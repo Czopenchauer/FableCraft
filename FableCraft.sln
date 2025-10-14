@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "fablecraft.client", "fablecraft.client\fablecraft.client.esproj", "{B702F043-EB47-E564-040C-79AE3F42D818}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.Server", "FableCraft.Server\FableCraft.Server.csproj", "{15D351E1-8865-949F-D72B-7E1C560CD9C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.AppHost", "FableCraft.AppHost\FableCraft.AppHost.csproj", "{214EE6EF-20D1-433E-A32D-0E17116ACA4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.ServiceDefaults", "FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj", "{B1AFE476-C5A1-D598-5C41-115236AE16F1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B702F043-EB47-E564-040C-79AE3F42D818}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B702F043-EB47-E564-040C-79AE3F42D818}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B702F043-EB47-E564-040C-79AE3F42D818}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B702F043-EB47-E564-040C-79AE3F42D818}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15D351E1-8865-949F-D72B-7E1C560CD9C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15D351E1-8865-949F-D72B-7E1C560CD9C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15D351E1-8865-949F-D72B-7E1C560CD9C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15D351E1-8865-949F-D72B-7E1C560CD9C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{214EE6EF-20D1-433E-A32D-0E17116ACA4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{214EE6EF-20D1-433E-A32D-0E17116ACA4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{214EE6EF-20D1-433E-A32D-0E17116ACA4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{214EE6EF-20D1-433E-A32D-0E17116ACA4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1AFE476-C5A1-D598-5C41-115236AE16F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1AFE476-C5A1-D598-5C41-115236AE16F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1AFE476-C5A1-D598-5C41-115236AE16F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1AFE476-C5A1-D598-5C41-115236AE16F1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A9A1B9FC-41AF-4810-B35C-692196E536D3}
+	EndGlobalSection
+EndGlobal
