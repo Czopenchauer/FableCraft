@@ -1,0 +1,1716 @@
+<?xml version="1.0"?>
+<!DOCTYPE rdf:RDF [
+    <!ENTITY owl "http://www.w3.org/2002/07/owl#" >
+    <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
+    <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
+    <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
+]>
+
+<rdf:RDF xmlns="http://example.org/fantasy#"
+     xml:base="http://example.org/fantasy"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <owl:Ontology rdf:about="http://example.org/fantasy">
+        <rdfs:label>Fantasy World and Narrative Ontology - Expanded</rdfs:label>
+        <rdfs:comment>A comprehensive ontology for modeling mature fantasy world entities, relationships, and narrative events</rdfs:comment>
+    </owl:Ontology>
+
+    <!-- Root Class -->
+    <owl:Class rdf:about="#Entity">
+        <rdfs:label>Entity</rdfs:label>
+        <rdfs:comment>The root class for all entities in the fantasy world</rdfs:comment>
+    </owl:Class>
+
+    <!-- ============= LIVING BEING HIERARCHY ============= -->
+    <owl:Class rdf:about="#LivingBeing">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Living Being</rdfs:label>
+    </owl:Class>
+
+    <!-- Character -->
+    <owl:Class rdf:about="#Character">
+        <rdfs:subClassOf rdf:resource="#LivingBeing"/>
+        <rdfs:label>Character</rdfs:label>
+        <rdfs:comment>Sentient beings including player characters and NPCs</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#PlayerCharacter">
+        <rdfs:subClassOf rdf:resource="#Character"/>
+        <rdfs:label>Player Character</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#NonPlayerCharacter">
+        <rdfs:subClassOf rdf:resource="#Character"/>
+        <rdfs:label>Non-Player Character</rdfs:label>
+    </owl:Class>
+
+    <!-- Species -->
+    <owl:Class rdf:about="#Species">
+        <rdfs:subClassOf rdf:resource="#LivingBeing"/>
+        <rdfs:label>Species</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Human">
+        <rdfs:subClassOf rdf:resource="#Species"/>
+        <rdfs:label>Human</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Elf">
+        <rdfs:subClassOf rdf:resource="#Species"/>
+        <rdfs:label>Elf</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dwarf">
+        <rdfs:subClassOf rdf:resource="#Species"/>
+        <rdfs:label>Dwarf</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Orc">
+        <rdfs:subClassOf rdf:resource="#Species"/>
+        <rdfs:label>Orc</rdfs:label>
+    </owl:Class>
+
+    <!-- Creature -->
+    <owl:Class rdf:about="#Creature">
+        <rdfs:subClassOf rdf:resource="#LivingBeing"/>
+        <rdfs:label>Creature</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Monster">
+        <rdfs:subClassOf rdf:resource="#Creature"/>
+        <rdfs:label>Monster</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dragon">
+        <rdfs:subClassOf rdf:resource="#Monster"/>
+        <rdfs:label>Dragon</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Undead">
+        <rdfs:subClassOf rdf:resource="#Monster"/>
+        <rdfs:label>Undead</rdfs:label>
+    </owl:Class>
+
+    <!-- Faction -->
+    <owl:Class rdf:about="#Faction">
+        <rdfs:subClassOf rdf:resource="#LivingBeing"/>
+        <rdfs:label>Faction</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Guild">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Guild</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Kingdom">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Kingdom</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Army">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Army</rdfs:label>
+    </owl:Class>
+
+    <!-- NEW: Additional Faction Types -->
+    <owl:Class rdf:about="#CriminalOrganization">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Criminal Organization</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ReligiousOrder">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Religious Order</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MerchantCompany">
+        <rdfs:subClassOf rdf:resource="#Faction"/>
+        <rdfs:label>Merchant Company</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= ITEM HIERARCHY ============= -->
+    <owl:Class rdf:about="#Item">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Item</rdfs:label>
+    </owl:Class>
+
+    <!-- Equipment -->
+    <owl:Class rdf:about="#Equipment">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Equipment</rdfs:label>
+    </owl:Class>
+
+    <!-- Armor -->
+    <owl:Class rdf:about="#Armor">
+        <rdfs:subClassOf rdf:resource="#Equipment"/>
+        <rdfs:label>Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#BodyArmor">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Body Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#LegArmor">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Leg Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#HandArmor">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Hand Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#HeadArmor">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Head Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#FootArmor">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Foot Armor</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Shield">
+        <rdfs:subClassOf rdf:resource="#Armor"/>
+        <rdfs:label>Shield</rdfs:label>
+    </owl:Class>
+
+    <!-- Specific Item Instance -->
+    <owl:Class rdf:about="#LeatherBracers">
+        <rdf:type rdf:resource="#HandArmor"/>
+        <rdfs:label>Leather Bracers</rdfs:label>
+    </owl:Class>
+
+    <!-- Weapon -->
+    <owl:Class rdf:about="#Weapon">
+        <rdfs:subClassOf rdf:resource="#Equipment"/>
+        <rdfs:label>Weapon</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MeleeWeapon">
+        <rdfs:subClassOf rdf:resource="#Weapon"/>
+        <rdfs:label>Melee Weapon</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Sword">
+        <rdfs:subClassOf rdf:resource="#MeleeWeapon"/>
+        <rdfs:label>Sword</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Axe">
+        <rdfs:subClassOf rdf:resource="#MeleeWeapon"/>
+        <rdfs:label>Axe</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dagger">
+        <rdfs:subClassOf rdf:resource="#MeleeWeapon"/>
+        <rdfs:label>Dagger</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#RangedWeapon">
+        <rdfs:subClassOf rdf:resource="#Weapon"/>
+        <rdfs:label>Ranged Weapon</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Bow">
+        <rdfs:subClassOf rdf:resource="#RangedWeapon"/>
+        <rdfs:label>Bow</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Crossbow">
+        <rdfs:subClassOf rdf:resource="#RangedWeapon"/>
+        <rdfs:label>Crossbow</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MagicalWeapon">
+        <rdfs:subClassOf rdf:resource="#Weapon"/>
+        <rdfs:label>Magical Weapon</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Staff">
+        <rdfs:subClassOf rdf:resource="#MagicalWeapon"/>
+        <rdfs:label>Staff</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Wand">
+        <rdfs:subClassOf rdf:resource="#MagicalWeapon"/>
+        <rdfs:label>Wand</rdfs:label>
+    </owl:Class>
+
+    <!-- Consumable -->
+    <owl:Class rdf:about="#Consumable">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Consumable</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Potion">
+        <rdfs:subClassOf rdf:resource="#Consumable"/>
+        <rdfs:label>Potion</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Scroll">
+        <rdfs:subClassOf rdf:resource="#Consumable"/>
+        <rdfs:label>Scroll</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Food">
+        <rdfs:subClassOf rdf:resource="#Consumable"/>
+        <rdfs:label>Food</rdfs:label>
+    </owl:Class>
+
+    <!-- Other Items -->
+    <owl:Class rdf:about="#CraftingMaterial">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Crafting Material</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Tool">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Tool</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Currency">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Currency</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#QuestItem">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Quest Item</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Artifact">
+        <rdfs:subClassOf rdf:resource="#Item"/>
+        <rdfs:label>Artifact</rdfs:label>
+    </owl:Class>
+
+    <!-- NEW: Item States -->
+    <owl:Class rdf:about="#ItemState">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Item State</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Enchanted">
+        <rdfs:subClassOf rdf:resource="#ItemState"/>
+        <rdfs:label>Enchanted</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Cursed">
+        <rdfs:subClassOf rdf:resource="#ItemState"/>
+        <rdfs:label>Cursed</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Damaged">
+        <rdfs:subClassOf rdf:resource="#ItemState"/>
+        <rdfs:label>Damaged</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Broken">
+        <rdfs:subClassOf rdf:resource="#ItemState"/>
+        <rdfs:label>Broken</rdfs:label>
+    </owl:Class>
+
+    <!-- NEW: Crafting -->
+    <owl:Class rdf:about="#Recipe">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Recipe</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#CraftingProcess">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Crafting Process</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= LOCATION HIERARCHY ============= -->
+    <owl:Class rdf:about="#Location">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Location</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Region">
+        <rdfs:subClassOf rdf:resource="#Location"/>
+        <rdfs:label>Region</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Territory">
+        <rdfs:subClassOf rdf:resource="#Region"/>
+        <rdfs:label>Territory</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#PlaneOfExistence">
+        <rdfs:subClassOf rdf:resource="#Region"/>
+        <rdfs:label>Plane of Existence</rdfs:label>
+    </owl:Class>
+
+    <!-- Settlement -->
+    <owl:Class rdf:about="#Settlement">
+        <rdfs:subClassOf rdf:resource="#Location"/>
+        <rdfs:label>Settlement</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#City">
+        <rdfs:subClassOf rdf:resource="#Settlement"/>
+        <rdfs:label>City</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Town">
+        <rdfs:subClassOf rdf:resource="#Settlement"/>
+        <rdfs:label>Town</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Village">
+        <rdfs:subClassOf rdf:resource="#Settlement"/>
+        <rdfs:label>Village</rdfs:label>
+    </owl:Class>
+
+    <!-- Building -->
+    <owl:Class rdf:about="#Building">
+        <rdfs:subClassOf rdf:resource="#Location"/>
+        <rdfs:label>Building</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Inn">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Inn</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Shop">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Shop</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Temple">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Temple</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Castle">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Castle</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dungeon">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Dungeon</rdfs:label>
+    </owl:Class>
+
+    <!-- NEW: Additional Buildings -->
+    <owl:Class rdf:about="#Brothel">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Brothel</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#TortureChamber">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Torture Chamber</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#SlaveMarket">
+        <rdfs:subClassOf rdf:resource="#Building"/>
+        <rdfs:label>Slave Market</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Room">
+        <rdfs:subClassOf rdf:resource="#Location"/>
+        <rdfs:label>Room</rdfs:label>
+    </owl:Class>
+
+    <!-- Natural Feature -->
+    <owl:Class rdf:about="#NaturalFeature">
+        <rdfs:subClassOf rdf:resource="#Location"/>
+        <rdfs:label>Natural Feature</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Mountain">
+        <rdfs:subClassOf rdf:resource="#NaturalFeature"/>
+        <rdfs:label>Mountain</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Forest">
+        <rdfs:subClassOf rdf:resource="#NaturalFeature"/>
+        <rdfs:label>Forest</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#River">
+        <rdfs:subClassOf rdf:resource="#NaturalFeature"/>
+        <rdfs:label>River</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Cave">
+        <rdfs:subClassOf rdf:resource="#NaturalFeature"/>
+        <rdfs:label>Cave</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= ABILITY HIERARCHY ============= -->
+    <owl:Class rdf:about="#Ability">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Ability</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Spell">
+        <rdfs:subClassOf rdf:resource="#Ability"/>
+        <rdfs:label>Spell</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Skill">
+        <rdfs:subClassOf rdf:resource="#Ability"/>
+        <rdfs:label>Skill</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#CombatSkill">
+        <rdfs:subClassOf rdf:resource="#Skill"/>
+        <rdfs:label>Combat Skill</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#CraftingSkill">
+        <rdfs:subClassOf rdf:resource="#Skill"/>
+        <rdfs:label>Crafting Skill</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#SocialSkill">
+        <rdfs:subClassOf rdf:resource="#Skill"/>
+        <rdfs:label>Social Skill</rdfs:label>
+    </owl:Class>
+
+    <!-- NEW: Magic System Expansion -->
+    <owl:Class rdf:about="#MagicSchool">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Magic School</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Evocation">
+        <rdfs:subClassOf rdf:resource="#MagicSchool"/>
+        <rdfs:label>Evocation</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Necromancy">
+        <rdfs:subClassOf rdf:resource="#MagicSchool"/>
+        <rdfs:label>Necromancy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Enchantment">
+        <rdfs:subClassOf rdf:resource="#MagicSchool"/>
+        <rdfs:label>Enchantment</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Illusion">
+        <rdfs:subClassOf rdf:resource="#MagicSchool"/>
+        <rdfs:label>Illusion</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#BloodMagic">
+        <rdfs:subClassOf rdf:resource="#MagicSchool"/>
+        <rdfs:label>Blood Magic</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#SpellComponent">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Spell Component</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MagicalAffinity">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Magical Affinity</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MagicCost">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Magic Cost</rdfs:label>
+        <rdfs:comment>The price or consequence of using magic</rdfs:comment>
+    </owl:Class>
+
+    <!-- Character Class -->
+    <owl:Class rdf:about="#CharacterClass">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Character Class</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Warrior">
+        <rdfs:subClassOf rdf:resource="#CharacterClass"/>
+        <rdfs:label>Warrior</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Mage">
+        <rdfs:subClassOf rdf:resource="#CharacterClass"/>
+        <rdfs:label>Mage</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Rogue">
+        <rdfs:subClassOf rdf:resource="#CharacterClass"/>
+        <rdfs:label>Rogue</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Cleric">
+        <rdfs:subClassOf rdf:resource="#CharacterClass"/>
+        <rdfs:label>Cleric</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= STATUS & ATTRIBUTES ============= -->
+    <owl:Class rdf:about="#StatusEffect">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Status Effect</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Buff">
+        <rdfs:subClassOf rdf:resource="#StatusEffect"/>
+        <rdfs:label>Buff</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Debuff">
+        <rdfs:subClassOf rdf:resource="#StatusEffect"/>
+        <rdfs:label>Debuff</rdfs:label>
+    </owl:Class>
+
+    <!-- Attribute -->
+    <owl:Class rdf:about="#Attribute">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Attribute</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Strength">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Strength</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Intelligence">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Intelligence</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dexterity">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Dexterity</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Constitution">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Constitution</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Wisdom">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Wisdom</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Charisma">
+        <rdfs:subClassOf rdf:resource="#Attribute"/>
+        <rdfs:label>Charisma</rdfs:label>
+    </owl:Class>
+
+    <!-- Alignment -->
+    <owl:Class rdf:about="#Alignment">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Alignment</rdfs:label>
+    </owl:Class>
+
+    <!-- Damage Type -->
+    <owl:Class rdf:about="#DamageType">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Damage Type</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#PhysicalDamage">
+        <rdfs:subClassOf rdf:resource="#DamageType"/>
+        <rdfs:label>Physical Damage</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#FireDamage">
+        <rdfs:subClassOf rdf:resource="#DamageType"/>
+        <rdfs:label>Fire Damage</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ColdDamage">
+        <rdfs:subClassOf rdf:resource="#DamageType"/>
+        <rdfs:label>Cold Damage</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#HolyDamage">
+        <rdfs:subClassOf rdf:resource="#DamageType"/>
+        <rdfs:label>Holy Damage</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#NecroticDamage">
+        <rdfs:subClassOf rdf:resource="#DamageType"/>
+        <rdfs:label>Necrotic Damage</rdfs:label>
+    </owl:Class>
+
+    <!-- Material -->
+    <owl:Class rdf:about="#Material">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Material</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Leather">
+        <rdfs:subClassOf rdf:resource="#Material"/>
+        <rdfs:label>Leather</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Steel">
+        <rdfs:subClassOf rdf:resource="#Material"/>
+        <rdfs:label>Steel</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Mythril">
+        <rdfs:subClassOf rdf:resource="#Material"/>
+        <rdfs:label>Mythril</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Dragonscale">
+        <rdfs:subClassOf rdf:resource="#Material"/>
+        <rdfs:label>Dragonscale</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Cloth">
+        <rdfs:subClassOf rdf:resource="#Material"/>
+        <rdfs:label>Cloth</rdfs:label>
+    </owl:Class>
+
+    <!-- Role & Profession -->
+    <owl:Class rdf:about="#Role">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Role</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Leader">
+        <rdfs:subClassOf rdf:resource="#Role"/>
+        <rdfs:label>Leader</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Member">
+        <rdfs:subClassOf rdf:resource="#Role"/>
+        <rdfs:label>Member</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Profession">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Profession</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Blacksmith">
+        <rdfs:subClassOf rdf:resource="#Profession"/>
+        <rdfs:label>Blacksmith</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Alchemist">
+        <rdfs:subClassOf rdf:resource="#Profession"/>
+        <rdfs:label>Alchemist</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Merchant">
+        <rdfs:subClassOf rdf:resource="#Profession"/>
+        <rdfs:label>Merchant</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Guard">
+        <rdfs:subClassOf rdf:resource="#Profession"/>
+        <rdfs:label>Guard</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Priest">
+        <rdfs:subClassOf rdf:resource="#Profession"/>
+        <rdfs:label>Priest</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: RELATIONSHIPS ============= -->
+    <owl:Class rdf:about="#Relationship">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Relationship</rdfs:label>
+        <rdfs:comment>Interpersonal connections between characters</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#RomanticRelationship">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Romantic Relationship</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#IntimateRelationship">
+        <rdfs:subClassOf rdf:resource="#RomanticRelationship"/>
+        <rdfs:label>Intimate Relationship</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#CasualRelationship">
+        <rdfs:subClassOf rdf:resource="#IntimateRelationship"/>
+        <rdfs:label>Casual Relationship</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#FamilialBond">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Familial Bond</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Rivalry">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Rivalry</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Enmity">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Enmity</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Alliance">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Alliance</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Betrayal">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Betrayal</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Mentorship">
+        <rdfs:subClassOf rdf:resource="#Relationship"/>
+        <rdfs:label>Mentorship</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: ECONOMIC SYSTEMS ============= -->
+    <owl:Class rdf:about="#EconomicSystem">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Economic System</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#TradeRoute">
+        <rdfs:subClassOf rdf:resource="#EconomicSystem"/>
+        <rdfs:label>Trade Route</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Resource">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Resource</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#NaturalResource">
+        <rdfs:subClassOf rdf:resource="#Resource"/>
+        <rdfs:label>Natural Resource</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MagicalResource">
+        <rdfs:subClassOf rdf:resource="#Resource"/>
+        <rdfs:label>Magical Resource</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#WealthLevel">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Wealth Level</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: POLITICAL SYSTEMS ============= -->
+    <owl:Class rdf:about="#PoliticalSystem">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Political System</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#GovernanceType">
+        <rdfs:subClassOf rdf:resource="#PoliticalSystem"/>
+        <rdfs:label>Governance Type</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Monarchy">
+        <rdfs:subClassOf rdf:resource="#GovernanceType"/>
+        <rdfs:label>Monarchy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Oligarchy">
+        <rdfs:subClassOf rdf:resource="#GovernanceType"/>
+        <rdfs:label>Oligarchy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Theocracy">
+        <rdfs:subClassOf rdf:resource="#GovernanceType"/>
+        <rdfs:label>Theocracy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Tyranny">
+        <rdfs:subClassOf rdf:resource="#GovernanceType"/>
+        <rdfs:label>Tyranny</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#PoliticalHierarchy">
+        <rdfs:subClassOf rdf:resource="#PoliticalSystem"/>
+        <rdfs:label>Political Hierarchy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Conflict">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Conflict</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#War">
+        <rdfs:subClassOf rdf:resource="#Conflict"/>
+        <rdfs:label>War</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Treaty">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Treaty</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#TerritorialClaim">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Territorial Claim</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: CULTURAL SYSTEMS ============= -->
+    <owl:Class rdf:about="#Culture">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Culture</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Religion">
+        <rdfs:subClassOf rdf:resource="#Culture"/>
+        <rdfs:label>Religion</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Deity">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Deity</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#CulturalPractice">
+        <rdfs:subClassOf rdf:resource="#Culture"/>
+        <rdfs:label>Cultural Practice</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Language">
+        <rdfs:subClassOf rdf:resource="#Culture"/>
+        <rdfs:label>Language</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Tradition">
+        <rdfs:subClassOf rdf:resource="#Culture"/>
+        <rdfs:label>Tradition</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Ritual">
+        <rdfs:subClassOf rdf:resource="#Tradition"/>
+        <rdfs:label>Ritual</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Festival">
+        <rdfs:subClassOf rdf:resource="#Tradition"/>
+        <rdfs:label>Festival</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: WORLD STATE & CONSEQUENCES ============= -->
+    <owl:Class rdf:about="#WorldState">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>World State</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Reputation">
+        <rdfs:subClassOf rdf:resource="#WorldState"/>
+        <rdfs:label>Reputation</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Fame">
+        <rdfs:subClassOf rdf:resource="#Reputation"/>
+        <rdfs:label>Fame</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Infamy">
+        <rdfs:subClassOf rdf:resource="#Reputation"/>
+        <rdfs:label>Infamy</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#LegalStatus">
+        <rdfs:subClassOf rdf:resource="#WorldState"/>
+        <rdfs:label>Legal Status</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Wanted">
+        <rdfs:subClassOf rdf:resource="#LegalStatus"/>
+        <rdfs:label>Wanted</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Outlaw">
+        <rdfs:subClassOf rdf:resource="#LegalStatus"/>
+        <rdfs:label>Outlaw</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MoralStanding">
+        <rdfs:subClassOf rdf:resource="#WorldState"/>
+        <rdfs:label>Moral Standing</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= NEW: MATURE CONTENT ============= -->
+    <owl:Class rdf:about="#MatureContent">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Mature Content</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ViolentAct">
+        <rdfs:subClassOf rdf:resource="#MatureContent"/>
+        <rdfs:label>Violent Act</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Torture">
+        <rdfs:subClassOf rdf:resource="#ViolentAct"/>
+        <rdfs:label>Torture</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Execution">
+        <rdfs:subClassOf rdf:resource="#ViolentAct"/>
+        <rdfs:label>Execution</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Trauma">
+        <rdfs:subClassOf rdf:resource="#MatureContent"/>
+        <rdfs:label>Trauma</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MentalState">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Mental State</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Addiction">
+        <rdfs:subClassOf rdf:resource="#MentalState"/>
+        <rdfs:label>Addiction</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Madness">
+        <rdfs:subClassOf rdf:resource="#MentalState"/>
+        <rdfs:label>Madness</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Corruption">
+        <rdfs:subClassOf rdf:resource="#MentalState"/>
+        <rdfs:label>Corruption</rdfs:label>
+        <rdfs:comment>Mental or spiritual corruption, often from dark magic</rdfs:comment>
+    </owl:Class>
+
+    <!-- ============= NEW: ENVIRONMENTAL SYSTEMS ============= -->
+    <owl:Class rdf:about="#EnvironmentalSystem">
+        <rdfs:subClassOf rdf:resource="#Entity"/>
+        <rdfs:label>Environmental System</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Weather">
+        <rdfs:subClassOf rdf:resource="#EnvironmentalSystem"/>
+        <rdfs:label>Weather</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Season">
+        <rdfs:subClassOf rdf:resource="#EnvironmentalSystem"/>
+        <rdfs:label>Season</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#NaturalDisaster">
+        <rdfs:subClassOf rdf:resource="#EnvironmentalSystem"/>
+        <rdfs:label>Natural Disaster</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Earthquake">
+        <rdfs:subClassOf rdf:resource="#NaturalDisaster"/>
+        <rdfs:label>Earthquake</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Flood">
+        <rdfs:subClassOf rdf:resource="#NaturalDisaster"/>
+        <rdfs:label>Flood</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Drought">
+        <rdfs:subClassOf rdf:resource="#NaturalDisaster"/>
+        <rdfs:label>Drought</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#MagicalCatastrophe">
+        <rdfs:subClassOf rdf:resource="#NaturalDisaster"/>
+        <rdfs:label>Magical Catastrophe</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Ecology">
+        <rdfs:subClassOf rdf:resource="#EnvironmentalSystem"/>
+        <rdfs:label>Ecology</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="#Biome">
+        <rdfs:subClassOf rdf:resource="#Ecology"/>
+        <rdfs:label>Biome</rdfs:label>
+    </owl:Class>
+
+    <!-- ============= EVENT HIERARCHY (PRESERVED FROM ORIGINAL) ============= -->
+    <owl:Class rdf:about="#Event">
+        <rdfs:label>Event</rdfs:label>
+        <rdfs:comment>A general occurrence or happening in a narrative</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#StoryEvent">
+        <rdfs:subClassOf rdf:resource="#Event"/>
+        <rdfs:label>Story Event</rdfs:label>
+        <rdfs:comment>An event that is part of a narrative storyline</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ActionEvent">
+        <rdfs:subClassOf rdf:resource="#Event"/>
+        <rdfs:label>Action Event</rdfs:label>
+        <rdfs:comment>An event involving physical or decisive action</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#DialogueEvent">
+        <rdfs:subClassOf rdf:resource="#Event"/>
+        <rdfs:label>Dialogue Event</rdfs:label>
+        <rdfs:comment>An event involving communication or conversation</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#DecisionEvent">
+        <rdfs:subClassOf rdf:resource="#Event"/>
+        <rdfs:label>Decision Event</rdfs:label>
+        <rdfs:comment>An event involving a significant choice or decision</rdfs:comment>
+    </owl:Class>
+
+    <!-- Actor -->
+    <owl:Class rdf:about="#Actor">
+        <rdfs:label>Actor</rdfs:label>
+        <rdfs:comment>An entity that can participate in events</rdfs:comment>
+    </owl:Class>
+
+    <!-- Time (from original) -->
+    <owl:Class rdf:about="#TimePoint">
+        <rdfs:label>Time Point</rdfs:label>
+        <rdfs:comment>A specific point in time</rdfs:comment>
+    </owl:Class>
+
+    <owl:Class rdf:about="#TimeInterval">
+        <rdfs:label>Time Interval</rdfs:label>
+        <rdfs:comment>A duration or period of time</rdfs:comment>
+    </owl:Class>
+
+    <!-- ============= OBJECT PROPERTIES ============= -->
+
+    <!-- Original Properties -->
+    <owl:ObjectProperty rdf:about="#equippedBy">
+        <rdfs:domain rdf:resource="#Equipment"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>equipped by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#equips">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Equipment"/>
+        <rdfs:label>equips</rdfs:label>
+        <owl:inverseOf rdf:resource="#equippedBy"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#locatedIn">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="#Location"/>
+        <rdfs:label>located in</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#contains">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Entity"/>
+        <rdfs:label>contains</rdfs:label>
+        <owl:inverseOf rdf:resource="#locatedIn"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#ownedBy">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>owned by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#owns">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Item"/>
+        <rdfs:label>owns</rdfs:label>
+        <owl:inverseOf rdf:resource="#ownedBy"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#memberOf">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Faction"/>
+        <rdfs:label>member of</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasMember">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>has member</rdfs:label>
+        <owl:inverseOf rdf:resource="#memberOf"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasSpecies">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Species"/>
+        <rdfs:label>has species</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasClass">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#CharacterClass"/>
+        <rdfs:label>has class</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasRole">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Role"/>
+        <rdfs:label>has role</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasProfession">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Profession"/>
+        <rdfs:label>has profession</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasAbility">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Ability"/>
+        <rdfs:label>has ability</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasEffect">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#StatusEffect"/>
+        <rdfs:label>has effect</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#madeOf">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#Material"/>
+        <rdfs:label>made of</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#craftedFrom">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#CraftingMaterial"/>
+        <rdfs:label>crafted from</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#dealsDamageType">
+        <rdfs:domain rdf:resource="#Weapon"/>
+        <rdfs:range rdf:resource="#DamageType"/>
+        <rdfs:label>deals damage type</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#partOf">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Location"/>
+        <rdfs:label>part of</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasPart">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Location"/>
+        <rdfs:label>has part</rdfs:label>
+        <owl:inverseOf rdf:resource="#partOf"/>
+    </owl:ObjectProperty>
+
+    <!-- Event Properties (from original) -->
+    <owl:ObjectProperty rdf:about="#hasParticipant">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#Actor"/>
+        <rdfs:label>has participant</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasAgent">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#Actor"/>
+        <rdfs:label>has agent</rdfs:label>
+        <rdfs:comment>The primary actor performing the event</rdfs:comment>
+        <rdfs:subPropertyOf rdf:resource="#hasParticipant"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasPatient">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#Actor"/>
+        <rdfs:label>has patient</rdfs:label>
+        <rdfs:comment>The actor affected by the event</rdfs:comment>
+        <rdfs:subPropertyOf rdf:resource="#hasParticipant"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#occursAt">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#Location"/>
+        <rdfs:label>occurs at</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasTimePoint">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#TimePoint"/>
+        <rdfs:label>has time point</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasTimeInterval">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="#TimeInterval"/>
+        <rdfs:label>has time interval</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Relationship Properties -->
+    <owl:ObjectProperty rdf:about="#hasRelationship">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Relationship"/>
+        <rdfs:label>has relationship</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#relatedTo">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>related to</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#romanticPartner">
+        <rdfs:subPropertyOf rdf:resource="#relatedTo"/>
+        <rdfs:label>romantic partner</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#intimateWith">
+        <rdfs:subPropertyOf rdf:resource="#romanticPartner"/>
+        <rdfs:label>intimate with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#familyOf">
+        <rdfs:subPropertyOf rdf:resource="#relatedTo"/>
+        <rdfs:label>family of</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#rivalOf">
+        <rdfs:subPropertyOf rdf:resource="#relatedTo"/>
+        <rdfs:label>rival of</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#enemyOf">
+        <rdfs:subPropertyOf rdf:resource="#relatedTo"/>
+        <rdfs:label>enemy of</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#alliedWith">
+        <rdfs:subPropertyOf rdf:resource="#relatedTo"/>
+        <rdfs:label>allied with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#betrayedBy">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>betrayed by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#betrays">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>betrays</rdfs:label>
+        <owl:inverseOf rdf:resource="#betrayedBy"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#mentorOf">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>mentor of</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#studentOf">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Character"/>
+        <rdfs:label>student of</rdfs:label>
+        <owl:inverseOf rdf:resource="#mentorOf"/>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Economic & Political Properties -->
+    <owl:ObjectProperty rdf:about="#controlsTerritory">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Territory"/>
+        <rdfs:label>controls territory</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#tradesWith">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Faction"/>
+        <rdfs:label>trades with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#atWarWith">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Faction"/>
+        <rdfs:label>at war with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#tributaryTo">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Faction"/>
+        <rdfs:label>tributary to</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasTreaty">
+        <rdfs:domain rdf:resource="#Faction"/>
+        <rdfs:range rdf:resource="#Treaty"/>
+        <rdfs:label>has treaty</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#governedBy">
+        <rdfs:domain rdf:resource="#Settlement"/>
+        <rdfs:range rdf:resource="#GovernanceType"/>
+        <rdfs:label>governed by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasResource">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Resource"/>
+        <rdfs:label>has resource</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Magic System Properties -->
+    <owl:ObjectProperty rdf:about="#belongsToSchool">
+        <rdfs:domain rdf:resource="#Spell"/>
+        <rdfs:range rdf:resource="#MagicSchool"/>
+        <rdfs:label>belongs to school</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#requiresComponent">
+        <rdfs:domain rdf:resource="#Spell"/>
+        <rdfs:range rdf:resource="#SpellComponent"/>
+        <rdfs:label>requires component</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasMagicalAffinity">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#MagicalAffinity"/>
+        <rdfs:label>has magical affinity</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#incursCost">
+        <rdfs:domain rdf:resource="#Spell"/>
+        <rdfs:range rdf:resource="#MagicCost"/>
+        <rdfs:label>incurs cost</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#causesCorruption">
+        <rdfs:domain rdf:resource="#Spell"/>
+        <rdfs:range rdf:resource="#Corruption"/>
+        <rdfs:label>causes corruption</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Cultural Properties -->
+    <owl:ObjectProperty rdf:about="#worships">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Deity"/>
+        <rdfs:label>worships</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#followsReligion">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Religion"/>
+        <rdfs:label>follows religion</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#practicesCulture">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Culture"/>
+        <rdfs:label>practices culture</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#speaksLanguage">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Language"/>
+        <rdfs:label>speaks language</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#opposesBeliefs">
+        <rdfs:domain rdf:resource="#Religion"/>
+        <rdfs:range rdf:resource="#Religion"/>
+        <rdfs:label>opposes beliefs of</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#sharesTraditions">
+        <rdfs:domain rdf:resource="#Culture"/>
+        <rdfs:range rdf:resource="#Culture"/>
+        <rdfs:label>shares traditions with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <!-- NEW: World State Properties -->
+    <owl:ObjectProperty rdf:about="#hasReputation">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Reputation"/>
+        <rdfs:label>has reputation</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasLegalStatus">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#LegalStatus"/>
+        <rdfs:label>has legal status</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasMoralStanding">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#MoralStanding"/>
+        <rdfs:label>has moral standing</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Mature Content Properties -->
+    <owl:ObjectProperty rdf:about="#hasMentalState">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#MentalState"/>
+        <rdfs:label>has mental state</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasTrauma">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Trauma"/>
+        <rdfs:label>has trauma</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#afflictedBy">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="#Addiction"/>
+        <rdfs:label>afflicted by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Item Interaction Properties -->
+    <owl:ObjectProperty rdf:about="#hasItemState">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#ItemState"/>
+        <rdfs:label>has item state</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#upgradesTo">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#Item"/>
+        <rdfs:label>upgrades to</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#compatibleWith">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#Item"/>
+        <rdfs:label>compatible with</rdfs:label>
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#producedBy">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="#Recipe"/>
+        <rdfs:label>produced by</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- NEW: Environmental Properties -->
+    <owl:ObjectProperty rdf:about="#hasWeather">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Weather"/>
+        <rdfs:label>has weather</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasSeason">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Season"/>
+        <rdfs:label>has season</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#affectedByWeather">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="#Weather"/>
+        <rdfs:label>affected by weather</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="#hasBiome">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="#Biome"/>
+        <rdfs:label>has biome</rdfs:label>
+    </owl:ObjectProperty>
+
+    <!-- ============= DATATYPE PROPERTIES ============= -->
+
+    <owl:DatatypeProperty rdf:about="#name">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>name</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#description">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>description</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#level">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>level</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#healthPoints">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>health points</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#manaPoints">
+        <rdfs:domain rdf:resource="#Character"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>mana points</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#armorRating">
+        <rdfs:domain rdf:resource="#Armor"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>armor rating</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#weaponDamage">
+        <rdfs:domain rdf:resource="#Weapon"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>weapon damage</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#weight">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="&xsd;float"/>
+        <rdfs:label>weight</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#value">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>value</rdfs:label>
+        <rdfs:comment>Gold value of the item</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#durability">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>durability</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#requiredLevel">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>required level</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#requiredStrength">
+        <rdfs:domain rdf:resource="#Item"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>required strength</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#attributeValue">
+        <rdfs:domain rdf:resource="#Attribute"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>attribute value</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#population">
+        <rdfs:domain rdf:resource="#Settlement"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>population</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#coordinates">
+        <rdfs:domain rdf:resource="#Location"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>coordinates</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#timestamp">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="&xsd;dateTime"/>
+        <rdfs:label>timestamp</rdfs:label>
+        <rdfs:comment>An ISO 8601 datetime for an event</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#sequenceNumber">
+        <rdfs:domain rdf:resource="#Event"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>sequence number</rdfs:label>
+        <rdfs:comment>Numeric position in a sequence</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <!-- NEW: Relationship Datatype Properties -->
+    <owl:DatatypeProperty rdf:about="#intimacyLevel">
+        <rdfs:domain rdf:resource="#Relationship"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>intimacy level</rdfs:label>
+        <rdfs:comment>Scale from 0-100</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#trustScore">
+        <rdfs:domain rdf:resource="#Relationship"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>trust score</rdfs:label>
+        <rdfs:comment>Scale from -100 to 100</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#relationshipHistory">
+        <rdfs:domain rdf:resource="#Relationship"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>relationship history</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <!-- NEW: Mature Content Datatype Properties -->
+    <owl:DatatypeProperty rdf:about="#sensitivityRating">
+        <rdfs:domain rdf:resource="#MatureContent"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>sensitivity rating</rdfs:label>
+        <rdfs:comment>Rating: Mild, Moderate, Severe, Extreme</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#consentIndicator">
+        <rdfs:domain rdf:resource="#IntimateRelationship"/>
+        <rdfs:range rdf:resource="&xsd;boolean"/>
+        <rdfs:label>consent indicator</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#psychologicalImpact">
+        <rdfs:domain rdf:resource="#MatureContent"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>psychological impact</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <!-- NEW: World State Datatype Properties -->
+    <owl:DatatypeProperty rdf:about="#reputationScore">
+        <rdfs:domain rdf:resource="#Reputation"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>reputation score</rdfs:label>
+        <rdfs:comment>Scale from -100 to 100</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#moralityScore">
+        <rdfs:domain rdf:resource="#MoralStanding"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>morality score</rdfs:label>
+        <rdfs:comment>Scale from -100 (evil) to 100 (good)</rdfs:comment>
+    </owl:DatatypeProperty>
+
+    <!-- NEW: Economic Datatype Properties -->
+    <owl:DatatypeProperty rdf:about="#wealthAmount">
+        <rdfs:domain rdf:resource="#WealthLevel"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>wealth amount</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#resourceQuantity">
+        <rdfs:domain rdf:resource="#Resource"/>
+        <rdfs:range rdf:resource="&xsd;integer"/>
+        <rdfs:label>resource quantity</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <!-- NEW: Environmental Datatype Properties -->
+    <owl:DatatypeProperty rdf:about="#seasonalAvailability">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>seasonal availability</rdfs:label>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="#environmentalDependency">
+        <rdfs:domain rdf:resource="#Entity"/>
+        <rdfs:range rdf:resource="&xsd;string"/>
+        <rdfs:label>environmental dependency</rdfs:label>
+    </owl:DatatypeProperty>
+
+</rdf:RDF>

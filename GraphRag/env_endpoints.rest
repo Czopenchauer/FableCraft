@@ -1,0 +1,32 @@
+﻿### GraphRAG API - Environment Variable Management
+### Base URL
+@baseUrl = http://127.0.0.1:8111
+
+### Set Single Environment Variable
+POST {{baseUrl}}/env/set
+Content-Type: application/json
+
+{
+  "key": "ENVIRONMENT_VARIABLE_KEY",
+  "value": "environment_variable_value"
+}
+
+### Set Multiple Environment Variables
+POST {{baseUrl}}/env/set_multiple
+Content-Type: application/json
+
+{
+  "variables": {
+    "KEY_1": "value_1",
+    "KEY_2": "value_2"
+  }
+}
+
+### Get Environment Variable
+GET {{baseUrl}}/env/get/ENVIRONMENT_VARIABLE_KEY
+
+### List All Environment Variables
+GET {{baseUrl}}/env/list
+
+### Delete Environment Variable
+DELETE {{baseUrl}}/env/delete/ENVIRONMENT_VARIABLE_KEY

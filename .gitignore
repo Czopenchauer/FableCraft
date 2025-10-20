@@ -7,6 +7,7 @@ out-tsc
 bazel-out
 bin
 obj
+GraphRag/.venv
 
 # Node
 node_modules
