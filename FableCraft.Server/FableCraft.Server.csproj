@@ -13,7 +13,12 @@
     <ProjectReference Include="..\fablecraft.client\fablecraft.client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj" />
+      <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj" />
+      <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
