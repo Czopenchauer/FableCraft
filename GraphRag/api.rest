@@ -1,6 +1,7 @@
 ### GraphRAG Search API - REST Client Tests
 ### Base URL
 @baseUrl = http://127.0.0.1:8111
+@datasetId = a68b27f3-7575-5ce8-ba2d-0917ab406ca0
 
 ### Health Check
 GET {{baseUrl}}/health
@@ -8,6 +9,7 @@ GET {{baseUrl}}/health
 ### Root Endpoint
 GET {{baseUrl}}/
 
+# datasetId = a68b27f3-7575-5ce8-ba2d-0917ab406ca0
 ### Build Index - With Dataset ID
 POST {{baseUrl}}/build_index
 Content-Type: application/json
@@ -21,7 +23,7 @@ Content-Type: application/json
 
 ### Get Pipeline Status
 # Replace {dataset_id} with actual UUID from build_index response
-GET {{baseUrl}}/pipeline_status/6c888ba0-cb22-5f47-897d-1f180ce4f602
+GET {{baseUrl}}/pipeline_status/{{datasetId}}
 
 ### Search - Graph Completion Context Extension
 POST {{baseUrl}}/search
@@ -30,8 +32,9 @@ Content-Type: application/json
 {
   "query": "Tell me about Ariel",
   "query_type": "GRAPH_COMPLETION_CONTEXT_EXTENSION",
-  "system_prompt": "You are a helpful assistant that provides information about the fantasy world.",
-  "top_k": 5
+  // "system_prompt": "You are a helpful assistant that provides information about the fantasy world.",
+  "top_k": 5,
+  "dataset_ids": ["a68b27f3-7575-5ce8-ba2d-0917ab406ca0"]
 }
 
 ### Delete Data
@@ -42,4 +45,12 @@ Content-Type: application/json
 {
   "dataset_id": "eaadd6ec-7885-5e37-b3c6-ea20380fab98",
   "data_id": "ba1f717d-89a8-5c0a-abc6-7aec2a2cb3a1"
+}
+
+### Visualize Graph
+POST {{baseUrl}}/visualize_graph
+Content-Type: application/json
+
+{
+  "output_path": null
 }
