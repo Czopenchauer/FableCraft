@@ -9,10 +9,10 @@ var postgres = builder.AddPostgres("fablecraftdb-npgsql", port: 65066)
 
 var neo4j = builder.AddContainer("fablecraft-neo4j", "neo4j", "5.26.14")
     .WithVolume("neo4j-data", "/data")
-    .WithHttpEndpoint(targetPort: 7474, port: 7474, name: "http") // Neo4j browser
-    .WithEndpoint(targetPort: 7687, port: 7687, name: "bolt") // Bolt protocol
+    .WithHttpEndpoint(targetPort: 7474, port: 7474, name: "http")
+    .WithEndpoint(targetPort: 7687, port: 7687, name: "bolt")
     .WithEnvironment("NEO4J_AUTH", "neo4j/SuperPassword")
-    .WithEnvironment("NEO4J_PLUGINS", "[\"apoc\", \"graph-data-science\"]");    // Optional: add plugins
+    .WithEnvironment("NEO4J_PLUGINS", "[\"apoc\", \"graph-data-science\"]");
 
 #pragma warning disable ASPIREHOSTINGPYTHON001
 builder.AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
@@ -30,7 +30,7 @@ builder.AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
         
         var httpEndpoint = neo4j.GetEndpoint("http");
         context.EnvironmentVariables["NEO4J_HTTP_URI"] = $"http://{httpEndpoint.Host}:{httpEndpoint.Port}";
-    });
+    }).WithRelationship(neo4j.Resource, "uses");
 #pragma warning restore ASPIREHOSTINGPYTHON001
 
 builder.AddNpmApp("fablecraft-client", "../FableCraft.Client")

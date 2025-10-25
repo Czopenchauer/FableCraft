@@ -23,6 +23,7 @@ class SearchRequest(BaseModel):
     query_type: str = Field(..., description="The type of search query (e.g., GRAPH_COMPLETION_CONTEXT_EXTENSION)")
     system_prompt: str = Field(None, description="System prompt for the search")
     top_k: int = Field(..., description="Number of top results to return", gt=0)
+    dataset_ids: List[UUID] = Field(None, description="Optional list of dataset IDs to restrict the search")
 
 
 class SearchResponse(BaseModel):
