@@ -1,20 +1,23 @@
+using FableCraft.AppHost;
+
 using Projects;
 
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
 var graphRagPostgres = builder
-    .AddPostgres("graphrag-npgsql", port: 65066)
+    .AddPostgres("graphrag-npgsql", port: 6467)
     .WithImage("pgvector/pgvector", "pg18")
-    .WithDataVolume();
+    .WithDataVolume()
+    .AddDatabase("graphrag", "graphrag");
 
 var serverDatabase = builder
-    .AddPostgres("fablecraftdb-npgsql", port: 65066)
-    .WithImage("postgres", "18")
-    .WithDataVolume()
+    .AddPostgres("fablecraftdb-npgsql", port: 6999)
+    .WithImage("postgres", "18.0")
+    .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
 var neo4j = builder
-    .AddContainer("fablecraft-neo4j", "neo4j", "5.26.14")
+    .AddContainer("fablecraft-neo4j", "neo4j", "community")
     .WithVolume("neo4j-data", "/data")
     .WithHttpEndpoint(targetPort: 7474, port: 7474, name: "http")
     .WithEndpoint(targetPort: 7687, port: 7687, name: "bolt")

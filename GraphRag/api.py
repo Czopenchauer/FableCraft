@@ -443,7 +443,7 @@ async def health():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    postgres = os.getenv("ConnectionStrings__fablecraftdb")
+    postgres = os.getenv("ConnectionStrings__graphrag")
 
     neo4j_uri = os.getenv("NEO4J_URI")
     neo4j_user = os.getenv("NEO4J_USER")
