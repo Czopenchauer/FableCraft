@@ -4,12 +4,6 @@ using Projects;
 
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
-var graphRagPostgres = builder
-    .AddPostgres("graphrag-npgsql", port: 6467)
-    .WithImage("pgvector/pgvector", "pg18")
-    .WithDataVolume()
-    .AddDatabase("graphrag", "graphrag");
-
 var serverDatabase = builder
     .AddPostgres("fablecraftdb-npgsql", port: 6999)
     .WithImage("postgres", "18.0")
@@ -30,10 +24,8 @@ var graphRagApi = builder
     .WithHttpEndpoint(env: "PORT", port: 8111, name: "graphRagApi")
     .WithExternalHttpEndpoints()
     .WithOtlpExporter()
-    .WithReference(graphRagPostgres)
     .WithEnvironment(context =>
     {
-        // Manually pass Neo4j connection details to Python app
         EndpointReference boltEndpoint = neo4j.GetEndpoint("bolt");
         context.EnvironmentVariables["NEO4J_URI"] = $"bolt://{boltEndpoint.Host}:{boltEndpoint.Port}";
         context.EnvironmentVariables["NEO4J_USER"] = "neo4j";
@@ -43,7 +35,6 @@ var graphRagApi = builder
         context.EnvironmentVariables["NEO4J_HTTP_URI"] = $"http://{httpEndpoint.Host}:{httpEndpoint.Port}";
     })
     .WithRelationship(neo4j.Resource, "uses")
-    .WaitFor(graphRagPostgres)
     .WaitFor(neo4j);
 #pragma warning restore ASPIREHOSTINGPYTHON001
 

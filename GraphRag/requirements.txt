@@ -1,19 +1,14 @@
-﻿cognee[neo4j]
-cognee[postgres]
-cognee
-transformers
-protego
-playwright
-
-# FastAPI and web server
+﻿uvicorn
+starlette
 fastapi
-uvicorn[standard]
 pydantic
 python-dotenv
 
 # OpenTelemetry dependencies
-opentelemetry-api
 opentelemetry-sdk
+opentelemetry-distro
 opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-logging
 opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-instrumentation-flask
+gunicorn

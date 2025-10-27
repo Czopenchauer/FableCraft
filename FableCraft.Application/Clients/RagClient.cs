@@ -149,6 +149,25 @@ internal class RagClient
     }
 }
 
+internal static class SearchType
+{
+    public const string Summaries = "SUMMARIES";
+    public const string Chunks = "CHUNKS";
+    public const string RagCompletion = "RAG_COMPLETION";
+    public const string GraphCompletion = "GRAPH_COMPLETION";
+    public const string GraphSummaryCompletion = "GRAPH_SUMMARY_COMPLETION";
+    public const string Code = "CODE";
+    public const string Cypher = "CYPHER";
+    public const string NaturalLanguage = "NATURAL_LANGUAGE";
+    public const string GraphCompletionCot = "GRAPH_COMPLETION_COT";
+    public const string GraphCompletionContextExtension = "GRAPH_COMPLETION_CONTEXT_EXTENSION";
+    public const string FeelingLucky = "FEELING_LUCKY";
+    public const string Feedback = "FEEDBACK";
+    public const string Temporal = "TEMPORAL";
+    public const string CodingRules = "CODING_RULES";
+    public const string ChunksLexical = "CHUNKS_LEXICAL";
+}
+
 internal record BuildIndexRequest
 {
     public required string Text { get; init; }
