@@ -20,7 +20,7 @@ const certFilePath = path.join(baseFolder, `${certificateName}.pem`);
 const keyFilePath = path.join(baseFolder, `${certificateName}.key`);
 
 if (!fs.existsSync(baseFolder)) {
-    fs.mkdirSync(baseFolder, { recursive: true });
+  fs.mkdirSync(baseFolder, {recursive: true});
 }
 
 if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
@@ -32,6 +32,6 @@ if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
     '--format',
     'Pem',
     '--no-password',
-  ], { stdio: 'inherit', })
-  .on('exit', (code) => process.exit(code));
+  ], {stdio: 'inherit',})
+    .on('exit', (code) => process.exit(code));
 }

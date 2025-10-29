@@ -1,18 +1,40 @@
 using FableCraft.Application;
+using FableCraft.Infrastructure;
 using FableCraft.ServiceDefaults;
 
-var builder = WebApplication.CreateBuilder(args);
+using Serilog;
+using Serilog.Events;
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.Services
+    .AddInfrastructureServices(builder.Configuration)
+    .AddApplicationServices(builder.Configuration);
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddApplicationServices(builder.Configuration);
+WebApplication app = builder.Build();
 
-var app = builder.Build();
+app.UseSerilogRequestLogging(options =>
+{
+    // Customize the message template
+    options.MessageTemplate = "Handled {RequestPath}";
+
+    // Emit debug-level events instead of the defaults
+    options.GetLevel = (httpContext, elapsed, ex) => LogEventLevel.Debug;
+
+    // Attach additional properties to the request completion event
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
+    };
+});
 
 app.MapDefaultEndpoints();
 
