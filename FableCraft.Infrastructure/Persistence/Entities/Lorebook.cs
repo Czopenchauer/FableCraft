@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class World
+public class World : IKnowledgeGraphEntity
 {
     [Key]
     public Guid WorldId { get; init; }
@@ -21,6 +21,10 @@ public class World
 
     public DateTime LastPlayedAt { get; init; }
 
+    public ProcessingStatus ProcessingStatus { get; init; }
+
+    public string KnowledgeGraphNodeId { get; init; }
+
     public Guid CharacterId { get; init; }
 
     public Character Character { get; init; }
@@ -30,7 +34,7 @@ public class World
     public ICollection<Scene> Scenes { get; init; }
 }
 
-public class LorebookEntry
+public class LorebookEntry : IKnowledgeGraphEntity
 {
     [Key]
     public Guid EntryId { get; init; }
@@ -50,6 +54,10 @@ public class LorebookEntry
     [Required]
     [MaxLength(100)]
     public string Category { get; init; }
+
+    public string KnowledgeGraphNodeId { get; init; }
+
+    public ProcessingStatus ProcessingStatus { get; init; }
 
     public DateTime CreatedAt { get; init; }
 

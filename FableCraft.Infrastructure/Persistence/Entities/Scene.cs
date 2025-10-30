@@ -22,6 +22,10 @@ public class Scene
     [Column(TypeName = "jsonb")]
     public string SceneStateJson { get; init; }
 
+    public string KnowledgeGraphNodeId { get; set; }
+
+    public ProcessingStatus ProcessingStatus { get; init; }
+
     public DateTime CreatedAt { get; init; }
 
     public Guid? PreviousSceneId { get; init; }
@@ -51,6 +55,10 @@ public class Character
 
     public string Background { get; init; }
 
+    public string KnowledgeGraphNodeId { get; set; }
+
+    public ProcessingStatus ProcessingStatus { get; init; }
+
     [Column(TypeName = "jsonb")]
     public string StatsJson { get; init; }
 
@@ -68,6 +76,10 @@ public class CharacterAction
     public Guid SceneId { get; init; }
 
     public Scene Scene { get; init; }
+
+    public string KnowledgeGraphNodeId { get; set; }
+
+    public ProcessingStatus ProcessingStatus { get; init; }
 
     [Required]
     public string ActionDescription { get; init; }

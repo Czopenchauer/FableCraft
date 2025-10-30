@@ -17,7 +17,7 @@ public static class StartupExtensions
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSerilog(config => config.ReadFrom.Configuration(configuration));
+        services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
 
         Channel<IMessage> channel = Channel.CreateUnbounded<IMessage>(new UnboundedChannelOptions
         {
@@ -31,13 +31,24 @@ public static class StartupExtensions
 
         string? connectionString = configuration.GetConnectionString("fablecraftdb");
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
-        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+        }));
         services.AddHostedService<MigratorApplier>();
 
         string? graphApiBaseUrl = configuration.GetConnectionString("graph-rag-api")
                                   ?? configuration["services:graph-rag-api:graphRagApi:0"];
         ArgumentException.ThrowIfNullOrEmpty(graphApiBaseUrl);
-        services.AddHttpClient<RagClient>(client =>
+        services.AddHttpClient<IRagBuilder, RagClient>(client =>
+        {
+            client.BaseAddress = new Uri(graphApiBaseUrl);
+
+            // LLM calls can take a while
+            client.Timeout = TimeSpan.FromMinutes(10);
+        }).AddServiceDiscovery();
+
+        services.AddHttpClient<IRagSearch, RagClient>(client =>
         {
             client.BaseAddress = new Uri(graphApiBaseUrl);
 

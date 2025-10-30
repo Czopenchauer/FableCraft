@@ -20,4 +20,29 @@ public class ApplicationDbContext : DbContext
     public DbSet<LorebookEntry> LorebookEntries { get; set; }
 
     public DbSet<CharacterAction> CharacterActions { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<World>()
+            .Property(w => w.ProcessingStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Character>()
+            .Property(c => c.ProcessingStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Scene>()
+            .Property(s => s.ProcessingStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<LorebookEntry>()
+            .Property(l => l.ProcessingStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<CharacterAction>()
+            .Property(a => a.ProcessingStatus)
+            .HasConversion<string>();
+    }
 }

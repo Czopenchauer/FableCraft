@@ -3,7 +3,28 @@ using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Clients;
 
-internal class RagClient
+public enum DataType
+{
+    Text,
+    Json
+}
+
+public interface IRagBuilder
+{
+    Task<string> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default);
+
+    Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default);
+
+    Task ClearAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IRagSearch
+{
+    Task<SearchResult[]> SearchAsync(string query, string? characterName = null,
+        CancellationToken cancellationToken = default);
+}
+
+internal class RagClient : IRagBuilder, IRagSearch
 {
     private readonly HttpClient _httpClient;
 
@@ -47,9 +68,9 @@ internal class RagClient
     /// <summary>
     ///     Delete data from the graph database by episode ID
     /// </summary>
-    public async Task DeleteDataAsync(string episodeId, CancellationToken cancellationToken = default)
+    public async Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default)
     {
-        DeleteRequest request = new() { EpisodeId = episodeId };
+        DeleteRequest request = new() { EpisodeId = dataId };
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/delete_data", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -64,7 +85,7 @@ internal class RagClient
     }
 }
 
-internal class SearchRequest
+public class SearchRequest
 {
     [JsonPropertyName("query")]
     public required string Query { get; set; }
@@ -73,7 +94,7 @@ internal class SearchRequest
     public string? CharacterName { get; set; }
 }
 
-internal class SearchResult
+public class SearchResult
 {
     [JsonPropertyName("uuid")]
     public string? Uuid { get; set; }
@@ -94,7 +115,7 @@ internal class SearchResult
     public string? Source { get; set; }
 }
 
-internal class AddDataRequest
+public class AddDataRequest
 {
     [JsonPropertyName("episode_type")]
     public required string EpisodeType { get; set; }
@@ -112,7 +133,7 @@ internal class AddDataRequest
     public DateTime? ReferenceTime { get; set; }
 }
 
-internal class DeleteRequest
+public class DeleteRequest
 {
     [JsonPropertyName("episode_id")]
     public required string EpisodeId { get; set; }

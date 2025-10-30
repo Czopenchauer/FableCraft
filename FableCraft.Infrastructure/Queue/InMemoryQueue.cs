@@ -40,24 +40,43 @@ internal class InMemoryMessageReader : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.Information("Starting In-Memory Message Reader...");
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            while (await _channel.Reader.WaitToReadAsync(stoppingToken))
+            while (!stoppingToken.IsCancellationRequested)
             {
-                while (_channel.Reader.TryRead(out IMessage? message))
+                while (await _channel.Reader.WaitToReadAsync(stoppingToken))
                 {
-                    ArgumentNullException.ThrowIfNull(message);
-                    _ = Task.Run(async () =>
+                    while (_channel.Reader.TryRead(out IMessage? message))
                     {
-                        Type messageType = message.GetType();
-                        Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
-                        await using AsyncServiceScope scope = _serviceProvider.CreateAsyncScope();
-                        object handler = scope.ServiceProvider.GetRequiredService(handlerType);
-                        MethodInfo? handleMethod = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
-                        await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
-                    }, stoppingToken);
+                        ArgumentNullException.ThrowIfNull(message);
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                Type messageType = message.GetType();
+                                Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
+                                await using AsyncServiceScope scope = _serviceProvider.CreateAsyncScope();
+                                object handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                                MethodInfo? handleMethod =
+                                    handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
+                                await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error(ex, "Error processing message of type {MessageType}", message.GetType().Name);
+                            }
+                        }, stoppingToken);
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when stopping
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Unhandled exception in In-Memory Message Reader");
         }
     }
 }
