@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Serilog;
 
-namespace FableCraft.Application;
+namespace FableCraft.Application.AdventureGeneration;
 
 internal class AddAdventureToKnowledgeGraphCommand : IMessage
 {
@@ -28,32 +28,34 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         if (adventure.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
         {
             var universeKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
-            {
-                Content = adventure.WorldDescription,
-                EpisodeType = nameof(DataType.Text),
-                Description = "World Description",
-                GroupId = adventure.Id.ToString(),
-                ReferenceTime = DateTime.UtcNow
-            }, cancellationToken);
+                {
+                    Content = adventure.WorldDescription,
+                    EpisodeType = nameof(DataType.Text),
+                    Description = "World Description",
+                    GroupId = adventure.Id.ToString(),
+                    ReferenceTime = DateTime.UtcNow
+                },
+                cancellationToken);
 
             await SetAsProcessed<Adventure>(universeKnowledgeGraphId, cancellationToken);
         }
-        
+
         if (adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
         {
             var characterKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
-            {
-                // TODO: structure character data in a more detailed way
-                Content = $"""
-                          Character name: {adventure.Character.Name}
-                          Character description: {adventure.Character.Description}
-                          Character background: {adventure.Character.Background}
-                          """,
-                EpisodeType = nameof(DataType.Text),
-                Description = "Main Character description",
-                GroupId = adventure.Id.ToString(),
-                ReferenceTime = DateTime.UtcNow
-            }, cancellationToken);
+                {
+                    // TODO: structure character data in a more detailed way
+                    Content = $"""
+                               Character name: {adventure.Character.Name}
+                               Character description: {adventure.Character.Description}
+                               Character background: {adventure.Character.Background}
+                               """,
+                    EpisodeType = nameof(DataType.Text),
+                    Description = "Main Character description",
+                    GroupId = adventure.Id.ToString(),
+                    ReferenceTime = DateTime.UtcNow
+                },
+                cancellationToken);
 
             await SetAsProcessed<Character>(characterKnowledgeGraphId, cancellationToken);
         }
@@ -64,13 +66,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         foreach (var entry in lorebookToProcess)
         {
             var lorebookEntryKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
-            {
-                Content = entry.Content,
-                EpisodeType = nameof(DataType.Text),
-                Description = entry.Category,
-                GroupId = adventure.Id.ToString(),
-                ReferenceTime = DateTime.UtcNow
-            }, cancellationToken);
+                {
+                    Content = entry.Content,
+                    EpisodeType = nameof(DataType.Text),
+                    Description = entry.Description,
+                    GroupId = adventure.Id.ToString(),
+                    ReferenceTime = DateTime.UtcNow
+                },
+                cancellationToken);
 
             await SetAsProcessed<LorebookEntry>(lorebookEntryKnowledgeGraphId, cancellationToken);
         }
@@ -91,14 +94,15 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         }
         catch (Exception ex)
         {
-            logger.Error(ex, "Failed to update universe backstory with knowledge graph node {knowledgeGraphNode}",
+            logger.Error(ex,
+                "Failed to update universe backstory with knowledge graph node {knowledgeGraphNode}",
                 knowledgeGraphNode);
             // Normally, there should compensation/ self-healing logic e.g. removing the added data from the knowledge graph, or scheduling message on a retry queue
             // but for simplicity, we just rethrow the exception here.
             throw;
         }
     }
-    
+
     private async Task SetAsFailed<TEntity>(
         CancellationToken cancellationToken)
         where TEntity : class, IKnowledgeGraphEntity
@@ -112,7 +116,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         }
         catch (Exception ex)
         {
-            logger.Error(ex, "Failed to update entity of type {EntityType} as failed",
+            logger.Error(ex,
+                "Failed to update entity of type {EntityType} as failed",
                 typeof(TEntity).Name);
             throw;
         }

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251030190018_Initial")]
+    [Migration("20251031155558_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -146,18 +146,21 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("KnowledgeGraphNodeId")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ProcessingStatus")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
 

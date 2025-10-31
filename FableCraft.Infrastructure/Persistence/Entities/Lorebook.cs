@@ -48,7 +48,9 @@ public class LorebookEntry : IKnowledgeGraphEntity
 
     [Required]
     [MaxLength(200)]
-    public string Title { get; init; } = null!;
+    public string Description { get; init; } = null!;
+
+    public int Priority { get; init; }
 
     [Required]
     public string Content { get; init; } = null!;

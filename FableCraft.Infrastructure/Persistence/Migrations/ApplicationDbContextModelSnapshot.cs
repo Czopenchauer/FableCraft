@@ -143,18 +143,21 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("KnowledgeGraphNodeId")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ProcessingStatus")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
 

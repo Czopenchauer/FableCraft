@@ -59,7 +59,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Priority = table.Column<int>(type: "integer", nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     KnowledgeGraphNodeId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),

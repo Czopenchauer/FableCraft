@@ -10,7 +10,7 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
             .NotEmpty().WithMessage("Adventure name is required")
             .MaximumLength(200).WithMessage("Adventure name must not exceed 200 characters");
 
-        RuleFor(x => x.Description)
+        RuleFor(x => x.WorldDescription)
             .NotEmpty().WithMessage("Adventure description is required")
             .MaximumLength(5000).WithMessage("Adventure description must not exceed 5000 characters");
 
@@ -60,7 +60,7 @@ public class LorebookEntryDtoValidator : AbstractValidator<LorebookEntryDto>
 {
     public LorebookEntryDtoValidator()
     {
-        RuleFor(x => x.Title)
+        RuleFor(x => x.Description)
             .NotEmpty().WithMessage("Lorebook entry title is required")
             .MaximumLength(200).WithMessage("Lorebook entry title must not exceed 200 characters");
 

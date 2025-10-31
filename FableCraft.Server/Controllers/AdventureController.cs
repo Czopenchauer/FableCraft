@@ -1,4 +1,5 @@
 ﻿using FableCraft.Application;
+using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 
@@ -12,11 +13,20 @@ namespace FableCraft.Server.Controllers;
 [Route("api/[controller]")]
 public class AdventureController : ControllerBase
 {
-    private readonly AdventureCreationService _adventureCreationService;
+    private readonly IAdventureCreationService _adventureCreationService;
 
-    public AdventureController(AdventureCreationService adventureCreationService)
+    public AdventureController(IAdventureCreationService adventureCreationService)
     {
         _adventureCreationService = adventureCreationService;
+    }
+    
+    [HttpGet("lorebook")]
+    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
+    public IActionResult GetSupportedLorebooks()
+    {
+        var result = _adventureCreationService.GetSupportedLorebook();
+
+        return Ok(result);
     }
 
     [HttpPost("create-adventure")]

@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using FableCraft.Application.AdventureGeneration;
+
+using FluentValidation;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,10 @@ public static class StartupExtensions
     {
         services.AddValidatorsFromAssemblyContaining<AdventureCreationService>();
 
-        services.AddScoped<AdventureCreationService>();
+        services.Configure<AdventureCreationConfig>(
+            configuration.GetSection("FableCraft:AdventureCreationConfig"));
+
+        services.AddScoped<IAdventureCreationService, AdventureCreationService>();
 
         return services;
     }

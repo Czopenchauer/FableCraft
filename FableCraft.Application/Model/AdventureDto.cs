@@ -2,29 +2,33 @@
 
 public class AdventureDto
 {
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
-    public string Description { get; set; } = string.Empty;
+    public string WorldDescription { get; init; } = string.Empty;
 
-    public CharacterDto Character { get; set; } = null!;
+    public string FirstSceneDescription { get; init; } = string.Empty;
 
-    public List<LorebookEntryDto> Lorebook { get; set; } = new();
+    public string AuthorNotes { get; init; } = string.Empty;
+
+    public CharacterDto Character { get; init; } = null!;
+
+    public List<LorebookEntryDto> Lorebook { get; init; } = new();
 }
 
 public class CharacterDto
 {
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
-    public string Description { get; set; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 
-    public string Background { get; set; } = string.Empty;
+    public string Background { get; init; } = string.Empty;
 }
 
 public class LorebookEntryDto
 {
-    public string Title { get; set; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 
-    public string Content { get; set; } = string.Empty;
+    public string Content { get; init; } = string.Empty;
 
-    public string Category { get; set; } = string.Empty;
+    public string Category { get; init; } = string.Empty;
 }
