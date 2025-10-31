@@ -2,6 +2,8 @@
 
 public class AdventureDto
 {
+    public Guid AdventureId { get; init; }
+    
     public string Name { get; init; } = string.Empty;
 
     public string WorldDescription { get; init; } = string.Empty;

@@ -65,8 +65,7 @@ public interface IAdventureCreationService
 {
     IReadOnlyDictionary<string, string> GetSupportedLorebook();
 
-    Task<string?> GenerateLorebookAsync(AdventureDto adventureDto, string instruction, string category,
-        CancellationToken cancellationToken);
+    Task<AdventureDto> GenerateLorebooksAsync(string instruction, CancellationToken cancellationToken);
 
     Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto, CancellationToken cancellationToken);
 
@@ -105,63 +104,78 @@ internal class AdventureCreationService : IAdventureCreationService
         return categories;
     }
 
-    public async Task<string?> GenerateLorebookAsync(
-        AdventureDto adventureDto,
+    public async Task<AdventureDto> GenerateAdventureAsync(
+        Guid? adventureId,
         string instruction,
-        string category,
         CancellationToken cancellationToken)
     {
-        if (!_config.Value.Lorebooks.TryGetValue(category, out var lorebook))
+        var adventure = await _dbContext.Adventures.FirstOrDefaultAsync(x => x.Id == adventureId, cancellationToken);
+        if (adventure == null)
         {
-            return null;
-        }
-
-        try
-        {
-            await using var stream = File.OpenRead(lorebook.PromptPath);
-            using var reader = new StreamReader(stream);
-            var prompt = await reader.ReadToEndAsync(cancellationToken);
-            var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
-            var promptExecutionSettings = new OpenAIPromptExecutionSettings()
+            adventure = new Adventure
             {
-                Temperature = _config.Value.Temperature,
-                PresencePenalty = _config.Value.PresencePenalty,
-                FrequencyPenalty = _config.Value.FrequencyPenalty,
-                MaxTokens = _config.Value.MaxTokens,
-                TopP = _config.Value.TopP
-            };
-
-            var orderedLorebooks = _config.Value.Lorebooks
-                .Where(x => x.Value.Priority <= lorebook.Priority)
-                .OrderBy(x => x.Value.Priority)
-                .Join(adventureDto.Lorebook,
-                    x => x.Key,
-                    y => y.Category,
-                    (config, lorebookEntry) => (lorebookEntry, config.Value.Priority))
-                .OrderBy(x => x.Priority)
-                .Aggregate("Already established world:",
-                    (current, entry) =>
-                        current + $"\nCategory: {entry.lorebookEntry.Category}\n{entry.lorebookEntry.Content}\n");
-
-            var arguments = new KernelArguments(promptExecutionSettings)
-            {
+                Name = "New Adventure",
+                WorldDescription = "",
+                CreatedAt = _timeProvider.GetUtcNow(),
+                LastPlayedAt = _timeProvider.GetUtcNow(),
+                ProcessingStatus = ProcessingStatus.Pending,
+                Character = new Character
                 {
-                    "history", new[]
-                    {
-                        new { role = AuthorRole.User, content = "What is my current membership level?" },
-                    }
+                    Name = "",
+                    Description = "",
+                    Background = "",
+                    ProcessingStatus = ProcessingStatus.Pending,
+                    StatsJson = string.Empty,
                 },
+                Lorebook = new List<LorebookEntry>(),
             };
-
-            var function = await kernel.InvokeHandlebarsPromptAsync(prompt, arguments, cancellationToken: cancellationToken);
-            _logger.Debug("{prompt}", function.RenderedPrompt);
-
-            return function.GetValue<string>();
         }
-        catch (FileNotFoundException e)
+
+        foreach (var keyValuePair in _config.Value.Lorebooks)
         {
-            _logger.Error(e, "Lorebook file for type {type} not found", category);
-            throw;
+            var lorebook = keyValuePair.Value;
+            try
+            {
+                await using var stream = File.OpenRead(lorebook.PromptPath);
+                using var reader = new StreamReader(stream);
+                var prompt = await reader.ReadToEndAsync(cancellationToken);
+                var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
+                var promptExecutionSettings = new OpenAIPromptExecutionSettings()
+                {
+                    Temperature = _config.Value.Temperature,
+                    PresencePenalty = _config.Value.PresencePenalty,
+                    FrequencyPenalty = _config.Value.FrequencyPenalty,
+                    MaxTokens = _config.Value.MaxTokens,
+                    TopP = _config.Value.TopP
+                };
+
+                var orderedLorebooks = _config.Value.Lorebooks
+                    .Where(x => x.Value.Priority <= lorebook.Priority)
+                    .OrderBy(x => x.Value.Priority)
+                    .Aggregate("Already established world:",
+                        (current, entry) =>
+                            current + $"\n{entry.lorebookEntry.Category}\n{entry.lorebookEntry.Content}\n");
+
+                var arguments = new KernelArguments(promptExecutionSettings)
+                {
+                    {
+                        "history", new[]
+                        {
+                            new { role = AuthorRole.User, content = "What is my current membership level?" },
+                        }
+                    },
+                };
+
+                var function = await kernel.InvokeHandlebarsPromptAsync(prompt, arguments, cancellationToken: cancellationToken);
+                _logger.Debug("{prompt}", function.RenderedPrompt);
+
+                return function.GetValue<string>();
+            }
+            catch (FileNotFoundException e)
+            {
+                _logger.Error(e, "Lorebook file for type {type} not found", category);
+                throw;
+            }
         }
     }
 
