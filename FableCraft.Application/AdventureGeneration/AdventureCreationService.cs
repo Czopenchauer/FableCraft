@@ -4,6 +4,8 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
+using HandlebarsDotNet.Helpers.Utils;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -11,9 +13,13 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 
+using Polly;
+using Polly.Retry;
+using Polly.Timeout;
+
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Clients.IKernelBuilder;
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.AdventureGeneration;
 
@@ -65,7 +71,11 @@ public interface IAdventureCreationService
 {
     IReadOnlyDictionary<string, string> GetSupportedLorebook();
 
-    Task<AdventureDto> GenerateLorebooksAsync(string instruction, CancellationToken cancellationToken);
+    Task<string> GenerateLorebookAsync(
+        LorebookEntryDto[] lorebooks,
+        string category,
+        CancellationToken cancellationToken,
+        string? additionalInstruction = null);
 
     Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto, CancellationToken cancellationToken);
 
@@ -102,81 +112,6 @@ internal class AdventureCreationService : IAdventureCreationService
         var categories = _config.Value.Lorebooks.ToDictionary(x => x.Key, y => y.Value.Description);
 
         return categories;
-    }
-
-    public async Task<AdventureDto> GenerateAdventureAsync(
-        Guid? adventureId,
-        string instruction,
-        CancellationToken cancellationToken)
-    {
-        var adventure = await _dbContext.Adventures.FirstOrDefaultAsync(x => x.Id == adventureId, cancellationToken);
-        if (adventure == null)
-        {
-            adventure = new Adventure
-            {
-                Name = "New Adventure",
-                WorldDescription = "",
-                CreatedAt = _timeProvider.GetUtcNow(),
-                LastPlayedAt = _timeProvider.GetUtcNow(),
-                ProcessingStatus = ProcessingStatus.Pending,
-                Character = new Character
-                {
-                    Name = "",
-                    Description = "",
-                    Background = "",
-                    ProcessingStatus = ProcessingStatus.Pending,
-                    StatsJson = string.Empty,
-                },
-                Lorebook = new List<LorebookEntry>(),
-            };
-        }
-
-        foreach (var keyValuePair in _config.Value.Lorebooks)
-        {
-            var lorebook = keyValuePair.Value;
-            try
-            {
-                await using var stream = File.OpenRead(lorebook.PromptPath);
-                using var reader = new StreamReader(stream);
-                var prompt = await reader.ReadToEndAsync(cancellationToken);
-                var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
-                var promptExecutionSettings = new OpenAIPromptExecutionSettings()
-                {
-                    Temperature = _config.Value.Temperature,
-                    PresencePenalty = _config.Value.PresencePenalty,
-                    FrequencyPenalty = _config.Value.FrequencyPenalty,
-                    MaxTokens = _config.Value.MaxTokens,
-                    TopP = _config.Value.TopP
-                };
-
-                var orderedLorebooks = _config.Value.Lorebooks
-                    .Where(x => x.Value.Priority <= lorebook.Priority)
-                    .OrderBy(x => x.Value.Priority)
-                    .Aggregate("Already established world:",
-                        (current, entry) =>
-                            current + $"\n{entry.lorebookEntry.Category}\n{entry.lorebookEntry.Content}\n");
-
-                var arguments = new KernelArguments(promptExecutionSettings)
-                {
-                    {
-                        "history", new[]
-                        {
-                            new { role = AuthorRole.User, content = "What is my current membership level?" },
-                        }
-                    },
-                };
-
-                var function = await kernel.InvokeHandlebarsPromptAsync(prompt, arguments, cancellationToken: cancellationToken);
-                _logger.Debug("{prompt}", function.RenderedPrompt);
-
-                return function.GetValue<string>();
-            }
-            catch (FileNotFoundException e)
-            {
-                _logger.Error(e, "Lorebook file for type {type} not found", category);
-                throw;
-            }
-        }
     }
 
     public async Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto,
@@ -216,6 +151,94 @@ internal class AdventureCreationService : IAdventureCreationService
             cancellationToken);
 
         return new AdventureCreationStatus(world);
+    }
+
+    public async Task<string> GenerateLorebookAsync(
+        LorebookEntryDto[] lorebooks,
+        string category,
+        CancellationToken cancellationToken,
+        string? additionalInstruction = null)
+    {
+        if (!_config.Value.Lorebooks.TryGetValue(category, out var lorebookConfig))
+        {
+            throw new ArgumentException($"Lorebook type '{category}' is not supported.", category);
+        }
+
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, nameof(AdventureGeneration), "Prompts", lorebookConfig.PromptPath);
+            await using var stream = File.OpenRead(path);
+            using var reader = new StreamReader(stream);
+            var prompt = await reader.ReadToEndAsync(cancellationToken);
+
+            var orderedLorebooks = _config.Value.Lorebooks
+                .Where(x => x.Value.Priority <= lorebookConfig.Priority)
+                .OrderBy(x => x.Value.Priority)
+                .Join(lorebooks,
+                    x => x.Key,
+                    y => y.Category,
+                    (x, y) => new { config = x.Value, lorebookEntry = y })
+                .ToArray();
+
+            var establishedWorld = string.Empty;
+            if (orderedLorebooks.Length > 0)
+            {
+                establishedWorld = orderedLorebooks.Aggregate("Already established world:",
+                    (current, entry) =>
+                        current + $"\n{entry.lorebookEntry.Category}\n{entry.lorebookEntry.Content}\n");
+            }
+
+            if (!string.IsNullOrEmpty(additionalInstruction))
+            {
+                establishedWorld += $"\nInstruction:\n{additionalInstruction}\n";
+            }
+
+            ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+                .AddTimeout(TimeSpan.FromMinutes(10))
+                .AddRetry(new RetryStrategyOptions
+                    { ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(), MaxRetryAttempts = 3, Delay = TimeSpan.FromSeconds(5) })
+                .Build();
+
+            var chatHistory = new ChatHistory();
+            chatHistory.AddSystemMessage(prompt);
+            chatHistory.AddUserMessage(establishedWorld);
+            var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
+            var promptExecutionSettings = new OpenAIPromptExecutionSettings
+            {
+                Temperature = _config.Value.Temperature,
+                PresencePenalty = _config.Value.PresencePenalty,
+                FrequencyPenalty = _config.Value.FrequencyPenalty,
+                MaxTokens = _config.Value.MaxTokens,
+                TopP = _config.Value.TopP,
+            };
+            try
+            {
+                var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+                return await pipeline.ExecuteAsync(async token =>
+                           {
+                               var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                               var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                               _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                                   replyInnerContent?.Usage.InputTokenCount,
+                                   replyInnerContent?.Usage.OutputTokenCount,
+                                   replyInnerContent?.Usage.TotalTokenCount);
+
+                               return result.Content;
+                           },
+                           cancellationToken)
+                       ?? string.Empty;
+            }
+            catch (InvalidCastException ex)
+            {
+                _logger.Error(ex, "Failed to generate lorebook for type {type}", category);
+                throw;
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            _logger.Error(e, "Lorebook file for type {type} not found", category);
+            throw;
+        }
     }
 
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid worldId,

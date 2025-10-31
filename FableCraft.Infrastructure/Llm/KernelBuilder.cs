@@ -5,7 +5,7 @@ using Microsoft.SemanticKernel;
 
 using Serilog;
 
-namespace FableCraft.Infrastructure.Clients;
+namespace FableCraft.Infrastructure.Llm;
 
 public interface IKernelBuilder
 {
@@ -14,25 +14,25 @@ public interface IKernelBuilder
 
 internal class OpenAiKernelBuilder : IKernelBuilder
 {
-    private readonly LlmConfiguration _configuration;
+    private readonly IOptions<LlmConfiguration> _configuration;
     private readonly IConfiguration _config;
 
     public OpenAiKernelBuilder(IOptions<LlmConfiguration> configuration, IConfiguration config)
     {
         _config = config;
-        _configuration = configuration.Value;
+        _configuration = configuration;
     }
 
     public Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null)
     {
         var builder = Kernel
             .CreateBuilder()
-            .AddOpenAIChatCompletion(model ?? _configuration.Model, new Uri(_configuration.BaseUrl), _configuration.ApiKey);
+            .AddOpenAIChatCompletion(model ?? _configuration.Value.Model, new Uri(_configuration.Value.BaseUrl), _configuration.Value.ApiKey);
 
         builder.Services.AddLogging(c =>
             c.Services.AddSerilog(config =>
             {
-                config.ReadFrom.Configuration(_config).Enrich.FromLogContext();
+                config.ReadFrom.Configuration(_config);
             }));
         return builder;
     }

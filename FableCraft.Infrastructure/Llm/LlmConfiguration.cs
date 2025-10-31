@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FableCraft.Infrastructure.Clients;
+namespace FableCraft.Infrastructure.Llm;
 
 internal class LlmConfiguration
 {

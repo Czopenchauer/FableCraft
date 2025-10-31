@@ -63,11 +63,12 @@ public class AdventureController : ControllerBase
         }
     }
 
-    [HttpPost("generate-entry")]
-    public IActionResult GenerateEntry(string instruction, CancellationToken cancellationToken)
+    [HttpPost("generate-lorebook")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GenerateLorebook(string instruction, CancellationToken cancellationToken)
     {
-        // LLM call for generation
+        var result = await _adventureCreationService.GenerateLorebookAsync([], "PhysicalWorld", cancellationToken, instruction);
 
-        return Ok();
+        return Ok(result);
     }
 }

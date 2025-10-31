@@ -1,6 +1,7 @@
 ﻿using System.Threading.Channels;
 
 using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
@@ -18,10 +19,7 @@ public static class StartupExtensions
         IConfiguration configuration)
     {
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
-
-        var llmConfiguration = configuration.GetSection("FableCraft:Server:LLM").Get<LlmConfiguration>();
-        ArgumentNullException.ThrowIfNull(llmConfiguration);
-        services.Configure<LlmConfiguration>(configuration);
+        services.Configure<LlmConfiguration>(configuration.GetSection("FableCraft:Server:LLM"));
 
         Channel<IMessage> channel = Channel.CreateUnbounded<IMessage>(new UnboundedChannelOptions
         {

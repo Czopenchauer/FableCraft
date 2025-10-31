@@ -22,7 +22,7 @@ IResourceBuilder<ContainerResource> neo4j = builder
 
 var llmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
 var llmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
-var llmEndpointKeySecret = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
+var llmEndpointKeySecret = builder.Configuration["FableCraft:Server:LLM:BaseUrl"]!;
 var embeddingModel = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
 var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"]!;
 

@@ -21,4 +21,11 @@
         <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="..\FableCraft.Application\AdventureGeneration\Prompts\*.txt">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Link>AdventureGeneration\Prompts\%(Filename)%(Extension)</Link>
+        </None>
+    </ItemGroup>
+
 </Project>
