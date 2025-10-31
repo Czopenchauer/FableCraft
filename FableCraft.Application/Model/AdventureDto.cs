@@ -1,12 +1,10 @@
-﻿namespace FableCraft.Application.Validators;
+﻿namespace FableCraft.Application.Model;
 
-public class WorldDto
+public class AdventureDto
 {
     public string Name { get; set; } = string.Empty;
 
-    public string Backstory { get; set; } = string.Empty;
-
-    public string UniverseBackstory { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 
     public CharacterDto Character { get; set; } = null!;
 

@@ -11,7 +11,7 @@ public class ApplicationDbContext : DbContext
     {
     }
 
-    public DbSet<World> Worlds { get; set; }
+    public DbSet<Adventure> Adventures { get; set; }
 
     public DbSet<Character> Characters { get; set; }
 
@@ -25,7 +25,7 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<World>()
+        modelBuilder.Entity<Adventure>()
             .Property(w => w.ProcessingStatus)
             .HasConversion<string>();
 
@@ -39,10 +39,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<LorebookEntry>()
             .Property(l => l.ProcessingStatus)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<CharacterAction>()
-            .Property(a => a.ProcessingStatus)
             .HasConversion<string>();
     }
 }

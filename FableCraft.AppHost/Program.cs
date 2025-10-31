@@ -20,6 +20,12 @@ IResourceBuilder<ContainerResource> neo4j = builder
     .WithEnvironment("NEO4J_AUTH", "neo4j/SuperPassword")
     .WithEnvironment("NEO4J_PLUGINS", "[\"apoc\", \"graph-data-science\"]");
 
+var llmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
+var llmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
+var llmEndpointKeySecret = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
+var embeddingModel = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
+var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"]!;
+
 #pragma warning disable ASPIREHOSTINGPYTHON001
 IResourceBuilder<PythonAppResource> graphRagApi = builder
     .AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
@@ -36,6 +42,11 @@ IResourceBuilder<PythonAppResource> graphRagApi = builder
         EndpointReference httpEndpoint = neo4j.GetEndpoint("http");
         context.EnvironmentVariables["NEO4J_HTTP_URI"] = $"http://{httpEndpoint.Host}:{httpEndpoint.Port}";
     })
+    .WithEnvironment("LLM_MODEL", llmModel)
+    .WithEnvironment("LLM_API_KEY", llmApiKeySecret)
+    .WithEnvironment("LLM_ENDPOINT", llmEndpointKeySecret)
+    .WithEnvironment("EMBEDDING_MODEL", embeddingModel)
+    .WithEnvironment("EMBEDDING_ENDPOINT", embeddingEndpoint)
     .WithRelationship(neo4j.Resource, "uses")
     .WaitFor(neo4j);
 #pragma warning restore ASPIREHOSTINGPYTHON001
@@ -44,6 +55,9 @@ IResourceBuilder<ProjectResource> server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
+    .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)
+    .WithEnvironment("FableCraft:Server:LLM:ApiKey", llmApiKeySecret)
+    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", llmEndpointKeySecret)
     .WaitFor(graphRagApi)
     .WaitFor(serverDatabase);
 

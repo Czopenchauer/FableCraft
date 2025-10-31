@@ -19,6 +19,10 @@ public static class StartupExtensions
     {
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
 
+        var llmConfiguration = configuration.GetSection("FableCraft:Server:LLM").Get<LlmConfiguration>();
+        ArgumentNullException.ThrowIfNull(llmConfiguration);
+        services.Configure<LlmConfiguration>(configuration);
+
         Channel<IMessage> channel = Channel.CreateUnbounded<IMessage>(new UnboundedChannelOptions
         {
             SingleWriter = false,
@@ -55,6 +59,8 @@ public static class StartupExtensions
             // LLM calls can take a while
             client.Timeout = TimeSpan.FromMinutes(10);
         }).AddServiceDiscovery();
+
+        services.AddSingleton<IKernelBuilder, OpenAiKernelBuilder>();
 
         return services;
     }

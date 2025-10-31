@@ -22,9 +22,53 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuthorNotes")
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KnowledgeGraphNodeId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("LastPlayedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ProcessingStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WorldDescription")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.ToTable("Adventures");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Character", b =>
                 {
-                    b.Property<Guid>("CharacterId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
@@ -32,19 +76,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("KnowledgeGraphNodeId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -59,29 +97,18 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.HasKey("CharacterId");
+                    b.HasKey("Id");
 
                     b.ToTable("Characters");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.CharacterAction", b =>
                 {
-                    b.Property<Guid>("ActionId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("ActionDescription")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("KnowledgeGraphNodeId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProcessingStatus")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -91,7 +118,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<bool>("Selected")
                         .HasColumnType("boolean");
 
-                    b.HasKey("ActionId");
+                    b.HasKey("Id");
 
                     b.HasIndex("SceneId");
 
@@ -100,8 +127,11 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.LorebookEntry", b =>
                 {
-                    b.Property<Guid>("EntryId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Category")
@@ -113,15 +143,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("KnowledgeGraphNodeId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("ProcessingStatus")
                         .IsRequired()
@@ -132,28 +156,28 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("WorldId")
-                        .HasColumnType("uuid");
+                    b.HasKey("Id");
 
-                    b.HasKey("EntryId");
-
-                    b.HasIndex("WorldId");
+                    b.HasIndex("AdventureId");
 
                     b.ToTable("LorebookEntries");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Scene", b =>
                 {
-                    b.Property<Guid>("SceneId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("KnowledgeGraphNodeId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("NarrativeText")
                         .IsRequired()
@@ -176,10 +200,10 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("WorldId")
+                    b.Property<Guid?>("WorldId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("SceneId");
+                    b.HasKey("Id");
 
                     b.HasIndex("NextSceneId");
 
@@ -190,47 +214,15 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.ToTable("Scenes");
                 });
 
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.World", b =>
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure", b =>
                 {
-                    b.Property<Guid>("WorldId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<string>("Backstory")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("CharacterId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("KnowledgeGraphNodeId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastPlayedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("ProcessingStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("UniverseBackstory")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("WorldId");
-
-                    b.HasIndex("CharacterId");
-
-                    b.ToTable("Worlds");
+                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.CharacterAction", b =>
@@ -246,13 +238,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.LorebookEntry", b =>
                 {
-                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.World", "World")
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure", "Adventure")
                         .WithMany("Lorebook")
-                        .HasForeignKey("WorldId")
+                        .HasForeignKey("AdventureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("World");
+                    b.Navigation("Adventure");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Scene", b =>
@@ -265,40 +257,27 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("PreviousSceneId");
 
-                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.World", "World")
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure", "Adventure")
                         .WithMany("Scenes")
-                        .HasForeignKey("WorldId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WorldId");
+
+                    b.Navigation("Adventure");
 
                     b.Navigation("NextScene");
 
                     b.Navigation("PreviousScene");
-
-                    b.Navigation("World");
                 });
 
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.World", b =>
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure", b =>
                 {
-                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Lorebook");
 
-                    b.Navigation("Character");
+                    b.Navigation("Scenes");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Scene", b =>
                 {
                     b.Navigation("CharacterActions");
-                });
-
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.World", b =>
-                {
-                    b.Navigation("Lorebook");
-
-                    b.Navigation("Scenes");
                 });
 #pragma warning restore 612, 618
         }

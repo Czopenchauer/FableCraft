@@ -2,28 +2,30 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class World : IKnowledgeGraphEntity
+public class Adventure : IKnowledgeGraphEntity
 {
     [Key]
-    public Guid WorldId { get; init; }
+    public Guid Id { get; init; }
 
     [Required]
     [MaxLength(200)]
-    public string Name { get; init; }
+    public string Name { get; init; } = null!;
 
     [Required]
-    public string Backstory { get; init; }
+    [MaxLength(5000)]
+    public string WorldDescription { get; init; } = null!;
 
-    [Required]
-    public string UniverseBackstory { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
 
-    public DateTime CreatedAt { get; init; }
-
-    public DateTime LastPlayedAt { get; init; }
+    public DateTimeOffset LastPlayedAt { get; init; }
 
     public ProcessingStatus ProcessingStatus { get; init; }
 
-    public string KnowledgeGraphNodeId { get; init; }
+    [MaxLength(64)]
+    public string? KnowledgeGraphNodeId { get; init; }
+
+    [MaxLength(5000)]
+    public string? AuthorNotes { get; set; }
 
     public Guid CharacterId { get; init; }
 
@@ -37,29 +39,26 @@ public class World : IKnowledgeGraphEntity
 public class LorebookEntry : IKnowledgeGraphEntity
 {
     [Key]
-    public Guid EntryId { get; init; }
+    public Guid Id { get; init; }
 
     [Required]
-    public Guid WorldId { get; init; }
+    public Guid AdventureId { get; init; }
 
-    public World World { get; set; }
+    public Adventure Adventure { get; init; } = null!;
 
     [Required]
     [MaxLength(200)]
-    public string Title { get; init; }
+    public string Title { get; init; } = null!;
 
     [Required]
-    public string Content { get; init; }
+    public string Content { get; init; } = null!;
 
     [Required]
     [MaxLength(100)]
-    public string Category { get; init; }
+    public string Category { get; init; } = null!;
 
-    public string KnowledgeGraphNodeId { get; init; }
+    [MaxLength(64)]
+    public string? KnowledgeGraphNodeId { get; init; }
 
     public ProcessingStatus ProcessingStatus { get; init; }
-
-    public DateTime CreatedAt { get; init; }
-
-    public DateTime LastUpdatedAt { get; init; }
 }

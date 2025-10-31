@@ -1,9 +1,4 @@
-﻿using FableCraft.Application;
-using FableCraft.Application.Validators;
-
-using FluentValidation;
-
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace FableCraft.Server.Controllers;
 
@@ -11,26 +6,6 @@ namespace FableCraft.Server.Controllers;
 [Route("api/[controller]")]
 public class GameController : ControllerBase
 {
-    private readonly WorldCreationService _worldCreationService;
-
-    public GameController(WorldCreationService worldCreationService)
-    {
-        _worldCreationService = worldCreationService;
-    }
-
-    [HttpPost("create-world")]
-    public async Task<ActionResult> SubmitAction([FromBody] WorldDto world, [FromServices] IValidator<WorldDto> validator, CancellationToken cancellationToken)
-    {
-        var validationResult = await validator.ValidateAsync(world, cancellationToken);
-
-        if (!validationResult.IsValid) 
-        {
-            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
-        }
-
-        return Ok();
-    }
-
     /// <summary>
     ///     Submit a player action
     /// </summary>

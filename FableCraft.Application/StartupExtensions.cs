@@ -10,9 +10,9 @@ public static class StartupExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddValidatorsFromAssemblyContaining<WorldCreationService>();
+        services.AddValidatorsFromAssemblyContaining<AdventureCreationService>();
 
-        services.AddScoped<WorldCreationService>();
+        services.AddScoped<AdventureCreationService>();
 
         return services;
     }

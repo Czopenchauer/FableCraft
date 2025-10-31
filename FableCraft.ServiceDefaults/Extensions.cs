@@ -58,6 +58,7 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
+                    .AddMeter("Microsoft.SemanticKernel*")
                     .AddRuntimeInstrumentation();
             })
             .WithTracing(tracing =>
@@ -71,6 +72,7 @@ public static class Extensions
                     )
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
+                    .AddSource("Microsoft.SemanticKernel*")
                     .AddHttpClientInstrumentation();
             });
 

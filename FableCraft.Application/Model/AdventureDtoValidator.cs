@@ -1,24 +1,18 @@
-﻿using FableCraft.Application.Validators;
-
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace FableCraft.Application.Model;
 
-public class WorldDtoValidator : AbstractValidator<WorldDto>
+public class AdventureDtoValidator : AbstractValidator<AdventureDto>
 {
-    public WorldDtoValidator()
+    public AdventureDtoValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("World name is required")
-            .MaximumLength(200).WithMessage("World name must not exceed 200 characters");
+            .NotEmpty().WithMessage("Adventure name is required")
+            .MaximumLength(200).WithMessage("Adventure name must not exceed 200 characters");
 
-        RuleFor(x => x.Backstory)
-            .NotEmpty().WithMessage("World backstory is required")
-            .MaximumLength(5000).WithMessage("World backstory must not exceed 5000 characters");
-
-        RuleFor(x => x.UniverseBackstory)
-            .NotEmpty().WithMessage("Universe backstory is required")
-            .MaximumLength(5000).WithMessage("Universe backstory must not exceed 5000 characters");
+        RuleFor(x => x.Description)
+            .NotEmpty().WithMessage("Adventure description is required")
+            .MaximumLength(5000).WithMessage("Adventure description must not exceed 5000 characters");
 
         RuleFor(x => x.Character)
             .NotNull().WithMessage("Character is required")
@@ -29,6 +23,18 @@ public class WorldDtoValidator : AbstractValidator<WorldDto>
 
         RuleForEach(x => x.Lorebook)
             .SetValidator(new LorebookEntryDtoValidator());
+
+        RuleFor(x => x.Lorebook)
+            .Must(HaveUniqueCategories)
+            .WithMessage("Lorebook entries must have unique categories");
+    }
+
+    private static bool HaveUniqueCategories(List<LorebookEntryDto>? lorebook)
+    {
+        if (lorebook == null || lorebook.Count == 0)
+            return true;
+
+        return lorebook.Count == lorebook.Select(x => x.Category).Distinct(StringComparer.OrdinalIgnoreCase).Count();
     }
 }
 
