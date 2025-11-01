@@ -22,9 +22,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\Prompts\*.txt">
+        <None Include="..\Prompts\**\*.txt">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-            <Link>Prompts\adventure_generation\%(Filename)%(Extension)</Link>
+            <Link>Prompts\%(RecursiveDir)%(Filename)%(Extension)</Link>
         </None>
     </ItemGroup>
 
