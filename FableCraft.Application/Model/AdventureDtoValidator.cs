@@ -10,10 +10,6 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
             .NotEmpty().WithMessage("Adventure name is required")
             .MaximumLength(200).WithMessage("Adventure name must not exceed 200 characters");
 
-        RuleFor(x => x.WorldDescription)
-            .NotEmpty().WithMessage("Adventure description is required")
-            .MaximumLength(5000).WithMessage("Adventure description must not exceed 5000 characters");
-
         RuleFor(x => x.Character)
             .NotNull().WithMessage("Character is required")
             .SetValidator(new CharacterDtoValidator());

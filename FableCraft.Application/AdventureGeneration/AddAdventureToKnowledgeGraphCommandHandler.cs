@@ -30,21 +30,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         var adventure = await dbContext.Adventures.Include(x => x.Character).Include(x => x.Lorebook)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken: cancellationToken);
 
-        if (adventure.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
-        {
-            await ProcessEntityAsync(
-                adventure,
-                async () => await ragBuilder.AddDataAsync(new AddDataRequest
-                {
-                    Content = adventure.WorldDescription,
-                    EpisodeType = nameof(DataType.Text),
-                    Description = "World Description",
-                    GroupId = adventure.Id.ToString(),
-                    ReferenceTime = DateTime.UtcNow
-                }, cancellationToken),
-                cancellationToken);
-        }
-
         if (adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
         {
             await ProcessEntityAsync(

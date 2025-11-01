@@ -132,27 +132,33 @@ internal class AdventureCreationService : IAdventureCreationService
         var world = new Adventure
         {
             Name = adventureDto.Name,
-            WorldDescription = adventureDto.WorldDescription,
             CreatedAt = now,
             LastPlayedAt = now,
             ProcessingStatus = ProcessingStatus.Pending,
+            AuthorNotes = adventureDto.AuthorNotes,
             Character = new Character
             {
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description,
                 Background = adventureDto.Character.Background,
                 ProcessingStatus = ProcessingStatus.Pending,
-                StatsJson = string.Empty,
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
-            {
-                Description = entry.Description,
-                Content = entry.Content,
-                Category = entry.Category,
-                ProcessingStatus =
-                    ProcessingStatus.Pending,
-            }).ToList(),
-            Scenes = new List<Scene>()
+                {
+                    Description = entry.Description,
+                    Content = entry.Content,
+                    Category = entry.Category,
+                    ProcessingStatus =
+                        ProcessingStatus.Pending,
+                })
+                .ToList(),
+            Scenes =
+            [
+                new Scene
+                {
+                    NarrativeText = adventureDto.FirstSceneDescription,
+                }
+            ],
         };
 
         _dbContext.Adventures.Add(world);
@@ -212,7 +218,9 @@ internal class AdventureCreationService : IAdventureCreationService
                     OnRetry = args =>
                     {
                         _logger.Warning("Attempt {attempt}: Retrying lorebook generation for type {type} due to error: {error}",
-                            args.AttemptNumber, category, args.Outcome.Exception?.Message);
+                            args.AttemptNumber,
+                            category,
+                            args.Outcome.Exception?.Message);
                         return default;
                     }
                 })

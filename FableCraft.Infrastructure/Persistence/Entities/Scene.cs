@@ -20,7 +20,7 @@ public class Scene : IKnowledgeGraphEntity, IEntity
     public required string NarrativeText { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public required string SceneStateJson { get; init; }
+    public string? SceneStateJson { get; init; } = null!;
 
     [MaxLength(64)]
     public string? KnowledgeGraphNodeId { get; init; }
@@ -39,7 +39,7 @@ public class Scene : IKnowledgeGraphEntity, IEntity
     [ForeignKey("NextSceneId")]
     public Scene? NextScene { get; init; }
 
-    public required ICollection<CharacterAction> CharacterActions { get; init; }
+    public List<CharacterAction> CharacterActions { get; init; } = new();
 }
 
 public class Character : IKnowledgeGraphEntity, IEntity
@@ -62,7 +62,7 @@ public class Character : IKnowledgeGraphEntity, IEntity
     public ProcessingStatus ProcessingStatus { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public required string StatsJson { get; init; }
+    public string? StatsJson { get; init; } = null!;
 }
 
 public class CharacterAction : IEntity

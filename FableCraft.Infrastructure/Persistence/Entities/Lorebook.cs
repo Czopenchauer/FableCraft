@@ -11,10 +11,6 @@ public class Adventure : IKnowledgeGraphEntity, IEntity
     [MaxLength(200)]
     public string Name { get; init; } = null!;
 
-    [Required]
-    [MaxLength(5000)]
-    public string WorldDescription { get; init; } = null!;
-
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset LastPlayedAt { get; init; }
@@ -25,7 +21,7 @@ public class Adventure : IKnowledgeGraphEntity, IEntity
     public string? KnowledgeGraphNodeId { get; init; }
 
     [MaxLength(5000)]
-    public string? AuthorNotes { get; set; }
+    public required string? AuthorNotes { get; init; }
 
     public Guid CharacterId { get; init; }
 
