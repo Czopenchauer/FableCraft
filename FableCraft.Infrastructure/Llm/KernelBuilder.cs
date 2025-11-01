@@ -34,6 +34,14 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             {
                 config.ReadFrom.Configuration(_config);
             }));
+        builder.Services.ConfigureHttpClientDefaults(hp =>
+        {
+            hp.ConfigureHttpClient((sp, c) =>
+            {
+                c.Timeout = TimeSpan.FromMinutes(10);
+            });
+        });
+
         return builder;
     }
 }
