@@ -14,22 +14,7 @@ internal class AdventureCreationConfig
 
     public double PresencePenalty { get; init; }
 
-    private readonly Dictionary<string, LorebookConfig> _lorebooks = new();
-
-    public Dictionary<string, LorebookConfig> Lorebooks
-    {
-        get => _lorebooks;
-        init
-        {
-            _lorebooks = new Dictionary<string, LorebookConfig>();
-            int priority = 1;
-            foreach (var (key, lorebookConfig) in value)
-            {
-                _lorebooks[key] = lorebookConfig with { Priority = priority };
-                priority++;
-            }
-        }
-    }
+    public Dictionary<string, LorebookConfig> Lorebooks { get; init; } = new();
 }
 
 internal record LorebookConfig
