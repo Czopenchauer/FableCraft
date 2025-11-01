@@ -76,7 +76,7 @@ public class LorebookEntryDtoValidator : AbstractValidator<LorebookEntryDto>
 
 public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDto>
 {
-    private readonly IReadOnlyDictionary<string, string> _supportedCategories;
+    private readonly AvailableLorebookDto[] _supportedCategories;
 
     public GenerateLorebookDtoValidator(AdventureGeneration.IAdventureCreationService adventureCreationService)
     {
@@ -85,7 +85,7 @@ public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDt
         RuleFor(x => x.Category)
             .NotEmpty().WithMessage("Category is required")
             .Must(BeSupportedCategory)
-            .WithMessage(x => $"Category '{x.Category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Keys)}");
+            .WithMessage(x => $"Category '{x.Category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Select(y => y.Category))}");
 
         RuleFor(x => x.Lorebooks)
             .NotNull().WithMessage("Lorebooks cannot be null");
@@ -96,7 +96,7 @@ public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDt
             {
                 lorebook.RuleFor(x => x.Category)
                     .Must((_, category) => BeSupportedCategory(category))
-                    .WithMessage((_, category) => $"Lorebook category '{category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Keys)}");
+                    .WithMessage((_, category) => $"Lorebook category '{category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Select(y => y.Category))}");
             });
 
         RuleFor(x => x.Lorebooks)
@@ -110,7 +110,7 @@ public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDt
 
     private bool BeSupportedCategory(string category)
     {
-        return _supportedCategories.ContainsKey(category);
+        return _supportedCategories.Any(x => x.Category == category);
     }
 
     private static bool HaveUniqueCategories(LorebookEntryDto[]? lorebooks)

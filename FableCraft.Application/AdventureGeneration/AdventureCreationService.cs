@@ -65,7 +65,7 @@ public class AdventureCreationStatus
 
 public interface IAdventureCreationService
 {
-    IReadOnlyDictionary<string, string> GetSupportedLorebook();
+    AvailableLorebookDto[] GetSupportedLorebook();
 
     Task<string> GenerateLorebookAsync(
         LorebookEntryDto[] lorebooks,
@@ -112,9 +112,14 @@ internal class AdventureCreationService : IAdventureCreationService
         _ragBuilder = ragBuilder;
     }
 
-    public IReadOnlyDictionary<string, string> GetSupportedLorebook()
+    public AvailableLorebookDto[] GetSupportedLorebook()
     {
-        var categories = _config.Value.Lorebooks.ToDictionary(x => x.Key, y => y.Value.Description);
+        var categories = _config.Value.Lorebooks.Select(x => new AvailableLorebookDto()
+        {
+            Category = x.Key,
+            Description = x.Value.Description,
+            Priority = x.Value.Priority
+        }).OrderBy(x => x.Priority).ToArray();
 
         return categories;
     }

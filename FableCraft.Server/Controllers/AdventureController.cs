@@ -29,7 +29,7 @@ public class AdventureController : ControllerBase
     }
 
     [HttpGet("lorebook")]
-    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AvailableLorebookDto[]), StatusCodes.Status200OK)]
     public IActionResult GetSupportedLorebooks()
     {
         var result = _adventureCreationService.GetSupportedLorebook();

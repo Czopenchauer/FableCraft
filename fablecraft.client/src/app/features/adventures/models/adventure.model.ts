@@ -7,10 +7,32 @@ export interface Adventure {
   updatedAt: Date;
 }
 
-export interface AdventureDto {
-  title: string;
+export interface CharacterDto {
+  name: string;
   description: string;
-  lorebooks?: Record<string, any>;
+  background: string;
+}
+
+export interface LorebookEntryDto {
+  description: string;
+  content: string;
+  category: string;
+}
+
+export interface AdventureDto {
+  adventureId: string;
+  name: string;
+  worldDescription: string;
+  firstSceneDescription: string;
+  authorNotes: string;
+  character: CharacterDto;
+  lorebook: LorebookEntryDto[];
+}
+
+export interface AvailableLorebookDto {
+  category: string;
+  description: string;
+  priority: number;
 }
 
 export interface AdventureCreationStatus {
@@ -30,7 +52,13 @@ export enum AdventureStatus {
 }
 
 export interface GenerateLorebookDto {
-  lorebooks: Record<string, any>;
+  lorebooks: LorebookEntryDto[];
   category: string;
   additionalInstruction?: string;
+}
+
+export interface LorebookGenerationState {
+  status: 'pending' | 'generating' | 'completed' | 'error';
+  content?: string;
+  error?: string;
 }

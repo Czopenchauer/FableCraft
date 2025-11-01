@@ -15,54 +15,362 @@
       </p>
     </div>
 
-    <!-- Adventure Creation Form will go here -->
-    <div class="creation-steps">
-      <div class="step-card">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <h2 class="step-title">World Building</h2>
-          <p class="step-description">
-            Describe your world's setting, magic systems, civilizations, and unique characteristics.
-            The AI will help bring your vision to life with rich details and consistent lore.
-          </p>
+    <!-- Initial Step Cards - Click to Start -->
+    <div *ngIf="currentStep === 0">
+      <div class="creation-steps">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h2 class="step-title">World Building</h2>
+            <p class="step-description">
+              Describe your world's setting, magic systems, civilizations, and unique characteristics.
+              The AI will help bring your vision to life with rich details and consistent lore.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h2 class="step-title">Character Creation</h2>
+            <p class="step-description">
+              Define your protagonist - their background, skills, motivations, and personality.
+              This character will be your avatar in the adventures to come.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h2 class="step-title">Starting Scene</h2>
+            <p class="step-description">
+              Set the stage for your adventure. Where does your story begin?
+              What situation or conflict launches you into this journey?
+            </p>
+          </div>
         </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <h2 class="step-title">Character Creation</h2>
-          <p class="step-description">
-            Define your protagonist - their background, skills, motivations, and personality.
-            This character will be your avatar in the adventures to come.
-          </p>
-        </div>
-      </div>
-
-      <div class="step-card">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <h2 class="step-title">Starting Scene</h2>
-          <p class="step-description">
-            Set the stage for your adventure. Where does your story begin?
-            What situation or conflict launches you into this journey?
-          </p>
-        </div>
+      <div class="start-button-container">
+        <button class="btn btn-primary btn-start" (click)="startAdventureCreation()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Start Creating Your Adventure
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
-    <!-- Placeholder for future form implementation -->
-    <div class="coming-soon">
-      <div class="coming-soon-icon">
-        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-          <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M13 10V3L4 14h7v7l9-11h-7z'"></path>
-        </svg>
-      </div>
-      <h3 class="coming-soon-title">Adventure Creation Form Coming Soon</h3>
-      <p class="coming-soon-text">
-        The interactive adventure creation interface is under development.
-        Soon you'll be able to craft detailed worlds and characters through an intuitive step-by-step process.
-      </p>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading form...</p>
     </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="error-message">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Adventure Creation Form -->
+    <form *ngIf="!isLoading && currentStep > 0" [formGroup]="adventureForm" (ngSubmit)="onSubmit()" class="adventure-form">
+
+      <!-- Progress Indicator -->
+      <div class="progress-container">
+        <div class="progress-steps">
+          <div *ngFor="let step of [1, 2, 3, 4]; let i = index"
+               class="progress-step"
+               [class.active]="currentStep === step"
+               [class.completed]="currentStep > step">
+            <div class="progress-circle">
+              <span *ngIf="currentStep <= step">{{ step }}</span>
+              <svg *ngIf="currentStep > step" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <span class="progress-label">Step {{ step }}</span>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="(currentStep / totalSteps) * 100"></div>
+        </div>
+      </div>
+
+      <!-- Step Header -->
+      <div class="step-header">
+        <h2 class="step-form-title">{{ getStepTitle() }}</h2>
+        <p class="step-form-description">{{ getStepDescription() }}</p>
+      </div>
+
+      <!-- Step 1: Adventure Settings -->
+      <div *ngIf="currentStep === 1" class="form-section">
+        <div class="form-group">
+          <label for="name" class="form-label">Adventure Name *</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            class="form-input"
+            [class.input-error]="isFieldInvalid('name')"
+            placeholder="Enter a memorable name for your adventure"
+          />
+          <span *ngIf="isFieldInvalid('name')" class="error-text">
+            {{ getFieldError('name') }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="authorNotes" class="form-label">Author Notes (Style Guide)</label>
+          <textarea
+            id="authorNotes"
+            formControlName="authorNotes"
+            class="form-textarea"
+            rows="4"
+            placeholder="Describe the style and tone you want for this story (e.g., 'dark and gritty', 'whimsical fantasy', 'epic heroic saga')"
+          ></textarea>
+          <span class="help-text">Optional: Guide the AI on how to narrate your story</span>
+        </div>
+      </div>
+
+      <!-- Step 2: World Building (Lorebook) -->
+      <div *ngIf="currentStep === 2" class="form-section">
+        <!-- AI Generation Info and Controls -->
+        <div class="ai-generation-info">
+          <div class="info-banner">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="info-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="info-content">
+              <h4>AI-Powered World Building</h4>
+              <p>You can generate lorebook entries using AI. The AI will create content for each category sequentially, using previously generated entries as context.</p>
+            </div>
+          </div>
+
+          <div class="generation-controls">
+            <div class="form-group">
+              <label for="customInstruction" class="form-label">Custom Instructions (Optional)</label>
+              <textarea
+                id="customInstruction"
+                [(ngModel)]="customInstruction"
+                [ngModelOptions]="{standalone: true}"
+                class="form-textarea"
+                rows="3"
+                placeholder="Add any specific instructions or themes for the AI to follow when generating lorebook entries..."
+                [disabled]="isGenerating"
+              ></textarea>
+            </div>
+
+            <div class="generation-buttons">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="startLorebookGeneration()"
+                [disabled]="isGenerating"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                Generate All Lorebooks
+              </button>
+
+              <button
+                *ngIf="isGenerating"
+                type="button"
+                class="btn btn-secondary"
+                (click)="stopLorebookGeneration()"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Stop Generation
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lorebook Entries -->
+        <div formArrayName="lorebook">
+          <div *ngFor="let entry of lorebookEntries.controls; let i = index"
+               class="lorebook-entry"
+               [class.generating]="isLorebookGenerating(i)"
+               [formGroupName]="i">
+            <div class="lorebook-header">
+              <h3 class="lorebook-category">{{ getLorebookAt(i).get('category')?.value }}</h3>
+              <div class="lorebook-actions">
+                <button
+                  type="button"
+                  class="btn-generate-lorebook"
+                  (click)="generateSingleLorebook(i)"
+                  [disabled]="isLorebookGenerating(i) || isGenerating"
+                  [title]="'Generate ' + getLorebookAt(i).get('category')?.value + ' using AI. You can provide custom instructions in the text area.'"
+                >
+                  <svg *ngIf="!isLorebookGenerating(i)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  <span *ngIf="isLorebookGenerating(i)" class="spinner-tiny"></span>
+                </button>
+                <span *ngIf="getLorebookState(i)?.status === 'pending'" class="status-badge pending">
+                  Waiting...
+                </span>
+                <span *ngIf="getLorebookState(i)?.status === 'error'" class="status-badge error">
+                  Error
+                </span>
+              </div>
+            </div>
+            <p class="lorebook-description">{{ getLorebookAt(i).get('description')?.value }}</p>
+
+            <div class="form-group lorebook-textarea-wrapper">
+              <div *ngIf="isLorebookGenerating(i)" class="textarea-overlay">
+                <div class="spinner"></div>
+              </div>
+              <textarea
+                formControlName="content"
+                class="form-textarea lorebook-textarea"
+                rows="4"
+                [placeholder]="'Describe ' + getLorebookAt(i).get('category')?.value + '...'"
+                [disabled]="isLorebookGenerating(i)"
+              ></textarea>
+            </div>
+
+            <div *ngIf="getLorebookState(i)?.error" class="error-message">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>{{ getLorebookState(i)?.error }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Character Creation -->
+      <div *ngIf="currentStep === 3" class="form-section" formGroupName="character">
+
+        <div class="form-group">
+          <label for="characterName" class="form-label">Character Name *</label>
+          <input
+            id="characterName"
+            type="text"
+            formControlName="name"
+            class="form-input"
+            [class.input-error]="isFieldInvalid('name', characterGroup)"
+            placeholder="Your character's name"
+          />
+          <span *ngIf="isFieldInvalid('name', characterGroup)" class="error-text">
+            {{ getFieldError('name', characterGroup) }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="characterDescription" class="form-label">Character Description *</label>
+          <textarea
+            id="characterDescription"
+            formControlName="description"
+            class="form-textarea"
+            [class.input-error]="isFieldInvalid('description', characterGroup)"
+            rows="4"
+            placeholder="Physical appearance, personality, skills, motivations..."
+          ></textarea>
+          <span *ngIf="isFieldInvalid('description', characterGroup)" class="error-text">
+            {{ getFieldError('description', characterGroup) }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="characterBackground" class="form-label">Character Background *</label>
+          <textarea
+            id="characterBackground"
+            formControlName="background"
+            class="form-textarea"
+            [class.input-error]="isFieldInvalid('background', characterGroup)"
+            rows="4"
+            placeholder="Where did your character come from? What shaped them?"
+          ></textarea>
+          <span *ngIf="isFieldInvalid('background', characterGroup)" class="error-text">
+            {{ getFieldError('background', characterGroup) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 4: Starting Scene -->
+      <div *ngIf="currentStep === 4" class="form-section">
+        <div class="form-group">
+          <label for="worldDescription" class="form-label">World Description *</label>
+          <textarea
+            id="worldDescription"
+            formControlName="worldDescription"
+            class="form-textarea"
+            [class.input-error]="isFieldInvalid('worldDescription')"
+            rows="6"
+            placeholder="Describe your world: setting, magic systems, civilizations, geography, climate, notable locations..."
+          ></textarea>
+          <span *ngIf="isFieldInvalid('worldDescription')" class="error-text">
+            {{ getFieldError('worldDescription') }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="firstSceneDescription" class="form-label">Starting Scene *</label>
+          <textarea
+            id="firstSceneDescription"
+            formControlName="firstSceneDescription"
+            class="form-textarea"
+            [class.input-error]="isFieldInvalid('firstSceneDescription')"
+            rows="6"
+            placeholder="Where does your story begin? Describe the initial setting, situation, and immediate objectives..."
+          ></textarea>
+          <span *ngIf="isFieldInvalid('firstSceneDescription')" class="error-text">
+            {{ getFieldError('firstSceneDescription') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="currentStep === 1 ? currentStep = 0 : previousStep()"
+          [disabled]="isSubmitting"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          {{ currentStep === 1 ? 'Cancel' : 'Previous' }}
+        </button>
+
+        <button
+          *ngIf="currentStep < totalSteps"
+          type="button"
+          class="btn btn-primary"
+          (click)="nextStep()"
+          [disabled]="isSubmitting"
+        >
+          Next
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+
+        <button
+          *ngIf="currentStep === totalSteps"
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isSubmitting"
+        >
+          <span *ngIf="!isSubmitting">Create Adventure</span>
+          <span *ngIf="isSubmitting" class="submit-loading">
+            <span class="spinner-small"></span>
+            Creating...
+          </span>
+        </button>
+      </div>
+    </form>
   </div>
 </div>
