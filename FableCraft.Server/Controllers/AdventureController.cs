@@ -100,4 +100,21 @@ public class AdventureController : ControllerBase
             return NotFound();
         }
     }
+
+    [HttpDelete("{adventure:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAdventure(Guid adventure, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _adventureCreationService.DeleteAdventureAsync(adventure, cancellationToken);
+
+            return NoContent();
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
+    }
 }

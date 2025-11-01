@@ -78,6 +78,8 @@ public interface IAdventureCreationService
     Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid worldId, CancellationToken cancellationToken);
 
     Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId, CancellationToken cancellationToken);
+
+    Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken);
 }
 
 internal class AdventureCreationService : IAdventureCreationService
@@ -88,6 +90,7 @@ internal class AdventureCreationService : IAdventureCreationService
     private readonly IOptions<AdventureCreationConfig> _config;
     private readonly IKernelBuilder _kernelBuilder;
     private readonly ILogger _logger;
+    private readonly Infrastructure.Clients.IRagBuilder _ragBuilder;
 
     public AdventureCreationService(
         ApplicationDbContext dbContext,
@@ -95,7 +98,8 @@ internal class AdventureCreationService : IAdventureCreationService
         TimeProvider timeProvider,
         IOptions<AdventureCreationConfig> config,
         IKernelBuilder kernelBuilder,
-        ILogger logger)
+        ILogger logger,
+        Infrastructure.Clients.IRagBuilder ragBuilder)
     {
         _dbContext = dbContext;
         _messageDispatcher = messageDispatcher;
@@ -103,6 +107,7 @@ internal class AdventureCreationService : IAdventureCreationService
         _config = config;
         _kernelBuilder = kernelBuilder;
         _logger = logger;
+        _ragBuilder = ragBuilder;
     }
 
     public IReadOnlyDictionary<string, string> GetSupportedLorebook()
@@ -288,5 +293,35 @@ internal class AdventureCreationService : IAdventureCreationService
             cancellationToken);
 
         return new AdventureCreationStatus(adventure);
+    }
+
+    public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)
+    {
+        var adventure = await _dbContext.Adventures
+            .Include(w => w.Character)
+            .Include(w => w.Lorebook)
+            .Include(x => x.Scenes)
+            .ThenInclude(x => x.CharacterActions)
+            .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
+
+        if (adventure == null)
+        {
+            throw new AdventureNotFoundException(adventureId);
+        }
+
+        try
+        {
+            await _ragBuilder.DeleteDataAsync(adventure.Id.ToString(), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex,
+                "Failed to delete adventure {adventureId} from knowledge graph.",
+                adventure.Id);
+            throw;
+        }
+
+        _dbContext.Adventures.Remove(adventure);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
