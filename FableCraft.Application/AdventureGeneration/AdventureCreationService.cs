@@ -207,8 +207,14 @@ internal class AdventureCreationService : IAdventureCreationService
                 .AddRetry(new RetryStrategyOptions
                 {
                     ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(),
-                    MaxRetryAttempts = 3,
+                    MaxRetryAttempts = 1,
                     Delay = TimeSpan.FromSeconds(5),
+                    OnRetry = args =>
+                    {
+                        _logger.Warning("Attempt {attempt}: Retrying lorebook generation for type {type} due to error: {error}",
+                            args.AttemptNumber, category, args.Outcome.Exception?.Message);
+                        return default;
+                    }
                 })
                 .Build();
 

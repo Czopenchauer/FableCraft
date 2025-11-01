@@ -90,7 +90,10 @@ public class AdventureController : ControllerBase
             cancellationToken,
             dto.AdditionalInstruction);
 
-        return Ok(result);
+        return Ok(new GeneratedLorebookDto
+        {
+            Content = result
+        });
     }
 
     [HttpPost("retry-knowledge-graph/{adventure:guid}")]
