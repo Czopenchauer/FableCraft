@@ -6,6 +6,7 @@ import {
   AdventureDto,
   AdventureCreationStatus,
   GenerateLorebookDto,
+  GeneratedLorebookDto,
   AvailableLorebookDto
 } from '../models/adventure.model';
 import { environment } from '../../../../environments/environment';
@@ -64,8 +65,8 @@ export class AdventureService {
   /**
    * Generate lorebook content
    */
-  generateLorebook(dto: GenerateLorebookDto): Observable<any> {
-    return this.http.post(`${this.apiUrl}/generate-lorebook`, dto);
+  generateLorebook(dto: GenerateLorebookDto): Observable<GeneratedLorebookDto> {
+    return this.http.post<GeneratedLorebookDto>(`${this.apiUrl}/generate-lorebook`, dto);
   }
 
   /**

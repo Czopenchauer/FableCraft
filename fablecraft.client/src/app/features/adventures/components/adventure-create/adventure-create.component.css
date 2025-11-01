@@ -47,7 +47,7 @@
 /* Header Section */
 .header-section {
   text-align: center;
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--spacing-xl);
 }
 
 .back-button {
@@ -123,7 +123,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-xl);
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--spacing-xl);
 }
 
 @media (min-width: 768px) {
@@ -145,12 +145,68 @@
   text-align: center;
 }
 
-/* Start Button Container */
-.start-button-container {
+/* Start Section */
+.start-section {
   display: flex;
-  justify-content: center;
-  margin-top: var(--spacing-3xl);
-  padding-top: var(--spacing-2xl);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-2xl);
+  padding-top: var(--spacing-lg);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.adventure-name-input-container {
+  width: 100%;
+}
+
+.adventure-name-label {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  text-align: left;
+}
+
+.adventure-name-input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-card);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-family: var(--font-family-body);
+  transition: all var(--transition-base);
+  text-align: center;
+}
+
+.adventure-name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+[data-theme="modern-dark"] .adventure-name-input {
+  backdrop-filter: var(--backdrop-blur);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="modern-dark"] .adventure-name-input:focus {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="medieval-fantasy"] .adventure-name-input {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .adventure-name-input:focus {
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.2);
 }
 
 .btn-start {
@@ -965,6 +1021,20 @@
   }
 
   .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .start-section {
+    margin-top: var(--spacing-lg);
+    padding-top: 0;
+  }
+
+  .adventure-name-input {
+    font-size: var(--font-size-base);
+  }
+
+  .btn-start {
     width: 100%;
     justify-content: center;
   }

@@ -22,7 +22,6 @@ export interface LorebookEntryDto {
 export interface AdventureDto {
   adventureId: string;
   name: string;
-  worldDescription: string;
   firstSceneDescription: string;
   authorNotes: string;
   character: CharacterDto;
@@ -55,6 +54,10 @@ export interface GenerateLorebookDto {
   lorebooks: LorebookEntryDto[];
   category: string;
   additionalInstruction?: string;
+}
+
+export interface GeneratedLorebookDto {
+  content: string;
 }
 
 export interface LorebookGenerationState {

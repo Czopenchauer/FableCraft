@@ -52,7 +52,22 @@
         </div>
       </div>
 
-      <div class="start-button-container">
+      <div class="start-section">
+        <div class="adventure-name-input-container">
+          <label for="adventureNameStart" class="adventure-name-label">Adventure Name *</label>
+          <input
+            id="adventureNameStart"
+            type="text"
+            [formControl]="$any(adventureForm.get('name'))"
+            class="adventure-name-input"
+            [class.input-error]="isFieldInvalid('name')"
+            placeholder="Enter a memorable name for your adventure"
+          />
+          <span *ngIf="isFieldInvalid('name')" class="error-text">
+            {{ getFieldError('name') }}
+          </span>
+        </div>
+
         <button class="btn btn-primary btn-start" (click)="startAdventureCreation()">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -85,7 +100,7 @@
       <!-- Progress Indicator -->
       <div class="progress-container">
         <div class="progress-steps">
-          <div *ngFor="let step of [1, 2, 3, 4]; let i = index"
+          <div *ngFor="let step of [1, 2, 3]; let i = index"
                class="progress-step"
                [class.active]="currentStep === step"
                [class.completed]="currentStep > step">
@@ -109,38 +124,8 @@
         <p class="step-form-description">{{ getStepDescription() }}</p>
       </div>
 
-      <!-- Step 1: Adventure Settings -->
+      <!-- Step 1: World Building (Lorebook) -->
       <div *ngIf="currentStep === 1" class="form-section">
-        <div class="form-group">
-          <label for="name" class="form-label">Adventure Name *</label>
-          <input
-            id="name"
-            type="text"
-            formControlName="name"
-            class="form-input"
-            [class.input-error]="isFieldInvalid('name')"
-            placeholder="Enter a memorable name for your adventure"
-          />
-          <span *ngIf="isFieldInvalid('name')" class="error-text">
-            {{ getFieldError('name') }}
-          </span>
-        </div>
-
-        <div class="form-group">
-          <label for="authorNotes" class="form-label">Author Notes (Style Guide)</label>
-          <textarea
-            id="authorNotes"
-            formControlName="authorNotes"
-            class="form-textarea"
-            rows="4"
-            placeholder="Describe the style and tone you want for this story (e.g., 'dark and gritty', 'whimsical fantasy', 'epic heroic saga')"
-          ></textarea>
-          <span class="help-text">Optional: Guide the AI on how to narrate your story</span>
-        </div>
-      </div>
-
-      <!-- Step 2: World Building (Lorebook) -->
-      <div *ngIf="currentStep === 2" class="form-section">
         <!-- AI Generation Info and Controls -->
         <div class="ai-generation-info">
           <div class="info-banner">
@@ -249,8 +234,8 @@
         </div>
       </div>
 
-      <!-- Step 3: Character Creation -->
-      <div *ngIf="currentStep === 3" class="form-section" formGroupName="character">
+      <!-- Step 2: Character Creation -->
+      <div *ngIf="currentStep === 2" class="form-section" formGroupName="character">
 
         <div class="form-group">
           <label for="characterName" class="form-label">Character Name *</label>
@@ -298,20 +283,20 @@
         </div>
       </div>
 
-      <!-- Step 4: Starting Scene -->
-      <div *ngIf="currentStep === 4" class="form-section">
+      <!-- Step 3: Starting Scene -->
+      <div *ngIf="currentStep === 3" class="form-section">
         <div class="form-group">
-          <label for="worldDescription" class="form-label">World Description *</label>
+          <label for="authorNotes" class="form-label">Author Notes (Style Guide) *</label>
           <textarea
-            id="worldDescription"
-            formControlName="worldDescription"
+            id="authorNotes"
+            formControlName="authorNotes"
             class="form-textarea"
-            [class.input-error]="isFieldInvalid('worldDescription')"
+            [class.input-error]="isFieldInvalid('authorNotes')"
             rows="6"
-            placeholder="Describe your world: setting, magic systems, civilizations, geography, climate, notable locations..."
+            placeholder="Describe the style, tone, and world of your adventure (e.g., 'dark and gritty fantasy with steampunk elements', 'whimsical high fantasy', 'epic heroic saga in a medieval world')..."
           ></textarea>
-          <span *ngIf="isFieldInvalid('worldDescription')" class="error-text">
-            {{ getFieldError('worldDescription') }}
+          <span *ngIf="isFieldInvalid('authorNotes')" class="error-text">
+            {{ getFieldError('authorNotes') }}
           </span>
         </div>
 

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdventureService } from '../../services/adventure.service';
@@ -11,7 +11,7 @@ import { Subject, takeUntil } from 'rxjs';
   templateUrl: './adventure-create.component.html',
   styleUrl: './adventure-create.component.css'
 })
-export class AdventureCreateComponent implements OnInit {
+export class AdventureCreateComponent implements OnInit, OnDestroy {
   adventureForm!: FormGroup;
   availableLorebooks: AvailableLorebookDto[] = [];
   isLoading = false;
@@ -19,13 +19,14 @@ export class AdventureCreateComponent implements OnInit {
   errorMessage = '';
 
   currentStep = 0;
-  totalSteps = 4;
+  totalSteps = 3;
 
   // AI Generation state
   customInstruction = '';
   lorebookGenerationStates: Map<number, LorebookGenerationState> = new Map();
   isGenerating = false;
   private stopGeneration$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
@@ -38,16 +39,35 @@ export class AdventureCreateComponent implements OnInit {
     this.loadAvailableLorebooks();
   }
 
+  ngOnDestroy(): void {
+    // Complete all subjects to prevent memory leaks
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    // Stop any ongoing generation
+    if (this.isGenerating) {
+      this.stopGeneration$.next();
+      this.stopGeneration$.complete();
+    }
+  }
+
   startAdventureCreation(): void {
-    this.currentStep = 1;
+    // Validate adventure name before proceeding
+    const nameControl = this.adventureForm.get('name');
+    nameControl?.markAsTouched();
+
+    if (nameControl?.valid) {
+      this.currentStep = 1;
+      this.errorMessage = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   private initializeForm(): void {
     this.adventureForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      worldDescription: ['', Validators.required],
       firstSceneDescription: ['', Validators.required],
-      authorNotes: [''],
+      authorNotes: ['', Validators.required],
       character: this.fb.group({
         name: ['', [Validators.required, Validators.minLength(2)]],
         description: ['', Validators.required],
@@ -59,18 +79,20 @@ export class AdventureCreateComponent implements OnInit {
 
   private loadAvailableLorebooks(): void {
     this.isLoading = true;
-    this.adventureService.getSupportedLorebooks().subscribe({
-      next: (lorebooks) => {
-        this.availableLorebooks = lorebooks.sort((a, b) => a.priority - b.priority);
-        this.initializeLorebookEntries();
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading lorebooks:', error);
-        this.errorMessage = 'Failed to load lorebook categories. Please try again.';
-        this.isLoading = false;
-      }
-    });
+    this.adventureService.getSupportedLorebooks()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (lorebooks) => {
+          this.availableLorebooks = lorebooks.sort((a, b) => a.priority - b.priority);
+          this.initializeLorebookEntries();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading lorebooks:', error);
+          this.errorMessage = 'Failed to load lorebook categories. Please try again.';
+          this.isLoading = false;
+        }
+      });
   }
 
   private initializeLorebookEntries(): void {
@@ -114,25 +136,20 @@ export class AdventureCreateComponent implements OnInit {
 
   validateCurrentStep(): boolean {
     switch (this.currentStep) {
-      case 1: // Adventure Settings
-        const nameControl = this.adventureForm.get('name');
-        nameControl?.markAsTouched();
-        return nameControl?.valid || false;
-
-      case 2: // World Building (lorebook - all optional)
+      case 1: // World Building (lorebook - all optional)
         return true;
 
-      case 3: // Character Creation
+      case 2: // Character Creation
         const characterGroup = this.adventureForm.get('character') as FormGroup;
         this.markFormGroupTouched(characterGroup);
         return characterGroup?.valid || false;
 
-      case 4: // Starting Scene
-        const worldDesc = this.adventureForm.get('worldDescription');
+      case 3: // Starting Scene
+        const authorNotes = this.adventureForm.get('authorNotes');
         const sceneDesc = this.adventureForm.get('firstSceneDescription');
-        worldDesc?.markAsTouched();
+        authorNotes?.markAsTouched();
         sceneDesc?.markAsTouched();
-        return (worldDesc?.valid && sceneDesc?.valid) || false;
+        return (authorNotes?.valid && sceneDesc?.valid) || false;
 
       default:
         return true;
@@ -156,41 +173,40 @@ export class AdventureCreateComponent implements OnInit {
     const adventureDto: AdventureDto = {
       adventureId: crypto.randomUUID(),
       name: formValue.name,
-      worldDescription: formValue.worldDescription,
       firstSceneDescription: formValue.firstSceneDescription,
-      authorNotes: formValue.authorNotes || '',
+      authorNotes: formValue.authorNotes,
       character: formValue.character,
-      lorebook: formValue.lorebook.filter((entry: any) => entry.content.trim() !== '')
+      lorebook: formValue.lorebook.filter((entry: any) => entry.content.trim() !== ''),
     };
 
-    this.adventureService.createAdventure(adventureDto).subscribe({
-      next: (status) => {
-        this.router.navigate(['/']);
-      },
-      error: (error) => {
-        console.error('Error creating adventure:', error);
-        this.errorMessage = error.error?.message || 'Failed to create adventure. Please try again.';
-        this.isSubmitting = false;
-      }
-    });
+    this.adventureService.createAdventure(adventureDto)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (status) => {
+          this.router.navigate(['/']);
+        },
+        error: (error) => {
+          console.error('Error creating adventure:', error);
+          this.errorMessage = error.error?.message || 'Failed to create adventure. Please try again.';
+          this.isSubmitting = false;
+        }
+      });
   }
 
   getStepTitle(): string {
     switch (this.currentStep) {
-      case 1: return 'Adventure Settings';
-      case 2: return 'World Building';
-      case 3: return 'Character Creation';
-      case 4: return 'Starting Scene';
+      case 1: return 'World Building';
+      case 2: return 'Character Creation';
+      case 3: return 'Starting Scene';
       default: return '';
     }
   }
 
   getStepDescription(): string {
     switch (this.currentStep) {
-      case 1: return 'Define the name and style of your adventure';
-      case 2: return 'Add details about your world (optional)';
-      case 3: return 'Create your protagonist';
-      case 4: return 'Set the stage for your adventure';
+      case 1: return 'Add details about your world (optional)';
+      case 2: return 'Create your protagonist';
+      case 3: return 'Set the stage for your adventure';
       default: return '';
     }
   }
@@ -257,13 +273,14 @@ export class AdventureCreateComponent implements OnInit {
     };
 
     this.adventureService.generateLorebook(dto)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
           // Update the content
-          lorebookGroup.get('content')?.setValue(response.content || response);
+          lorebookGroup.get('content')?.setValue(response.content);
           this.lorebookGenerationStates.set(index, {
             status: 'completed',
-            content: response.content || response
+            content: response.content
           });
         },
         error: (error) => {
@@ -283,6 +300,12 @@ export class AdventureCreateComponent implements OnInit {
 
     this.isGenerating = true;
     this.errorMessage = '';
+
+    // Complete previous stopGeneration$ if it exists and create a new one
+    if (this.stopGeneration$) {
+      this.stopGeneration$.next();
+      this.stopGeneration$.complete();
+    }
     this.stopGeneration$ = new Subject<void>();
 
     // Initialize all lorebooks as pending
@@ -332,14 +355,14 @@ export class AdventureCreateComponent implements OnInit {
     };
 
     this.adventureService.generateLorebook(dto)
-      .pipe(takeUntil(this.stopGeneration$))
+      .pipe(takeUntil(this.stopGeneration$), takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
           // Update the content
-          lorebookGroup.get('content')?.setValue(response.content || response);
+          lorebookGroup.get('content')?.setValue(response.content);
           this.lorebookGenerationStates.set(index, {
             status: 'completed',
-            content: response.content || response
+            content: response.content
           });
 
           // Generate next
