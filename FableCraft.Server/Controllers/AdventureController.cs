@@ -18,7 +18,16 @@ public class AdventureController : ControllerBase
     {
         _adventureCreationService = adventureCreationService;
     }
-    
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<AdventureListItemDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var adventures = await _adventureCreationService.GetAllAdventuresAsync(cancellationToken);
+
+        return Ok(adventures);
+    }
+
     [HttpGet("lorebook")]
     [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
     public IActionResult GetSupportedLorebooks()

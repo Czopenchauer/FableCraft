@@ -29,11 +29,11 @@ public class Adventure : IKnowledgeGraphEntity, IEntity
 
     public Guid CharacterId { get; init; }
 
-    public Character Character { get; init; }
+    public required Character Character { get; init; }
 
-    public ICollection<LorebookEntry> Lorebook { get; init; }
+    public required ICollection<LorebookEntry> Lorebook { get; init; }
 
-    public ICollection<Scene> Scenes { get; init; }
+    public required ICollection<Scene> Scenes { get; init; }
 }
 
 public class LorebookEntry : IKnowledgeGraphEntity, IEntity

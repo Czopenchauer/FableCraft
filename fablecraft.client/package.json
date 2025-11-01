@@ -4,7 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "run-script-os",
-    "build": "ng build",
+    "build": "npm run set-env:prod && ng build",
+    "build:dev": "npm run set-env:dev && ng build --configuration development",
+    "set-env:dev": "node set-env.js",
+    "set-env:prod": "node set-env.js --production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "prestart": "node aspnetcore-https",

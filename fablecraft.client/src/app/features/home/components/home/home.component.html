@@ -1,0 +1,54 @@
+<div class="home-container">
+  <div class="home-content">
+    <!-- Title Section -->
+    <div class="title-section">
+      <h1 class="main-title">
+        FableCraft
+      </h1>
+      <p class="subtitle">
+        Embark on an AI-powered adventure. Create persistent worlds, shape your destiny, and experience stories that evolve with your choices.
+      </p>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="action-cards">
+      <!-- Create New Adventure Card -->
+      <button
+        [routerLink]="['/adventures/create']"
+        class="action-card card-create"
+      >
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="card-icon">
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+              <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M12 4v16m8-8H4'"></path>
+            </svg>
+          </div>
+          <h2 class="card-title">Create New Adventure</h2>
+          <p class="card-description">
+            Begin a new journey. Define your world, create your character, and let the AI weave your unique story.
+          </p>
+        </div>
+      </button>
+
+      <!-- Load Adventure Card -->
+      <button
+        [routerLink]="['/adventures']"
+        class="action-card card-load"
+      >
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="card-icon">
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+              <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z'"></path>
+            </svg>
+          </div>
+          <h2 class="card-title">Load Adventure</h2>
+          <p class="card-description">
+            Continue your existing adventures. Your worlds await your return with persistent memories and evolving narratives.
+          </p>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

@@ -80,6 +80,8 @@ public interface IAdventureCreationService
     Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId, CancellationToken cancellationToken);
 
     Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken);
+
+    Task<IEnumerable<AdventureListItemDto>> GetAllAdventuresAsync(CancellationToken cancellationToken);
 }
 
 internal class AdventureCreationService : IAdventureCreationService
@@ -322,5 +324,26 @@ internal class AdventureCreationService : IAdventureCreationService
 
         _dbContext.Adventures.Remove(adventure);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<AdventureListItemDto>> GetAllAdventuresAsync(CancellationToken cancellationToken)
+    {
+        var adventures = await _dbContext.Adventures
+            .Include(a => a.Scenes)
+            .OrderByDescending(a => a.LastPlayedAt)
+            .Select(a => new AdventureListItemDto
+            {
+                AdventureId = a.Id,
+                Name = a.Name,
+                LastScenePreview = a.Scenes
+                    .OrderByDescending(s => s.SequenceNumber)
+                    .Select(s => s.NarrativeText.Length > 200
+                        ? s.NarrativeText.Substring(0, 200)
+                        : s.NarrativeText)
+                    .FirstOrDefault()
+            })
+            .ToListAsync(cancellationToken);
+
+        return adventures;
     }
 }
