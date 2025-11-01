@@ -169,7 +169,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
         try
         {
-            var path = Path.Combine(AppContext.BaseDirectory, nameof(AdventureGeneration), "Prompts", lorebookConfig.PromptPath);
+            var path = Path.Combine(AppContext.BaseDirectory, "Prompts", "adventure_generation", lorebookConfig.PromptPath);
             await using var stream = File.OpenRead(path);
             using var reader = new StreamReader(stream);
             var prompt = await reader.ReadToEndAsync(cancellationToken);

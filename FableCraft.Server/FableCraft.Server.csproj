@@ -22,9 +22,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\FableCraft.Application\AdventureGeneration\Prompts\*.txt">
+        <None Include="..\Prompts\*.txt">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-            <Link>AdventureGeneration\Prompts\%(Filename)%(Extension)</Link>
+            <Link>Prompts\adventure_generation\%(Filename)%(Extension)</Link>
         </None>
     </ItemGroup>
 
