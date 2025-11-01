@@ -4,18 +4,14 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
-using HandlebarsDotNet.Helpers.Utils;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 
 using Polly;
 using Polly.Retry;
-using Polly.Timeout;
 
 using Serilog;
 
@@ -80,6 +76,8 @@ public interface IAdventureCreationService
     Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto, CancellationToken cancellationToken);
 
     Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid worldId, CancellationToken cancellationToken);
+
+    Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId, CancellationToken cancellationToken);
 }
 
 internal class AdventureCreationService : IAdventureCreationService
@@ -260,5 +258,35 @@ internal class AdventureCreationService : IAdventureCreationService
         }
 
         return new AdventureCreationStatus(world);
+    }
+
+    public async Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId,
+        CancellationToken cancellationToken)
+    {
+        var adventure = await _dbContext.Adventures
+            .Include(w => w.Character)
+            .Include(w => w.Lorebook)
+            .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
+
+        if (adventure == null)
+        {
+            throw new AdventureNotFoundException(adventureId);
+        }
+
+        var hasPendingOrFailed = adventure.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
+                                 || adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
+                                 || adventure.Lorebook.Any(x => x.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed);
+
+        if (!hasPendingOrFailed)
+        {
+            _logger.Information("No pending or failed items for adventure {AdventureId}, skipping retry", adventureId);
+            return new AdventureCreationStatus(adventure);
+        }
+
+        _logger.Information("Retrying knowledge graph processing for adventure {AdventureId}", adventureId);
+        await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventureId },
+            cancellationToken);
+
+        return new AdventureCreationStatus(adventure);
     }
 }

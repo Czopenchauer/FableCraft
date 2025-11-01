@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Adventure : IKnowledgeGraphEntity
+public class Adventure : IKnowledgeGraphEntity, IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -36,7 +36,7 @@ public class Adventure : IKnowledgeGraphEntity
     public ICollection<Scene> Scenes { get; init; }
 }
 
-public class LorebookEntry : IKnowledgeGraphEntity
+public class LorebookEntry : IKnowledgeGraphEntity, IEntity
 {
     [Key]
     public Guid Id { get; init; }

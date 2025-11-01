@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Scene : IKnowledgeGraphEntity
+public class Scene : IKnowledgeGraphEntity, IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -42,7 +42,7 @@ public class Scene : IKnowledgeGraphEntity
     public ICollection<CharacterAction> CharacterActions { get; init; }
 }
 
-public class Character : IKnowledgeGraphEntity
+public class Character : IKnowledgeGraphEntity, IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -65,7 +65,7 @@ public class Character : IKnowledgeGraphEntity
     public string StatsJson { get; init; }
 }
 
-public class CharacterAction
+public class CharacterAction : IEntity
 {
     [Key]
     public Guid Id { get; init; }

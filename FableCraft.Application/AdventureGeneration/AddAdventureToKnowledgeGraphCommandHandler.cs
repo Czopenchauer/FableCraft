@@ -5,6 +5,9 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 
+using Polly;
+using Polly.Retry;
+
 using Serilog;
 
 namespace FableCraft.Application.AdventureGeneration;
@@ -20,6 +23,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     ILogger logger)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
+    private const int MaxRetryAttempts = 3;
+
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
         var adventure = await dbContext.Adventures.Include(x => x.Character).Include(x => x.Lorebook)
@@ -27,22 +32,24 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         if (adventure.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
         {
-            var universeKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
+            await ProcessEntityAsync(
+                adventure,
+                async () => await ragBuilder.AddDataAsync(new AddDataRequest
                 {
                     Content = adventure.WorldDescription,
                     EpisodeType = nameof(DataType.Text),
                     Description = "World Description",
                     GroupId = adventure.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
-                },
+                }, cancellationToken),
                 cancellationToken);
-
-            await SetAsProcessed<Adventure>(universeKnowledgeGraphId, cancellationToken);
         }
 
         if (adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed)
         {
-            var characterKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
+            await ProcessEntityAsync(
+                adventure.Character,
+                async () => await ragBuilder.AddDataAsync(new AddDataRequest
                 {
                     // TODO: structure character data in a more detailed way
                     Content = $"""
@@ -54,10 +61,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     Description = "Main Character description",
                     GroupId = adventure.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
-                },
+                }, cancellationToken),
                 cancellationToken);
-
-            await SetAsProcessed<Character>(characterKnowledgeGraphId, cancellationToken);
         }
 
         var lorebookToProcess = adventure.Lorebook
@@ -65,60 +70,109 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         foreach (var entry in lorebookToProcess)
         {
-            var lorebookEntryKnowledgeGraphId = await ragBuilder.AddDataAsync(new AddDataRequest
+            await ProcessEntityAsync(
+                entry,
+                async () => await ragBuilder.AddDataAsync(new AddDataRequest
                 {
                     Content = entry.Content,
                     EpisodeType = nameof(DataType.Text),
                     Description = entry.Description,
                     GroupId = adventure.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
-                },
+                }, cancellationToken),
                 cancellationToken);
-
-            await SetAsProcessed<LorebookEntry>(lorebookEntryKnowledgeGraphId, cancellationToken);
         }
     }
 
-    private async Task SetAsProcessed<TEntity>(
-        string knowledgeGraphNode,
+    private async Task ProcessEntityAsync<TEntity>(
+        TEntity entity,
+        Func<Task<string>> addDataAction,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity
+    where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
-        var dbSet = dbContext.Set<TEntity>();
+        var pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder()
+                    .Handle<HttpRequestException>()
+                    .Handle<TaskCanceledException>()
+                    .Handle<TimeoutException>(),
+                MaxRetryAttempts = MaxRetryAttempts,
+                Delay = TimeSpan.FromSeconds(2),
+                BackoffType = DelayBackoffType.Exponential,
+                OnRetry = args =>
+                {
+                    logger.Warning(
+                        "Retry {AttemptNumber} of {MaxRetryAttempts} for {EntityType} {EntityId} due to {ExceptionType}: {ExceptionMessage}",
+                        args.AttemptNumber + 1,
+                        MaxRetryAttempts,
+                        typeof(TEntity).Name,
+                        entity.Id,
+                        args.Outcome.Exception?.GetType().Name,
+                        args.Outcome.Exception?.Message);
+                    return ValueTask.CompletedTask;
+                }
+            })
+            .Build();
+
         try
         {
-            await dbSet.ExecuteUpdateAsync(
-                x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Completed)
-                    .SetProperty(e => e.KnowledgeGraphNodeId, knowledgeGraphNode),
-                cancellationToken);
+            var knowledgeGraphId = await pipeline.ExecuteAsync(async token => await addDataAction(), cancellationToken);
+            await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+            logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
+                typeof(TEntity).Name, entity.Id, knowledgeGraphId);
         }
         catch (Exception ex)
         {
             logger.Error(ex,
-                "Failed to update universe backstory with knowledge graph node {knowledgeGraphNode}",
-                knowledgeGraphNode);
-            // Normally, there should compensation/ self-healing logic e.g. removing the added data from the knowledge graph, or scheduling message on a retry queue
-            // but for simplicity, we just rethrow the exception here.
+                "Failed to add {EntityType} {EntityId} to knowledge graph after {MaxRetryAttempts} attempts",
+                typeof(TEntity).Name, entity.Id, MaxRetryAttempts);
+            await SetAsFailed(entity, cancellationToken);
+        }
+    }
+
+    private async Task SetAsProcessed<TEntity>(
+        TEntity entity,
+        string knowledgeGraphNode,
+        CancellationToken cancellationToken)
+        where TEntity : class, IKnowledgeGraphEntity, IEntity
+    {
+        var dbSet = dbContext.Set<TEntity>();
+        try
+        {
+            await dbSet.Where(e => e.Id == entity.Id)
+                .ExecuteUpdateAsync(
+                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Completed)
+                        .SetProperty(e => e.KnowledgeGraphNodeId, knowledgeGraphNode),
+                    cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex,
+                "Failed to update {EntityType} {EntityId} with knowledge graph node {KnowledgeGraphNode}",
+                typeof(TEntity).Name, entity.Id, knowledgeGraphNode);
             throw;
         }
     }
 
     private async Task SetAsFailed<TEntity>(
+        TEntity entity,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity
+        where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
         var dbSet = dbContext.Set<TEntity>();
         try
         {
-            await dbSet.ExecuteUpdateAsync(
-                x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Failed),
-                cancellationToken);
+            await dbSet.Where(e => e.Id == entity.Id)
+                .ExecuteUpdateAsync(
+                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Failed),
+                    cancellationToken);
         }
         catch (Exception ex)
         {
             logger.Error(ex,
-                "Failed to update entity of type {EntityType} as failed",
-                typeof(TEntity).Name);
+                "Failed to update {EntityType} {EntityId} as failed",
+                typeof(TEntity).Name, entity.Id);
             throw;
         }
     }

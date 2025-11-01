@@ -83,4 +83,21 @@ public class AdventureController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("retry-knowledge-graph/{adventure:guid}")]
+    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RetryKnowledgeGraphProcessing(Guid adventure, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _adventureCreationService.RetryKnowledgeGraphProcessingAsync(adventure, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
+    }
 }

@@ -9,6 +9,11 @@ public enum ProcessingStatus
     Failed
 }
 
+public interface IEntity
+{
+    Guid Id { get; init; }
+}
+
 public interface IKnowledgeGraphEntity
 {
     string? KnowledgeGraphNodeId { get; init; }
