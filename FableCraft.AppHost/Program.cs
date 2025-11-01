@@ -53,6 +53,7 @@ IResourceBuilder<PythonAppResource> graphRagApi = builder
 
 IResourceBuilder<ProjectResource> server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
+    .WithOtlpExporter()
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
     .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)

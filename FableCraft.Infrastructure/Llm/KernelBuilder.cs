@@ -1,9 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
-
-using Serilog;
 
 namespace FableCraft.Infrastructure.Llm;
 
@@ -15,11 +13,11 @@ public interface IKernelBuilder
 internal class OpenAiKernelBuilder : IKernelBuilder
 {
     private readonly IOptions<LlmConfiguration> _configuration;
-    private readonly IConfiguration _config;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public OpenAiKernelBuilder(IOptions<LlmConfiguration> configuration, IConfiguration config)
+    public OpenAiKernelBuilder(IOptions<LlmConfiguration> configuration, ILoggerFactory loggerFactory)
     {
-        _config = config;
+        _loggerFactory = loggerFactory;
         _configuration = configuration;
     }
 
@@ -29,11 +27,8 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             .CreateBuilder()
             .AddOpenAIChatCompletion(model ?? _configuration.Value.Model, new Uri(_configuration.Value.BaseUrl), _configuration.Value.ApiKey);
 
-        builder.Services.AddLogging(c =>
-            c.Services.AddSerilog(config =>
-            {
-                config.ReadFrom.Configuration(_config);
-            }));
+        builder.Services.AddSingleton(_loggerFactory);
+
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
             hp.ConfigureHttpClient((sp, c) =>
