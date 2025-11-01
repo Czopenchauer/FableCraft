@@ -194,9 +194,13 @@ internal class AdventureCreationService : IAdventureCreationService
             }
 
             ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-                .AddTimeout(TimeSpan.FromMinutes(10))
+                .AddTimeout(TimeSpan.FromMinutes(5))
                 .AddRetry(new RetryStrategyOptions
-                    { ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(), MaxRetryAttempts = 3, Delay = TimeSpan.FromSeconds(5) })
+                {
+                    ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(),
+                    MaxRetryAttempts = 3,
+                    Delay = TimeSpan.FromSeconds(5)
+                })
                 .Build();
 
             var chatHistory = new ChatHistory();
