@@ -215,6 +215,7 @@ internal class AdventureCreationService : IAdventureCreationService
                 MaxTokens = _config.Value.MaxTokens,
                 TopP = _config.Value.TopP,
             };
+            _logger.Debug("Generating lorebook for type {type} with prompt: {prompt}", category, prompt);
             try
             {
                 var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();

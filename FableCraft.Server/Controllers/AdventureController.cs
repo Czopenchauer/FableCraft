@@ -1,5 +1,4 @@
-﻿using FableCraft.Application;
-using FableCraft.Application.AdventureGeneration;
+﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 
@@ -32,7 +31,7 @@ public class AdventureController : ControllerBase
     [HttpPost("create-adventure")]
     [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SubmitAction([FromBody] AdventureDto adventure,
+    public async Task<IActionResult> Create([FromBody] AdventureDto adventure,
         [FromServices] IValidator<AdventureDto> validator, CancellationToken cancellationToken)
     {
         var validationResult = await validator.ValidateAsync(adventure, cancellationToken);
@@ -65,9 +64,22 @@ public class AdventureController : ControllerBase
 
     [HttpPost("generate-lorebook")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GenerateLorebook(string instruction, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GenerateLorebook([FromBody] GenerateLorebookDto dto,
+        [FromServices] IValidator<GenerateLorebookDto> validator, CancellationToken cancellationToken)
     {
-        var result = await _adventureCreationService.GenerateLorebookAsync([], "PhysicalWorld", cancellationToken, instruction);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
+        }
+
+        var result = await _adventureCreationService.GenerateLorebookAsync(
+            dto.Lorebooks,
+            dto.Category,
+            cancellationToken,
+            dto.AdditionalInstruction);
 
         return Ok(result);
     }
