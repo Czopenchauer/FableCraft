@@ -12,7 +12,11 @@ public enum DataType
 
 public interface IRagBuilder
 {
-    Task<string> AddDataAsync(AddDataRequest request);
+    Task<AddDataResponse> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default);
+
+    Task<TaskStatusResponse> GetTaskStatusAsync(string taskId, CancellationToken cancellationToken = default);
+
+    Task<EpisodeResponse> GetEpisodeAsync(string episodeId, CancellationToken cancellationToken = default);
 
     Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default);
 
@@ -21,7 +25,7 @@ public interface IRagBuilder
 
 public interface IRagSearch
 {
-    Task<SearchResult[]> SearchAsync(string query, string? characterName = null,
+    Task<SearchResult[]> SearchAsync(string adventureId, string query, string? characterName = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -37,11 +41,12 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// <summary>
     ///     Search the graph database
     /// </summary>
-    public async Task<SearchResult[]> SearchAsync(string query, string? characterName = null,
+    public async Task<SearchResult[]> SearchAsync(string adventureId, string query, string? characterName = null,
         CancellationToken cancellationToken = default)
     {
         SearchRequest request = new()
         {
+            AdventureId = adventureId,
             Query = query,
             CharacterName = characterName
         };
@@ -55,15 +60,39 @@ internal class RagClient : IRagBuilder, IRagSearch
     }
 
     /// <summary>
-    ///     Add data to the graph database
+    ///     Add data to the graph database (returns immediately with task info)
     /// </summary>
-    public async Task<string> AddDataAsync(AddDataRequest request)
+    public async Task<AddDataResponse> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request);
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<string>()
-               ?? string.Empty;
+        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
+    }
+
+    /// <summary>
+    ///     Get the status of a background task
+    /// </summary>
+    public async Task<TaskStatusResponse> GetTaskStatusAsync(string taskId, CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync($"/task/{Uri.EscapeDataString(taskId)}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<TaskStatusResponse>(cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize TaskStatusResponse");
+    }
+
+    /// <summary>
+    ///     Get episode details by episode ID
+    /// </summary>
+    public async Task<EpisodeResponse> GetEpisodeAsync(string episodeId, CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync($"/episode/{Uri.EscapeDataString(episodeId)}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<EpisodeResponse>(cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize EpisodeResponse");
     }
 
     /// <summary>
@@ -94,6 +123,9 @@ internal class RagClient : IRagBuilder, IRagSearch
 
 public class SearchRequest
 {
+    [JsonPropertyName("adventure_id")]
+    public required string AdventureId { get; set; }
+
     [JsonPropertyName("query")]
     public required string Query { get; set; }
 
@@ -136,6 +168,87 @@ public class AddDataRequest
     [JsonPropertyName("group_id")]
     public required string GroupId { get; set; }
 
+    [JsonPropertyName("node_id")]
+    public required string NodeId { get; set; }
+
     [JsonPropertyName("reference_time")]
     public DateTime? ReferenceTime { get; set; }
+}
+
+public class AddDataResponse
+{
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("task_id")]
+    public required string TaskId { get; set; }
+
+    [JsonPropertyName("episode_id")]
+    public required string EpisodeId { get; set; }
+
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+}
+
+public enum TaskStatus
+{
+    Pending,
+    Processing,
+    Completed,
+    Failed
+}
+
+public class TaskStatusResponse
+{
+    [JsonPropertyName("task_id")]
+    public required string TaskId { get; set; }
+
+    [JsonPropertyName("episode_id")]
+    public required string EpisodeId { get; set; }
+
+    [JsonPropertyName("status")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public TaskStatus Status { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("completed_at")]
+    public DateTime? CompletedAt { get; set; }
+
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+}
+
+public class EpisodeResponse
+{
+    [JsonPropertyName("uuid")]
+    public required string Uuid { get; set; }
+
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
+
+    [JsonPropertyName("group_id")]
+    public required string GroupId { get; set; }
+
+    [JsonPropertyName("source")]
+    public required string Source { get; set; }
+
+    [JsonPropertyName("source_description")]
+    public required string SourceDescription { get; set; }
+
+    [JsonPropertyName("content")]
+    public required string Content { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("valid_at")]
+    public DateTime ValidAt { get; set; }
+
+    [JsonPropertyName("entity_edges")]
+    public required List<string> EntityEdges { get; set; }
 }

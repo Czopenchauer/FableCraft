@@ -48,12 +48,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     EpisodeType = nameof(DataType.Text),
                     Description = "Main Character description",
                     GroupId = adventure.Id.ToString(),
+                    NodeId = adventure.Character.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
-                }));
+                }, cancellationToken),
+                cancellationToken);
         }
 
         var lorebookToProcess = adventure.Lorebook
-            .Where(x => x.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed);
+            .Where(x => x.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed).OrderBy(x => x.Priority);
 
         foreach (var entry in lorebookToProcess)
         {
@@ -65,8 +67,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     EpisodeType = nameof(DataType.Text),
                     Description = entry.Description,
                     GroupId = adventure.Id.ToString(),
+                    NodeId = entry.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
-                }));
+                }, cancellationToken),
+                cancellationToken);
         }
     }
 
@@ -102,7 +106,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     private async Task ProcessEntityAsync<TEntity>(
         TEntity entity,
-        Func<Task<string>> addDataAction)
+        Func<Task<AddDataResponse>> addDataAction,
+        CancellationToken cancellationToken)
     where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
         var pipeline = new ResiliencePipelineBuilder()
@@ -132,8 +137,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         try
         {
-            var knowledgeGraphId = await pipeline.ExecuteAsync(async token => await addDataAction());
-            await SetAsProcessed(entity, knowledgeGraphId);
+            // Submit the task to the graph
+            var response = await pipeline.ExecuteAsync(async token => await addDataAction(), cancellationToken);
+            logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", response.TaskId, typeof(TEntity).Name, entity.Id);
+
+            // Poll for task completion
+            var knowledgeGraphId = await WaitForTaskCompletionAsync(response.TaskId, cancellationToken);
+            
+            await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
             logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                 typeof(TEntity).Name, entity.Id, knowledgeGraphId);
         }
@@ -142,13 +153,43 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             logger.Error(ex,
                 "Failed to add {EntityType} {EntityId} to knowledge graph after {MaxRetryAttempts} attempts",
                 typeof(TEntity).Name, entity.Id, MaxRetryAttempts);
-            await SetAsFailed(entity);
+            await SetAsFailed(entity, cancellationToken);
         }
+    }
+
+    private async Task<string> WaitForTaskCompletionAsync(string taskId, CancellationToken cancellationToken)
+    {
+        const int maxPollingAttempts = 60; // 5 minutes with 5 second intervals
+        const int pollingIntervalSeconds = 5;
+
+        for (int attempt = 0; attempt < maxPollingAttempts; attempt++)
+        {
+            var status = await ragBuilder.GetTaskStatusAsync(taskId, cancellationToken);
+            
+            switch (status.Status)
+            {
+                case Infrastructure.Clients.TaskStatus.Completed:
+                    logger.Information("Task {TaskId} completed successfully", taskId);
+                    return status.EpisodeId;
+                
+                case Infrastructure.Clients.TaskStatus.Failed:
+                    throw new InvalidOperationException($"Task {taskId} failed: {status.Error}");
+                
+                case Infrastructure.Clients.TaskStatus.Pending:
+                case Infrastructure.Clients.TaskStatus.Processing:
+                    logger.Debug("Task {TaskId} is {Status}, waiting...", taskId, status.Status);
+                    await Task.Delay(TimeSpan.FromSeconds(pollingIntervalSeconds), cancellationToken);
+                    break;
+            }
+        }
+
+        throw new TimeoutException($"Task {taskId} did not complete within the expected time");
     }
 
     private async Task SetAsProcessed<TEntity>(
         TEntity entity,
-        string knowledgeGraphNode)
+        string knowledgeGraphNode,
+        CancellationToken cancellationToken)
         where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
         var dbSet = dbContext.Set<TEntity>();
@@ -157,7 +198,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             await dbSet.Where(e => e.Id == entity.Id)
                 .ExecuteUpdateAsync(
                     x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Completed)
-                        .SetProperty(e => e.KnowledgeGraphNodeId, knowledgeGraphNode));
+                        .SetProperty(e => e.KnowledgeGraphNodeId, knowledgeGraphNode),
+                    cancellationToken);
         }
         catch (Exception ex)
         {
@@ -169,7 +211,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     }
 
     private async Task SetAsFailed<TEntity>(
-        TEntity entity)
+        TEntity entity,
+        CancellationToken cancellationToken)
         where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
         var dbSet = dbContext.Set<TEntity>();
@@ -177,7 +220,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             await dbSet.Where(e => e.Id == entity.Id)
                 .ExecuteUpdateAsync(
-                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Failed));
+                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Failed),
+                    cancellationToken);
         }
         catch (Exception ex)
         {
