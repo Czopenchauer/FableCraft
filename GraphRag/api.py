@@ -181,8 +181,19 @@ async def add_data(data: AddDataRequest):
 async def delete_data(delete_request: DeleteRequest):
     """Endpoint to delete data from the graph database"""
     client = build_graph_client()
+    existing_nodes = await client.get_nodes_and_edges_by_episode([delete_request.episode_id])
+    if not existing_nodes:
+        logger.info("No data found for the given episode_id")
+        return
+
     try:
         await client.remove_episode(delete_request.episode_id)
+    except Exception as e:
+        logger.error(f"Error deleting data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete data: {str(e)}"
+        )
     finally:
         await client.close()
 
