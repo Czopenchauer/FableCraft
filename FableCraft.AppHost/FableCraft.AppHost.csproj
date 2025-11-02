@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FableCraft.Server\FableCraft.Server.csproj"/>
+        <ProjectReference Include="..\Server\FableCraft.Server\FableCraft.Server.csproj" />
     </ItemGroup>
 
 </Project>
