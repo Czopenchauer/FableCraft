@@ -84,6 +84,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .ToList()
             .ForEach(x => x.ProcessingStatus = ProcessingStatus.Pending);
 
+        logger.Information("Reset lorebooks from Failed to Pending");
+
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -152,12 +154,12 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         try
         {
-            var response = await pipeline.ExecuteAsync(async token => await addDataAction());
-            logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", response.TaskId, typeof(TEntity).Name, entity.Id);
+            _ = await pipeline.ExecuteAsync(async token => await addDataAction());
+            logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
 
             await SetAsInProgress(entity, cancellationToken);
 
-            var knowledgeGraphId = await WaitForTaskCompletionAsync(response.TaskId, cancellationToken);
+            var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
             await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
             logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
@@ -173,6 +175,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 entity.Id,
                 MaxRetryAttempts);
             await SetAsFailed(entity, cancellationToken);
+            throw;
         }
     }
 

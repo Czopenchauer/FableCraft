@@ -114,6 +114,7 @@ class EpisodeResponse(BaseModel):
 
 class TaskStatusResponse(BaseModel):
     task_id: str
+    episode_id: str
     status: TaskStatus
     message: Optional[str] = None
     created_at: datetime
@@ -193,7 +194,9 @@ async def process_episode_addition(
 
         # Update status to completed
         task_store[task_id]["status"] = TaskStatus.COMPLETED
+        task_store[task_id]["episode_id"] = result.episode.uuid
         task_store[task_id]["message"] = f"Episode {result.episode.uuid} added successfully"
+        task_store[task_id]["completed_at"] = datetime.now()
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error adding episode in background: {str(e)}")

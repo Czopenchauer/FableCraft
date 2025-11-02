@@ -177,15 +177,6 @@ public class AddDataRequest
 
 public class AddDataResponse
 {
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
-
-    [JsonPropertyName("task_id")]
-    public required string TaskId { get; set; }
-
-    [JsonPropertyName("episode_id")]
-    public required string EpisodeId { get; set; }
-
     [JsonPropertyName("status")]
     public string? Status { get; set; }
 }
@@ -200,9 +191,6 @@ public enum TaskStatus
 
 public class TaskStatusResponse
 {
-    [JsonPropertyName("task_id")]
-    public required string TaskId { get; set; }
-
     [JsonPropertyName("episode_id")]
     public required string EpisodeId { get; set; }
 
