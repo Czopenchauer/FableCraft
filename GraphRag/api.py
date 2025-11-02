@@ -145,16 +145,15 @@ async def add_data(data: AddDataRequest):
 
     graphiti = build_graph_client()
     try:
-        # Convert string to EpisodeType enum
-        try:
-            episode_type = EpisodeType.from_str(data.episode_type)
-        except KeyError:
-            valid_types = [e.name for e in EpisodeType]
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid episode_type. Must be one of: {', '.join(valid_types)}"
-            )
+        episode_type = EpisodeType.from_str(data.episode_type)
+    except KeyError:
+        valid_types = [e.name.lower() for e in EpisodeType]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid episode_type. Must be one of: {', '.join(valid_types)}"
+        )
 
+    try:
         result = await graphiti.add_episode(
             name=data.description,
             episode_body=data.content,
