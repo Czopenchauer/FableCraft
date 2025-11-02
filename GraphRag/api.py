@@ -114,7 +114,7 @@ class EpisodeResponse(BaseModel):
 
 class TaskStatusResponse(BaseModel):
     task_id: str
-    episode_id: str
+    episode_id: Optional[str] = None
     status: TaskStatus
     message: Optional[str] = None
     created_at: datetime
@@ -238,6 +238,7 @@ async def add_data(data: AddDataRequest, background_tasks: BackgroundTasks):
     # Create task tracking entry
     task_store[data.task_id] = {
         "task_id": data.task_id,
+        "episode_id": None,
         "status": TaskStatus.PENDING,
         "created_at": datetime.now(),
         "completed_at": None,
