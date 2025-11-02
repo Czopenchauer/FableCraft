@@ -23,6 +23,7 @@ public enum Status
 {
     Pending,
     Completed,
+    InProgress,
     Failed
 }
 
@@ -33,6 +34,7 @@ public static class StatusExtensions
         {
             ProcessingStatus.Pending => Status.Pending,
             ProcessingStatus.Completed => Status.Completed,
+            ProcessingStatus.InProgress => Status.InProgress,
             ProcessingStatus.Failed => Status.Failed,
             _ => throw new ArgumentOutOfRangeException(nameof(processingStatus), processingStatus, null)
         };

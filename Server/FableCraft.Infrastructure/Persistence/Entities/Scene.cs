@@ -25,7 +25,7 @@ public class Scene : IKnowledgeGraphEntity, IEntity
     [MaxLength(64)]
     public string? KnowledgeGraphNodeId { get; init; }
 
-    public ProcessingStatus ProcessingStatus { get; init; }
+    public ProcessingStatus ProcessingStatus { get; set; }
 
     public DateTime CreatedAt { get; init; }
 
@@ -59,7 +59,7 @@ public class Character : IKnowledgeGraphEntity, IEntity
     [MaxLength(64)]
     public string? KnowledgeGraphNodeId { get; init; }
 
-    public ProcessingStatus ProcessingStatus { get; init; }
+    public ProcessingStatus ProcessingStatus { get; set; }
 
     [Column(TypeName = "jsonb")]
     public string? StatsJson { get; init; } = null!;

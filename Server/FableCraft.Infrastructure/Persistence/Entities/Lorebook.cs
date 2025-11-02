@@ -53,5 +53,5 @@ public class LorebookEntry : IKnowledgeGraphEntity, IEntity
     [MaxLength(64)]
     public string? KnowledgeGraphNodeId { get; init; }
 
-    public ProcessingStatus ProcessingStatus { get; init; }
+    public ProcessingStatus ProcessingStatus { get; set; }
 }

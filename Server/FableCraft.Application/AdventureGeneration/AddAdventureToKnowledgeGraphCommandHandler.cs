@@ -34,30 +34,25 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         await ResetFailedToPendingAsync(adventure, cancellationToken);
 
-        if (adventure.Character.ProcessingStatus is ProcessingStatus.Pending)
-        {
-            await ProcessEntityAsync(
-                adventure.Character,
-                async () => await ragBuilder.AddDataAsync(new AddDataRequest
-                    {
-                        // TODO: structure character data in a more detailed way
-                        Content = $"""
-                                   Character name: {adventure.Character.Name}
-                                   Character description: {adventure.Character.Description}
-                                   Character background: {adventure.Character.Background}
-                                   """,
-                        EpisodeType = nameof(DataType.Text),
-                        Description = "Main Character description",
-                        GroupId = adventure.Id.ToString(),
-                        NodeId = adventure.Character.Id.ToString(),
-                        ReferenceTime = DateTime.UtcNow
-                    },
-                    cancellationToken),
-                cancellationToken);
-        }
+        await ProcessEntityAsync(
+            adventure.Character,
+            async () => await ragBuilder.AddDataAsync(new AddDataRequest
+            {
+                // TODO: structure character data in a more detailed way
+                Content = $"""
+                           Character name: {adventure.Character.Name}
+                           Character description: {adventure.Character.Description}
+                           Character background: {adventure.Character.Background}
+                           """,
+                EpisodeType = nameof(DataType.Text),
+                Description = "Main Character description",
+                GroupId = adventure.Id.ToString(),
+                TaskId = adventure.Character.Id.ToString(),
+                ReferenceTime = DateTime.UtcNow
+            }),
+            cancellationToken);
 
-        var lorebookToProcess = adventure.Lorebook
-            .Where(x => x.ProcessingStatus is ProcessingStatus.Pending).OrderBy(x => x.Priority);
+        var lorebookToProcess = adventure.Lorebook.OrderBy(x => x.Priority);
 
         foreach (var entry in lorebookToProcess)
         {
@@ -69,10 +64,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                         EpisodeType = nameof(DataType.Text),
                         Description = entry.Description,
                         GroupId = adventure.Id.ToString(),
-                        NodeId = entry.Id.ToString(),
+                        TaskId = entry.Id.ToString(),
                         ReferenceTime = DateTime.UtcNow
-                    },
-                    cancellationToken),
+                    }),
                 cancellationToken);
         }
     }
@@ -81,28 +75,16 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     {
         if (adventure.Character.ProcessingStatus == ProcessingStatus.Failed)
         {
-            await dbContext.Characters
-                .Where(c => c.Id == adventure.Character.Id)
-                .ExecuteUpdateAsync(
-                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Pending),
-                    cancellationToken);
+            adventure.Character.ProcessingStatus = ProcessingStatus.Pending;
             logger.Information("Reset Character {CharacterId} from Failed to Pending", adventure.Character.Id);
         }
 
-        var failedLorebookIds = adventure.Lorebook
+        adventure.Lorebook
             .Where(x => x.ProcessingStatus == ProcessingStatus.Failed)
-            .Select(x => x.Id)
-            .ToList();
+            .ToList()
+            .ForEach(x => x.ProcessingStatus = ProcessingStatus.Pending);
 
-        if (failedLorebookIds.Any())
-        {
-            await dbContext.LorebookEntries
-                .Where(l => failedLorebookIds.Contains(l.Id))
-                .ExecuteUpdateAsync(
-                    x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Pending),
-                    cancellationToken);
-            logger.Information("Reset {Count} Lorebook entries from Failed to Pending", failedLorebookIds.Count);
-        }
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task ProcessEntityAsync<TEntity>(
@@ -170,7 +152,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         try
         {
-            var response = await pipeline.ExecuteAsync(async token => await addDataAction(), cancellationToken);
+            var response = await pipeline.ExecuteAsync(async token => await addDataAction());
             logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", response.TaskId, typeof(TEntity).Name, entity.Id);
 
             await SetAsInProgress(entity, cancellationToken);

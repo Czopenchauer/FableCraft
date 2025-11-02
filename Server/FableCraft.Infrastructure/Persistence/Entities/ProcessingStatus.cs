@@ -19,7 +19,7 @@ public interface IKnowledgeGraphEntity
 {
     string? KnowledgeGraphNodeId { get; init; }
 
-    ProcessingStatus ProcessingStatus { get; init; }
+    ProcessingStatus ProcessingStatus { get; set; }
 
     [MemberNotNullWhen(true, nameof(KnowledgeGraphNodeId))]
     public bool HasKnowledgeGraph() => ProcessingStatus == ProcessingStatus.Completed;

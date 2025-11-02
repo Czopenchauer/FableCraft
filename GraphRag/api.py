@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from uuid import uuid4
 
 import fastapi
 import uvicorn
@@ -71,7 +70,6 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 
-# In-memory task tracking (consider using Redis for production)
 task_store = {}
 
 
@@ -80,7 +78,7 @@ class AddDataRequest(BaseModel):
     description: str
     content: str
     group_id: str
-    node_id: str
+    task_id: str
     reference_time: Optional[datetime] = None
 
 
@@ -116,7 +114,6 @@ class EpisodeResponse(BaseModel):
 
 class TaskStatusResponse(BaseModel):
     task_id: str
-    episode_id: str
     status: TaskStatus
     message: Optional[str] = None
     created_at: datetime
@@ -175,7 +172,6 @@ async def process_episode_addition(
     episode_type: EpisodeType,
     description: str,
     content: str,
-    node_id: str,
     group_id: str,
     reference_time: datetime
 ):
@@ -189,7 +185,6 @@ async def process_episode_addition(
             name=description,
             episode_body=content,
             source=episode_type,
-            uuid=node_id,
             source_description=description,
             reference_time=reference_time,
             group_id=group_id
@@ -199,7 +194,6 @@ async def process_episode_addition(
         # Update status to completed
         task_store[task_id]["status"] = TaskStatus.COMPLETED
         task_store[task_id]["message"] = f"Episode {result.episode.uuid} added successfully"
-        task_store[task_id]["completed_at"] = datetime.now()
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error adding episode in background: {str(e)}")
@@ -222,7 +216,7 @@ async def add_data(data: AddDataRequest, background_tasks: BackgroundTasks):
     - description: str (brief description of the episode)
     - content: str (the actual content to be added)
     - group_id: str (group identifier for the episode)
-    - node_id: str (unique identifier for the episode)
+    - task_id: str (unique identifier for the episode)
     - reference_time: datetime (optional, timestamp for the episode)
 
     Note: Episodes are processed sequentially in the background.
@@ -238,13 +232,9 @@ async def add_data(data: AddDataRequest, background_tasks: BackgroundTasks):
             detail=f"Invalid episode_type. Must be one of: {', '.join(valid_types)}"
         )
 
-    # Generate unique task ID
-    task_id = str(uuid4())
-
     # Create task tracking entry
-    task_store[task_id] = {
-        "task_id": task_id,
-        "episode_id": data.node_id,
+    task_store[data.task_id] = {
+        "task_id": data.task_id,
         "status": TaskStatus.PENDING,
         "created_at": datetime.now(),
         "completed_at": None,
@@ -255,19 +245,17 @@ async def add_data(data: AddDataRequest, background_tasks: BackgroundTasks):
     # Add the episode processing to background tasks
     background_tasks.add_task(
         process_episode_addition,
-        task_id=task_id,
+        task_id=data.task_id,
         episode_type=episode_type,
         description=data.description,
         content=data.content,
-        node_id=data.node_id,
         group_id=data.group_id,
         reference_time=data.reference_time or datetime.now()
     )
 
     return {
         "message": "Episode queued for processing",
-        "task_id": task_id,
-        "episode_id": data.node_id,
+        "task_id": data.task_id,
         "status": "accepted"
     }
 
@@ -278,7 +266,6 @@ async def get_task_status(task_id: str):
 
     Returns:
     - task_id: The unique task identifier
-    - episode_id: The episode ID being processed
     - status: Current status (pending, processing, completed, failed)
     - message: Success message if completed
     - error: Error message if failed

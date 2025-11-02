@@ -64,7 +64,7 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// </summary>
     public async Task<AddDataResponse> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
@@ -168,8 +168,8 @@ public class AddDataRequest
     [JsonPropertyName("group_id")]
     public required string GroupId { get; set; }
 
-    [JsonPropertyName("node_id")]
-    public required string NodeId { get; set; }
+    [JsonPropertyName("task_id")]
+    public required string TaskId { get; set; }
 
     [JsonPropertyName("reference_time")]
     public DateTime? ReferenceTime { get; set; }
