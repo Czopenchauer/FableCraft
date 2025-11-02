@@ -102,6 +102,8 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
         return '✗';
       case 'Pending':
         return '⋯';
+      case 'InProgress':
+        return '⟳';
       default:
         return '?';
     }
@@ -115,6 +117,8 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
         return 'status-failed';
       case 'Pending':
         return 'status-pending';
+      case 'InProgress':
+        return 'status-in-progress';
       default:
         return '';
     }

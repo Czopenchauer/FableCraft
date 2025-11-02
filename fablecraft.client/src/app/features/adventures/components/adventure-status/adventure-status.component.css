@@ -210,6 +210,11 @@
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+.status-item.status-in-progress::before {
+  background: var(--status-info);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -217,6 +222,10 @@
 
 [data-theme="medieval-fantasy"] .status-item.status-pending::before {
   box-shadow: 0 0 10px var(--status-warning);
+}
+
+[data-theme="medieval-fantasy"] .status-item.status-in-progress::before {
+  box-shadow: 0 0 10px var(--status-info);
 }
 
 .status-left {
@@ -307,9 +316,20 @@
   border: 2px solid var(--status-warning);
 }
 
+.status-in-progress .status-icon {
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  border: 2px solid var(--status-info);
+}
+
 [data-theme="medieval-fantasy"] .status-pending .status-icon {
   box-shadow: var(--shadow-glow);
   animation: torchFlicker 3s ease-in-out infinite;
+}
+
+[data-theme="medieval-fantasy"] .status-in-progress .status-icon {
+  box-shadow: 0 0 20px rgba(70, 130, 180, 0.4);
+  animation: blueGlow 3s ease-in-out infinite;
 }
 
 @keyframes torchFlicker {
@@ -318,6 +338,15 @@
   }
   50% {
     box-shadow: 0 0 30px rgba(218, 165, 32, 0.6);
+  }
+}
+
+@keyframes blueGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(70, 130, 180, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(70, 130, 180, 0.6);
   }
 }
 
@@ -337,8 +366,17 @@
   animation: spin 1s linear infinite;
 }
 
+.status-in-progress .pulse-spinner {
+  border-color: var(--status-info-bg);
+  border-top-color: var(--status-info);
+}
+
 [data-theme="medieval-fantasy"] .pulse-spinner {
   filter: drop-shadow(0 0 8px var(--status-warning));
+}
+
+[data-theme="medieval-fantasy"] .status-in-progress .pulse-spinner {
+  filter: drop-shadow(0 0 8px var(--status-info));
 }
 
 /* Action Buttons */

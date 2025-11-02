@@ -54,7 +54,7 @@ export enum AdventureStatus {
   Failed = 'Failed'
 }
 
-export type ComponentStatus = 'Pending' | 'Completed' | 'Failed';
+export type ComponentStatus = 'Pending' | 'InProgress' | 'Completed' | 'Failed';
 
 export interface GenerateLorebookDto {
   lorebooks: LorebookEntryDto[];
