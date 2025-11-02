@@ -133,7 +133,7 @@ internal class AdventureCreationService : IAdventureCreationService
         {
             Name = adventureDto.Name,
             CreatedAt = now,
-            LastPlayedAt = now,
+            LastPlayedAt = null,
             ProcessingStatus = ProcessingStatus.Pending,
             AuthorNotes = adventureDto.AuthorNotes,
             Character = new Character
@@ -359,7 +359,9 @@ internal class AdventureCreationService : IAdventureCreationService
                     .Select(s => s.NarrativeText.Length > 200
                         ? s.NarrativeText.Substring(0, 200)
                         : s.NarrativeText)
-                    .FirstOrDefault()
+                    .FirstOrDefault(),
+                Created = a.CreatedAt,
+                LastPlayed = a.LastPlayedAt,
             })
             .ToListAsync(cancellationToken);
 

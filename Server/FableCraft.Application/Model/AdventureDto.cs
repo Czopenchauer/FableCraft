@@ -63,4 +63,8 @@ public class AdventureListItemDto
     public string Name { get; init; } = string.Empty;
 
     public string? LastScenePreview { get; init; }
+
+    public DateTimeOffset Created { get; init; }
+
+    public DateTimeOffset? LastPlayed { get; init; }
 }

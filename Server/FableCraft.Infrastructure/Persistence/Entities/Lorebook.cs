@@ -13,7 +13,7 @@ public class Adventure : IKnowledgeGraphEntity, IEntity
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public DateTimeOffset LastPlayedAt { get; init; }
+    public DateTimeOffset? LastPlayedAt { get; init; }
 
     public ProcessingStatus ProcessingStatus { get; init; }
 
