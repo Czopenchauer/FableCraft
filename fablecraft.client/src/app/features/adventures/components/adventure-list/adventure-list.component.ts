@@ -14,6 +14,11 @@ export class AdventureListComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
+  // Delete modal state
+  showDeleteModal = false;
+  adventureToDelete: { id: string; name: string } | null = null;
+  isDeleting = false;
+
   constructor(
     private adventureService: AdventureService,
     private router: Router
@@ -54,19 +59,37 @@ export class AdventureListComponent implements OnInit {
     this.router.navigate(['/adventures/status', adventure.adventureId]);
   }
 
-  deleteAdventure(event: Event, adventureId: string): void {
+  deleteAdventure(event: Event, adventureId: string, adventureName: string): void {
     event.stopPropagation();
+    this.adventureToDelete = { id: adventureId, name: adventureName };
+    this.showDeleteModal = true;
+  }
 
-    if (confirm('Are you sure you want to delete this adventure?')) {
-      this.adventureService.deleteAdventure(adventureId).subscribe({
-        next: () => {
-          this.loadAdventures();
-        },
-        error: (err) => {
-          console.error('Error deleting adventure:', err);
-          alert('Failed to delete adventure');
-        }
-      });
+  confirmDelete(): void {
+    if (!this.adventureToDelete) return;
+
+    this.isDeleting = true;
+
+    this.adventureService.deleteAdventure(this.adventureToDelete.id).subscribe({
+      next: () => {
+        this.isDeleting = false;
+        this.showDeleteModal = false;
+        this.adventureToDelete = null;
+        this.loadAdventures();
+      },
+      error: (err) => {
+        console.error('Error deleting adventure:', err);
+        this.isDeleting = false;
+        // Keep modal open to show error state
+        alert('Failed to delete adventure. Please try again.');
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    if (!this.isDeleting) {
+      this.showDeleteModal = false;
+      this.adventureToDelete = null;
     }
   }
 

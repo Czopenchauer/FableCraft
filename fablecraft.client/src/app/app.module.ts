@@ -10,6 +10,7 @@ import { AdventureListComponent } from './features/adventures/components/adventu
 import { AdventureCreateComponent } from './features/adventures/components/adventure-create/adventure-create.component';
 import { AdventureStatusComponent } from './features/adventures/components/adventure-status/adventure-status.component';
 import { GamePanelComponent } from './features/adventures/components/game-panel/game-panel.component';
+import { DeleteConfirmationModalComponent } from './features/adventures/components/delete-confirmation-modal/delete-confirmation-modal.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { GamePanelComponent } from './features/adventures/components/game-panel/
     AdventureListComponent,
     AdventureCreateComponent,
     AdventureStatusComponent,
-    GamePanelComponent
+    GamePanelComponent,
+    DeleteConfirmationModalComponent
   ],
   imports: [
     BrowserModule,

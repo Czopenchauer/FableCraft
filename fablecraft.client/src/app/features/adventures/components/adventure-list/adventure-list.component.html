@@ -84,7 +84,7 @@
       >
         <!-- Delete Button -->
         <button
-          (click)="deleteAdventure($event, adventure.adventureId)"
+          (click)="deleteAdventure($event, adventure.adventureId, adventure.name)"
           class="delete-button"
           title="Delete adventure"
         >
@@ -126,4 +126,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Delete Confirmation Modal -->
+  <app-delete-confirmation-modal
+    [isOpen]="showDeleteModal"
+    [adventureName]="adventureToDelete?.name || ''"
+    [isDeleting]="isDeleting"
+    (confirm)="confirmDelete()"
+    (cancel)="cancelDelete()">
+  </app-delete-confirmation-modal>
 </div>
