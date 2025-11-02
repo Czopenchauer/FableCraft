@@ -19,6 +19,7 @@ from graphiti_core import Graphiti
 from graphiti_core.cross_encoder.bge_reranker_client import BGERerankerClient
 from graphiti_core.driver.neo4j_driver import Neo4jDriver
 from graphiti_core.embedder import OpenAIEmbedder, OpenAIEmbedderConfig
+from graphiti_core.errors import NodeNotFoundError
 from graphiti_core.llm_client import LLMConfig
 from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.nodes import EpisodeType
@@ -41,7 +42,7 @@ async def lifespan(app: FastAPI):
         logger.info("Graphiti initialized successfully")
         await graphiti.close()
     except Exception as e:
-        logger.error(f"Error initializing Graphiti: {str(e)}")
+        logger.error(f"{type(e).__name__}: Error initializing Graphiti: {str(e)}")
         raise e
     finally:
         await graphiti.close()
@@ -82,6 +83,7 @@ class MessageResponse(BaseModel):
 
 
 class SearchRequest(BaseModel):
+    adventure_id: str
     query: str
     character_name: Optional[str] = None
 
@@ -145,9 +147,9 @@ async def add_data(data: AddDataRequest):
 
     graphiti = build_graph_client()
     try:
-        episode_type = EpisodeType.from_str(data.episode_type)
+        episode_type = EpisodeType.from_str(data.episode_type.lower())
     except KeyError:
-        valid_types = [e.name.lower() for e in EpisodeType]
+        valid_types = [e.name for e in EpisodeType]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid episode_type. Must be one of: {', '.join(valid_types)}"
@@ -168,7 +170,7 @@ async def add_data(data: AddDataRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error adding data: {str(e)}")
+        logger.error(f"{type(e).__name__}: Error adding data: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add data: {str(e)}"
@@ -178,18 +180,18 @@ async def add_data(data: AddDataRequest):
 
 
 @app.delete("/delete_data")
-async def delete_data(delete_request: DeleteRequest):
+async def delete_data(episode_id: str):
     """Endpoint to delete data from the graph database"""
     client = build_graph_client()
-    existing_nodes = await client.get_nodes_and_edges_by_episode([delete_request.episode_id])
-    if not existing_nodes:
-        logger.info("No data found for the given episode_id")
-        return
-
     try:
-        await client.remove_episode(delete_request.episode_id)
+        await client.remove_episode(episode_id)
+    except NodeNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_204_NO_CONTENT,
+            detail=f"Node not found: {str(e)}"
+        )
     except Exception as e:
-        logger.error(f"Error deleting data: {str(e)}")
+        logger.error(f"{type(e).__name__}: Error deleting data: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete data: {str(e)}"
