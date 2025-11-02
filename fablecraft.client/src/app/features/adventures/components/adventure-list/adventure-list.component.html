@@ -84,7 +84,7 @@
       >
         <!-- Delete Button -->
         <button
-          (click)="deleteAdventure($event, adventure.id)"
+          (click)="deleteAdventure($event, adventure.adventureId)"
           class="delete-button"
           title="Delete adventure"
         >
@@ -93,22 +93,12 @@
           </svg>
         </button>
 
-        <!-- Status Badge -->
-        <div class="card-status-wrapper">
-          <div [class]="'status-badge ' + getStatusClass(adventure.status)">
-            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-              <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="getStatusIcon(adventure.status)"></path>
-            </svg>
-            <span>{{ adventure.status }}</span>
-          </div>
-        </div>
-
         <!-- Title and Description -->
         <h3 class="card-title">
-          {{ adventure.title }}
+          {{ adventure.name }}
         </h3>
         <p class="card-description">
-          {{ adventure.description }}
+          {{ adventure.lastScenePreview || 'No preview available' }}
         </p>
 
         <!-- Meta Information -->
@@ -117,13 +107,13 @@
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
               <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'"></path>
             </svg>
-            <span>Created: {{ adventure.createdAt | date:'short' }}</span>
+            <span>Created: {{ adventure.created | date:'short' }}</span>
           </div>
-          <div class="meta-item">
+          <div class="meta-item" *ngIf="adventure.lastPlayed">
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
               <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'"></path>
             </svg>
-            <span>Updated: {{ adventure.updatedAt | date:'short' }}</span>
+            <span>Last Played: {{ adventure.lastPlayed | date:'short' }}</span>
           </div>
         </div>
 

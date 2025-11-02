@@ -7,6 +7,14 @@ export interface Adventure {
   updatedAt: Date;
 }
 
+export interface AdventureListItemDto {
+  adventureId: string;
+  name: string;
+  lastScenePreview?: string;
+  created: string;
+  lastPlayed?: string;
+}
+
 export interface CharacterDto {
   name: string;
   description: string;

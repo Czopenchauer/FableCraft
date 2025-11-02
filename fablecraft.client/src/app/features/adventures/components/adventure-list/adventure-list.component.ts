@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Adventure, AdventureStatus } from '../../models/adventure.model';
+import { AdventureListItemDto } from '../../models/adventure.model';
 import { AdventureService } from '../../services/adventure.service';
 
 @Component({
@@ -10,7 +10,7 @@ import { AdventureService } from '../../services/adventure.service';
   styleUrl: './adventure-list.component.css'
 })
 export class AdventureListComponent implements OnInit {
-  adventures: Adventure[] = [];
+  adventures: AdventureListItemDto[] = [];
   loading = false;
   error: string | null = null;
 
@@ -46,8 +46,8 @@ export class AdventureListComponent implements OnInit {
     this.router.navigate(['/adventures/create']);
   }
 
-  openAdventure(adventure: Adventure): void {
-    this.router.navigate(['/adventures', adventure.id]);
+  openAdventure(adventure: AdventureListItemDto): void {
+    this.router.navigate(['/adventures', adventure.adventureId]);
   }
 
   deleteAdventure(event: Event, adventureId: string): void {
@@ -63,34 +63,6 @@ export class AdventureListComponent implements OnInit {
           alert('Failed to delete adventure');
         }
       });
-    }
-  }
-
-  getStatusClass(status: AdventureStatus): string {
-    switch (status) {
-      case AdventureStatus.Ready:
-        return 'status-ready';
-      case AdventureStatus.Creating:
-      case AdventureStatus.Processing:
-        return 'status-processing';
-      case AdventureStatus.Failed:
-        return 'status-failed';
-      default:
-        return 'status-default';
-    }
-  }
-
-  getStatusIcon(status: AdventureStatus): string {
-    switch (status) {
-      case AdventureStatus.Ready:
-        return 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
-      case AdventureStatus.Creating:
-      case AdventureStatus.Processing:
-        return 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15';
-      case AdventureStatus.Failed:
-        return 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-      default:
-        return 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
     }
   }
 

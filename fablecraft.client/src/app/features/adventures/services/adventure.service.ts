@@ -7,7 +7,8 @@ import {
   AdventureCreationStatus,
   GenerateLorebookDto,
   GeneratedLorebookDto,
-  AvailableLorebookDto
+  AvailableLorebookDto,
+  AdventureListItemDto
 } from '../models/adventure.model';
 import { environment } from '../../../../environments/environment';
 
@@ -21,11 +22,9 @@ export class AdventureService {
 
   /**
    * Get all adventures
-   * Note: This endpoint doesn't exist in the backend yet
-   * You'll need to implement GET /api/adventure in AdventureController.cs
    */
-  getAllAdventures(): Observable<Adventure[]> {
-    return this.http.get<Adventure[]>(this.apiUrl);
+  getAllAdventures(): Observable<AdventureListItemDto[]> {
+    return this.http.get<AdventureListItemDto[]>(this.apiUrl);
   }
 
   /**
