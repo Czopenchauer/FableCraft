@@ -67,6 +67,7 @@ class AddDataRequest(BaseModel):
     description: str
     content: str
     group_id: str
+    node_id: str
     reference_time: Optional[datetime] = None
 
 
@@ -86,6 +87,18 @@ class SearchRequest(BaseModel):
     adventure_id: str
     query: str
     character_name: Optional[str] = None
+
+
+class EpisodeResponse(BaseModel):
+    uuid: str
+    name: str
+    group_id: str
+    source: str
+    source_description: str
+    content: str
+    created_at: datetime
+    valid_at: datetime
+    entity_edges: list[str]
 
 
 def build_graph_client() -> Graphiti:
@@ -160,6 +173,7 @@ async def add_data(data: AddDataRequest):
             name=data.description,
             episode_body=data.content,
             source=episode_type,
+            uuid=data.node_id,
             source_description=data.description,
             reference_time=data.reference_time or datetime.now(),
             group_id=data.group_id
@@ -177,6 +191,39 @@ async def add_data(data: AddDataRequest):
         )
     finally:
         await graphiti.close()
+
+
+@app.get("/episode/{episode_id}", response_model=EpisodeResponse)
+async def get_episode(episode_id: str):
+    """Endpoint to retrieve a specific episode by its ID"""
+    client = build_graph_client()
+    try:
+        from graphiti_core.nodes import EpisodicNode
+        episode = await EpisodicNode.get_by_uuid(client.driver, episode_id)
+        return EpisodeResponse(
+            uuid=episode.uuid,
+            name=episode.name,
+            group_id=episode.group_id,
+            source=episode.source.value,
+            source_description=episode.source_description,
+            content=episode.content,
+            created_at=episode.created_at,
+            valid_at=episode.valid_at,
+            entity_edges=episode.entity_edges
+        )
+    except NodeNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Episode not found: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error retrieving episode: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve episode: {str(e)}"
+        )
+    finally:
+        await client.close()
 
 
 @app.delete("/delete_data")
