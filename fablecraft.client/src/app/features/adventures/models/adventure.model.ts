@@ -44,11 +44,7 @@ export interface AvailableLorebookDto {
 
 export interface AdventureCreationStatus {
   adventureId: string;
-  status: AdventureStatus;
-  progress: number;
-  message?: string;
-  completedSteps: string[];
-  currentStep?: string;
+  componentStatuses: Record<string, ComponentStatus>;
 }
 
 export enum AdventureStatus {
@@ -57,6 +53,8 @@ export enum AdventureStatus {
   Ready = 'Ready',
   Failed = 'Failed'
 }
+
+export type ComponentStatus = 'Pending' | 'Completed' | 'Failed';
 
 export interface GenerateLorebookDto {
   lorebooks: LorebookEntryDto[];

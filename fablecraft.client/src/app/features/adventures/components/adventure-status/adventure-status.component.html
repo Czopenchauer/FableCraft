@@ -1,0 +1,66 @@
+<div class="status-container">
+  <div class="status-content">
+  <div class="status-header">
+    <h1>Creating Your Adventure</h1>
+    <p class="header-subtitle" *ngIf="!hasAnyFailedStatus() && !hasError">
+      Please wait while we prepare your adventure...
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading status...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="hasError && !status" class="error-state">
+    <div class="error-icon">⚠</div>
+    <p class="error-message">{{ errorMessage }}</p>
+    <button class="btn btn-secondary" (click)="goToAdventureList()">Back to Adventures</button>
+  </div>
+
+  <!-- Status List -->
+  <div *ngIf="status && !isLoading" class="status-list">
+    <div *ngFor="let entry of getStatusEntries()"
+         class="status-item"
+         [ngClass]="getStatusClass(entry.value)">
+
+      <div class="status-left">
+        <div class="status-icon-wrapper">
+          <div class="status-icon">{{ getStatusIcon(entry.value) }}</div>
+        </div>
+        <div class="status-content">
+          <div class="status-name">{{ entry.key }}</div>
+          <div class="status-value">{{ entry.value }}</div>
+        </div>
+      </div>
+
+      <div class="status-right">
+        <div *ngIf="entry.value === 'Pending'" class="status-spinner-wrapper">
+          <div class="pulse-spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retry Button -->
+  <div *ngIf="hasAnyFailedStatus() && !isLoading" class="action-buttons">
+    <div class="failure-message">
+      <div class="failure-icon">⚠</div>
+      <div class="failure-text">
+        <strong>Creation Failed</strong>
+        <p>Some components failed to process. You can retry or go back to your adventures.</p>
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn btn-primary" (click)="retry()">
+        Retry Creation
+      </button>
+      <button class="btn btn-primary" (click)="goToAdventureList()">
+        Back to Adventures
+      </button>
+    </div>
+  </div>
+  </div>
+</div>

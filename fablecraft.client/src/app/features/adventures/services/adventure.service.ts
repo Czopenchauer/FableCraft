@@ -79,6 +79,16 @@ export class AdventureService {
   }
 
   /**
+   * Retry adventure creation
+   */
+  retryCreateAdventure(adventureId: string): Observable<AdventureCreationStatus> {
+    return this.http.post<AdventureCreationStatus>(
+      `${this.apiUrl}/retry-create-adventure/${adventureId}`,
+      {}
+    );
+  }
+
+  /**
    * Delete an adventure
    */
   deleteAdventure(adventureId: string): Observable<void> {

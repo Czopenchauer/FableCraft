@@ -47,7 +47,11 @@ export class AdventureListComponent implements OnInit {
   }
 
   openAdventure(adventure: AdventureListItemDto): void {
-    this.router.navigate(['/adventures', adventure.adventureId]);
+    // Navigate to status screen which will:
+    // - Auto-redirect to game panel if all statuses are completed
+    // - Show retry option if any status failed
+    // - Display progress if still processing
+    this.router.navigate(['/adventures/status', adventure.adventureId]);
   }
 
   deleteAdventure(event: Event, adventureId: string): void {

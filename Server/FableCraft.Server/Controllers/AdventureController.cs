@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
+using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
 
@@ -13,10 +14,12 @@ namespace FableCraft.Server.Controllers;
 public class AdventureController : ControllerBase
 {
     private readonly IAdventureCreationService _adventureCreationService;
+    private readonly IMessageDispatcher _messageDispatcher;
 
-    public AdventureController(IAdventureCreationService adventureCreationService)
+    public AdventureController(IAdventureCreationService adventureCreationService, IMessageDispatcher messageDispatcher)
     {
         _adventureCreationService = adventureCreationService;
+        _messageDispatcher = messageDispatcher;
     }
 
     [HttpGet]
@@ -53,6 +56,19 @@ public class AdventureController : ControllerBase
         var result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);
 
         return Ok(result);
+    }
+
+    [HttpPost("retry-create-adventure/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Retry(Guid adventureId, CancellationToken cancellationToken)
+    {
+        await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand
+        {
+            AdventureId = adventureId
+        },
+        cancellationToken);
+
+        return Ok();
     }
 
     [HttpGet("status/{adventure:guid}")]

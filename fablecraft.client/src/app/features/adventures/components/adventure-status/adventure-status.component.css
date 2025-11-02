@@ -1,0 +1,546 @@
+/* Adventure Status Component - Theme-aware styling */
+
+.status-container {
+  min-height: 100vh;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background effect - changes with theme */
+[data-theme="modern-dark"] .status-container {
+  background: linear-gradient(to bottom right, #0f172a 0%, #581c87 50%, #0f172a 100%);
+}
+
+[data-theme="medieval-fantasy"] .status-container {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.1) 0%, transparent 70%),
+    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+}
+
+/* Medieval texture overlay */
+[data-theme="medieval-fantasy"] .status-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(184, 134, 11, 0.02) 2px,
+      rgba(184, 134, 11, 0.02) 4px
+    );
+  pointer-events: none;
+}
+
+.status-content {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header Section */
+.status-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-xl);
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.header-icon {
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--spacing-md);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+[data-theme="medieval-fantasy"] .header-icon {
+  filter: drop-shadow(var(--shadow-glow));
+}
+
+.status-header h1 {
+  font-size: var(--font-size-4xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  text-shadow: var(--shadow-md);
+}
+
+/* Modern theme gradient text */
+[data-theme="modern-dark"] .status-header h1 {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Medieval theme golden text */
+[data-theme="medieval-fantasy"] .status-header h1 {
+  color: var(--color-primary);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.header-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: var(--spacing-3xl) 0;
+}
+
+.spinner {
+  width: 64px;
+  height: 64px;
+  border: 4px solid var(--border-secondary);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto var(--spacing-lg);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+[data-theme="medieval-fantasy"] .spinner {
+  filter: drop-shadow(var(--shadow-glow));
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  background: var(--status-error-bg);
+  border: 2px solid var(--status-error);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="medieval-fantasy"] .error-state {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.2) 0%, rgba(139, 0, 0, 0.1) 100%);
+}
+
+.error-icon {
+  font-size: var(--font-size-5xl);
+  color: var(--status-error);
+  margin-bottom: var(--spacing-md);
+}
+
+.error-message {
+  color: var(--status-error);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+
+/* Status List */
+.status-list {
+  background: var(--bg-card);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .status-list {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 rgba(184, 134, 11, 0.1);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  border-bottom: 2px solid var(--border-secondary);
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.status-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  transition: all var(--transition-base);
+}
+
+.status-item.status-completed::before {
+  background: var(--status-success);
+}
+
+.status-item.status-failed::before {
+  background: var(--status-error);
+}
+
+.status-item.status-pending::before {
+  background: var(--status-warning);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+[data-theme="medieval-fantasy"] .status-item.status-pending::before {
+  box-shadow: 0 0 10px var(--status-warning);
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--spacing-lg);
+}
+
+.status-icon-wrapper {
+  flex-shrink: 0;
+}
+
+.status-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  font-weight: bold;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+}
+
+.status-content {
+  flex: 1;
+}
+
+.status-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-xs);
+  font-family: var(--font-family-heading);
+}
+
+.status-value {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-right {
+  flex-shrink: 0;
+  margin-left: var(--spacing-md);
+}
+
+/* Status-specific styling */
+.status-completed .status-icon {
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border: 2px solid var(--status-success);
+}
+
+[data-theme="modern-dark"] .status-completed .status-icon {
+  animation: success-pop 0.5s ease-out;
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.status-failed .status-icon {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  border: 2px solid var(--status-error);
+}
+
+[data-theme="modern-dark"] .status-failed .status-icon {
+  animation: shake 0.5s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.status-pending .status-icon {
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border: 2px solid var(--status-warning);
+}
+
+[data-theme="medieval-fantasy"] .status-pending .status-icon {
+  box-shadow: var(--shadow-glow);
+  animation: torchFlicker 3s ease-in-out infinite;
+}
+
+@keyframes torchFlicker {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(218, 165, 32, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(218, 165, 32, 0.6);
+  }
+}
+
+/* Spinner for pending items */
+.status-spinner-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--status-warning-bg);
+  border-top-color: var(--status-warning);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+
+[data-theme="medieval-fantasy"] .pulse-spinner {
+  filter: drop-shadow(0 0 8px var(--status-warning));
+}
+
+/* Action Buttons */
+.action-buttons {
+  margin-top: var(--spacing-2xl);
+}
+
+.failure-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: var(--status-error-bg);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--status-error);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="medieval-fantasy"] .failure-message {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.2) 0%, rgba(139, 0, 0, 0.1) 100%);
+}
+
+.failure-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--status-error);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-2xl);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+}
+
+.failure-text {
+  flex: 1;
+}
+
+.failure-text strong {
+  display: block;
+  color: var(--status-error);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  font-family: var(--font-family-heading);
+}
+
+.failure-text p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+}
+
+/* Button Styles */
+.btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-family-heading);
+}
+
+.btn-icon {
+  font-size: var(--font-size-xl);
+}
+
+/* Modern theme buttons */
+[data-theme="modern-dark"] .btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+[data-theme="modern-dark"] .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-purple);
+  border-color: var(--color-primary-light);
+}
+
+[data-theme="modern-dark"] .btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="modern-dark"] .btn-secondary:hover {
+  border-color: var(--border-primary);
+  transform: translateY(-2px);
+}
+
+/* Medieval theme buttons */
+[data-theme="medieval-fantasy"] .btn-primary {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--text-primary);
+  border: 2px solid var(--color-accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.05em;
+}
+
+[data-theme="medieval-fantasy"] .btn-primary:hover {
+  background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 6px 12px rgba(0, 0, 0, 0.5),
+    var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="medieval-fantasy"] .btn-secondary:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .status-container {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .status-header h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .header-subtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .status-item {
+    padding: var(--spacing-lg) var(--spacing-md);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-left {
+    width: 100%;
+  }
+
+  .status-right {
+    margin-left: 0;
+    margin-top: var(--spacing-md);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .status-name {
+    font-size: var(--font-size-lg);
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .failure-message {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+}

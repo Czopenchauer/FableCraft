@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Clients;
@@ -11,7 +12,7 @@ public enum DataType
 
 public interface IRagBuilder
 {
-    Task<string> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default);
+    Task<string> AddDataAsync(AddDataRequest request);
 
     Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default);
 
@@ -56,12 +57,12 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// <summary>
     ///     Add data to the graph database
     /// </summary>
-    public async Task<string> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default)
+    public async Task<string> AddDataAsync(AddDataRequest request)
     {
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<string>(cancellationToken)
+        return await response.Content.ReadFromJsonAsync<string>()
                ?? string.Empty;
     }
 
@@ -70,9 +71,15 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// </summary>
     public async Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default)
     {
-        DeleteRequest request = new() { EpisodeId = dataId };
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/delete_data", request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var response = await _httpClient.DeleteAsync($"/delete_data?episode_id={Uri.EscapeDataString(dataId)}", cancellationToken);
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // Good to go, data already doesn't exist
+        }
     }
 
     /// <summary>
@@ -131,10 +138,4 @@ public class AddDataRequest
 
     [JsonPropertyName("reference_time")]
     public DateTime? ReferenceTime { get; set; }
-}
-
-public class DeleteRequest
-{
-    [JsonPropertyName("episode_id")]
-    public required string EpisodeId { get; set; }
 }

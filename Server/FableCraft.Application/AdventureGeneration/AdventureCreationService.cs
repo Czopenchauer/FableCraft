@@ -44,15 +44,14 @@ public class AdventureCreationStatus
     {
         AdventureId = adventure.Id;
 
-        var statusDict = new Dictionary<string, Status>
+        var statusDict = new Dictionary<string, string>
         {
-            { "World Description", adventure.ProcessingStatus.ToStatus() },
-            { "Character", adventure.Character.ProcessingStatus.ToStatus() }
+            { "Character", adventure.Character.ProcessingStatus.ToStatus().ToString() }
         };
 
         foreach (var entry in adventure.Lorebook)
         {
-            statusDict.Add(entry.Category, entry.ProcessingStatus.ToStatus());
+            statusDict.Add(entry.Category, entry.ProcessingStatus.ToStatus().ToString());
         }
 
         ComponentStatuses = statusDict;
@@ -60,7 +59,7 @@ public class AdventureCreationStatus
 
     public Guid AdventureId { get; }
 
-    public Dictionary<string, Status> ComponentStatuses { get; }
+    public Dictionary<string, string> ComponentStatuses { get; }
 }
 
 public interface IAdventureCreationService
@@ -134,7 +133,6 @@ internal class AdventureCreationService : IAdventureCreationService
             Name = adventureDto.Name,
             CreatedAt = now,
             LastPlayedAt = null,
-            ProcessingStatus = ProcessingStatus.Pending,
             AuthorNotes = adventureDto.AuthorNotes,
             Character = new Character
             {
@@ -298,8 +296,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var hasPendingOrFailed = adventure.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
-                                 || adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
+        var hasPendingOrFailed = adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
                                  || adventure.Lorebook.Any(x => x.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed);
 
         if (!hasPendingOrFailed)
@@ -331,7 +328,9 @@ internal class AdventureCreationService : IAdventureCreationService
 
         try
         {
-            await _ragBuilder.DeleteDataAsync(adventure.Id.ToString(), cancellationToken);
+            var tasks = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.CharacterId])
+                .Select(id => _ragBuilder.DeleteDataAsync(id.ToString(), cancellationToken));
+            await Task.WhenAll(tasks);
         }
         catch (Exception ex)
         {

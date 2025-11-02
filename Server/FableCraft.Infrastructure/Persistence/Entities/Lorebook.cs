@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Adventure : IKnowledgeGraphEntity, IEntity
+public class Adventure : IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -14,11 +14,6 @@ public class Adventure : IKnowledgeGraphEntity, IEntity
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset? LastPlayedAt { get; init; }
-
-    public ProcessingStatus ProcessingStatus { get; init; }
-
-    [MaxLength(64)]
-    public string? KnowledgeGraphNodeId { get; init; }
 
     [MaxLength(5000)]
     public required string? AuthorNotes { get; init; }

@@ -183,7 +183,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (status) => {
-          this.router.navigate(['/']);
+          // Navigate to the status screen to monitor progress
+          this.router.navigate(['/adventures/status', status.adventureId]);
         },
         error: (error) => {
           console.error('Error creating adventure:', error);

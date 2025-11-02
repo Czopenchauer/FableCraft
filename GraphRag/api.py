@@ -2,11 +2,13 @@
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
+from enum import Enum
 from typing import Optional
+from uuid import uuid4
 
 import fastapi
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -62,6 +64,17 @@ logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+# In-memory task tracking (consider using Redis for production)
+task_store = {}
+
+
 class AddDataRequest(BaseModel):
     episode_type: str
     description: str
@@ -99,6 +112,16 @@ class EpisodeResponse(BaseModel):
     created_at: datetime
     valid_at: datetime
     entity_edges: list[str]
+
+
+class TaskStatusResponse(BaseModel):
+    task_id: str
+    episode_id: str
+    status: TaskStatus
+    message: Optional[str] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    error: Optional[str] = None
 
 
 def build_graph_client() -> Graphiti:
@@ -147,18 +170,65 @@ async def search(request: SearchRequest):
         await client.close()
 
 
-@app.post("/add", status_code=status.HTTP_201_CREATED)
-async def add_data(data: AddDataRequest):
-    """Endpoint to add data to the graph database
+async def process_episode_addition(
+    task_id: str,
+    episode_type: EpisodeType,
+    description: str,
+    content: str,
+    node_id: str,
+    group_id: str,
+    reference_time: datetime
+):
+    """Background task to process episode addition sequentially"""
+    # Update status to processing
+    task_store[task_id]["status"] = TaskStatus.PROCESSING
+
+    graphiti = build_graph_client()
+    try:
+        result = await graphiti.add_episode(
+            name=description,
+            episode_body=content,
+            source=episode_type,
+            uuid=node_id,
+            source_description=description,
+            reference_time=reference_time,
+            group_id=group_id
+        )
+        logger.info(f"Successfully added episode {result.episode.uuid} in background")
+
+        # Update status to completed
+        task_store[task_id]["status"] = TaskStatus.COMPLETED
+        task_store[task_id]["message"] = f"Episode {result.episode.uuid} added successfully"
+        task_store[task_id]["completed_at"] = datetime.now()
+
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error adding episode in background: {str(e)}")
+
+        # Update status to failed
+        task_store[task_id]["status"] = TaskStatus.FAILED
+        task_store[task_id]["error"] = f"{type(e).__name__}: {str(e)}"
+        task_store[task_id]["completed_at"] = datetime.now()
+
+    finally:
+        await graphiti.close()
+
+
+@app.post("/add", status_code=status.HTTP_202_ACCEPTED)
+async def add_data(data: AddDataRequest, background_tasks: BackgroundTasks):
+    """Endpoint to add data to the graph database as a background task
 
     Request body should contain:
     - episode_type: str (one of: message, event, action, narration, etc.)
     - description: str (brief description of the episode)
     - content: str (the actual content to be added)
-    - reference_time: str (optional, timestamp for the episode)
-    """
+    - group_id: str (group identifier for the episode)
+    - node_id: str (unique identifier for the episode)
+    - reference_time: datetime (optional, timestamp for the episode)
 
-    graphiti = build_graph_client()
+    Note: Episodes are processed sequentially in the background.
+    The endpoint returns immediately with a 202 Accepted status.
+    Returns a task_id that can be used to check the status at /task/{task_id}
+    """
     try:
         episode_type = EpisodeType.from_str(data.episode_type.lower())
     except KeyError:
@@ -168,29 +238,60 @@ async def add_data(data: AddDataRequest):
             detail=f"Invalid episode_type. Must be one of: {', '.join(valid_types)}"
         )
 
-    try:
-        result = await graphiti.add_episode(
-            name=data.description,
-            episode_body=data.content,
-            source=episode_type,
-            uuid=data.node_id,
-            source_description=data.description,
-            reference_time=data.reference_time or datetime.now(),
-            group_id=data.group_id
-        )
+    # Generate unique task ID
+    task_id = str(uuid4())
 
-        return result.episode.uuid
+    # Create task tracking entry
+    task_store[task_id] = {
+        "task_id": task_id,
+        "episode_id": data.node_id,
+        "status": TaskStatus.PENDING,
+        "created_at": datetime.now(),
+        "completed_at": None,
+        "message": None,
+        "error": None
+    }
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"{type(e).__name__}: Error adding data: {str(e)}")
+    # Add the episode processing to background tasks
+    background_tasks.add_task(
+        process_episode_addition,
+        task_id=task_id,
+        episode_type=episode_type,
+        description=data.description,
+        content=data.content,
+        node_id=data.node_id,
+        group_id=data.group_id,
+        reference_time=data.reference_time or datetime.now()
+    )
+
+    return {
+        "message": "Episode queued for processing",
+        "task_id": task_id,
+        "episode_id": data.node_id,
+        "status": "accepted"
+    }
+
+
+@app.get("/task/{task_id}", response_model=TaskStatusResponse)
+async def get_task_status(task_id: str):
+    """Endpoint to check the status of a background task
+
+    Returns:
+    - task_id: The unique task identifier
+    - episode_id: The episode ID being processed
+    - status: Current status (pending, processing, completed, failed)
+    - message: Success message if completed
+    - error: Error message if failed
+    - created_at: When the task was created
+    - completed_at: When the task completed (if applicable)
+    """
+    if task_id not in task_store:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add data: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task {task_id} not found"
         )
-    finally:
-        await graphiti.close()
+
+    return TaskStatusResponse(**task_store[task_id])
 
 
 @app.get("/episode/{episode_id}", response_model=EpisodeResponse)
