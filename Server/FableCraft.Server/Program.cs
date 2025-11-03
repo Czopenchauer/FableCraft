@@ -1,6 +1,5 @@
 using FableCraft.Application;
 using FableCraft.Infrastructure;
-using FableCraft.Infrastructure.Persistence.Cosmos;
 using FableCraft.ServiceDefaults;
 
 using Serilog;
@@ -18,7 +17,6 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.AddAzureCosmosDb();
 
 WebApplication app = builder.Build();
 

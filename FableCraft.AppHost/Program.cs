@@ -12,8 +12,6 @@ IResourceBuilder<PostgresDatabaseResource> serverDatabase = builder
     .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
-var cosmosDb = builder.AddCosmosDb();
-
 IResourceBuilder<ContainerResource> neo4j = builder
     .AddContainer("fablecraft-neo4j", "neo4j", "community")
     .WithVolume("neo4j-data", "/data")
@@ -56,7 +54,6 @@ IResourceBuilder<PythonAppResource> graphRagApi = builder
 IResourceBuilder<ProjectResource> server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithOtlpExporter()
-    .WithReference(cosmosDb)
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
     .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)

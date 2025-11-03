@@ -131,66 +131,45 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         CancellationToken cancellationToken)
         where TEntity : class, IKnowledgeGraphEntity, IEntity
     {
-        if (entity.ProcessingStatus == ProcessingStatus.Completed)
+        switch (entity.ProcessingStatus)
         {
-            return;
-        }
-
-        if (entity.ProcessingStatus == ProcessingStatus.InProgress)
-        {
-            try
-            {
-                var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
-
-                await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
-                logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
-                    typeof(TEntity).Name,
-                    entity.Id,
-                    knowledgeGraphId);
-            }
-            catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
-            {
+            case ProcessingStatus.Completed:
                 return;
-            }
-            catch (Exception e)
-            {
-                logger.Error(e,
-                    "Failed to resume processing of {EntityType} {EntityId} which was InProgress",
-                    typeof(TEntity).Name,
-                    entity.Id);
-                await SetAsFailed(entity, cancellationToken);
-                throw;
-            }
-        }
-
-        var pipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions
-            {
-                ShouldHandle = new PredicateBuilder()
-                    .Handle<HttpRequestException>()
-                    .Handle<TaskCanceledException>()
-                    .Handle<TimeoutException>(),
-                MaxRetryAttempts = MaxRetryAttempts,
-                Delay = TimeSpan.FromSeconds(2),
-                BackoffType = DelayBackoffType.Exponential,
-                OnRetry = args =>
+            case ProcessingStatus.InProgress:
+                try
                 {
-                    logger.Warning(
-                        "Retry {AttemptNumber} of {MaxRetryAttempts} for {EntityType} {EntityId} due to {ExceptionType}: {ExceptionMessage}",
-                        args.AttemptNumber + 1,
-                        MaxRetryAttempts,
+                    var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
+
+                    await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+                    logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                         typeof(TEntity).Name,
                         entity.Id,
-                        args.Outcome.Exception?.GetType().Name,
-                        args.Outcome.Exception?.Message);
-                    return ValueTask.CompletedTask;
+                        knowledgeGraphId);
                 }
-            })
-            .Build();
+                catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return;
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e,
+                        "Failed to resume processing of {EntityType} {EntityId} which was InProgress",
+                        typeof(TEntity).Name,
+                        entity.Id);
+                    await SetAsFailed(entity, cancellationToken);
+                    throw;
+                }
+
+                break;
+            case ProcessingStatus.Failed:
+                throw new InvalidOperationException(
+                    $"{typeof(TEntity).Name} {entity.Id} is in Failed state. Retry the operation to reprocess.");
+        }
 
         try
         {
-            _ = await pipeline.ExecuteAsync(async token => await addDataAction());
+            // Task cancellation is not supported in upstream API
+            _ = await addDataAction();
             logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
 
             await SetAsInProgress(entity, CancellationToken.None);
