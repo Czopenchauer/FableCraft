@@ -52,7 +52,7 @@ public class AdventureCreationStatus
         var statusDict = new Dictionary<string, string>();
         foreach (var entry in adventure.Lorebook)
         {
-            statusDict.Add(entry.Category, entry.ProcessingStatus.ToStatus().ToString());
+            statusDict.Add(entry.Category, entry.ToStatus().ToString());
         }
 
         statusDict.Add(nameof(Character), adventure.Character.ProcessingStatus.ToString());
@@ -150,8 +150,6 @@ internal class AdventureCreationService : IAdventureCreationService
                     Description = entry.Description,
                     Content = entry.Content,
                     Category = entry.Category,
-                    ProcessingStatus =
-                        ProcessingStatus.Pending,
                 })
                 .ToList(),
         };
@@ -285,6 +283,7 @@ internal class AdventureCreationService : IAdventureCreationService
         var adventure = await _dbContext.Adventures
             .Include(w => w.Character)
             .Include(w => w.Lorebook)
+            .ThenInclude(lorebookEntry => lorebookEntry.Chunks)
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -293,7 +292,7 @@ internal class AdventureCreationService : IAdventureCreationService
         }
 
         var hasPendingOrFailed = adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
-                                 || adventure.Lorebook.Any(x => x.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed);
+                                 || adventure.Lorebook.Any(x => x.Chunks.Any(c => c.ProcessingStatus is ProcessingStatus.Failed or ProcessingStatus.Pending));
 
         if (!hasPendingOrFailed)
         {

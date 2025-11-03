@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Scene : IKnowledgeGraphEntity, IEntity
+public class Scene : IEntity, IChunkedEntity<SceneChunk>
 {
     [Key]
     public Guid Id { get; init; }
@@ -22,22 +22,9 @@ public class Scene : IKnowledgeGraphEntity, IEntity
     [Column(TypeName = "jsonb")]
     public string? SceneStateJson { get; init; } = null!;
 
-    [MaxLength(64)]
-    public string? KnowledgeGraphNodeId { get; init; }
-
-    public ProcessingStatus ProcessingStatus { get; set; }
-
     public DateTime CreatedAt { get; init; }
 
-    public Guid? PreviousSceneId { get; init; }
-
-    [ForeignKey("PreviousSceneId")]
-    public Scene? PreviousScene { get; init; }
-
-    public Guid? NextSceneId { get; init; }
-
-    [ForeignKey("NextSceneId")]
-    public Scene? NextScene { get; init; }
-
     public List<CharacterAction> CharacterActions { get; init; } = new();
+
+    public List<SceneChunk> Chunks { get; init; } = new();
 }

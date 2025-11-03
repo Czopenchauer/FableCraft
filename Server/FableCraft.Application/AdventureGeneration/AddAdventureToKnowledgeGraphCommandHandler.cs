@@ -1,13 +1,24 @@
 ﻿using System.Net;
+using System.Text.Json;
 
 using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+
+using Polly;
+using Polly.Retry;
 
 using Serilog;
+
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.AdventureGeneration;
 
@@ -20,6 +31,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
     IRagBuilder ragBuilder,
+    IKernelBuilder kernelBuilder,
+    IOptions<AdventureCreationConfig> config,
     ILogger logger)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
@@ -27,175 +40,331 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
-        var adventure = await dbContext.Adventures.Include(x => x.Character).Include(x => x.Lorebook)
+        var adventure = await dbContext.Adventures
+            .Include(x => x.Character)
+            .ThenInclude(character => character.Chunks)
+            .Include(x => x.Lorebook)
+            .ThenInclude(lorebook => lorebook.Chunks)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken: cancellationToken);
 
-        await ResetFailedToPendingAsync(adventure, cancellationToken);
+        // Reset any previously failed chunks to pending to retry processing
+        await ResetFailedToPendingAsync(adventure.Character.Chunks, cancellationToken);
+        await ResetFailedToPendingAsync(adventure.Lorebook.SelectMany(x => x.Chunks).ToList(), cancellationToken);
 
-        await ProcessEntityAsync(
-            adventure.Character,
-            async () => await ragBuilder.AddDataAsync(new AddDataRequest
-            {
-                // TODO: structure character data in a more detailed way
-                Content = $"""
-                           Character name: {adventure.Character.Name}
-                           Character description: {adventure.Character.Description}
-                           Character background: {adventure.Character.Background}
-                           """,
-                EpisodeType = nameof(DataType.Text),
-                Description = "Main Character description",
-                GroupId = adventure.Id.ToString(),
-                TaskId = adventure.Character.Id.ToString(),
-                ReferenceTime = DateTime.UtcNow
-            }),
-            cancellationToken);
-
-        var lorebookToProcess = adventure.Lorebook.OrderBy(x => x.Priority);
-
-        // Cannot be processed in parallel due to how adding new data works in KG
-        foreach (var entry in lorebookToProcess)
+        // Apply chunking
+        foreach (var lorebookEntry in adventure.Lorebook.Where(lorebookEntry => lorebookEntry.Chunks.Count == 0))
         {
-            await ProcessEntityAsync(
-                entry,
-                async () => await ragBuilder.AddDataAsync(new AddDataRequest
-                {
-                    Content = entry.Content,
-                    EpisodeType = nameof(DataType.Text),
-                    Description = entry.Description,
-                    GroupId = adventure.Id.ToString(),
-                    TaskId = entry.Id.ToString(),
-                    ReferenceTime = DateTime.UtcNow
-                }),
+            var chunkedText = await ChunkText(lorebookEntry.Content, cancellationToken);
+            var lorebookChunks = chunkedText.Select(text => new LorebookEntryChunk
+            {
+                RawChunk = text,
+                LorebookEntry = lorebookEntry,
+                ProcessingStatus = ProcessingStatus.Pending,
+                Name = lorebookEntry.Category,
+                Description = lorebookEntry.Description,
+            });
+            dbContext.Chunks.AddRange(lorebookChunks);
+            await dbContext.SaveChangesAsync();
+            foreach (LorebookEntryChunk lorebookChunk in lorebookEntry.Chunks.Where(x => x.ContextualizedChunk != null))
+            {
+                var contextualizeChunk = await ContextualizeChunk(lorebookChunk.RawChunk, lorebookEntry.Content, cancellationToken);
+                await dbContext.Chunks
+                    .OfType<LorebookEntryChunk>()
+                    .Where(c => c.Id == lorebookChunk.Id)
+                    .ExecuteUpdateAsync(
+                        x => x.SetProperty(c => c.ContextualizedChunk, contextualizeChunk),
+                        cancellationToken);
+            }
+        }
+
+        await ProcessChunksAsync(adventure.Id, adventure.Character.Chunks, cancellationToken);
+        foreach (LorebookEntry lorebookEntry in adventure.Lorebook)
+        {
+            await ProcessChunksAsync(adventure.Id, lorebookEntry.Chunks, cancellationToken);
+        }
+        
+        var entireCharacterText = $"""
+                                   Main Character Description: {adventure.Character.Description}
+
+                                   Main Character Background: {adventure.Character.Background}
+                                   """;
+        if (!adventure.Character.Chunks.Any())
+        {
+            var chunkedText = await ChunkText(entireCharacterText,
                 cancellationToken);
+            var characterChunks = chunkedText.Select(text => new CharacterChunk
+            {
+                RawChunk = text,
+                Character = adventure.Character,
+                ProcessingStatus = ProcessingStatus.Pending,
+                Name = $"Main Character, {adventure.Character.Name}",
+                Description = $"Main Character, {adventure.Character.Name}, Description and Background",
+            });
+            dbContext.Chunks.AddRange(characterChunks);
+            await dbContext.SaveChangesAsync();
+        }
+
+        foreach (CharacterChunk characterChunk in adventure.Character.Chunks.Where(x => x.ContextualizedChunk != null))
+        {
+            var contextualizeChunk = await ContextualizeChunk(characterChunk.RawChunk, entireCharacterText, cancellationToken);
+            await dbContext.Chunks
+                .OfType<CharacterChunk>()
+                .Where(c => c.Id == characterChunk.Id)
+                .ExecuteUpdateAsync(
+                    x => x.SetProperty(c => c.ContextualizedChunk, contextualizeChunk),
+                    cancellationToken);
         }
 
         await messageDispatcher.PublishAsync(new AdventureCreatedEvent
-        {
-            AdventureId = adventure.Id
-        },
-        cancellationToken);
+            {
+                AdventureId = adventure.Id
+            },
+            cancellationToken);
     }
 
-    private async Task ResetFailedToPendingAsync(Adventure adventure, CancellationToken cancellationToken)
+    private async Task<List<string>> ChunkText(string text, CancellationToken cancellationToken)
     {
-        var characterEpisode = ragBuilder.GetEpisodeAsync(adventure.Character.Id.ToString(), cancellationToken);
-        var lorebookEpisodes = adventure.Lorebook
-            .Where(x => x.ProcessingStatus == ProcessingStatus.Failed)
+        var kernel = kernelBuilder.WithBase(config.Value.LlmModel).Build();
+        var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddUserMessage("""
+                                   You are a text chunking specialist. Your task is to split the provided text into logical, meaningful chunks while preserving context and readability.
+
+                                   # Instructions
+
+                                   1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
+                                   2. Split the text into chunks that:
+                                      - Maintain semantic coherence (each chunk covers a complete thought or topic)
+                                      - Stay within the specified size limit of 250 characters
+                                      - Preserve context by avoiding mid-sentence breaks when possible
+                                      - Keep related information together
+                                    - avoid modifying text where possible
+                                   - split entire text
+
+                                   3. For each chunk, ensure:
+                                      - It can stand alone with minimal context loss
+                                      - Transitions between chunks are clear
+                                      - Important entities or concepts introduced in earlier chunks are referenced if needed
+
+                                   # Output Format
+
+                                   Return the chunks as a array in json format
+                                   """);
+        chatHistory.AddUserMessage(text);
+        var promptExecutionSettings = new OpenAIPromptExecutionSettings
+        {
+            Temperature = config.Value.Temperature,
+            PresencePenalty = config.Value.PresencePenalty,
+            FrequencyPenalty = config.Value.FrequencyPenalty,
+            MaxTokens = config.Value.MaxTokens,
+            TopP = config.Value.TopP,
+        };
+        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>().Handle<LlmEmptyResponseException>(),
+                MaxRetryAttempts = 1,
+                Delay = TimeSpan.FromSeconds(5)
+            })
+            .Build();
+        var chunkedText = await pipeline.ExecuteAsync(async token =>
+            {
+                var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                    replyInnerContent?.Usage.InputTokenCount,
+                    replyInnerContent?.Usage.OutputTokenCount,
+                    replyInnerContent?.Usage.TotalTokenCount);
+                logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                var sanitized = result.Content?.RemoveThinkingBlock();
+                if (string.IsNullOrEmpty(sanitized))
+                {
+                    throw new LlmEmptyResponseException();
+                }
+
+                return JsonSerializer.Deserialize<List<string>>(sanitized);
+            },
+            cancellationToken);
+
+        return chunkedText!;
+    }
+
+    private async Task<string> ContextualizeChunk(string chunk, string text, CancellationToken cancellationToken)
+    {
+        var kernel = kernelBuilder.WithBase(config.Value.LlmModel).Build();
+        var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddUserMessage($"""
+                                    <document>
+                                    {text}
+                                    </document>
+                                    """);
+        chatHistory.AddUserMessage($"""
+                                    Here is the chunk we want to situate within 
+                                    the whole document:
+                                    <chunk> 
+                                    {chunk}
+                                    </chunk> 
+                                    Please give a short succinct context to situate 
+                                    this chunk within the overall document for the 
+                                    purposes of improving search retrieval of the 
+                                    chunk. If the document has a publication date, 
+                                    please include the date in your context. Answer 
+                                    only with the succinct context and nothing else.
+                                    """);
+        var promptExecutionSettings = new OpenAIPromptExecutionSettings
+        {
+            Temperature = config.Value.Temperature,
+            PresencePenalty = config.Value.PresencePenalty,
+            FrequencyPenalty = config.Value.FrequencyPenalty,
+            MaxTokens = config.Value.MaxTokens,
+            TopP = config.Value.TopP,
+        };
+        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>().Handle<LlmEmptyResponseException>(),
+                MaxRetryAttempts = 1,
+                Delay = TimeSpan.FromSeconds(5)
+            })
+            .Build();
+        var chunkedText = await pipeline.ExecuteAsync(async token =>
+            {
+                var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                    replyInnerContent?.Usage.InputTokenCount,
+                    replyInnerContent?.Usage.OutputTokenCount,
+                    replyInnerContent?.Usage.TotalTokenCount);
+                logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                var sanitized = result.Content?.RemoveThinkingBlock();
+                if (string.IsNullOrEmpty(sanitized))
+                {
+                    throw new LlmEmptyResponseException();
+                }
+
+                return sanitized;
+            },
+            cancellationToken);
+
+        return chunkedText;
+    }
+
+    private async Task ResetFailedToPendingAsync<TEntity>(List<TEntity> chunks, CancellationToken cancellationToken) where TEntity : ChunkBase
+    {
+        var failedChunks = chunks.Where(x => x.ProcessingStatus == ProcessingStatus.Failed).ToList();
+        if (!failedChunks.Any())
+        {
+            return;
+        }
+
+        var committedChunks = failedChunks
             .Select(x => new
             {
-                Lorebook = x,
+                Chunk = x,
                 EpisodeId = Task.Run(() => ragBuilder.GetEpisodeAsync(x.Id.ToString(), cancellationToken), cancellationToken)
             });
 
-        bool pendingChanges = false;
-        try
+        foreach (var chunk in committedChunks)
         {
-            var characterEpisodeResult = await characterEpisode;
-            await SetAsProcessed(adventure.Character, characterEpisodeResult.Uuid, cancellationToken);
-            logger.Debug("Successfully retrieved episode for Character {LorebookEntryId}", adventure.Character.Id);
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            if (adventure.Character.ProcessingStatus == ProcessingStatus.Failed)
-            {
-                adventure.Character.ProcessingStatus = ProcessingStatus.Pending;
-                pendingChanges = true;
-                logger.Debug("Reset Character {CharacterId} from Failed to Pending", adventure.Character.Id);
-            }
-        }
-
-        foreach (var lorebookEpisode in lorebookEpisodes)
-        {
+            var dbSet = dbContext.Chunks.OfType<TEntity>();
             try
             {
-                var lorebookEpisodeResult = await lorebookEpisode.EpisodeId;
-                await SetAsProcessed(lorebookEpisode.Lorebook, lorebookEpisodeResult.Uuid, cancellationToken);
-                logger.Debug("Successfully retrieved episode for LorebookEntry {LorebookEntryId}", lorebookEpisode.Lorebook.Id);
+                var chunkEpisodeId = await chunk.EpisodeId;
+                await dbSet.Where(e => e.Id == chunk.Chunk.Id)
+                    .ExecuteUpdateAsync(
+                        x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Completed)
+                            .SetProperty(e => e.KnowledgeGraphNodeId, chunkEpisodeId.Uuid),
+                        cancellationToken);
+                logger.Debug("Successfully retrieved episode for Chunk {chunkId}", chunk.Chunk.Id);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                var lorebookEntry = lorebookEpisode.Lorebook;
-                if (lorebookEntry.ProcessingStatus == ProcessingStatus.Failed)
-                {
-                    lorebookEntry.ProcessingStatus = ProcessingStatus.Pending;
-                    pendingChanges = true;
-                    logger.Debug("Reset LorebookEntry {LorebookEntryId} from Failed to Pending", lorebookEntry.Id);
-                }
+                await dbSet.Where(e => e.Id == chunk.Chunk.Id)
+                    .ExecuteUpdateAsync(
+                        x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Pending),
+                        cancellationToken);
             }
-        }
-
-        if (pendingChanges)
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 
-    private async Task ProcessEntityAsync<TEntity>(
-        TEntity entity,
-        Func<Task<AddDataResponse>> addDataAction,
+    private async Task ProcessChunksAsync<TEntity>(
+        Guid adventureId,
+        ICollection<TEntity> entities,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity, IEntity
+        where TEntity : ChunkBase
     {
-        switch (entity.ProcessingStatus)
+        foreach (var entity in entities)
         {
-            case ProcessingStatus.Completed:
-                return;
-            case ProcessingStatus.InProgress:
-                try
-                {
-                    var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
-
-                    await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
-                    logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
-                        typeof(TEntity).Name,
-                        entity.Id,
-                        knowledgeGraphId);
-                }
-                catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
-                {
+            switch (entity.ProcessingStatus)
+            {
+                case ProcessingStatus.Completed:
                     return;
-                }
-                catch (Exception e)
+                case ProcessingStatus.InProgress:
+                    try
+                    {
+                        var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
+
+                        await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+                        logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
+                            typeof(TEntity).Name,
+                            entity.Id,
+                            knowledgeGraphId);
+                    }
+                    catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error(e,
+                            "Failed to resume processing of {EntityType} {EntityId} which was InProgress",
+                            typeof(TEntity).Name,
+                            entity.Id);
+                        await SetAsFailed(entity, cancellationToken);
+                        throw;
+                    }
+
+                    break;
+                case ProcessingStatus.Failed:
+                    throw new InvalidOperationException(
+                        $"{typeof(TEntity).Name} {entity.Id} is in Failed state. Retry the operation to reprocess.");
+            }
+
+            try
+            {
+                // Task cancellation is not supported in upstream API
+                _ = await ragBuilder.AddDataAsync(new AddDataRequest
                 {
-                    logger.Error(e,
-                        "Failed to resume processing of {EntityType} {EntityId} which was InProgress",
-                        typeof(TEntity).Name,
-                        entity.Id);
-                    await SetAsFailed(entity, cancellationToken);
-                    throw;
-                }
+                    Content = entity.ContextualizedChunk!,
+                    EpisodeType = nameof(DataType.Text),
+                    Description = entity.Description,
+                    GroupId = adventureId.ToString(),
+                    TaskId = entity.Id.ToString(),
+                    ReferenceTime = DateTime.UtcNow
+                });
+                logger.Debug("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
 
-                break;
-            case ProcessingStatus.Failed:
-                throw new InvalidOperationException(
-                    $"{typeof(TEntity).Name} {entity.Id} is in Failed state. Retry the operation to reprocess.");
-        }
+                await SetAsInProgress(entity, CancellationToken.None);
 
-        try
-        {
-            // Task cancellation is not supported in upstream API
-            _ = await addDataAction();
-            logger.Debug("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
+                var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
-            await SetAsInProgress(entity, CancellationToken.None);
-
-            var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
-
-            await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
-            logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
-                typeof(TEntity).Name,
-                entity.Id,
-                knowledgeGraphId);
-        }
-        catch (Exception ex)
-        {
-            logger.Error(ex,
-                "Failed to add {EntityType} {EntityId} to knowledge graph after {MaxRetryAttempts} attempts",
-                typeof(TEntity).Name,
-                entity.Id,
-                MaxRetryAttempts);
-            await SetAsFailed(entity, cancellationToken);
-            throw;
+                await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+                logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
+                    typeof(TEntity).Name,
+                    entity.Id,
+                    knowledgeGraphId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex,
+                    "Failed to add {EntityType} {EntityId} to knowledge graph after {MaxRetryAttempts} attempts",
+                    typeof(TEntity).Name,
+                    entity.Id,
+                    MaxRetryAttempts);
+                await SetAsFailed(entity, cancellationToken);
+                throw;
+            }
         }
     }
 
@@ -211,7 +380,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             switch (status.Status)
             {
                 case Infrastructure.Clients.TaskStatus.Completed:
-                    logger.Debug("Task {TaskId} completed successfully", taskId);
                     return status.EpisodeId;
 
                 case Infrastructure.Clients.TaskStatus.Failed:
@@ -219,7 +387,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                 case Infrastructure.Clients.TaskStatus.Pending:
                 case Infrastructure.Clients.TaskStatus.Processing:
-                    logger.Debug("Task {TaskId} is {Status}, waiting...", taskId, status.Status);
                     await Task.Delay(TimeSpan.FromSeconds(pollingIntervalSeconds), cancellationToken);
                     break;
             }
@@ -231,7 +398,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     private async Task SetAsInProgress<TEntity>(
         TEntity entity,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity, IEntity
+        where TEntity : ChunkBase
     {
         var dbSet = dbContext.Set<TEntity>();
         try
@@ -240,7 +407,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 .ExecuteUpdateAsync(
                     x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.InProgress),
                     cancellationToken);
-            logger.Debug("Set {EntityType} {EntityId} to InProgress", typeof(TEntity).Name, entity.Id);
         }
         catch (Exception ex)
         {
@@ -256,7 +422,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         TEntity entity,
         string knowledgeGraphNode,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity, IEntity
+        where TEntity : ChunkBase
     {
         var dbSet = dbContext.Set<TEntity>();
         try
@@ -281,7 +447,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     private async Task SetAsFailed<TEntity>(
         TEntity entity,
         CancellationToken cancellationToken)
-        where TEntity : class, IKnowledgeGraphEntity, IEntity
+        where TEntity : ChunkBase
     {
         var dbSet = dbContext.Set<TEntity>();
         try
