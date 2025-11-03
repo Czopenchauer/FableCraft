@@ -24,4 +24,6 @@ internal record LorebookConfig
     public string PromptPath { get; init; } = string.Empty;
 
     public int Priority { get; init; }
+
+    public string GetPromptFileName() => Path.Combine(AppContext.BaseDirectory, "Prompts", "adventure_generation", PromptPath);
 }

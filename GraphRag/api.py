@@ -141,6 +141,7 @@ def build_graph_client() -> Graphiti:
 
     ollama_embedder = OpenAIEmbedder(
         config=OpenAIEmbedderConfig(
+            embedding_dim=4096,
             api_key="abc",
             embedding_model=os.environ.get("EMBEDDING_MODEL"),
             base_url=os.environ.get("EMBEDDING_ENDPOINT"),

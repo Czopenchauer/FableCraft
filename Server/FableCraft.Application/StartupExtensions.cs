@@ -14,6 +14,7 @@ public static class StartupExtensions
         IConfiguration configuration)
     {
         services.AddValidatorsFromAssemblyContaining<AdventureCreationService>();
+        services.AddHostedService<ValidateLorebookPrompt>();
 
         services.Configure<AdventureCreationConfig>(
             configuration.GetSection("FableCraft:AdventureCreationConfig"));

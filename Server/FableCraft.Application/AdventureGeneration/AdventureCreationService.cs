@@ -177,8 +177,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
         try
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "Prompts", "adventure_generation", lorebookConfig.PromptPath);
-            await using var stream = File.OpenRead(path);
+            await using var stream = File.OpenRead(lorebookConfig.GetPromptFileName());
             using var reader = new StreamReader(stream);
             var prompt = await reader.ReadToEndAsync(cancellationToken);
 
