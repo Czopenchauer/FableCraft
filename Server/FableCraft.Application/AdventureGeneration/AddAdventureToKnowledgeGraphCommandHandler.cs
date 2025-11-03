@@ -17,6 +17,7 @@ public class AddAdventureToKnowledgeGraphCommand : IMessage
 }
 
 internal class AddAdventureToKnowledgeGraphCommandHandler(
+    IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
     IRagBuilder ragBuilder,
     ILogger logger)
@@ -67,6 +68,12 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 }),
                 cancellationToken);
         }
+
+        await messageDispatcher.PublishAsync(new AdventureCreatedEvent
+        {
+            AdventureId = adventure.Id
+        },
+        cancellationToken);
     }
 
     private async Task ResetFailedToPendingAsync(Adventure adventure, CancellationToken cancellationToken)

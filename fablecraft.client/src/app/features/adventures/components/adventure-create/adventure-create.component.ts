@@ -376,8 +376,16 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
             error: error.error?.message || 'Generation failed'
           });
 
-          // Continue with next lorebook even if this one failed
-          this.generateNextLorebook(index + 1);
+          // Stop generation on first failure
+          this.isGenerating = false;
+          this.errorMessage = `Failed to generate ${category}: ${error.error?.message || 'Generation failed'}`;
+
+          // Clean up remaining lorebook states
+          this.lorebookGenerationStates.forEach((state, idx) => {
+            if (idx !== index && (state.status === 'pending' || state.status === 'generating')) {
+              this.lorebookGenerationStates.delete(idx);
+            }
+          });
         }
       });
   }
@@ -402,5 +410,9 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
   isLorebookGenerating(index: number): boolean {
     const state = this.lorebookGenerationStates.get(index);
     return state?.status === 'generating' || state?.status === 'pending';
+  }
+
+  isGenerateAllDisabled(): boolean {
+    return this.isGenerating || !this.customInstruction.trim();
   }
 }

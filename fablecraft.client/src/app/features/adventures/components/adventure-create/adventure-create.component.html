@@ -140,7 +140,7 @@
 
           <div class="generation-controls">
             <div class="form-group">
-              <label for="customInstruction" class="form-label">Custom Instructions (Optional)</label>
+              <label for="customInstruction" class="form-label">Custom Instructions *</label>
               <textarea
                 id="customInstruction"
                 [(ngModel)]="customInstruction"
@@ -157,7 +157,7 @@
                 type="button"
                 class="btn btn-primary"
                 (click)="startLorebookGeneration()"
-                [disabled]="isGenerating"
+                [disabled]="isGenerateAllDisabled()"
               >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>

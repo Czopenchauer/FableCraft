@@ -15,6 +15,8 @@ public class Adventure : IEntity
     [MaxLength(5000)]
     public required string FirstSceneGuidance { get; init; }
 
+    public ProcessingStatus ProcessingStatus { get; set; } = ProcessingStatus.Pending;
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset? LastPlayedAt { get; init; }
