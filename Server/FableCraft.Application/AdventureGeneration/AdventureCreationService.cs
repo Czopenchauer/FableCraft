@@ -1,5 +1,8 @@
-﻿using FableCraft.Application.Exceptions;
+﻿using System.Text.Json;
+
+using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
+using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
@@ -242,8 +245,8 @@ internal class AdventureCreationService : IAdventureCreationService
                                    replyInnerContent?.Usage.InputTokenCount,
                                    replyInnerContent?.Usage.OutputTokenCount,
                                    replyInnerContent?.Usage.TotalTokenCount);
-
-                               return result.Content;
+                               _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                               return result.Content?.RemoveThinkingBlock();
                            },
                            cancellationToken)
                        ?? string.Empty;
