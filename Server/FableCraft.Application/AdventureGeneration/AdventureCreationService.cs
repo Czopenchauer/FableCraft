@@ -134,6 +134,7 @@ internal class AdventureCreationService : IAdventureCreationService
         {
             Name = adventureDto.Name,
             CreatedAt = now,
+            FirstSceneGuidance = adventureDto.FirstSceneDescription,
             LastPlayedAt = null,
             AuthorNotes = adventureDto.AuthorNotes,
             Character = new Character
@@ -152,13 +153,6 @@ internal class AdventureCreationService : IAdventureCreationService
                         ProcessingStatus.Pending,
                 })
                 .ToList(),
-            Scenes =
-            [
-                new Scene
-                {
-                    NarrativeText = adventureDto.FirstSceneDescription,
-                }
-            ],
         };
 
         _dbContext.Adventures.Add(world);

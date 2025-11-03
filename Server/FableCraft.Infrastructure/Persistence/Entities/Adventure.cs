@@ -11,6 +11,10 @@ public class Adventure : IEntity
     [MaxLength(200)]
     public string Name { get; init; } = null!;
 
+    [Required]
+    [MaxLength(5000)]
+    public required string FirstSceneGuidance { get; init; }
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset? LastPlayedAt { get; init; }
@@ -22,7 +26,7 @@ public class Adventure : IEntity
 
     public required Character Character { get; init; }
 
-    public required ICollection<LorebookEntry> Lorebook { get; init; }
+    public required List<LorebookEntry> Lorebook { get; init; }
 
-    public required ICollection<Scene> Scenes { get; init; }
+    public List<Scene> Scenes { get; init; } = [];
 }
