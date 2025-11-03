@@ -7,9 +7,6 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 
-using Polly;
-using Polly.Retry;
-
 using Serilog;
 
 namespace FableCraft.Application.AdventureGeneration;
@@ -54,6 +51,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         var lorebookToProcess = adventure.Lorebook.OrderBy(x => x.Priority);
 
+        // Cannot be processed in parallel due to how adding new data works in KG
         foreach (var entry in lorebookToProcess)
         {
             await ProcessEntityAsync(
@@ -87,7 +85,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             var characterEpisodeResult = await characterEpisode;
             await SetAsProcessed(adventure.Character, characterEpisodeResult.Uuid, cancellationToken);
-            logger.Information("Successfully retrieved episode for Character {LorebookEntryId}", adventure.Character.Id);
+            logger.Debug("Successfully retrieved episode for Character {LorebookEntryId}", adventure.Character.Id);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -95,7 +93,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             {
                 adventure.Character.ProcessingStatus = ProcessingStatus.Pending;
                 pendingChanges = true;
-                logger.Information("Reset Character {CharacterId} from Failed to Pending", adventure.Character.Id);
+                logger.Debug("Reset Character {CharacterId} from Failed to Pending", adventure.Character.Id);
             }
         }
 
@@ -105,7 +103,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             {
                 var lorebookEpisodeResult = await lorebookEpisode.EpisodeId;
                 await SetAsProcessed(lorebookEpisode.Lorebook, lorebookEpisodeResult.Uuid, cancellationToken);
-                logger.Information("Successfully retrieved episode for LorebookEntry {LorebookEntryId}", lorebookEpisode.Lorebook.Id);
+                logger.Debug("Successfully retrieved episode for LorebookEntry {LorebookEntryId}", lorebookEpisode.Lorebook.Id);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -114,7 +112,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 {
                     lorebookEntry.ProcessingStatus = ProcessingStatus.Pending;
                     pendingChanges = true;
-                    logger.Information("Reset LorebookEntry {LorebookEntryId} from Failed to Pending", lorebookEntry.Id);
+                    logger.Debug("Reset LorebookEntry {LorebookEntryId} from Failed to Pending", lorebookEntry.Id);
                 }
             }
         }
@@ -141,7 +139,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
                     await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
-                    logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
+                    logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                         typeof(TEntity).Name,
                         entity.Id,
                         knowledgeGraphId);
@@ -170,14 +168,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             // Task cancellation is not supported in upstream API
             _ = await addDataAction();
-            logger.Information("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
+            logger.Debug("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
 
             await SetAsInProgress(entity, CancellationToken.None);
 
             var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
             await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
-            logger.Information("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
+            logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                 typeof(TEntity).Name,
                 entity.Id,
                 knowledgeGraphId);
@@ -206,7 +204,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             switch (status.Status)
             {
                 case Infrastructure.Clients.TaskStatus.Completed:
-                    logger.Information("Task {TaskId} completed successfully", taskId);
+                    logger.Debug("Task {TaskId} completed successfully", taskId);
                     return status.EpisodeId;
 
                 case Infrastructure.Clients.TaskStatus.Failed:
@@ -235,7 +233,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 .ExecuteUpdateAsync(
                     x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.InProgress),
                     cancellationToken);
-            logger.Information("Set {EntityType} {EntityId} to InProgress", typeof(TEntity).Name, entity.Id);
+            logger.Debug("Set {EntityType} {EntityId} to InProgress", typeof(TEntity).Name, entity.Id);
         }
         catch (Exception ex)
         {
