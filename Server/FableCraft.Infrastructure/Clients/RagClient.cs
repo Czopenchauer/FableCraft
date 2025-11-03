@@ -12,7 +12,7 @@ public enum DataType
 
 public interface IRagBuilder
 {
-    Task<AddDataResponse> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default);
+    Task<AddDataResponse> AddDataAsync(AddDataRequest request);
 
     Task<TaskStatusResponse> GetTaskStatusAsync(string taskId, CancellationToken cancellationToken = default);
 
@@ -62,12 +62,12 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// <summary>
     ///     Add data to the graph database (returns immediately with task info)
     /// </summary>
-    public async Task<AddDataResponse> AddDataAsync(AddDataRequest request, CancellationToken cancellationToken = default)
+    public async Task<AddDataResponse> AddDataAsync(AddDataRequest request)
     {
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
+        return await response.Content.ReadFromJsonAsync<AddDataResponse>()
                ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
     }
 
