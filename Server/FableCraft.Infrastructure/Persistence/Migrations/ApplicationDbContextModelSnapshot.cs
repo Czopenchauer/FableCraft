@@ -29,8 +29,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AuthorNotes")
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("CharacterId")
                         .HasColumnType("uuid");
@@ -40,8 +39,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("FirstSceneGuidance")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("LastPlayedAt")
                         .HasColumnType("timestamp with time zone");
@@ -131,8 +129,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -140,8 +137,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
                     b.Property<string>("KnowledgeGraphNodeId")
                         .HasMaxLength(64)

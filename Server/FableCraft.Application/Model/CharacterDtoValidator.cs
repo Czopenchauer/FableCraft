@@ -12,10 +12,10 @@ public class CharacterDtoValidator : AbstractValidator<CharacterDto>
 
         RuleFor(x => x.Description)
             .NotEmpty().WithMessage("Character description is required")
-            .MaximumLength(2000).WithMessage("Character description must not exceed 2000 characters");
+            .MaximumLength(20000).WithMessage("Character description must not exceed 20000 characters");
 
         RuleFor(x => x.Background)
             .NotEmpty().WithMessage("Character background is required")
-            .MaximumLength(5000).WithMessage("Character background must not exceed 5000 characters");
+            .MaximumLength(50000).WithMessage("Character background must not exceed 50000 characters");
     }
 }

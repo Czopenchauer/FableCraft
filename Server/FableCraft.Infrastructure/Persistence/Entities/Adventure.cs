@@ -12,7 +12,6 @@ public class Adventure : IEntity
     public string Name { get; init; } = null!;
 
     [Required]
-    [MaxLength(5000)]
     public required string FirstSceneGuidance { get; init; }
 
     public ProcessingStatus ProcessingStatus { get; set; } = ProcessingStatus.Pending;
@@ -21,7 +20,6 @@ public class Adventure : IEntity
 
     public DateTimeOffset? LastPlayedAt { get; init; }
 
-    [MaxLength(5000)]
     public required string? AuthorNotes { get; init; }
 
     public Guid CharacterId { get; init; }

@@ -13,7 +13,6 @@ public class LorebookEntry : IKnowledgeGraphEntity, IEntity
     public Adventure Adventure { get; init; } = null!;
 
     [Required]
-    [MaxLength(200)]
     public string Description { get; init; } = null!;
 
     public int Priority { get; init; }
@@ -22,7 +21,6 @@ public class LorebookEntry : IKnowledgeGraphEntity, IEntity
     public string Content { get; init; } = null!;
 
     [Required]
-    [MaxLength(100)]
     public string Category { get; init; } = null!;
 
     [MaxLength(64)]
