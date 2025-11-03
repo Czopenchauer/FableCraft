@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class LorebookEntry : IKnowledgeGraphEntity, IEntity
+public class LorebookEntry : IEntity, IChunkedEntity<LorebookEntryChunk>
 {
     [Key]
     public Guid Id { get; init; }
@@ -23,8 +23,5 @@ public class LorebookEntry : IKnowledgeGraphEntity, IEntity
     [Required]
     public string Category { get; init; } = null!;
 
-    [MaxLength(64)]
-    public string? KnowledgeGraphNodeId { get; init; }
-
-    public ProcessingStatus ProcessingStatus { get; set; }
+    public List<LorebookEntryChunk> Chunks { get; init; } = new();
 }

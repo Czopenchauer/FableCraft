@@ -21,24 +21,41 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<CharacterAction> CharacterActions { get; set; }
 
+    public DbSet<ChunkBase> Chunks { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Adventure>()
+        // Configure Table Per Hierarchy (TPH) for chunks
+        modelBuilder.Entity<ChunkBase>()
+            .ToTable("Chunks")
+            .HasDiscriminator<string>("ChunkType")
+            .HasValue<LorebookEntryChunk>("LorebookEntry")
+            .HasValue<CharacterChunk>("Character")
+            .HasValue<SceneChunk>("Scene");
+
+        modelBuilder.Entity<ChunkBase>()
             .Property(c => c.ProcessingStatus)
             .HasConversion<string>();
 
-        modelBuilder.Entity<Character>()
-            .Property(c => c.ProcessingStatus)
-            .HasConversion<string>();
+        // Configure relationships for each chunk type
+        modelBuilder.Entity<LorebookEntryChunk>()
+            .HasOne(c => c.LorebookEntry)
+            .WithMany(e => e.Chunks)
+            .HasForeignKey(c => c.EntityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Scene>()
-            .Property(s => s.ProcessingStatus)
-            .HasConversion<string>();
+        modelBuilder.Entity<CharacterChunk>()
+            .HasOne(c => c.Character)
+            .WithMany(e => e.Chunks)
+            .HasForeignKey(c => c.EntityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<LorebookEntry>()
-            .Property(l => l.ProcessingStatus)
-            .HasConversion<string>();
+        modelBuilder.Entity<SceneChunk>()
+            .HasOne(c => c.Scene)
+            .WithMany(e => e.Chunks)
+            .HasForeignKey(c => c.EntityId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
