@@ -46,16 +46,14 @@ public class AdventureCreationStatus
     {
         AdventureId = adventure.Id;
 
-        var statusDict = new Dictionary<string, string>
-        {
-            { "Character", adventure.Character.ProcessingStatus.ToStatus().ToString() }
-        };
-
+        var statusDict = new Dictionary<string, string>();
         foreach (var entry in adventure.Lorebook)
         {
             statusDict.Add(entry.Category, entry.ProcessingStatus.ToStatus().ToString());
         }
 
+        statusDict.Add(nameof(Character), adventure.Character.ProcessingStatus.ToString());
+        statusDict.Add(nameof(Adventure), adventure.ProcessingStatus.ToString());
         ComponentStatuses = statusDict;
     }
 
@@ -221,7 +219,7 @@ internal class AdventureCreationService : IAdventureCreationService
                 .Build();
 
             var chatHistory = new ChatHistory();
-            chatHistory.AddSystemMessage(prompt);
+            chatHistory.AddUserMessage(prompt);
             chatHistory.AddUserMessage(establishedWorld);
             var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
             var promptExecutionSettings = new OpenAIPromptExecutionSettings
@@ -232,7 +230,7 @@ internal class AdventureCreationService : IAdventureCreationService
                 MaxTokens = _config.Value.MaxTokens,
                 TopP = _config.Value.TopP,
             };
-            _logger.Debug("Generating lorebook for type {type} with prompt: {prompt}", category, prompt);
+            _logger.Debug("Generating lorebook for type {type} with prompt: {prompt}", category, establishedWorld);
             try
             {
                 var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();

@@ -25,6 +25,10 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Adventure>()
+            .Property(c => c.ProcessingStatus)
+            .HasConversion<string>();
+
         modelBuilder.Entity<Character>()
             .Property(c => c.ProcessingStatus)
             .HasConversion<string>();
