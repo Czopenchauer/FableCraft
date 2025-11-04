@@ -52,10 +52,10 @@ public class AdventureCreationStatus
         var statusDict = new Dictionary<string, string>();
         foreach (var entry in adventure.Lorebook)
         {
-            statusDict.Add(entry.Category, entry.ToStatus().ToString());
+            statusDict.Add(entry.Category, entry.GetProcessingStatus().ToStatus().ToString());
         }
 
-        statusDict.Add(nameof(Character), adventure.Character.ProcessingStatus.ToString());
+        statusDict.Add(nameof(Character), adventure.Character.GetProcessingStatus().ToStatus().ToString());
         statusDict.Add(nameof(Adventure), adventure.ProcessingStatus.ToString());
         ComponentStatuses = statusDict;
     }
@@ -143,7 +143,6 @@ internal class AdventureCreationService : IAdventureCreationService
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description,
                 Background = adventureDto.Character.Background,
-                ProcessingStatus = ProcessingStatus.Pending,
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
                 {
@@ -282,6 +281,7 @@ internal class AdventureCreationService : IAdventureCreationService
     {
         var adventure = await _dbContext.Adventures
             .Include(w => w.Character)
+            .ThenInclude(character => character.Chunks)
             .Include(w => w.Lorebook)
             .ThenInclude(lorebookEntry => lorebookEntry.Chunks)
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
@@ -291,7 +291,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var hasPendingOrFailed = adventure.Character.ProcessingStatus is ProcessingStatus.Pending or ProcessingStatus.Failed
+        var hasPendingOrFailed = adventure.Character.Chunks.Any(c => c.ProcessingStatus is ProcessingStatus.Failed or ProcessingStatus.Pending)
                                  || adventure.Lorebook.Any(x => x.Chunks.Any(c => c.ProcessingStatus is ProcessingStatus.Failed or ProcessingStatus.Pending));
 
         if (!hasPendingOrFailed)

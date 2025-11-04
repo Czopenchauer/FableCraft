@@ -27,13 +27,15 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure Table Per Hierarchy (TPH) for chunks
-        modelBuilder.Entity<ChunkBase>()
-            .ToTable("Chunks")
-            .HasDiscriminator<string>("ChunkType")
-            .HasValue<LorebookEntryChunk>("LorebookEntry")
-            .HasValue<CharacterChunk>("Character")
-            .HasValue<SceneChunk>("Scene");
+        modelBuilder.Entity<ChunkBase>(entity =>
+        {
+            entity.ToTable("Chunks");
+            entity.HasKey(e => e.Id);
+            entity.HasDiscriminator<string>("ChunkType")
+                .HasValue<LorebookEntryChunk>("LorebookEntry")
+                .HasValue<CharacterChunk>("Character")
+                .HasValue<SceneChunk>("Scene");
+        });
 
         modelBuilder.Entity<ChunkBase>()
             .Property(c => c.ProcessingStatus)
