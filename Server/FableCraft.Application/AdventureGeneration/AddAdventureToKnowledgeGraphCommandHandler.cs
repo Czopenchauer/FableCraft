@@ -58,13 +58,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             var lorebookChunks = chunkedText.Select(text => new LorebookEntryChunk
             {
                 RawChunk = text,
+                EntityId = lorebookEntry.Id,
                 LorebookEntry = lorebookEntry,
                 ProcessingStatus = ProcessingStatus.Pending,
                 Name = lorebookEntry.Category,
                 Description = lorebookEntry.Description,
             });
             dbContext.Chunks.AddRange(lorebookChunks);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(CancellationToken.None);
             foreach (LorebookEntryChunk lorebookChunk in lorebookEntry.Chunks.Where(x => x.ContextualizedChunk != null))
             {
                 var contextualizeChunk = await ContextualizeChunk(lorebookChunk.RawChunk, lorebookEntry.Content, cancellationToken);
@@ -95,13 +96,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             var characterChunks = chunkedText.Select(text => new CharacterChunk
             {
                 RawChunk = text,
+                EntityId = adventure.CharacterId,
                 Character = adventure.Character,
                 ProcessingStatus = ProcessingStatus.Pending,
                 Name = $"Main Character, {adventure.Character.Name}",
-                Description = $"Main Character, {adventure.Character.Name}, Description and Background",
+                Description = $"Main Character, {adventure.Character.Name}, Description",
             });
             dbContext.Chunks.AddRange(characterChunks);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(CancellationToken.None);
         }
 
         foreach (CharacterChunk characterChunk in adventure.Character.Chunks.Where(x => x.ContextualizedChunk != null))
@@ -148,7 +150,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                                    # Output Format
 
-                                   Return the chunks as a array in json format
+                                   Return the chunks as a array in json format. Respond only with json array and nothing else.
                                    """);
         chatHistory.AddUserMessage(text);
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
@@ -162,8 +164,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>().Handle<LlmEmptyResponseException>(),
-                MaxRetryAttempts = 1,
+                ShouldHandle = new PredicateBuilder().Handle<JsonException>().Handle<LlmEmptyResponseException>(),
+                MaxRetryAttempts = 3,
                 Delay = TimeSpan.FromSeconds(5)
             })
             .Build();
@@ -176,7 +178,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     replyInnerContent?.Usage.OutputTokenCount,
                     replyInnerContent?.Usage.TotalTokenCount);
                 logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                var sanitized = result.Content?.RemoveThinkingBlock();
+                var sanitized = result.Content?.RemoveThinkingBlock().Replace("```json", "").Replace("```", "").Trim();
                 if (string.IsNullOrEmpty(sanitized))
                 {
                     throw new LlmEmptyResponseException();

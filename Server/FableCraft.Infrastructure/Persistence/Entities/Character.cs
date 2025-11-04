@@ -17,11 +17,6 @@ public class Character : IEntity, IChunkedEntity<CharacterChunk>
 
     public required string Background { get; init; }
 
-    [MaxLength(64)]
-    public string? KnowledgeGraphNodeId { get; init; }
-
-    public ProcessingStatus ProcessingStatus { get; set; }
-
     [Column(TypeName = "jsonb")]
     public string? StatsJson { get; init; } = null!;
 
