@@ -12,6 +12,9 @@ public class Chunk : IEntity
 
     public required string RawChunk { get; set; } = null!;
 
+    /// <summary>
+    /// Describe the chunk in the context of the overall text document it belongs to.
+    /// </summary>
     public string? ContextualizedChunk { get; set; }
 
     public string? KnowledgeGraphNodeId { get; init; }

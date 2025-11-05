@@ -22,27 +22,6 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.AdventureGeneration;
 
-public enum Status
-{
-    Pending,
-    Completed,
-    InProgress,
-    Failed
-}
-
-public static class StatusExtensions
-{
-    public static Status ToStatus(this ProcessingStatus processingStatus) =>
-        processingStatus switch
-        {
-            ProcessingStatus.Pending => Status.Pending,
-            ProcessingStatus.Completed => Status.Completed,
-            ProcessingStatus.InProgress => Status.InProgress,
-            ProcessingStatus.Failed => Status.Failed,
-            _ => throw new ArgumentOutOfRangeException(nameof(processingStatus), processingStatus, null)
-        };
-}
-
 public class AdventureCreationStatus
 {
     public required Guid AdventureId { get; init; }
@@ -268,7 +247,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var characterChunksTask = _dbContext.Chunks.Where(x => x.EntityId == adventure.CharacterId).ToListAsync(cancellationToken: cancellationToken);
+        var characterChunks = await _dbContext.Chunks.Where(x => x.EntityId == adventure.CharacterId).ToListAsync(cancellationToken: cancellationToken);
         var lorebookChunks = await _dbContext.Chunks.Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId)).ToListAsync(cancellationToken: cancellationToken);
 
         var status = new Dictionary<string, string>();
@@ -320,7 +299,6 @@ internal class AdventureCreationService : IAdventureCreationService
             }
         }
 
-        var characterChunks = await characterChunksTask;
         if (!characterChunks.Any())
         {
             status.Add("Character", nameof(ProcessingStatus.Pending));
