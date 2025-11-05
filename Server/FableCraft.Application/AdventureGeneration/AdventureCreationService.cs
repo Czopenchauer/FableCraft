@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
@@ -45,24 +46,9 @@ public static class StatusExtensions
 
 public class AdventureCreationStatus
 {
-    public AdventureCreationStatus(Adventure adventure)
-    {
-        AdventureId = adventure.Id;
+    public required Guid AdventureId { get; init; }
 
-        var statusDict = new Dictionary<string, string>();
-        foreach (var entry in adventure.Lorebook)
-        {
-            statusDict.Add(entry.Category, entry.GetProcessingStatus().ToStatus().ToString());
-        }
-
-        statusDict.Add(nameof(Character), adventure.Character.GetProcessingStatus().ToStatus().ToString());
-        statusDict.Add(nameof(Adventure), adventure.ProcessingStatus.ToString());
-        ComponentStatuses = statusDict;
-    }
-
-    public Guid AdventureId { get; }
-
-    public Dictionary<string, string> ComponentStatuses { get; }
+    public required Dictionary<string, string> ComponentStatuses { get; init; }
 }
 
 public interface IAdventureCreationService
@@ -131,7 +117,7 @@ internal class AdventureCreationService : IAdventureCreationService
     {
         var now = _timeProvider.GetUtcNow();
 
-        var world = new Adventure
+        var adventure = new Adventure
         {
             Name = adventureDto.Name,
             CreatedAt = now,
@@ -153,12 +139,12 @@ internal class AdventureCreationService : IAdventureCreationService
                 .ToList(),
         };
 
-        _dbContext.Adventures.Add(world);
+        _dbContext.Adventures.Add(adventure);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = world.Id },
+        await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventure.Id },
             cancellationToken);
 
-        return new AdventureCreationStatus(world);
+        return await GetAdventureCreationStatusAsync(adventure.Id, cancellationToken);
     }
 
     public async Task<string> GenerateLorebookAsync(
@@ -260,30 +246,22 @@ internal class AdventureCreationService : IAdventureCreationService
         }
     }
 
-    public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid worldId,
-        CancellationToken cancellationToken)
-    {
-        var world = await _dbContext.Adventures
-            .Include(w => w.Character)
-            .Include(w => w.Lorebook)
-            .FirstOrDefaultAsync(w => w.Id == worldId, cancellationToken);
-
-        if (world == null)
-        {
-            throw new AdventureNotFoundException(worldId);
-        }
-
-        return new AdventureCreationStatus(world);
-    }
-
-    public async Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId,
+    public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures
             .Include(w => w.Character)
-            .ThenInclude(character => character.Chunks)
             .Include(w => w.Lorebook)
-            .ThenInclude(lorebookEntry => lorebookEntry.Chunks)
+            .Select(x => new
+            {
+                x.Id, CharacterId = x.Character.Id, Lorebooks = x.Lorebook.Select(y =>
+                    new
+                    {
+                        LorebookId = y.Id,
+                        y.Category
+                    }),
+                x.ProcessingStatus
+            })
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -291,20 +269,108 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var hasPendingOrFailed = adventure.Character.Chunks.Any(c => c.ProcessingStatus is ProcessingStatus.Failed or ProcessingStatus.Pending)
-                                 || adventure.Lorebook.Any(x => x.Chunks.Any(c => c.ProcessingStatus is ProcessingStatus.Failed or ProcessingStatus.Pending));
+        var characterChunksTask = _dbContext.Chunks.Where(x => x.EntityId == x.Id).ToListAsync(cancellationToken: cancellationToken);
+        var lorebookChunks = await _dbContext.Chunks.Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.Id)).ToListAsync(cancellationToken: cancellationToken);
 
-        if (!hasPendingOrFailed)
+        var status = new Dictionary<string, string>();
+        if (lorebookChunks.Count == 0)
+        {
+            status = lorebookChunks.Join(
+                    adventure.Lorebooks,
+                    chunk => chunk.EntityId,
+                    lorebook => lorebook.LorebookId,
+                    (chunk, lorebook) => new
+                    {
+                        lorebook.LorebookId,
+                        lorebook.Category,
+                        chunk.ProcessingStatus
+                    })
+                .GroupBy(x => x.Category)
+                .ToDictionary(x => x.Key,
+                    x =>
+                    {
+                        var statuses = x.Select(y => y.ProcessingStatus).ToList();
+                        if (statuses.All(s => s == ProcessingStatus.Completed))
+                        {
+                            return nameof(ProcessingStatus.Completed);
+                        }
+
+                        if (statuses.Any(s => s == ProcessingStatus.Failed))
+                        {
+                            return nameof(ProcessingStatus.Failed);
+                        }
+
+                        if (statuses.Any(s => s == ProcessingStatus.InProgress))
+                        {
+                            return nameof(ProcessingStatus.InProgress);
+                        }
+
+                        return nameof(ProcessingStatus.Pending);
+                    });
+
+            foreach (var se in adventure.Lorebooks.Select(x => x.Category).Except(status.Keys))
+            {
+                status.Add(se, nameof(ProcessingStatus.Pending));
+            }
+        }
+        else
+        {
+            foreach (var se in adventure.Lorebooks.Select(x => x.Category))
+            {
+                status.Add(se, nameof(ProcessingStatus.Pending));
+            }
+        }
+
+        var characterChunks = await characterChunksTask;
+        if (!characterChunks.Any())
+        {
+            status.Add("Character", nameof(ProcessingStatus.Pending));
+        }
+        else
+        {
+            var characterStatus = characterChunks.Select(x => x.ProcessingStatus).ToList();
+            if (characterStatus.All(s => s == ProcessingStatus.Completed))
+            {
+                status.Add("Character", nameof(ProcessingStatus.Completed));
+            }
+            else if (characterStatus.Any(s => s == ProcessingStatus.Failed))
+            {
+                status.Add("Character", nameof(ProcessingStatus.Failed));
+            }
+            else if (characterStatus.Any(s => s == ProcessingStatus.InProgress))
+            {
+                status.Add("Character", nameof(ProcessingStatus.InProgress));
+            }
+            else
+            {
+                status.Add("Character", nameof(ProcessingStatus.Pending));
+            }
+        }
+        
+        status.Add(nameof(Adventure), adventure.ProcessingStatus.ToString());
+        return new AdventureCreationStatus
+        {
+            AdventureId = adventureId,
+            ComponentStatuses = status
+        };
+    }
+
+    public async Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId,
+        CancellationToken cancellationToken)
+    {
+        var adventureStatus = await GetAdventureCreationStatusAsync(adventureId, cancellationToken);
+
+        if (!adventureStatus.ComponentStatuses.ContainsValue(nameof(ProcessingStatus.Failed)))
         {
             _logger.Information("No pending or failed items for adventure {AdventureId}, skipping retry", adventureId);
-            return new AdventureCreationStatus(adventure);
+            return adventureStatus;
         }
 
         _logger.Information("Retrying knowledge graph processing for adventure {AdventureId}", adventureId);
         await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventureId },
             cancellationToken);
 
-        return new AdventureCreationStatus(adventure);
+        return adventureStatus;
     }
 
     public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)

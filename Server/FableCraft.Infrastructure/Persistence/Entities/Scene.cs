@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Scene : IEntity, IChunkedEntity<SceneChunk>
+public class Scene : IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -25,6 +25,4 @@ public class Scene : IEntity, IChunkedEntity<SceneChunk>
     public DateTime CreatedAt { get; init; }
 
     public List<CharacterAction> CharacterActions { get; init; } = new();
-
-    public List<SceneChunk> Chunks { get; init; } = new();
 }

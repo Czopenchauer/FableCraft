@@ -21,43 +21,16 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<CharacterAction> CharacterActions { get; set; }
 
-    public DbSet<ChunkBase> Chunks { get; set; }
+    public DbSet<Chunk> Chunks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<ChunkBase>(entity =>
+        modelBuilder.Entity<Chunk>(p =>
         {
-            entity.ToTable("Chunks");
-            entity.HasKey(e => e.Id);
-            entity.HasDiscriminator<string>("ChunkType")
-                .HasValue<LorebookEntryChunk>("LorebookEntry")
-                .HasValue<CharacterChunk>("Character")
-                .HasValue<SceneChunk>("Scene");
+            p.HasIndex(x => x.EntityId);
+            p.Property(c => c.ProcessingStatus).HasConversion<string>();
         });
-
-        modelBuilder.Entity<ChunkBase>()
-            .Property(c => c.ProcessingStatus)
-            .HasConversion<string>();
-
-        // Configure relationships for each chunk type
-        modelBuilder.Entity<LorebookEntryChunk>()
-            .HasOne(c => c.LorebookEntry)
-            .WithMany(e => e.Chunks)
-            .HasForeignKey(c => c.EntityId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<CharacterChunk>()
-            .HasOne(c => c.Character)
-            .WithMany(e => e.Chunks)
-            .HasForeignKey(c => c.EntityId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<SceneChunk>()
-            .HasOne(c => c.Scene)
-            .WithMany(e => e.Chunks)
-            .HasForeignKey(c => c.EntityId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }
