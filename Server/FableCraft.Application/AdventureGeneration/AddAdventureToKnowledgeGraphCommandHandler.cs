@@ -42,80 +42,92 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     {
         var adventure = await dbContext.Adventures
             .Include(x => x.Character)
-            .ThenInclude(character => character.Chunks)
             .Include(x => x.Lorebook)
-            .ThenInclude(lorebook => lorebook.Chunks)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken: cancellationToken);
 
         // Reset any previously failed chunks to pending to retry processing
-        await ResetFailedToPendingAsync(adventure.Character.Chunks, cancellationToken);
-        await ResetFailedToPendingAsync(adventure.Lorebook.SelectMany(x => x.Chunks).ToList(), cancellationToken);
+        var existingCharacterChunks = await dbContext.Chunks.Where(x => x.EntityId == adventure.CharacterId).ToListAsync(cancellationToken: cancellationToken);
+        var existingLorebooksChunks = await dbContext.Chunks
+            .Where(x => adventure.Lorebook.Select(y => y.Id)
+                .Contains(x.EntityId))
+            .ToListAsync(cancellationToken: cancellationToken);
+
+        await ResetFailedToPendingAsync(existingCharacterChunks, cancellationToken);
+        await ResetFailedToPendingAsync(existingLorebooksChunks, cancellationToken);
 
         // Apply chunking
-        foreach (var lorebookEntry in adventure.Lorebook.Where(lorebookEntry => lorebookEntry.Chunks.Count == 0))
+        var lorebookToProcess = adventure.Lorebook.Where(x => existingLorebooksChunks.All(y => y.EntityId != x.Id)).ToList();
+        foreach (var lorebook in lorebookToProcess)
         {
-            var chunkedText = await ChunkText(lorebookEntry.Content, cancellationToken);
-            var lorebookChunks = chunkedText.Select(text => new LorebookEntryChunk
+            var chunkedText = await ChunkText(lorebook.Content, cancellationToken);
+            var lorebookChunks = chunkedText.Select(text => new Chunk
             {
                 RawChunk = text,
-                EntityId = lorebookEntry.Id,
-                LorebookEntry = lorebookEntry,
+                EntityId = lorebook.Id,
                 ProcessingStatus = ProcessingStatus.Pending,
-                Name = lorebookEntry.Category,
-                Description = lorebookEntry.Description,
+                Name = lorebook.Category,
+                Description = lorebook.Description,
             });
             dbContext.Chunks.AddRange(lorebookChunks);
             await dbContext.SaveChangesAsync(CancellationToken.None);
-            foreach (LorebookEntryChunk lorebookChunk in lorebookEntry.Chunks.Where(x => x.ContextualizedChunk != null))
-            {
-                var contextualizeChunk = await ContextualizeChunk(lorebookChunk.RawChunk, lorebookEntry.Content, cancellationToken);
-                await dbContext.Chunks
-                    .OfType<LorebookEntryChunk>()
-                    .Where(c => c.Id == lorebookChunk.Id)
-                    .ExecuteUpdateAsync(
-                        x => x.SetProperty(c => c.ContextualizedChunk, contextualizeChunk),
-                        cancellationToken);
-            }
+            existingLorebooksChunks.AddRange(lorebookChunks);
         }
 
-        await ProcessChunksAsync(adventure.Id, adventure.Character.Chunks, cancellationToken);
-        foreach (LorebookEntry lorebookEntry in adventure.Lorebook)
+        var lorebookChunksGrouped = existingLorebooksChunks
+            .Join(adventure.Lorebook,
+                chunk => chunk.EntityId,
+                lorebook => lorebook.Id,
+                (chunk, lorebook) => new
+                {
+                    LorebookChunk = lorebook,
+                    Chunk = chunk,
+                });
+        foreach (var chunk in lorebookChunksGrouped.Where(x => string.IsNullOrEmpty(x.Chunk.ContextualizedChunk)))
         {
-            await ProcessChunksAsync(adventure.Id, lorebookEntry.Chunks, cancellationToken);
+            var contextualizeChunk = await ContextualizeChunk(chunk.Chunk.RawChunk, chunk.LorebookChunk.Content, cancellationToken);
+            chunk.Chunk.ContextualizedChunk = contextualizeChunk;
+            await dbContext.Chunks
+                .Where(c => c.Id == chunk.Chunk.Id)
+                .ExecuteUpdateAsync(
+                    x => x.SetProperty(c => c.ContextualizedChunk, contextualizeChunk),
+                    cancellationToken);
         }
-        
+
         var entireCharacterText = $"""
                                    Main Character Description: {adventure.Character.Description}
 
                                    Main Character Background: {adventure.Character.Background}
                                    """;
-        if (!adventure.Character.Chunks.Any())
+        if (!existingCharacterChunks.Any())
         {
             var chunkedText = await ChunkText(entireCharacterText,
                 cancellationToken);
-            var characterChunks = chunkedText.Select(text => new CharacterChunk
+            var characterChunks = chunkedText.Select(text => new Chunk
             {
                 RawChunk = text,
                 EntityId = adventure.CharacterId,
-                Character = adventure.Character,
                 ProcessingStatus = ProcessingStatus.Pending,
                 Name = $"Main Character, {adventure.Character.Name}",
                 Description = $"Main Character, {adventure.Character.Name}, Description",
             });
             dbContext.Chunks.AddRange(characterChunks);
             await dbContext.SaveChangesAsync(CancellationToken.None);
+            existingCharacterChunks.AddRange(characterChunks);
         }
 
-        foreach (CharacterChunk characterChunk in adventure.Character.Chunks.Where(x => x.ContextualizedChunk != null))
+        foreach (var characterChunk in existingCharacterChunks.Where(x => string.IsNullOrEmpty(x.ContextualizedChunk)))
         {
             var contextualizeChunk = await ContextualizeChunk(characterChunk.RawChunk, entireCharacterText, cancellationToken);
+            characterChunk.ContextualizedChunk = contextualizeChunk;
             await dbContext.Chunks
-                .OfType<CharacterChunk>()
                 .Where(c => c.Id == characterChunk.Id)
                 .ExecuteUpdateAsync(
                     x => x.SetProperty(c => c.ContextualizedChunk, contextualizeChunk),
                     cancellationToken);
         }
+
+        await ProcessChunksAsync(adventure.Id, existingCharacterChunks, cancellationToken);
+        await ProcessChunksAsync(adventure.Id, lorebookChunksGrouped.Select(x => x.Chunk).ToList(), cancellationToken);
 
         await messageDispatcher.PublishAsync(new AdventureCreatedEvent
             {
@@ -252,7 +264,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         return chunkedText;
     }
 
-    private async Task ResetFailedToPendingAsync<TEntity>(List<TEntity> chunks, CancellationToken cancellationToken) where TEntity : ChunkBase
+    private async Task ResetFailedToPendingAsync(List<Chunk> chunks, CancellationToken cancellationToken)
     {
         var failedChunks = chunks.Where(x => x.ProcessingStatus == ProcessingStatus.Failed).ToList();
         if (!failedChunks.Any())
@@ -261,15 +273,16 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         }
 
         var committedChunks = failedChunks
+            .Where(x => !string.IsNullOrEmpty(x.KnowledgeGraphNodeId))
             .Select(x => new
             {
                 Chunk = x,
-                EpisodeId = Task.Run(() => ragBuilder.GetEpisodeAsync(x.Id.ToString(), cancellationToken), cancellationToken)
+                EpisodeId = Task.Run(() => ragBuilder.GetEpisodeAsync(x.KnowledgeGraphNodeId!.ToString(), cancellationToken), cancellationToken)
             });
 
         foreach (var chunk in committedChunks)
         {
-            var dbSet = dbContext.Chunks.OfType<TEntity>();
+            var dbSet = dbContext.Chunks.OfType<Chunk>();
             try
             {
                 var chunkEpisodeId = await chunk.EpisodeId;
@@ -290,11 +303,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         }
     }
 
-    private async Task ProcessChunksAsync<TEntity>(
+    private async Task ProcessChunksAsync(
         Guid adventureId,
-        ICollection<TEntity> entities,
+        List<Chunk> entities,
         CancellationToken cancellationToken)
-        where TEntity : ChunkBase
     {
         foreach (var entity in entities)
         {
@@ -309,7 +321,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                         await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
                         logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
-                            typeof(TEntity).Name,
+                            nameof(Chunk),
                             entity.Id,
                             knowledgeGraphId);
                     }
@@ -321,7 +333,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     {
                         logger.Error(e,
                             "Failed to resume processing of {EntityType} {EntityId} which was InProgress",
-                            typeof(TEntity).Name,
+                            nameof(Chunk),
                             entity.Id);
                         await SetAsFailed(entity, cancellationToken);
                         throw;
@@ -330,7 +342,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     break;
                 case ProcessingStatus.Failed:
                     throw new InvalidOperationException(
-                        $"{typeof(TEntity).Name} {entity.Id} is in Failed state. Retry the operation to reprocess.");
+                        $"{nameof(Chunk)} {entity.Id} is in Failed state. Retry the operation to reprocess.");
             }
 
             try
@@ -345,7 +357,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     TaskId = entity.Id.ToString(),
                     ReferenceTime = DateTime.UtcNow
                 });
-                logger.Debug("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, typeof(TEntity).Name, entity.Id);
+                logger.Debug("Task {TaskId} queued for {EntityType} {EntityId}", entity.Id, nameof(Chunk), entity.Id);
 
                 await SetAsInProgress(entity, CancellationToken.None);
 
@@ -353,7 +365,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                 await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
                 logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
-                    typeof(TEntity).Name,
+                    nameof(Chunk),
                     entity.Id,
                     knowledgeGraphId);
             }
@@ -361,7 +373,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             {
                 logger.Error(ex,
                     "Failed to add {EntityType} {EntityId} to knowledge graph after {MaxRetryAttempts} attempts",
-                    typeof(TEntity).Name,
+                    nameof(Chunk),
                     entity.Id,
                     MaxRetryAttempts);
                 await SetAsFailed(entity, cancellationToken);
@@ -397,12 +409,11 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         throw new TimeoutException($"Task {taskId} did not complete within the expected time");
     }
 
-    private async Task SetAsInProgress<TEntity>(
-        TEntity entity,
+    private async Task SetAsInProgress(
+        Chunk entity,
         CancellationToken cancellationToken)
-        where TEntity : ChunkBase
     {
-        var dbSet = dbContext.Set<TEntity>();
+        var dbSet = dbContext.Set<Chunk>();
         try
         {
             await dbSet.Where(e => e.Id == entity.Id)
@@ -414,19 +425,18 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             logger.Error(ex,
                 "Failed to update {EntityType} {EntityId} to InProgress",
-                typeof(TEntity).Name,
+                nameof(Chunk),
                 entity.Id);
             throw;
         }
     }
 
-    private async Task SetAsProcessed<TEntity>(
-        TEntity entity,
+    private async Task SetAsProcessed(
+        Chunk entity,
         string knowledgeGraphNode,
         CancellationToken cancellationToken)
-        where TEntity : ChunkBase
     {
-        var dbSet = dbContext.Set<TEntity>();
+        var dbSet = dbContext.Set<Chunk>();
         try
         {
             await dbSet.Where(e => e.Id == entity.Id)
@@ -439,19 +449,18 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             logger.Error(ex,
                 "Failed to update {EntityType} {EntityId} with knowledge graph node {KnowledgeGraphNode}",
-                typeof(TEntity).Name,
+                nameof(Chunk),
                 entity.Id,
                 knowledgeGraphNode);
             throw;
         }
     }
 
-    private async Task SetAsFailed<TEntity>(
-        TEntity entity,
+    private async Task SetAsFailed(
+        Chunk entity,
         CancellationToken cancellationToken)
-        where TEntity : ChunkBase
     {
-        var dbSet = dbContext.Set<TEntity>();
+        var dbSet = dbContext.Set<Chunk>();
         try
         {
             await dbSet.Where(e => e.Id == entity.Id)
@@ -463,7 +472,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             logger.Error(ex,
                 "Failed to update {EntityType} {EntityId} as failed",
-                typeof(TEntity).Name,
+                nameof(Chunk),
                 entity.Id);
             throw;
         }

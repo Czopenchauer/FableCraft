@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class LorebookEntry : IEntity, IChunkedEntity<LorebookEntryChunk>
+public class LorebookEntry : IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -22,6 +22,4 @@ public class LorebookEntry : IEntity, IChunkedEntity<LorebookEntryChunk>
 
     [Required]
     public string Category { get; init; } = null!;
-
-    public List<LorebookEntryChunk> Chunks { get; init; } = new();
 }

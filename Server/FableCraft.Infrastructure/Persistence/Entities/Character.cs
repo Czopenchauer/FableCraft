@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Character : IEntity, IChunkedEntity<CharacterChunk>
+public class Character : IEntity
 {
     [Key]
     public Guid Id { get; init; }
@@ -19,6 +19,4 @@ public class Character : IEntity, IChunkedEntity<CharacterChunk>
 
     [Column(TypeName = "jsonb")]
     public string? StatsJson { get; init; } = null!;
-
-    public List<CharacterChunk> Chunks { get; init; } = new();
 }

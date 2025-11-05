@@ -121,7 +121,7 @@ public class AdventureController : ControllerBase
         {
             var result = await _adventureCreationService.RetryKnowledgeGraphProcessingAsync(adventure, cancellationToken);
 
-            return Ok(result);
+            return RedirectToAction(nameof(GetGenerationStatus), result.AdventureId);
         }
         catch (AdventureNotFoundException)
         {
