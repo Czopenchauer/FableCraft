@@ -138,22 +138,22 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     private async Task<List<string>> ChunkText(string text, CancellationToken cancellationToken)
     {
+        const int maxChunkSize = 250;
         var kernel = kernelBuilder.WithBase(config.Value.LlmModel).Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
-        chatHistory.AddUserMessage("""
+        chatHistory.AddUserMessage($"""
                                    You are a text chunking specialist. Your task is to split the provided text into logical, meaningful chunks while preserving context and readability.
 
                                    # Instructions
-
                                    1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
                                    2. Split the text into chunks that:
                                       - Maintain semantic coherence (each chunk covers a complete thought or topic)
-                                      - Stay within the specified size limit of 250 characters
+                                      - Stay within the specified size limit of {maxChunkSize} tokens
                                       - Preserve context by avoiding mid-sentence breaks when possible
                                       - Keep related information together
-                                    - avoid modifying text where possible
-                                   - split entire text
+                                      - avoid modifying text where possible
+                                      - split entire text
 
                                    3. For each chunk, ensure:
                                       - It can stand alone with minimal context loss
@@ -255,6 +255,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 {
                     throw new LlmEmptyResponseException();
                 }
+
                 logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
                 return sanitized;
             },
@@ -349,7 +350,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 // Task cancellation is not supported in upstream API
                 _ = await ragBuilder.AddDataAsync(new AddDataRequest
                 {
-                    Content = entity.ContextualizedChunk!,
+                    Content = $"""
+                              {entity.ContextualizedChunk}
+                              {entity.RawChunk}
+                              """,
                     EpisodeType = nameof(DataType.Text),
                     Description = entity.Description,
                     GroupId = adventureId.ToString(),
