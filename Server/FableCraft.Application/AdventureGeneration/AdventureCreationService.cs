@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
@@ -269,11 +268,11 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var characterChunksTask = _dbContext.Chunks.Where(x => x.EntityId == x.Id).ToListAsync(cancellationToken: cancellationToken);
-        var lorebookChunks = await _dbContext.Chunks.Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.Id)).ToListAsync(cancellationToken: cancellationToken);
+        var characterChunksTask = _dbContext.Chunks.Where(x => x.EntityId == adventure.CharacterId).ToListAsync(cancellationToken: cancellationToken);
+        var lorebookChunks = await _dbContext.Chunks.Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId)).ToListAsync(cancellationToken: cancellationToken);
 
         var status = new Dictionary<string, string>();
-        if (lorebookChunks.Count == 0)
+        if (lorebookChunks.Count > 0)
         {
             status = lorebookChunks.Join(
                     adventure.Lorebooks,
