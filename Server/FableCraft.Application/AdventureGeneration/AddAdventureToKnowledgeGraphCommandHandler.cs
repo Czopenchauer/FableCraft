@@ -250,13 +250,12 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     replyInnerContent?.Usage.InputTokenCount,
                     replyInnerContent?.Usage.OutputTokenCount,
                     replyInnerContent?.Usage.TotalTokenCount);
-                logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
                 var sanitized = result.Content?.RemoveThinkingBlock();
                 if (string.IsNullOrEmpty(sanitized))
                 {
                     throw new LlmEmptyResponseException();
                 }
-
+                logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
                 return sanitized;
             },
             cancellationToken);
