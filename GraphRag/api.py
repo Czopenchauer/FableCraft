@@ -24,7 +24,10 @@ from graphiti_core.errors import NodeNotFoundError
 from graphiti_core.llm_client import LLMConfig
 from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.nodes import EpisodeType
+from graphiti_core.search.search_config import SearchConfig, EdgeSearchConfig, EdgeSearchMethod, EdgeReranker, \
+    NodeSearchConfig, NodeSearchMethod, NodeReranker
 from graphiti_core.utils.maintenance.graph_data_operations import clear_data
+from graphiti_search_agent import create_graph_search_agent, GraphSearchState
 
 otlpExporter = OTLPSpanExporter()
 processor = BatchSpanProcessor(otlpExporter)
@@ -32,11 +35,8 @@ tracerProvider = TracerProvider()
 tracerProvider.add_span_processor(processor)
 trace.set_tracer_provider(tracerProvider)
 
-
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    graphiti = build_graph_client()
-
+async def lifespan(application: FastAPI):
     try:
         logger.info("Initializing Graphiti and building indices/constraints...")
         await graphiti.build_indices_and_constraints()
@@ -62,6 +62,40 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
+neo4j_uri = os.environ.get('NEO4J_URI', 'bolt://localhost:7687')
+neo4j_user = os.environ.get('NEO4J_USER', 'neo4j')
+neo4j_password = os.environ.get('NEO4J_PASSWORD', 'SuperPassword')
+
+if not neo4j_uri or not neo4j_user or not neo4j_password:
+    raise ValueError('NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set')
+
+llm_config = LLMConfig(
+    api_key=os.environ.get("LLM_API_KEY"),
+    model=os.environ.get("LLM_MODEL"),
+    small_model=os.environ.get("LLM_MODEL"),
+    base_url=os.environ.get("LLM_ENDPOINT"),
+    temperature=1,
+    max_tokens=150000
+)
+
+ollama_embedder = OpenAIEmbedder(
+    config=OpenAIEmbedderConfig(
+        embedding_dim=4096,
+        api_key="abc",
+        embedding_model=os.environ.get("EMBEDDING_MODEL"),
+        base_url=os.environ.get("EMBEDDING_ENDPOINT"),
+    ))
+
+driver = Neo4jDriver(neo4j_uri, neo4j_user, neo4j_password, database="neo4j")
+graphiti = Graphiti(
+    graph_driver=driver,
+    tracer=tracer,
+    trace_span_prefix='graphrag',
+    llm_client=OpenAIGenericClient(config=llm_config),
+    embedder=ollama_embedder,
+    cross_encoder=BGERerankerClient())
+
+agent = create_graph_search_agent(graphiti)
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -97,7 +131,9 @@ class MessageResponse(BaseModel):
 class SearchRequest(BaseModel):
     adventure_id: str
     query: str
-    character_name: Optional[str] = None
+
+class SearchResult(BaseModel):
+    content: str
 
 
 class EpisodeResponse(BaseModel):
@@ -122,51 +158,30 @@ class TaskStatusResponse(BaseModel):
     error: Optional[str] = None
 
 
-def build_graph_client() -> Graphiti:
-    neo4j_uri = os.environ.get('NEO4J_URI', 'bolt://localhost:7687')
-    neo4j_user = os.environ.get('NEO4J_USER', 'neo4j')
-    neo4j_password = os.environ.get('NEO4J_PASSWORD', 'SuperPassword')
-
-    if not neo4j_uri or not neo4j_user or not neo4j_password:
-        raise ValueError('NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set')
-
-    llm_config = LLMConfig(
-        api_key=os.environ.get("LLM_API_KEY"),
-        model=os.environ.get("LLM_MODEL"),
-        small_model=os.environ.get("LLM_MODEL"),
-        base_url=os.environ.get("LLM_ENDPOINT"),
-        temperature=1,
-        max_tokens=150000
-    )
-
-    ollama_embedder = OpenAIEmbedder(
-        config=OpenAIEmbedderConfig(
-            embedding_dim=4096,
-            api_key="abc",
-            embedding_model=os.environ.get("EMBEDDING_MODEL"),
-            base_url=os.environ.get("EMBEDDING_ENDPOINT"),
-        ))
-
-    driver = Neo4jDriver(neo4j_uri, neo4j_user, neo4j_password, database="neo4j")
-    graphiti = Graphiti(
-        graph_driver=driver,
-        tracer=tracer,
-        trace_span_prefix='graphrag',
-        llm_client=OpenAIGenericClient(config=llm_config),
-        embedder=ollama_embedder,
-        cross_encoder=BGERerankerClient())
-    return graphiti
-
 
 @app.post("/search")
 async def search(request: SearchRequest):
     """Endpoint to search the graph database"""
-    client = build_graph_client()
-    try:
-        results = await client.search(request.query, num_results=20)
-        return results
-    finally:
-        await client.close()
+    initial_state = GraphSearchState(
+        user_query=request.query,
+        group_id=request.adventure_id,
+        search_depth=3,
+        current_depth=0,
+        max_search_results_per_round=15,
+        edges=[],
+        nodes=[],
+        communities=[],
+        explored_entities=[],
+        search_queries=[],
+        intermediate_syntheses=[],
+        final_answer="",
+        reflection_feedback=None,
+        needs_regeneration=False,
+        regeneration_count=0
+    )
+
+    result = await agent.ainvoke(initial_state)
+    return SearchResult(content=result["final_answer"])
 
 
 async def process_episode_addition(
@@ -181,7 +196,6 @@ async def process_episode_addition(
     # Update status to processing
     task_store[task_id]["status"] = TaskStatus.PROCESSING
 
-    graphiti = build_graph_client()
     try:
         result = await graphiti.add_episode(
             name=description,
@@ -206,9 +220,6 @@ async def process_episode_addition(
         task_store[task_id]["status"] = TaskStatus.FAILED
         task_store[task_id]["error"] = f"{type(e).__name__}: {str(e)}"
         task_store[task_id]["completed_at"] = datetime.now()
-
-    finally:
-        await graphiti.close()
 
 
 @app.post("/add", status_code=status.HTTP_202_ACCEPTED)
@@ -289,10 +300,9 @@ async def get_task_status(task_id: str):
 @app.get("/episode/{episode_id}", response_model=EpisodeResponse)
 async def get_episode(episode_id: str):
     """Endpoint to retrieve a specific episode by its ID"""
-    client = build_graph_client()
     try:
         from graphiti_core.nodes import EpisodicNode
-        episode = await EpisodicNode.get_by_uuid(client.driver, episode_id)
+        episode = await EpisodicNode.get_by_uuid(graphiti.driver, episode_id)
         return EpisodeResponse(
             uuid=episode.uuid,
             name=episode.name,
@@ -315,16 +325,13 @@ async def get_episode(episode_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve episode: {str(e)}"
         )
-    finally:
-        await client.close()
 
 
 @app.delete("/delete_data")
 async def delete_data(episode_id: str):
     """Endpoint to delete data from the graph database"""
-    client = build_graph_client()
     try:
-        await client.remove_episode(episode_id)
+        await graphiti.remove_episode(episode_id)
     except NodeNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
@@ -336,18 +343,12 @@ async def delete_data(episode_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete data: {str(e)}"
         )
-    finally:
-        await client.close()
 
 
 @app.delete("/clear")
 async def clear():
-    client = build_graph_client()
-    try:
-        await clear_data(client.driver)
-        await client.build_indices_and_constraints()
-    finally:
-        await client.close()
+    await clear_data(graphiti.driver)
+    await graphiti.build_indices_and_constraints()
 
 @app.get("/", response_model=MessageResponse)
 async def root():

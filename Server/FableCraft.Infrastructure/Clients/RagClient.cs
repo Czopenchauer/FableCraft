@@ -25,8 +25,7 @@ public interface IRagBuilder
 
 public interface IRagSearch
 {
-    Task<SearchResult[]> SearchAsync(string adventureId, string query, string? characterName = null,
-        CancellationToken cancellationToken = default);
+    Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default);
 }
 
 internal class RagClient : IRagBuilder, IRagSearch
@@ -41,22 +40,22 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// <summary>
     ///     Search the graph database
     /// </summary>
-    public async Task<SearchResult[]> SearchAsync(string adventureId, string query, string? characterName = null,
-        CancellationToken cancellationToken = default)
+    public async Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default)
     {
         SearchRequest request = new()
         {
             AdventureId = adventureId,
             Query = query,
-            CharacterName = characterName
         };
 
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<SearchResult[]>(cancellationToken)
-               // ReSharper disable once UseCollectionExpression
-               ?? Array.Empty<SearchResult>();
+        return await response.Content.ReadFromJsonAsync<SearchResult>(cancellationToken)
+               ?? new SearchResult
+               {
+                   Content = string.Empty
+               };
     }
 
     /// <summary>
@@ -135,23 +134,8 @@ public class SearchRequest
 
 public class SearchResult
 {
-    [JsonPropertyName("uuid")]
-    public string? Uuid { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
     [JsonPropertyName("content")]
     public string? Content { get; set; }
-
-    [JsonPropertyName("created_at")]
-    public DateTime? CreatedAt { get; set; }
-
-    [JsonPropertyName("group_id")]
-    public string? GroupId { get; set; }
-
-    [JsonPropertyName("source")]
-    public string? Source { get; set; }
 }
 
 public class AddDataRequest

@@ -1,8 +1,14 @@
-﻿uvicorn
+﻿langchain-openai
+langchain-litellm
+litellm
+langchain-core
+langgraph
+uvicorn
 starlette
 fastapi
 pydantic
 python-dotenv
+litellm[proxy]
 
 # OpenTelemetry dependencies
 opentelemetry-sdk
