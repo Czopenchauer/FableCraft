@@ -96,7 +96,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WorldId = table.Column<Guid>(type: "uuid", nullable: true),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
                     NarrativeText = table.Column<string>(type: "text", nullable: false),
                     SceneStateJson = table.Column<string>(type: "jsonb", nullable: true),
@@ -106,10 +105,11 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_Scenes", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Scenes_Adventures_WorldId",
-                        column: x => x.WorldId,
+                        name: "FK_Scenes_Adventures_AdventureId",
+                        column: x => x.AdventureId,
                         principalTable: "Adventures",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -153,9 +153,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 column: "AdventureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Scenes_WorldId",
+                name: "IX_Scenes_AdventureId",
                 table: "Scenes",
-                column: "WorldId");
+                column: "AdventureId");
         }
 
         /// <inheritdoc />

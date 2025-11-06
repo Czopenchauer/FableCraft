@@ -364,18 +364,24 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        try
+        var ids = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.CharacterId]);
+        var chunks = new List<Chunk>();
+        foreach (var guides in ids.Chunk(50))
         {
-            var tasks = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.CharacterId])
-                .Select(id => _ragBuilder.DeleteDataAsync(id.ToString(), cancellationToken));
-            await Task.WhenAll(tasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex,
-                "Failed to delete adventure {adventureId} from knowledge graph.",
-                adventure.Id);
-            throw;
+            chunks = await _dbContext.Chunks.Where(x => guides.Contains(x.Id)).ToListAsync(cancellationToken: cancellationToken);
+            try
+            {
+                var tasks = chunks.Select(chunk => _ragBuilder.DeleteDataAsync(chunk.EntityId.ToString(), cancellationToken));
+                await Task.WhenAll(tasks);
+                chunks.Clear();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex,
+                    "Failed to delete adventure {adventureId} from knowledge graph.",
+                    adventure.Id);
+                throw;
+            }
         }
 
         _dbContext.Adventures.Remove(adventure);

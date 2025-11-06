@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -37,6 +38,23 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
     private const int MaxRetryAttempts = 3;
+
+    private readonly ResiliencePipeline _resiliencePipeline = new ResiliencePipelineBuilder()
+        .AddConcurrencyLimiter(new ConcurrencyLimiterOptions
+        {
+            PermitLimit = 20,
+            QueueLimit = 200,
+        })
+        .AddRetry(new RetryStrategyOptions
+        {
+            ShouldHandle = new PredicateBuilder()
+                .Handle<InvalidCastException>()
+                .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.TooManyRequests)
+                .Handle<LlmEmptyResponseException>(),
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(5)
+        })
+        .Build();
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
@@ -143,27 +161,27 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
         chatHistory.AddUserMessage($"""
-                                   You are a text chunking specialist. Your task is to split the provided text into logical, meaningful chunks while preserving context and readability.
+                                    You are a text chunking specialist. Your task is to split the provided text into logical, meaningful chunks while preserving context and readability.
 
-                                   # Instructions
-                                   1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
-                                   2. Split the text into chunks that:
-                                      - Maintain semantic coherence (each chunk covers a complete thought or topic)
-                                      - Stay within the specified size limit of {maxChunkSize} tokens
-                                      - Preserve context by avoiding mid-sentence breaks when possible
-                                      - Keep related information together
-                                      - avoid modifying text where possible
-                                      - split entire text
+                                    # Instructions
+                                    1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
+                                    2. Split the text into chunks that:
+                                       - Maintain semantic coherence (each chunk covers a complete thought or topic)
+                                       - Stay within the specified size limit of {maxChunkSize} tokens
+                                       - Preserve context by avoiding mid-sentence breaks when possible
+                                       - Keep related information together
+                                       - avoid modifying text where possible
+                                       - split entire text
 
-                                   3. For each chunk, ensure:
-                                      - It can stand alone with minimal context loss
-                                      - Transitions between chunks are clear
-                                      - Important entities or concepts introduced in earlier chunks are referenced if needed
+                                    3. For each chunk, ensure:
+                                       - It can stand alone with minimal context loss
+                                       - Transitions between chunks are clear
+                                       - Important entities or concepts introduced in earlier chunks are referenced if needed
 
-                                   # Output Format
+                                    # Output Format
 
-                                   Return the chunks as a array in json format. Respond only with json array and nothing else.
-                                   """);
+                                    Return the chunks as a array in json format. Respond only with json array and nothing else.
+                                    """);
         chatHistory.AddUserMessage(text);
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
@@ -234,15 +252,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             MaxTokens = config.Value.MaxTokens,
             TopP = config.Value.TopP,
         };
-        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions
-            {
-                ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>().Handle<LlmEmptyResponseException>(),
-                MaxRetryAttempts = 1,
-                Delay = TimeSpan.FromSeconds(5)
-            })
-            .Build();
-        var chunkedText = await pipeline.ExecuteAsync(async token =>
+
+        var chunkedText = await _resiliencePipeline.ExecuteAsync(async token =>
             {
                 var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
                 var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
@@ -351,9 +362,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 _ = await ragBuilder.AddDataAsync(new AddDataRequest
                 {
                     Content = $"""
-                              {entity.ContextualizedChunk}
-                              {entity.RawChunk}
-                              """,
+                               {entity.ContextualizedChunk}
+                               {entity.RawChunk}
+                               """,
                     EpisodeType = nameof(DataType.Text),
                     Description = entity.Description,
                     GroupId = adventureId.ToString(),
