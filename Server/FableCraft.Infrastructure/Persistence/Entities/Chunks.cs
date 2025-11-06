@@ -1,6 +1,6 @@
 ﻿namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public abstract class ChunkBase : IEntity
+public class Chunk : IEntity
 {
     public Guid Id { get; init; }
 
@@ -12,24 +12,12 @@ public abstract class ChunkBase : IEntity
 
     public required string RawChunk { get; set; } = null!;
 
+    /// <summary>
+    /// Describe the chunk in the context of the overall text document it belongs to.
+    /// </summary>
     public string? ContextualizedChunk { get; set; }
 
     public string? KnowledgeGraphNodeId { get; init; }
 
     public ProcessingStatus ProcessingStatus { get; set; }
-}
-
-public class LorebookEntryChunk : ChunkBase
-{
-    public LorebookEntry LorebookEntry { get; init; } = null!;
-}
-
-public class CharacterChunk : ChunkBase
-{
-    public Character Character { get; init; } = null!;
-}
-
-public class SceneChunk : ChunkBase
-{
-    public Scene Scene { get; init; } = null!;
 }
