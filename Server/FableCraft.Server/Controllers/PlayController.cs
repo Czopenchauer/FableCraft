@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FableCraft.Application.Exceptions;
+using FableCraft.Application.NarrativeEngine;
+
+using Microsoft.AspNetCore.Mvc;
 
 namespace FableCraft.Server.Controllers;
 
@@ -6,6 +9,13 @@ namespace FableCraft.Server.Controllers;
 [Route("api/[controller]")]
 public class PlayController : ControllerBase
 {
+    private readonly IGameService _gameService;
+
+    public PlayController(IGameService gameService)
+    {
+        _gameService = gameService;
+    }
+
     /// <summary>
     ///     Submit a player action
     /// </summary>
@@ -17,22 +27,37 @@ public class PlayController : ControllerBase
     }
 
     /// <summary>
-    ///     Redo the last action
+    ///     Delete the last scene
     /// </summary>
     [HttpDelete("delete/{adventureId:guid}")]
     public async Task<ActionResult> DeleteLastScene(Guid adventureId, CancellationToken cancellationToken)
     {
-        // TODO: Implement redo logic
-        return Ok();
+        try
+        {
+            await _gameService.DeleteLastSceneAsync(adventureId, cancellationToken);
+            return NoContent();
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     /// <summary>
-    ///     Regenerate the last response
+    ///     Regenerate the last scene
     /// </summary>
     [HttpPost("regenerate/{adventureId:guid}")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     public async Task<ActionResult> Regenerate(Guid adventureId, CancellationToken cancellationToken)
     {
-        // TODO: Implement regenerate logic
-        return Ok();
+        try
+        {
+            await _gameService.RegenerateAsync(adventureId, cancellationToken);
+            return Accepted();
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }
