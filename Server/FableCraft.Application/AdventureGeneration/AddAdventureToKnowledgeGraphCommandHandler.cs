@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 
@@ -91,6 +92,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             existingLorebooksChunks.AddRange(lorebookChunks);
         }
 
+        Debug.Assert(existingLorebooksChunks.All(x => x.Id != Guid.Empty));
         var lorebookChunksGrouped = existingLorebooksChunks
             .Join(adventure.Lorebook,
                 chunk => chunk.EntityId,
@@ -133,6 +135,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             existingCharacterChunks.AddRange(characterChunks);
         }
 
+        Debug.Assert(existingCharacterChunks.All(x => x.Id != Guid.Empty));
         foreach (var characterChunk in existingCharacterChunks.Where(x => string.IsNullOrEmpty(x.ContextualizedChunk)))
         {
             var contextualizeChunk = await ContextualizeChunk(characterChunk.RawChunk, entireCharacterText, cancellationToken);
