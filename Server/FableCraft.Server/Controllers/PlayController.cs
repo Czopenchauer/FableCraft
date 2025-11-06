@@ -4,7 +4,7 @@ namespace FableCraft.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GameController : ControllerBase
+public class PlayController : ControllerBase
 {
     /// <summary>
     ///     Submit a player action
@@ -19,8 +19,8 @@ public class GameController : ControllerBase
     /// <summary>
     ///     Redo the last action
     /// </summary>
-    [HttpDelete("redo")]
-    public async Task<ActionResult> Redo()
+    [HttpDelete("delete/{adventureId:guid}")]
+    public async Task<ActionResult> DeleteLastScene(Guid adventureId, CancellationToken cancellationToken)
     {
         // TODO: Implement redo logic
         return Ok();
@@ -29,8 +29,8 @@ public class GameController : ControllerBase
     /// <summary>
     ///     Regenerate the last response
     /// </summary>
-    [HttpPost("regenerate")]
-    public async Task<ActionResult> Regenerate()
+    [HttpPost("regenerate/{adventureId:guid}")]
+    public async Task<ActionResult> Regenerate(Guid adventureId, CancellationToken cancellationToken)
     {
         // TODO: Implement regenerate logic
         return Ok();

@@ -10,7 +10,7 @@ public class CharacterAction : IEntity
     [Required]
     public Guid SceneId { get; init; }
 
-    public required Scene Scene { get; init; }
+    public Scene Scene { get; init; }
 
     [Required]
     public required string ActionDescription { get; init; }

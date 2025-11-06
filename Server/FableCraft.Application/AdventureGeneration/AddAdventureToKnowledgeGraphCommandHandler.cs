@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 
+using FableCraft.Application.NarrativeEngine.WelcomeScene;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;

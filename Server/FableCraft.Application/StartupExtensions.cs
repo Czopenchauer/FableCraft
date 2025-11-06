@@ -1,4 +1,5 @@
 ﻿using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.NarrativeEngine.WelcomeScene;
 using FableCraft.Infrastructure;
 
 using FluentValidation;
@@ -21,6 +22,7 @@ public static class StartupExtensions
 
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
+        services.AddMessageHandler<AdventureCreatedEvent, AdventureCreatedEventHandler>();
 
         return services;
     }
