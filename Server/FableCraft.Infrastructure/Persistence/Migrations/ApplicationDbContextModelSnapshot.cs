@@ -200,12 +200,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("WorldId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("WorldId");
+                    b.HasIndex("AdventureId");
 
                     b.ToTable("Scenes");
                 });
@@ -247,7 +244,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure", "Adventure")
                         .WithMany("Scenes")
-                        .HasForeignKey("WorldId");
+                        .HasForeignKey("AdventureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Adventure");
                 });

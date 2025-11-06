@@ -11,7 +11,6 @@ public class Scene : IEntity
     [Required]
     public Guid AdventureId { get; init; }
 
-    [ForeignKey("WorldId")]
     public Adventure? Adventure { get; init; }
 
     public int SequenceNumber { get; init; }
