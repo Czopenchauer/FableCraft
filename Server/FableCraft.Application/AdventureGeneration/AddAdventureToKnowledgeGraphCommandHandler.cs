@@ -406,7 +406,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         const int maxPollingAttempts = 600;
         const int pollingIntervalSeconds = 5;
 
-        for (int attempt = 0; attempt < maxPollingAttempts; attempt++)
+        for (var attempt = 0; attempt < maxPollingAttempts; attempt++)
         {
             var status = await ragBuilder.GetTaskStatusAsync(taskId, cancellationToken);
 

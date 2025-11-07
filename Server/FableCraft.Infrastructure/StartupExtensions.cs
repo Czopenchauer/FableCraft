@@ -21,17 +21,18 @@ public static class StartupExtensions
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
         services.Configure<LlmConfiguration>(configuration.GetSection("FableCraft:Server:LLM"));
 
-        Channel<IMessage> channel = Channel.CreateUnbounded<IMessage>(new UnboundedChannelOptions
+        var channel = Channel.CreateBounded<IMessage>(new BoundedChannelOptions(10_000)
         {
             SingleWriter = false,
             SingleReader = false,
-            AllowSynchronousContinuations = true
+            AllowSynchronousContinuations = true,
+            FullMode = BoundedChannelFullMode.Wait
         });
         services.AddSingleton(channel);
         services.AddHostedService<InMemoryMessageReader>();
         services.AddSingleton<IMessageDispatcher, InMemoryMessageDispatcher>();
 
-        string? connectionString = configuration.GetConnectionString("fablecraftdb");
+        var connectionString = configuration.GetConnectionString("fablecraftdb");
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
             sqlOptions =>
@@ -40,8 +41,8 @@ public static class StartupExtensions
             }));
         services.AddHostedService<MigratorApplier>();
 
-        string? graphApiBaseUrl = configuration.GetConnectionString("graph-rag-api")
-                                  ?? configuration["services:graph-rag-api:graphRagApi:0"];
+        var graphApiBaseUrl = configuration.GetConnectionString("graph-rag-api")
+                              ?? configuration["services:graph-rag-api:graphRagApi:0"];
         ArgumentException.ThrowIfNullOrEmpty(graphApiBaseUrl);
         services.AddHttpClient<IRagBuilder, RagClient>(client =>
         {

@@ -56,7 +56,7 @@ internal class InMemoryMessageReader : BackgroundService
                                 Type messageType = message.GetType();
                                 Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
                                 await using AsyncServiceScope scope = _serviceProvider.CreateAsyncScope();
-                                object handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                                var handler = scope.ServiceProvider.GetRequiredService(handlerType);
                                 MethodInfo? handleMethod =
                                     handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
                                 await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;

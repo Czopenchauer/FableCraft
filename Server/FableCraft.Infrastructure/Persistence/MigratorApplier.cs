@@ -21,7 +21,7 @@ internal class MigratorApplier : IHostedService
     {
         _logger.Information("Starting database migration...");
         using IServiceScope scope = _serviceProvider.CreateScope();
-        ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await dbContext.Database.MigrateAsync(cancellationToken);
         _logger.Information("Database migration completed.");
     }
