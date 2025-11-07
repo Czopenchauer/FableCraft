@@ -102,8 +102,8 @@ export class AdventureService {
    * Generate the first scene for an adventure
    */
   generateFirstScene(adventureId: string): Observable<GameScene> {
-    return this.http.post<GameScene>(
-      `${environment.apiUrl}/api/play/generate-first/${adventureId}`,
+    return this.http.get<GameScene>(
+      `${environment.apiUrl}/api/play/current-scene/${adventureId}`,
       {}
     );
   }

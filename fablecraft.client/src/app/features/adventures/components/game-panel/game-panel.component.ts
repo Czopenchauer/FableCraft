@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
@@ -15,15 +15,19 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   adventureId: string | null = null;
+  adventureName: string = '';
   currentScene: GameScene | null = null;
   isLoading = false;
   isInitialLoad = true;
+  isRegenerating = false;
   error: string | null = null;
+  customAction = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private adventureService: AdventureService
+    private adventureService: AdventureService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -34,7 +38,30 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.loadAdventureName();
     this.loadFirstScene();
+  }
+
+  /**
+   * Load the adventure name
+   */
+  loadAdventureName(): void {
+    if (!this.adventureId) return;
+
+    this.adventureService.getAllAdventures()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (adventures) => {
+          const adventure = adventures.find(a => a.adventureId === this.adventureId);
+          if (adventure) {
+            this.adventureName = adventure.name;
+          }
+        },
+        error: (err) => {
+          console.error('Error loading adventure name:', err);
+          this.adventureName = 'Your Adventure';
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -87,6 +114,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (scene) => {
           this.currentScene = scene;
+          this.customAction = ''; // Reset custom action
         },
         error: (err) => {
           console.error('Error submitting action:', err);
@@ -96,26 +124,50 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle custom action submission
+   */
+  onCustomActionSubmit(): void {
+    if (!this.customAction.trim()) return;
+    this.onChoiceSelected(this.customAction);
+  }
+
+  /**
+   * Handle Enter key press in custom action input
+   */
+  onCustomActionKeyPress(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      this.onCustomActionSubmit();
+    }
+  }
+
+  /**
    * Regenerate the current scene
    */
   onRegenerateScene(): void {
-    if (!this.adventureId || this.isLoading || !this.currentScene) return;
+    if (!this.adventureId || this.isLoading || this.isRegenerating || !this.currentScene) return;
 
-    this.isLoading = true;
+    this.isRegenerating = true;
     this.error = null;
 
     this.adventureService.regenerateScene(this.adventureId)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => {
+          this.isRegenerating = false;
+          this.cdr.detectChanges();
+        })
       )
       .subscribe({
         next: (scene) => {
+          console.log('Regenerated scene received:', scene);
           this.currentScene = scene;
+          this.customAction = ''; // Reset custom action
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error regenerating scene:', err);
           this.error = 'Failed to regenerate the scene. Please try again.';
+          this.cdr.detectChanges();
         }
       });
   }

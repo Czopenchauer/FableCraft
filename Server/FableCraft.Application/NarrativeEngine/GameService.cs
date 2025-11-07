@@ -29,6 +29,8 @@ public class GameScene
 
 public interface IGameService
 {
+    Task<GameScene?> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Regenerates the last scene. Currently only supports regenerating the first scene.
     /// </summary>
@@ -170,6 +172,25 @@ internal class GameService : IGameService
         _logger = logger;
     }
 
+    public async Task<GameScene?> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken)
+    {
+        var currentScene = await _dbContext.Scenes
+            .OrderByDescending(x => x.SequenceNumber)
+            .Include(scene => scene.CharacterActions)
+            .FirstOrDefaultAsync(scene => scene.AdventureId == adventureId, cancellationToken: cancellationToken);
+
+        if (currentScene == null)
+        {
+            return null;
+        }
+
+        return new GameScene
+        {
+            Text = currentScene.NarrativeText,
+            Choices = currentScene.CharacterActions.Select(x => x.ActionDescription).ToList()
+        };
+    }
+
     public async Task<GameScene> RegenerateAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures
@@ -193,24 +214,28 @@ internal class GameService : IGameService
         {
             _logger.Information("Regenerating first scene for adventure {AdventureId}", adventureId);
 
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            try
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                adventure.ProcessingStatus = ProcessingStatus.Pending;
-                adventure.Scenes.Clear();
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    adventure.ProcessingStatus = ProcessingStatus.Pending;
+                    adventure.Scenes.Clear();
+                    await _dbContext.SaveChangesAsync(cancellationToken);
 
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
 
             return await GenerateFirstSceneAsync(adventureId, cancellationToken);
         }
-        
+
         _logger.Warning("Regenerating scenes beyond the first is not yet supported (AdventureId: {AdventureId})", adventureId);
         throw new NotImplementedException("Regenerating scenes beyond the first is not yet supported");
     }
@@ -302,7 +327,7 @@ internal class GameService : IGameService
                         new OpenAIPromptExecutionSettings
                         {
                             MaxTokens = 150000,
-                            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+                            Temperature = 0.7
                         },
                         kernel,
                         token);
@@ -330,23 +355,29 @@ internal class GameService : IGameService
             {
                 NarrativeText = firstScene.Scene,
                 CharacterActions = firstScene.Choices.Select(x => new CharacterAction
-                {
-                    ActionDescription = x
-                }).ToList()
+                    {
+                        ActionDescription = x
+                    })
+                    .ToList(),
+                SequenceNumber = 0
             });
 
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            try
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _dbContext.Adventures.Update(adventure);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    _dbContext.Adventures.Update(adventure);
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
 
             return new GameScene
             {
@@ -356,7 +387,6 @@ internal class GameService : IGameService
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to reach LLM service during pre-check");
             await _dbContext.Adventures.ExecuteUpdateAsync(x => x.SetProperty(y => y.ProcessingStatus, ProcessingStatus.Failed), CancellationToken.None);
             throw;
         }

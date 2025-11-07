@@ -26,7 +26,6 @@
 .game-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: var(--spacing-2xl);
   flex-wrap: wrap;
   gap: var(--spacing-lg);
@@ -65,6 +64,8 @@
   font-family: var(--font-family-heading);
   font-weight: 700;
   margin: 0;
+  flex: 1;
+  text-align: left;
 }
 
 [data-theme="modern-dark"] .page-title {
@@ -273,7 +274,53 @@
 .game-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2xl);
+  gap: var(--spacing-lg);
+  position: relative;
+}
+
+.game-content.regenerating .scene-container,
+.game-content.regenerating .choices-container {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.regenerating-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.spinner-small {
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.regenerating-text {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--bg-card);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .regenerating-text {
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .regenerating-text {
+  font-style: italic;
 }
 
 /* ========== Scene Container ========== */
@@ -307,11 +354,11 @@
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+  text-align: justify;
 }
 
 [data-theme="medieval-fantasy"] .narrative-text {
   font-family: var(--font-family-primary);
-  text-align: justify;
 }
 
 [data-theme="modern-dark"] .narrative-text {
@@ -341,7 +388,7 @@
 /* ========== Choices Container ========== */
 
 .choices-container {
-  padding: var(--spacing-xl);
+  padding: 0;
 }
 
 .choices-title {
@@ -349,7 +396,7 @@
   font-family: var(--font-family-heading);
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
   text-align: center;
 }
 
@@ -364,85 +411,72 @@
   color: var(--color-primary);
 }
 
-.choices-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-/* ========== Choice Button ========== */
-
-.choice-button {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-xl);
+.choices-card {
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  text-align: left;
-  position: relative;
   overflow: hidden;
 }
 
-[data-theme="modern-dark"] .choice-button {
+[data-theme="modern-dark"] .choices-card {
   background: rgba(30, 41, 59, 0.5);
   backdrop-filter: var(--backdrop-blur);
 }
 
-[data-theme="modern-dark"] .choice-button:hover {
-  border-color: rgba(147, 51, 234, 0.5);
-  box-shadow: 0 10px 30px rgba(147, 51, 234, 0.15);
-  transform: translateY(-4px);
-  background: rgba(30, 41, 59, 0.7);
-}
-
-[data-theme="medieval-fantasy"] .choice-button {
+[data-theme="medieval-fantasy"] .choices-card {
   background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
   border-color: var(--color-accent);
   box-shadow: var(--shadow-md);
 }
 
-[data-theme="medieval-fantasy"] .choice-button:hover {
-  border-color: var(--color-primary-light);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-  transform: translateY(-4px);
-  background: linear-gradient(135deg, rgba(72, 46, 31, 0.95) 0%, rgba(55, 34, 26, 0.95) 100%);
-}
+/* ========== Choice Item ========== */
 
-.choice-number {
+.choice-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: left;
+  position: relative;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.choice-item-last {
+  border-bottom: none;
+}
+
+[data-theme="modern-dark"] .choice-item:hover {
+  background: rgba(147, 51, 234, 0.15);
+}
+
+[data-theme="medieval-fantasy"] .choice-item:hover {
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.choice-arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--color-primary);
   flex-shrink: 0;
   transition: all var(--transition-base);
 }
 
-[data-theme="modern-dark"] .choice-number {
-  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-  color: var(--text-primary);
+.choice-item:hover .choice-arrow {
+  transform: translateX(4px);
 }
 
-[data-theme="modern-dark"] .choice-button:hover .choice-number {
-  transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+.choice-item.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-[data-theme="medieval-fantasy"] .choice-number {
-  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: var(--text-primary);
-  border: 2px solid var(--color-accent);
+.choice-item.disabled:hover {
+  background: transparent;
 }
 
-[data-theme="medieval-fantasy"] .choice-button:hover .choice-number {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-glow);
+.choice-item.disabled .choice-arrow {
+  transform: none;
 }
 
 .choice-text {
@@ -453,18 +487,79 @@
   font-family: var(--font-family-primary);
 }
 
-.choice-arrow {
-  width: 24px;
-  height: 24px;
-  color: var(--color-primary);
-  flex-shrink: 0;
-  opacity: 0;
-  transition: all var(--transition-base);
+/* ========== Custom Action Input ========== */
+
+.choice-item-custom {
+  cursor: default;
 }
 
-.choice-button:hover .choice-arrow {
-  opacity: 1;
-  transform: translateX(4px);
+.choice-item-custom:hover {
+  background: transparent;
+}
+
+.custom-action-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  padding: 0;
+}
+
+.custom-action-input::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+.custom-action-input:focus::placeholder {
+  opacity: 0.5;
+}
+
+.custom-action-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.custom-action-submit svg {
+  width: 16px;
+  height: 16px;
+}
+
+[data-theme="modern-dark"] .custom-action-submit {
+  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  color: var(--text-primary);
+}
+
+[data-theme="modern-dark"] .custom-action-submit:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .custom-action-submit {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--text-primary);
+  border: 2px solid var(--color-accent);
+}
+
+[data-theme="medieval-fantasy"] .custom-action-submit:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-glow);
+}
+
+.custom-action-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ========== Responsive Design ========== */
@@ -516,18 +611,17 @@
     font-size: var(--font-size-xl);
   }
 
-  .choice-button {
-    padding: var(--spacing-lg);
-  }
-
-  .choice-number {
-    width: 40px;
-    height: 40px;
-    font-size: var(--font-size-lg);
+  .choice-item {
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 
   .choice-text {
     font-size: var(--font-size-sm);
+  }
+
+  .choice-arrow {
+    width: 18px;
+    height: 18px;
   }
 
   /* Hide decorative elements on mobile */
@@ -561,6 +655,6 @@
   }
 
   .choices-container {
-    padding: var(--spacing-md);
+    padding: 0;
   }
 }

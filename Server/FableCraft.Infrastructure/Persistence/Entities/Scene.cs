@@ -13,7 +13,7 @@ public class Scene : IEntity
 
     public Adventure? Adventure { get; init; }
 
-    public int SequenceNumber { get; init; }
+    public required int SequenceNumber { get; init; }
 
     [Required]
     public required string NarrativeText { get; init; }

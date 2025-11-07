@@ -16,6 +16,19 @@ public class PlayController : ControllerBase
         _gameService = gameService;
     }
 
+    [HttpGet("current-scene/{adventureId:guid}")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetCurrentScene(Guid adventureId, CancellationToken cancellationToken)
+    {
+        var scene = await _gameService.GetCurrentSceneAsync(adventureId, cancellationToken);
+        if (scene == null)
+        {
+            return NotFound();
+        }
+        
+        return Ok(scene);
+    }
+
     /// <summary>
     ///     Submit a player action
     /// </summary>
@@ -52,8 +65,8 @@ public class PlayController : ControllerBase
     {
         try
         {
-            await _gameService.RegenerateAsync(adventureId, cancellationToken);
-            return Accepted();
+            var scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
+            return Ok(scene);
         }
         catch (AdventureNotFoundException)
         {
