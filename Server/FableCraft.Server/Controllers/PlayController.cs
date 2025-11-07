@@ -33,10 +33,24 @@ public class PlayController : ControllerBase
     ///     Submit a player action
     /// </summary>
     [HttpPost("submit")]
-    public async Task<ActionResult> SubmitAction()
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> SubmitAction([FromBody] SubmitActionRequest request, CancellationToken cancellationToken)
     {
-        // TODO: Implement action submission logic
-        return Ok();
+        try
+        {
+            var scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
+            return Ok(scene);
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
