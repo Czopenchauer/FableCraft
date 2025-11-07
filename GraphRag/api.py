@@ -24,8 +24,6 @@ from graphiti_core.errors import NodeNotFoundError
 from graphiti_core.llm_client import LLMConfig
 from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
 from graphiti_core.nodes import EpisodeType
-from graphiti_core.search.search_config import SearchConfig, EdgeSearchConfig, EdgeSearchMethod, EdgeReranker, \
-    NodeSearchConfig, NodeSearchMethod, NodeReranker
 from graphiti_core.utils.maintenance.graph_data_operations import clear_data
 from graphiti_search_agent import create_graph_search_agent, GraphSearchState
 
@@ -135,6 +133,7 @@ class SearchResult(BaseModel):
 
 class BuildCommunitiesRequest(BaseModel):
     group_id: str
+    task_id: str
 
 
 class BuildCommunitiesResponse(BaseModel):
@@ -190,39 +189,41 @@ async def search(request: SearchRequest):
     return SearchResult(content=result["final_answer"])
 
 
-@app.post("/build_communities", response_model=BuildCommunitiesResponse)
-async def build_communities(request: BuildCommunitiesRequest):
-    """Endpoint to build communities for a specific group_id
+@app.post("/build_communities", status_code=status.HTTP_202_ACCEPTED)
+async def build_communities(request: BuildCommunitiesRequest, background_tasks: BackgroundTasks):
+    """Endpoint to build communities for a specific group_id as a background task
 
     Request body should contain:
     - group_id: str (group identifier to build communities for)
+    - task_id: str (unique identifier for the task)
 
-    Returns:
-    - message: Success message
-    - communities_count: Number of communities created
-    - edges_count: Number of community edges created
+    Note: Community building is processed in the background.
+    The endpoint returns immediately with a 202 Accepted status.
+    Returns a task_id that can be used to check the status at /task/{task_id}
     """
-    try:
-        logger.info(f"Building communities for group_id: {request.group_id}")
-        community_nodes, community_edges = await graphiti.build_communities(
-            group_ids=[request.group_id]
-        )
+    # Create task tracking entry
+    task_store[request.task_id] = {
+        "task_id": request.task_id,
+        "episode_id": None,
+        "status": TaskStatus.PENDING,
+        "created_at": datetime.now(),
+        "completed_at": None,
+        "message": None,
+        "error": None
+    }
 
-        communities_count = len(community_nodes)
-        edges_count = len(community_edges)
+    # Add the community building to background tasks
+    background_tasks.add_task(
+        process_community_building,
+        task_id=request.task_id,
+        group_id=request.group_id
+    )
 
-        logger.info(f"Successfully built {communities_count} communities with {edges_count} edges for group_id: {request.group_id}")
-
-        return BuildCommunitiesResponse(
-            communities_count=communities_count,
-            edges_count=edges_count
-        )
-    except Exception as e:
-        logger.error(f"{type(e).__name__}: Error building communities: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to build communities: {str(e)}"
-        )
+    return {
+        "message": "Community building queued for processing",
+        "task_id": request.task_id,
+        "status": "accepted"
+    }
 
 
 async def process_episode_addition(
@@ -256,6 +257,39 @@ async def process_episode_addition(
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error adding episode in background: {str(e)}")
+
+        # Update status to failed
+        task_store[task_id]["status"] = TaskStatus.FAILED
+        task_store[task_id]["error"] = f"{type(e).__name__}: {str(e)}"
+        task_store[task_id]["completed_at"] = datetime.now()
+
+
+async def process_community_building(
+    task_id: str,
+    group_id: str
+):
+    """Background task to process community building"""
+    # Update status to processing
+    task_store[task_id]["status"] = TaskStatus.PROCESSING
+
+    try:
+        logger.info(f"Building communities for group_id: {group_id}")
+        community_nodes, community_edges = await graphiti.build_communities(
+            group_ids=[group_id]
+        )
+
+        communities_count = len(community_nodes)
+        edges_count = len(community_edges)
+
+        logger.info(f"Successfully built {communities_count} communities with {edges_count} edges for group_id: {group_id}")
+
+        # Update status to completed
+        task_store[task_id]["status"] = TaskStatus.COMPLETED
+        task_store[task_id]["message"] = f"Built {communities_count} communities with {edges_count} edges"
+        task_store[task_id]["completed_at"] = datetime.now()
+
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error building communities in background: {str(e)}")
 
         # Update status to failed
         task_store[task_id]["status"] = TaskStatus.FAILED

@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 
@@ -153,7 +155,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         await ProcessChunksAsync(adventure.Id, lorebookChunksGrouped.Select(x => x.Chunk).ToList(), cancellationToken);
         await ProcessChunksAsync(adventure.Id, existingCharacterChunks, cancellationToken);
 
-        await ragBuilder.BuildCommunitiesAsync(adventure.Id.ToString(), cancellationToken);
+        await ragBuilder.BuildCommunitiesAsync(adventure.Id.ToString(), adventure.Id.ToString(), cancellationToken);
+        await WaitForTaskCompletionAsync(adventure.Id.ToString(), cancellationToken);
+
         await messageDispatcher.PublishAsync(new AdventureCreatedEvent
             {
                 AdventureId = adventure.Id
@@ -335,13 +339,13 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 case ProcessingStatus.InProgress:
                     try
                     {
-                        var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
+                        var statusResponse = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
-                        await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+                        await SetAsProcessed(entity, statusResponse.EpisodeId!, cancellationToken);
                         logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                             nameof(Chunk),
                             entity.Id,
-                            knowledgeGraphId);
+                            statusResponse.EpisodeId);
                     }
                     catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
                     {
@@ -378,13 +382,13 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                 await SetAsInProgress(entity, CancellationToken.None);
 
-                var knowledgeGraphId = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
+                var statusResponse = await WaitForTaskCompletionAsync(entity.Id.ToString(), cancellationToken);
 
-                await SetAsProcessed(entity, knowledgeGraphId, cancellationToken);
+                await SetAsProcessed(entity, statusResponse.EpisodeId!, cancellationToken);
                 logger.Debug("Successfully added {EntityType} {EntityId} to knowledge graph with ID {KnowledgeGraphId}",
                     nameof(Chunk),
                     entity.Id,
-                    knowledgeGraphId);
+                    statusResponse.EpisodeId);
             }
             catch (Exception ex)
             {
@@ -399,7 +403,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         }
     }
 
-    private async Task<string> WaitForTaskCompletionAsync(string taskId, CancellationToken cancellationToken)
+    private async Task<TaskStatusResponse> WaitForTaskCompletionAsync(string taskId, CancellationToken cancellationToken)
     {
         const int maxPollingAttempts = 600;
         const int pollingIntervalSeconds = 5;
@@ -411,7 +415,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             switch (status.Status)
             {
                 case Infrastructure.Clients.TaskStatus.Completed:
-                    return status.EpisodeId;
+                    return status;
 
                 case Infrastructure.Clients.TaskStatus.Failed:
                     throw new InvalidOperationException($"Task {taskId} failed: {status.Error}");

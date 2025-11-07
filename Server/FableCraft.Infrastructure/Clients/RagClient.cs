@@ -22,7 +22,7 @@ public interface IRagBuilder
 
     Task ClearAsync(CancellationToken cancellationToken = default);
 
-    Task<BuildCommunitiesResponse> BuildCommunitiesAsync(string groupId, CancellationToken cancellationToken = default);
+    Task<AddDataResponse> BuildCommunitiesAsync(string groupId, string taskId, CancellationToken cancellationToken = default);
 }
 
 public interface IRagSearch
@@ -122,20 +122,21 @@ internal class RagClient : IRagBuilder, IRagSearch
     }
 
     /// <summary>
-    ///     Build communities for a specific group/adventure
+    ///     Build communities for a specific group/adventure (returns immediately with task info)
     /// </summary>
-    public async Task<BuildCommunitiesResponse> BuildCommunitiesAsync(string groupId, CancellationToken cancellationToken = default)
+    public async Task<AddDataResponse> BuildCommunitiesAsync(string groupId, string taskId, CancellationToken cancellationToken = default)
     {
         BuildCommunitiesRequest request = new()
         {
-            GroupId = groupId
+            GroupId = groupId,
+            TaskId = taskId
         };
 
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/build_communities", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<BuildCommunitiesResponse>(cancellationToken)
-               ?? throw new InvalidOperationException("Failed to deserialize BuildCommunitiesResponse");
+        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
     }
 }
 
@@ -248,6 +249,9 @@ public class BuildCommunitiesRequest
 {
     [JsonPropertyName("group_id")]
     public required string GroupId { get; set; }
+
+    [JsonPropertyName("task_id")]
+    public required string TaskId { get; set; }
 }
 
 public class BuildCommunitiesResponse
