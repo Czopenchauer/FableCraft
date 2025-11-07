@@ -419,7 +419,6 @@ internal class GameService : IGameService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        // Get the current (most recent) scene
         var currentScene = adventure.Scenes
             .OrderByDescending(s => s.SequenceNumber)
             .FirstOrDefault();
@@ -430,21 +429,18 @@ internal class GameService : IGameService
             throw new InvalidOperationException("Cannot submit action: adventure has no scenes");
         }
 
-        // Find and validate the selected action
         var selectedAction = currentScene.CharacterActions
             .FirstOrDefault(a => a.ActionDescription == actionText);
 
-        if (selectedAction == null)
+        if (selectedAction != null)
         {
-            _logger.Warning("Action '{ActionText}' not found in scene {SceneId}", actionText, currentScene.Id);
-            throw new InvalidOperationException($"Invalid action: '{actionText}' is not a valid choice for this scene");
+            selectedAction.Selected = true;
         }
 
         var kernel = _kernelBuilder.WithBase().Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
 
-        // Build context from recent scenes (most recent last)
         var recentScenes = adventure.Scenes
             .OrderBy(s => s.SequenceNumber)
             .Select(s => new
@@ -611,7 +607,6 @@ internal class GameService : IGameService
             };
 
             adventure.Scenes.Add(newScene);
-            selectedAction.Selected = true;
             var strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {

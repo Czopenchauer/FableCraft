@@ -37,15 +37,13 @@
     </div>
 
     <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
+    <div *ngIf="isLoading && isInitialLoad" class="loading-state">
       <div class="loading-content">
         <svg class="spinner" [attr.fill]="'none'" viewBox="0 0 24 24">
           <circle class="opacity-25" [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke]="'currentColor'" [attr.stroke-width]="4"></circle>
           <path class="opacity-75" [attr.fill]="'currentColor'" [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"></path>
         </svg>
-        <p class="loading-text">
-          {{ isInitialLoad ? 'Generating your first scene...' : 'Processing your choice...' }}
-        </p>
+        <p class="loading-text">Generating your first scene...</p>
       </div>
     </div>
 
@@ -73,7 +71,7 @@
     </div>
 
     <!-- Game Content -->
-    <div *ngIf="currentScene && !isLoading" class="game-content" [class.regenerating]="isRegenerating">
+    <div *ngIf="currentScene && !isInitialLoad" class="game-content" [class.regenerating]="isRegenerating">
       <!-- Regenerating overlay -->
       <div *ngIf="isRegenerating" class="regenerating-overlay">
         <svg class="spinner-small" [attr.fill]="'none'" viewBox="0 0 24 24">
@@ -97,9 +95,9 @@
           <!-- First 3 predefined choices -->
           <div
             *ngFor="let choice of currentScene.choices.slice(0, 3); let i = index"
-            (click)="!isRegenerating && onChoiceSelected(choice)"
+            (click)="!(isRegenerating || isLoading) && onChoiceSelected(choice)"
             class="choice-item"
-            [class.disabled]="isRegenerating"
+            [class.disabled]="isRegenerating || isLoading"
           >
             <svg class="choice-arrow" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
               <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'"></path>
@@ -108,7 +106,7 @@
           </div>
 
           <!-- Custom action input -->
-          <div class="choice-item choice-item-custom choice-item-last" [class.disabled]="isRegenerating">
+          <div class="choice-item choice-item-custom choice-item-last" [class.disabled]="isRegenerating || isLoading">
             <svg class="choice-arrow" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
               <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'"></path>
             </svg>

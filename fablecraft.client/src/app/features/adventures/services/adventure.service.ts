@@ -110,12 +110,11 @@ export class AdventureService {
 
   /**
    * Submit a player action (choice selection)
-   * Note: This endpoint is not yet implemented in the backend
    */
-  submitAction(adventureId: string, actionDescription: string): Observable<GameScene> {
+  submitAction(adventureId: string, actionText: string): Observable<GameScene> {
     return this.http.post<GameScene>(
       `${environment.apiUrl}/api/play/submit`,
-      { adventureId, actionDescription }
+      { adventureId, actionText }
     );
   }
 

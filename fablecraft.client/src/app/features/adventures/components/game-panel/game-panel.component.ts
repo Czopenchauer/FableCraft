@@ -109,16 +109,22 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.adventureService.submitAction(this.adventureId, choice)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
       )
       .subscribe({
         next: (scene) => {
+          console.log('New scene received:', scene);
           this.currentScene = scene;
           this.customAction = ''; // Reset custom action
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error submitting action:', err);
-          this.error = 'Failed to submit your choice. The action submission endpoint is not yet implemented in the backend.';
+          this.error = 'Failed to submit your choice. Please try again.';
+          this.cdr.detectChanges();
         }
       });
   }
