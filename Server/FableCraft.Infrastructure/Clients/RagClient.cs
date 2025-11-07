@@ -21,6 +21,8 @@ public interface IRagBuilder
     Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default);
 
     Task ClearAsync(CancellationToken cancellationToken = default);
+
+    Task<BuildCommunitiesResponse> BuildCommunitiesAsync(string groupId, CancellationToken cancellationToken = default);
 }
 
 public interface IRagSearch
@@ -117,6 +119,23 @@ internal class RagClient : IRagBuilder, IRagSearch
     {
         HttpResponseMessage response = await _httpClient.DeleteAsync("/clear", cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    ///     Build communities for a specific group/adventure
+    /// </summary>
+    public async Task<BuildCommunitiesResponse> BuildCommunitiesAsync(string groupId, CancellationToken cancellationToken = default)
+    {
+        BuildCommunitiesRequest request = new()
+        {
+            GroupId = groupId
+        };
+
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/build_communities", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<BuildCommunitiesResponse>(cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize BuildCommunitiesResponse");
     }
 }
 
@@ -224,3 +243,19 @@ public class EpisodeResponse
     [JsonPropertyName("entity_edges")]
     public required List<string> EntityEdges { get; set; }
 }
+
+public class BuildCommunitiesRequest
+{
+    [JsonPropertyName("group_id")]
+    public required string GroupId { get; set; }
+}
+
+public class BuildCommunitiesResponse
+{
+    [JsonPropertyName("communities_count")]
+    public int CommunitiesCount { get; set; }
+
+    [JsonPropertyName("edges_count")]
+    public int EdgesCount { get; set; }
+}
+

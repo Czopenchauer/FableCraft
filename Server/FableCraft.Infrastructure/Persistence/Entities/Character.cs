@@ -6,7 +6,7 @@ namespace FableCraft.Infrastructure.Persistence.Entities;
 public class Character : IEntity
 {
     [Key]
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
     [Required]
     [MaxLength(200)]

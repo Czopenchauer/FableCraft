@@ -1,14 +1,104 @@
 <div class="game-panel-container">
-  <div class="placeholder-content">
-    <div class="placeholder-icon">🎮</div>
-    <h1>Game Panel</h1>
-    <p>Welcome to your adventure!</p>
-    <p class="subtitle">The game interface will be implemented here.</p>
-
-    <div class="info-box">
-      <p><strong>Adventure ID:</strong> {{ adventureId }}</p>
+  <div class="game-panel-content">
+    <!-- Header -->
+    <div class="game-header">
+      <button
+        (click)="goToAdventureList()"
+        class="back-button"
+        title="Back to adventures"
+      >
+        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+          <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M10 19l-7-7m0 0l7-7m-7 7h18'"></path>
+        </svg>
+      </button>
+      <h1 class="page-title">Your Adventure</h1>
+      <div class="action-buttons" *ngIf="currentScene && !isLoading">
+        <button
+          (click)="onRegenerateScene()"
+          class="btn-action btn-regenerate"
+          title="Regenerate this scene"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'"></path>
+          </svg>
+          <span>Regenerate</span>
+        </button>
+        <button
+          (click)="onDeleteLastScene()"
+          class="btn-action btn-delete"
+          title="Delete this scene"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'"></path>
+          </svg>
+          <span>Delete</span>
+        </button>
+      </div>
     </div>
 
-    <button class="btn btn-secondary" (click)="goToAdventureList()">Back to Adventures</button>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="loading-content">
+        <svg class="spinner" [attr.fill]="'none'" viewBox="0 0 24 24">
+          <circle class="opacity-25" [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke]="'currentColor'" [attr.stroke-width]="4"></circle>
+          <path class="opacity-75" [attr.fill]="'currentColor'" [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"></path>
+        </svg>
+        <p class="loading-text">
+          {{ isInitialLoad ? 'Generating your first scene...' : 'Processing your choice...' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="error-state">
+      <div class="error-content">
+        <svg class="error-icon" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+          <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'"></path>
+        </svg>
+        <div class="error-text">
+          <h3 class="error-title">Something Went Wrong</h3>
+          <p class="error-message">{{ error }}</p>
+          <button
+            *ngIf="isInitialLoad"
+            (click)="retryLoad()"
+            class="btn-retry"
+          >
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+              <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'"></path>
+            </svg>
+            <span>Try Again</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Content -->
+    <div *ngIf="currentScene && !isLoading" class="game-content">
+      <!-- Scene Narrative -->
+      <div class="scene-container">
+        <div class="scene-narrative">
+          <p class="narrative-text">{{ currentScene.text }}</p>
+        </div>
+      </div>
+
+      <!-- Choices -->
+      <div class="choices-container">
+        <h2 class="choices-title">What do you do?</h2>
+        <div class="choices-grid">
+          <button
+            *ngFor="let choice of currentScene.choices; let i = index"
+            (click)="onChoiceSelected(choice)"
+            class="choice-button"
+            [attr.data-choice-number]="i + 1"
+          >
+            <div class="choice-number">{{ i + 1 }}</div>
+            <div class="choice-text">{{ choice }}</div>
+            <svg class="choice-arrow" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+              <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

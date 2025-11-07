@@ -8,7 +8,8 @@ import {
   GenerateLorebookDto,
   GeneratedLorebookDto,
   AvailableLorebookDto,
-  AdventureListItemDto
+  AdventureListItemDto,
+  GameScene
 } from '../models/adventure.model';
 import { environment } from '../../../../environments/environment';
 
@@ -93,5 +94,47 @@ export class AdventureService {
    */
   deleteAdventure(adventureId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${adventureId}`);
+  }
+
+  // ============== Game Play API Methods ==============
+
+  /**
+   * Generate the first scene for an adventure
+   */
+  generateFirstScene(adventureId: string): Observable<GameScene> {
+    return this.http.post<GameScene>(
+      `${environment.apiUrl}/api/play/generate-first/${adventureId}`,
+      {}
+    );
+  }
+
+  /**
+   * Submit a player action (choice selection)
+   * Note: This endpoint is not yet implemented in the backend
+   */
+  submitAction(adventureId: string, actionDescription: string): Observable<GameScene> {
+    return this.http.post<GameScene>(
+      `${environment.apiUrl}/api/play/submit`,
+      { adventureId, actionDescription }
+    );
+  }
+
+  /**
+   * Delete the last scene from an adventure
+   */
+  deleteLastScene(adventureId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/api/play/delete/${adventureId}`
+    );
+  }
+
+  /**
+   * Regenerate the last scene of an adventure
+   */
+  regenerateScene(adventureId: string): Observable<GameScene> {
+    return this.http.post<GameScene>(
+      `${environment.apiUrl}/api/play/regenerate/${adventureId}`,
+      {}
+    );
   }
 }

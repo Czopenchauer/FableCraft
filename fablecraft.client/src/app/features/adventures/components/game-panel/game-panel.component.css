@@ -1,92 +1,566 @@
+/* Game Panel Component - Theme-aware styling */
+
 .game-panel-container {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 2rem;
-  min-height: 60vh;
+  min-height: 100vh;
+  padding: var(--spacing-xl);
+  position: relative;
+}
+
+[data-theme="modern-dark"] .game-panel-container {
+  background: linear-gradient(to bottom right, #0f172a 0%, #581c87 50%, #0f172a 100%);
+}
+
+[data-theme="medieval-fantasy"] .game-panel-container {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.08) 0%, transparent 70%),
+    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+}
+
+.game-panel-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========== Header ========== */
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2xl);
+  flex-wrap: wrap;
+  gap: var(--spacing-lg);
+}
+
+.back-button {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.placeholder-content {
-  text-align: center;
-  padding: 3rem;
-  background-color: var(--card-bg);
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  max-width: 500px;
+.back-button svg {
+  width: 24px;
+  height: 24px;
 }
 
-.placeholder-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.placeholder-content h1 {
-  font-size: 2rem;
+.back-button:hover {
+  border-color: var(--border-primary);
   color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  transform: translateX(-4px);
 }
 
-.placeholder-content p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-  margin-bottom: 1rem;
+[data-theme="modern-dark"] .back-button {
+  backdrop-filter: var(--backdrop-blur);
 }
 
-.subtitle {
-  font-style: italic;
-  color: var(--text-tertiary);
-}
-
-.info-box {
-  background-color: var(--info-bg, #e7f3ff);
-  border: 1px solid var(--info-border, #b3d9ff);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 2rem 0;
-}
-
-.info-box p {
+.page-title {
+  font-size: var(--font-size-4xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
   margin: 0;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  word-break: break-all;
 }
 
-/* Button Styles */
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
+[data-theme="modern-dark"] .page-title {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="medieval-fantasy"] .page-title {
+  color: var(--color-primary);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
+  border: 1px solid var(--border-primary);
 }
 
-.btn-secondary {
-  background-color: var(--secondary-bg);
+.btn-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Regenerate Button */
+[data-theme="modern-dark"] .btn-regenerate {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="modern-dark"] .btn-regenerate:hover {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-regenerate {
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .btn-regenerate:hover {
+  background: rgba(184, 134, 11, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Delete Button */
+[data-theme="modern-dark"] .btn-delete {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="modern-dark"] .btn-delete:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-delete {
+  background: rgba(139, 0, 0, 0.2);
+  color: var(--status-error);
+  border-color: var(--status-error);
+}
+
+[data-theme="medieval-fantasy"] .btn-delete:hover {
+  background: rgba(139, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ========== Loading State ========== */
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl) 0;
+  min-height: 400px;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  color: var(--color-primary);
+  margin: 0 auto var(--spacing-lg);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-lg);
+  font-family: var(--font-family-primary);
+}
+
+[data-theme="medieval-fantasy"] .loading-text {
+  font-style: italic;
+}
+
+/* ========== Error State ========== */
+
+.error-state {
+  padding: var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  margin: var(--spacing-2xl) 0;
+  border: 1px solid var(--status-error);
+}
+
+[data-theme="modern-dark"] .error-state {
+  background: rgba(239, 68, 68, 0.1);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .error-state {
+  background: var(--status-error-bg);
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  text-align: center;
+}
+
+.error-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--status-error);
+  flex-shrink: 0;
+}
+
+.error-text {
+  max-width: 600px;
+}
+
+.error-title {
+  color: var(--status-error);
+  font-weight: 700;
+  font-size: var(--font-size-xl);
+  font-family: var(--font-family-heading);
+  margin-bottom: var(--spacing-sm);
+}
+
+.error-message {
+  color: var(--status-error);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-lg);
+}
+
+.btn-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid var(--status-error);
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+.btn-retry svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========== Game Content ========== */
+
+.game-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+/* ========== Scene Container ========== */
+
+.scene-container {
+  padding: var(--spacing-3xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-secondary);
+  position: relative;
+}
+
+[data-theme="modern-dark"] .scene-container {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .scene-container {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.scene-narrative {
+  position: relative;
+}
+
+.narrative-text {
+  font-size: var(--font-size-lg);
+  line-height: 1.8;
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-.btn-secondary:hover {
-  background-color: var(--hover-bg);
-  transform: translateY(-1px);
+[data-theme="medieval-fantasy"] .narrative-text {
+  font-family: var(--font-family-primary);
+  text-align: justify;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+[data-theme="modern-dark"] .narrative-text {
+  font-family: var(--font-family-primary);
+}
+
+/* Add decorative elements for medieval theme */
+[data-theme="medieval-fantasy"] .scene-container::before,
+[data-theme="medieval-fantasy"] .scene-container::after {
+  content: '⚜';
+  position: absolute;
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+  opacity: 0.3;
+}
+
+[data-theme="medieval-fantasy"] .scene-container::before {
+  top: var(--spacing-lg);
+  left: var(--spacing-lg);
+}
+
+[data-theme="medieval-fantasy"] .scene-container::after {
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+}
+
+/* ========== Choices Container ========== */
+
+.choices-container {
+  padding: var(--spacing-xl);
+}
+
+.choices-title {
+  font-size: var(--font-size-2xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+}
+
+[data-theme="modern-dark"] .choices-title {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="medieval-fantasy"] .choices-title {
+  color: var(--color-primary);
+}
+
+.choices-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ========== Choice Button ========== */
+
+.choice-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="modern-dark"] .choice-button {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="modern-dark"] .choice-button:hover {
+  border-color: rgba(147, 51, 234, 0.5);
+  box-shadow: 0 10px 30px rgba(147, 51, 234, 0.15);
+  transform: translateY(-4px);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+[data-theme="medieval-fantasy"] .choice-button {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="medieval-fantasy"] .choice-button:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, rgba(72, 46, 31, 0.95) 0%, rgba(55, 34, 26, 0.95) 100%);
+}
+
+.choice-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+}
+
+[data-theme="modern-dark"] .choice-number {
+  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  color: var(--text-primary);
+}
+
+[data-theme="modern-dark"] .choice-button:hover .choice-number {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .choice-number {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--text-primary);
+  border: 2px solid var(--color-accent);
+}
+
+[data-theme="medieval-fantasy"] .choice-button:hover .choice-number {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-glow);
+}
+
+.choice-text {
+  flex: 1;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+}
+
+.choice-arrow {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all var(--transition-base);
+}
+
+.choice-button:hover .choice-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 1024px) {
+  .game-panel-content {
+    max-width: 900px;
+  }
+
+  .narrative-text {
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 767px) {
   .game-panel-container {
-    padding: 1rem;
+    padding: var(--spacing-lg);
   }
 
-  .placeholder-content {
-    padding: 2rem 1rem;
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
   }
 
-  .placeholder-content h1 {
-    font-size: 1.5rem;
+  .page-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .btn-action span {
+    display: none;
+  }
+
+  .scene-container {
+    padding: var(--spacing-xl);
+  }
+
+  .narrative-text {
+    font-size: var(--font-size-base);
+    line-height: 1.7;
+  }
+
+  .choices-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .choice-button {
+    padding: var(--spacing-lg);
+  }
+
+  .choice-number {
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-lg);
+  }
+
+  .choice-text {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Hide decorative elements on mobile */
+  [data-theme="medieval-fantasy"] .scene-container::before,
+  [data-theme="medieval-fantasy"] .scene-container::after {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-header {
+    align-items: stretch;
+  }
+
+  .action-buttons {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+  }
+
+  .btn-action {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .loading-state {
+    min-height: 300px;
+  }
+
+  .scene-container {
+    padding: var(--spacing-lg);
+  }
+
+  .choices-container {
+    padding: var(--spacing-md);
   }
 }

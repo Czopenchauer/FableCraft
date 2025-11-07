@@ -71,3 +71,15 @@ export interface LorebookGenerationState {
   content?: string;
   error?: string;
 }
+
+export interface GameScene {
+  text: string;
+  choices: string[];
+}
+
+export interface GameState {
+  adventureId: string;
+  currentScene: GameScene | null;
+  isLoading: boolean;
+  error?: string;
+}

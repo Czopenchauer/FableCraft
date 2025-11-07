@@ -80,15 +80,16 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         foreach (var lorebook in lorebookToProcess)
         {
             var chunkedText = await ChunkText(lorebook.Content, cancellationToken);
-            var lorebookChunks = chunkedText.Select(text => new Chunk
+            var lorebookChunks = chunkedText.Select((text, idx) => new Chunk
             {
                 RawChunk = text,
                 EntityId = lorebook.Id,
                 ProcessingStatus = ProcessingStatus.Pending,
                 Name = lorebook.Category,
                 Description = lorebook.Description,
-            });
-            dbContext.Chunks.AddRange(lorebookChunks);
+                Order = idx
+            }).ToList();
+            await dbContext.Chunks.AddRangeAsync(lorebookChunks, cancellationToken);
             await dbContext.SaveChangesAsync(CancellationToken.None);
             existingLorebooksChunks.AddRange(lorebookChunks);
         }
@@ -123,15 +124,16 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         {
             var chunkedText = await ChunkText(entireCharacterText,
                 cancellationToken);
-            var characterChunks = chunkedText.Select(text => new Chunk
+            var characterChunks = chunkedText.Select((text, idx) => new Chunk
             {
                 RawChunk = text,
                 EntityId = adventure.CharacterId,
                 ProcessingStatus = ProcessingStatus.Pending,
                 Name = $"Main Character, {adventure.Character.Name}",
                 Description = $"Main Character, {adventure.Character.Name}, Description",
-            });
-            dbContext.Chunks.AddRange(characterChunks);
+                Order = idx,
+            }).ToList();
+            await dbContext.Chunks.AddRangeAsync(characterChunks, cancellationToken);
             await dbContext.SaveChangesAsync(CancellationToken.None);
             existingCharacterChunks.AddRange(characterChunks);
         }
@@ -148,9 +150,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     cancellationToken);
         }
 
-        await ProcessChunksAsync(adventure.Id, existingCharacterChunks, cancellationToken);
         await ProcessChunksAsync(adventure.Id, lorebookChunksGrouped.Select(x => x.Chunk).ToList(), cancellationToken);
+        await ProcessChunksAsync(adventure.Id, existingCharacterChunks, cancellationToken);
 
+        await ragBuilder.BuildCommunitiesAsync(adventure.Id.ToString(), cancellationToken);
         await messageDispatcher.PublishAsync(new AdventureCreatedEvent
             {
                 AdventureId = adventure.Id
@@ -160,7 +163,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     private async Task<List<string>> ChunkText(string text, CancellationToken cancellationToken)
     {
-        const int maxChunkSize = 250;
+        const int maxChunkSize = 128;
         var kernel = kernelBuilder.WithBase(config.Value.LlmModel).Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
@@ -171,7 +174,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                     1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
                                     2. Split the text into chunks that:
                                        - Maintain semantic coherence (each chunk covers a complete thought or topic)
-                                       - Stay within the specified size limit of {maxChunkSize} tokens
+                                       - Stay within the specified size limit of {maxChunkSize} characters
                                        - Preserve context by avoiding mid-sentence breaks when possible
                                        - Keep related information together
                                        - avoid modifying text where possible
@@ -323,12 +326,12 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         List<Chunk> entities,
         CancellationToken cancellationToken)
     {
-        foreach (var entity in entities)
+        foreach (var entity in entities.OrderBy(x => x.Order))
         {
             switch (entity.ProcessingStatus)
             {
                 case ProcessingStatus.Completed:
-                    return;
+                    continue;
                 case ProcessingStatus.InProgress:
                     try
                     {
@@ -342,7 +345,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     }
                     catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
                     {
-                        return;
                     }
                     catch (Exception e)
                     {
@@ -365,10 +367,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 // Task cancellation is not supported in upstream API
                 _ = await ragBuilder.AddDataAsync(new AddDataRequest
                 {
-                    Content = $"""
-                               {entity.ContextualizedChunk}
-                               {entity.RawChunk}
-                               """,
+                    Content = $"{entity.ContextualizedChunk}\n{entity.RawChunk}",
                     EpisodeType = nameof(DataType.Text),
                     Description = entity.Description,
                     GroupId = adventureId.ToString(),

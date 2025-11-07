@@ -5,7 +5,7 @@ namespace FableCraft.Infrastructure.Persistence.Entities;
 public class LorebookEntry : IEntity
 {
     [Key]
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
     [Required]
     public Guid AdventureId { get; init; }

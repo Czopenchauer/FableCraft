@@ -41,12 +41,9 @@ async def lifespan(application: FastAPI):
         logger.info("Initializing Graphiti and building indices/constraints...")
         await graphiti.build_indices_and_constraints()
         logger.info("Graphiti initialized successfully")
-        await graphiti.close()
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error initializing Graphiti: {str(e)}")
         raise e
-    finally:
-        await graphiti.close()
 
     yield
 
@@ -136,6 +133,15 @@ class SearchResult(BaseModel):
     content: str
 
 
+class BuildCommunitiesRequest(BaseModel):
+    group_id: str
+
+
+class BuildCommunitiesResponse(BaseModel):
+    communities_count: int
+    edges_count: int
+
+
 class EpisodeResponse(BaseModel):
     uuid: str
     name: str
@@ -182,6 +188,41 @@ async def search(request: SearchRequest):
 
     result = await agent.ainvoke(initial_state)
     return SearchResult(content=result["final_answer"])
+
+
+@app.post("/build_communities", response_model=BuildCommunitiesResponse)
+async def build_communities(request: BuildCommunitiesRequest):
+    """Endpoint to build communities for a specific group_id
+
+    Request body should contain:
+    - group_id: str (group identifier to build communities for)
+
+    Returns:
+    - message: Success message
+    - communities_count: Number of communities created
+    - edges_count: Number of community edges created
+    """
+    try:
+        logger.info(f"Building communities for group_id: {request.group_id}")
+        community_nodes, community_edges = await graphiti.build_communities(
+            group_ids=[request.group_id]
+        )
+
+        communities_count = len(community_nodes)
+        edges_count = len(community_edges)
+
+        logger.info(f"Successfully built {communities_count} communities with {edges_count} edges for group_id: {request.group_id}")
+
+        return BuildCommunitiesResponse(
+            communities_count=communities_count,
+            edges_count=edges_count
+        )
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error building communities: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to build communities: {str(e)}"
+        )
 
 
 async def process_episode_addition(

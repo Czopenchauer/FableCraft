@@ -2,7 +2,7 @@
 
 public class Chunk : IEntity
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
     public Guid EntityId { get; init; }
 
@@ -16,6 +16,8 @@ public class Chunk : IEntity
     /// Describe the chunk in the context of the overall text document it belongs to.
     /// </summary>
     public string? ContextualizedChunk { get; set; }
+
+    public required int Order { get; set; }
 
     public string? KnowledgeGraphNodeId { get; init; }
 
