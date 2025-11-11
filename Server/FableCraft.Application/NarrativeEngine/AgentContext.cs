@@ -1,176 +1,352 @@
-using FableCraft.Application.NarrativeEngine.Interfaces;
-using FableCraft.Application.NarrativeEngine.Models;
-
 namespace FableCraft.Application.NarrativeEngine;
 
-/// <summary>
-/// Concrete implementation of shared context for agents
-/// </summary>
-public class AgentContext : IAgentContext
+using System.Text.Json.Serialization;
+
+internal sealed class NarrativeContext
 {
-    public List<SceneContext> RecentScenes { get; set; } = new();
-    public List<StoryBeat> StoryBeats { get; set; } = new();
-    public string CurrentArcPosition { get; set; } = "Beginning";
-    public PacingHistory PacingHistory { get; set; } = new()
-    {
-        RecentBeatTypes = new List<string>(),
-        CurrentTension = 0.5,
-        ScenesSinceLastClimactic = 0
-    };
-    public Dictionary<string, string> WorldConsistencyGuidelines { get; set; } = new();
-    public List<string> GenreConventions { get; set; } = new();
+    [JsonPropertyName("story_summary")]
+    public string StorySummary { get; set; }
 
-    /// <summary>
-    /// Create a default context for testing
-    /// </summary>
-    public static AgentContext CreateDefault()
-    {
-        return new AgentContext
-        {
-            RecentScenes = new List<SceneContext>(),
-            StoryBeats = new List<StoryBeat>
-            {
-                new StoryBeat
-                {
-                    BeatId = "long_1",
-                    Tier = "Long",
-                    Description = "Establish the world and introduce main conflict",
-                    Objectives = new List<string> { "Introduce protagonist", "Present inciting incident" },
-                    Progress = 0.3,
-                    IsCompleted = false,
-                    Dependencies = new List<string>()
-                },
-                new StoryBeat
-                {
-                    BeatId = "medium_1",
-                    Tier = "Medium",
-                    Description = "First challenge and character development",
-                    Objectives = new List<string> { "Character faces obstacle", "Reveal character trait" },
-                    Progress = 0.0,
-                    IsCompleted = false,
-                    Dependencies = new List<string> { "long_1" }
-                }
-            },
-            CurrentArcPosition = "Act 1: Setup",
-            PacingHistory = new PacingHistory
-            {
-                RecentBeatTypes = new List<string> { "Setup", "Introduction", "Dialogue" },
-                CurrentTension = 0.4,
-                ScenesSinceLastClimactic = 3
-            },
-            WorldConsistencyGuidelines = new Dictionary<string, string>
-            {
-                { "Magic System", "Magic requires personal sacrifice - blood, memories, or years of life" },
-                { "Technology Level", "Medieval with minor magical enhancements" },
-                { "Geography", "Island archipelago with distinct regional cultures" },
-                { "Power Structure", "Feudal system with mage guilds holding significant influence" }
-            },
-            GenreConventions = new List<string>
-            {
-                "Fantasy with dark undertones",
-                "Morally gray characters preferred over purely good/evil",
-                "Consequences matter - actions have lasting impact",
-                "Show don't tell - reveal through action and dialogue",
-                "Avoid deus ex machina resolutions"
-            }
-        };
-    }
+    [JsonPropertyName("scene_context")]
+    public List<SceneContext> SceneContext { get; set; }
 
-    /// <summary>
-    /// Update context after a scene is generated
-    /// </summary>
-    public void UpdateAfterScene(SceneOutput scene)
-    {
-        // Add new scene to recent scenes
-        var newSceneContext = new SceneContext
-        {
-            SceneId = scene.SceneId,
-            Summary = ExtractSummary(scene.Prose),
-            KeyEvents = scene.ObjectivesAdvanced,
-            CharacterDevelopments = ExtractCharacterDevelopments(scene.CharacterUpdates),
-            LocationChanges = ExtractLocations(scene.NewEntities),
-            Timestamp = DateTime.UtcNow,
-            NarrativeArcPosition = scene.NarrativeArcPosition
-        };
+    [JsonPropertyName("tracker")]
+    public CurrentSceneTracker Tracker { get; set; }
 
-        RecentScenes.Add(newSceneContext);
+    [JsonPropertyName("characters")]
+    public List<Character> Characters { get; set; }
 
-        // Keep only last 20 scenes
-        if (RecentScenes.Count > 20)
-        {
-            RecentScenes.RemoveAt(0);
-        }
+    [JsonPropertyName("narrative_state")]
+    public NarrativeState NarrativeState { get; set; }
 
-        // Update pacing history
-        if (scene.Metadata.TryGetValue("Beat Type", out var beatTypeObj))
-        {
-            var beatType = beatTypeObj.ToString() ?? "Unknown";
-            PacingHistory.RecentBeatTypes.Add(beatType);
-            if (PacingHistory.RecentBeatTypes.Count > 10)
-            {
-                PacingHistory.RecentBeatTypes.RemoveAt(0);
-            }
+    [JsonPropertyName("causal_chain")]
+    public List<CausalChainEvent> CausalChain { get; set; }
 
-            if (beatType.Contains("Climactic", StringComparison.OrdinalIgnoreCase))
-            {
-                PacingHistory.ScenesSinceLastClimactic = 0;
-                PacingHistory.CurrentTension = 0.9;
-            }
-            else
-            {
-                PacingHistory.ScenesSinceLastClimactic++;
-                PacingHistory.CurrentTension = Math.Max(0.2, PacingHistory.CurrentTension - 0.1);
-            }
-        }
+    [JsonPropertyName("style_and_tone")]
+    public StyleAndTone StyleAndTone { get; set; }
 
-        // Update story beat progress
-        foreach (var objective in scene.ObjectivesAdvanced)
-        {
-            var beat = StoryBeats.FirstOrDefault(b =>
-                b.Objectives.Any(o => o.Contains(objective, StringComparison.OrdinalIgnoreCase)));
+    [JsonPropertyName("metadata")]
+    public Metadata Metadata { get; set; }
+}
 
-            if (beat != null)
-            {
-                beat.Progress = Math.Min(1.0, beat.Progress + 0.2);
-                if (beat.Progress >= 1.0)
-                {
-                    beat.IsCompleted = true;
-                }
-            }
-        }
+internal sealed class CurrentSceneTracker
+{
+    // Current scene time in ISO 8601 format
+    public DateTime DateTime { get; set; }
 
-        // Update arc position
-        CurrentArcPosition = scene.NarrativeArcPosition;
-    }
+    public string Season { get; set; }
 
-    private string ExtractSummary(string prose)
-    {
-        // Take first 200 characters as summary
-        var summary = prose.Length > 200 ? prose.Substring(0, 200) + "..." : prose;
-        return summary.Replace("\n", " ").Trim();
-    }
+    public string Location { get; set; }
 
-    private Dictionary<string, string> ExtractCharacterDevelopments(Dictionary<string, object> characterUpdates)
-    {
-        var developments = new Dictionary<string, string>();
+    public string Weather { get; set; }
 
-        foreach (var update in characterUpdates)
-        {
-            if (update.Key.EndsWith("_EmotionalState"))
-            {
-                var characterName = update.Key.Replace("_EmotionalState", "");
-                developments[characterName] = $"Emotional state: {update.Value}";
-            }
-        }
+    public List<CharacterSceneTracker> CharacterPresent { get; set; }
 
-        return developments;
-    }
+    // Main character tracker
+    public Dictionary<string, string> Tracker { get; set; }
+}
 
-    private List<string> ExtractLocations(List<WorldEntity> newEntities)
-    {
-        return newEntities
-            .Where(e => e.EntityType == "Location" || e is Location)
-            .Select(e => e.Name)
-            .ToList();
-    }
+internal sealed class CharacterSceneTracker
+{
+    public string CharacterName { get; set; }
+
+    // Only set for complex character
+    public Dictionary<string, string>? Tracker { get; set; }
+
+    // Is the character complex (has detailed emotional and physical states, relationships, goals, memories) and should be simulated by separate character agent
+    public bool ComplexCharacter { get; set; }
+}
+
+internal sealed class SceneContext
+{
+    [JsonPropertyName("scene_content")]
+    public string SceneContent { get; set; }
+
+    [JsonPropertyName("player_choice")]
+    public string PlayerChoice { get; set; }
+}
+
+internal sealed class Character
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+
+    [JsonPropertyName("current_location")]
+    public string CurrentLocation { get; set; }
+
+    [JsonPropertyName("emotional_state")]
+    public EmotionalState EmotionalState { get; set; }
+
+    [JsonPropertyName("physical_state")]
+    public PhysicalState PhysicalState { get; set; }
+
+    [JsonPropertyName("knowledge")]
+    public List<Knowledge> Knowledge { get; set; }
+
+    [JsonPropertyName("relationships")]
+    public List<Relationship> Relationships { get; set; }
+
+    [JsonPropertyName("goals")]
+    public Goals Goals { get; set; }
+
+    [JsonPropertyName("memories")]
+    public Memories Memories { get; set; }
+}
+
+internal sealed class EmotionalState
+{
+    [JsonPropertyName("primary_emotion")]
+    public string PrimaryEmotion { get; set; }
+
+    [JsonPropertyName("intensity")]
+    public int Intensity { get; set; }
+
+    [JsonPropertyName("toward")]
+    public string Toward { get; set; }
+}
+
+internal sealed class PhysicalState
+{
+    [JsonPropertyName("health")]
+    public int Health { get; set; }
+
+    [JsonPropertyName("energy")]
+    public int Energy { get; set; }
+
+    [JsonPropertyName("status_effects")]
+    public List<string> StatusEffects { get; set; }
+}
+
+internal sealed class Knowledge
+{
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+}
+
+internal sealed class Relationship
+{
+    [JsonPropertyName("character_id")]
+    public string CharacterId { get; set; }
+
+    [JsonPropertyName("relationship_type")]
+    public string RelationshipType { get; set; }
+
+    [JsonPropertyName("trust_level")]
+    public int TrustLevel { get; set; }
+
+    [JsonPropertyName("recent_interactions")]
+    public List<string> RecentInteractions { get; set; }
+}
+
+internal sealed class Goals
+{
+    [JsonPropertyName("active_goal_id")]
+    public string ActiveGoalId { get; set; }
+
+    [JsonPropertyName("motivation")]
+    public string Motivation { get; set; }
+}
+
+internal sealed class Memories
+{
+    [JsonPropertyName("episodic")]
+    public List<EpisodicMemory> Episodic { get; set; }
+
+    [JsonPropertyName("reflective_summary")]
+    public string ReflectiveSummary { get; set; }
+}
+
+internal sealed class EpisodicMemory
+{
+    [JsonPropertyName("scene_id")]
+    public string SceneId { get; set; }
+
+    [JsonPropertyName("summary")]
+    public string Summary { get; set; }
+
+    [JsonPropertyName("emotional_impact")]
+    public int EmotionalImpact { get; set; }
+
+    [JsonPropertyName("importance")]
+    public int Importance { get; set; }
+}
+
+internal sealed class NarrativeState
+{
+    [JsonPropertyName("objectives")]
+    public Objectives Objectives { get; set; }
+
+    [JsonPropertyName("story_arc")]
+    public StoryArc StoryArc { get; set; }
+
+    [JsonPropertyName("pacing")]
+    public Pacing Pacing { get; set; }
+
+    [JsonPropertyName("tension")]
+    public Tension Tension { get; set; }
+}
+
+internal sealed class Objectives
+{
+    [JsonPropertyName("long_term")]
+    public List<LongTermObjective> LongTerm { get; set; }
+
+    [JsonPropertyName("medium_term")]
+    public List<MediumTermObjective> MediumTerm { get; set; }
+
+    [JsonPropertyName("short_term")]
+    public List<ShortTermObjective> ShortTerm { get; set; }
+}
+
+internal sealed class LongTermObjective
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("progress")]
+    public int Progress { get; set; }
+
+    [JsonPropertyName("introduced_at_scene_id")]
+    public string IntroducedAtSceneId { get; set; }
+}
+
+internal sealed class MediumTermObjective
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("progress")]
+    public int Progress { get; set; }
+
+    [JsonPropertyName("parent_objective_id")]
+    public string ParentObjectiveId { get; set; }
+}
+
+internal sealed class ShortTermObjective
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("progress")]
+    public int Progress { get; set; }
+
+    [JsonPropertyName("must_resolve_by_scene")]
+    public int? MustResolveByScene { get; set; }
+}
+
+internal sealed class StoryArc
+{
+    [JsonPropertyName("current_position")]
+    public string CurrentPosition { get; set; }
+
+    [JsonPropertyName("current_beat_type")]
+    public string CurrentBeatType { get; set; }
+
+    [JsonPropertyName("arc_progress")]
+    public int ArcProgress { get; set; }
+}
+
+internal sealed class Pacing
+{
+    [JsonPropertyName("current_intensity")]
+    public int CurrentIntensity { get; set; }
+
+    [JsonPropertyName("recent_scene_pacing")]
+    public List<ScenePacing> RecentScenePacing { get; set; }
+
+    [JsonPropertyName("recommended_next_pacing")]
+    public string RecommendedNextPacing { get; set; }
+}
+
+internal sealed class ScenePacing
+{
+    [JsonPropertyName("scene_id")]
+    public string SceneId { get; set; }
+
+    [JsonPropertyName("intensity")]
+    public int Intensity { get; set; }
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
+}
+
+internal sealed class Tension
+{
+    [JsonPropertyName("overall_tension")]
+    public int OverallTension { get; set; }
+
+    [JsonPropertyName("tension_sources")]
+    public List<TensionSource> TensionSources { get; set; }
+
+    [JsonPropertyName("unresolved_cliffhangers")]
+    public List<string> UnresolvedCliffhangers { get; set; }
+}
+
+internal sealed class TensionSource
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("intensity")]
+    public int Intensity { get; set; }
+}
+
+internal sealed class CausalChainEvent
+{
+    [JsonPropertyName("event_id")]
+    public string EventId { get; set; }
+
+    [JsonPropertyName("scene_id")]
+    public string SceneId { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("caused_by")]
+    public List<string> CausedBy { get; set; }
+
+    [JsonPropertyName("consequences")]
+    public List<string> Consequences { get; set; }
+
+    [JsonPropertyName("affected_entities")]
+    public List<string> AffectedEntities { get; set; }
+}
+
+internal sealed class StyleAndTone
+{
+    [JsonPropertyName("narrative_voice")]
+    public string NarrativeVoice { get; set; }
+
+    [JsonPropertyName("genre")]
+    public string Genre { get; set; }
+
+    [JsonPropertyName("tone")]
+    public string Tone { get; set; }
+
+    [JsonPropertyName("themes")]
+    public List<string> Themes { get; set; }
+
+    [JsonPropertyName("writing_style_notes")]
+    public string WritingStyleNotes { get; set; }
+}
+
+internal sealed class Metadata
+{
+    [JsonPropertyName("total_scenes_generated")]
+    public int TotalScenesGenerated { get; set; }
+
+    [JsonPropertyName("story_duration")]
+    public string StoryDuration { get; set; }
 }
