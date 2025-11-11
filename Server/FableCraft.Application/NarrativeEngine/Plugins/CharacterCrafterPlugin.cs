@@ -12,8 +12,6 @@ using Polly.Retry;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterCrafterPlugin

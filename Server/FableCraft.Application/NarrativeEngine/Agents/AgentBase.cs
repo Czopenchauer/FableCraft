@@ -1,20 +1,13 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 
-using Serilog;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal interface IAgent
+internal abstract class AgentBase
 {
-    ChatCompletionAgent BuildAgent(Kernel kernel, NarrativeContext context);
-}
+    protected abstract string Name { get; }
 
-internal abstract class AgentBase : IAgent
-{
-    public abstract string Name { get; }
-
-    public abstract string Description { get; }
+    protected abstract string Description { get; }
 
     protected abstract string BuildInstruction(NarrativeContext context);
 

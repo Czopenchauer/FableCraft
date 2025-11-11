@@ -16,7 +16,7 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterPlugin
 {
-    private readonly ChatHistory _chatHistory;
+    private readonly Dictionary<string, ChatHistory> _chatHistory;
     private readonly Kernel _kernel;
     private readonly ILogger _logger;
 
@@ -25,7 +25,7 @@ internal sealed class CharacterPlugin
         Kernel kernel,
         ILogger logger)
     {
-        _chatHistory = new ChatHistory();
+        _chatHistory = narrativeContext.Tracker.CharacterPresent.ToDictionary(x => x.CharacterName, _ => new ChatHistory());
         _logger = logger;
         _kernel = kernel;
     }
@@ -39,6 +39,11 @@ internal sealed class CharacterPlugin
         [Description("The name of the character whose action is to be emulated")]
         string characterName)
     {
+        if (!_chatHistory.TryGetValue(characterName, out var chatHistory))
+        {
+            return "Character not found.";
+        }
+
         ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
@@ -57,7 +62,7 @@ internal sealed class CharacterPlugin
             .Build();
 
         // TODO add system prompt for character action emulation
-        _chatHistory.AddUserMessage(situation);
+        chatHistory.AddUserMessage(situation);
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
             Temperature = 0.9,
@@ -67,23 +72,24 @@ internal sealed class CharacterPlugin
         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
         try
         {
-            return await GetResponse(pipeline, chatCompletionService, promptExecutionSettings);
+            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
         }
         catch (InvalidCastException ex)
         {
-            _chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
-            return await GetResponse(pipeline, chatCompletionService, promptExecutionSettings);
+            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
+            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
         }
     }
 
     private async Task<string> GetResponse(
+        ChatHistory chatHistory,
         ResiliencePipeline pipeline,
         IChatCompletionService chatCompletionService,
         OpenAIPromptExecutionSettings promptExecutionSettings)
     {
         var result = await pipeline.ExecuteAsync(async token =>
                          {
-                             var result = await chatCompletionService.GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel, token);
+                             var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, _kernel, token);
                              var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
                              _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                                  replyInnerContent?.Usage.InputTokenCount,
@@ -93,7 +99,7 @@ internal sealed class CharacterPlugin
                              return result.Content?.RemoveThinkingBlock();
                          })
                      ?? string.Empty;
-        _chatHistory.AddAssistantMessage(result);
+        chatHistory.AddAssistantMessage(result);
         return result;
     }
 }

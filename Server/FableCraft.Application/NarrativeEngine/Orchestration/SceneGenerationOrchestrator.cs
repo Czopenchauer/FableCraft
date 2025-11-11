@@ -5,9 +5,10 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.Agents.Orchestration.Sequential;
 using Microsoft.SemanticKernel.Agents.Runtime.InProcess;
+
+using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -17,29 +18,40 @@ internal sealed class SceneGenerationOrchestrator
 {
     private readonly IKernelBuilder _kernelBuilder;
     private readonly IRagSearch _ragSearch;
-    private readonly IEnumerable<IAgent> _agents;
 
-    public SceneGenerationOrchestrator(IKernelBuilder kernelBuilder, IRagSearch ragSearch, IEnumerable<IAgent> agents)
+    private readonly ILogger _logger;
+
+    public SceneGenerationOrchestrator(IKernelBuilder kernelBuilder, IRagSearch ragSearch, ILogger logger)
     {
         _kernelBuilder = kernelBuilder;
         _ragSearch = ragSearch;
-        _agents = agents;
+        _logger = logger;
     }
 
     [Experimental("SKEXP0110")]
-    public async Task GenerateSceneAsync(string adventureId, CancellationToken cancellationToken)
+    public async Task GenerateSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var narrativeContext = new NarrativeContext();
         var kernel = _kernelBuilder.WithBase();
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId);
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString());
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         var kernelWithKg = kernel.Build();
 
-        var agents = _agents.Select(x => x.BuildAgent(kernelWithKg, narrativeContext)).ToArray<Agent>();
-        var orchestrator = new SequentialOrchestration(agents);
+        var trackerAgent = new TrackerAgent().BuildAgent(kernelWithKg, narrativeContext);
+        var narrativeAgent = new NarrativeAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
+        var writerAgent = new WriterAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
+        var formatterAgent = new FormatterAgent().BuildAgent(kernelWithKg, narrativeContext);
+        var orchestrator = new SequentialOrchestration(trackerAgent, narrativeAgent, writerAgent, formatterAgent);
 
-        InProcessRuntime runtime = new InProcessRuntime();
-        await runtime.StartAsync(cancellationToken);
-        var result = await orchestrator.InvokeAsync("", runtime, cancellationToken);
+        var runtime = new InProcessRuntime();
+        try
+        {
+            await runtime.StartAsync(cancellationToken);
+            var result = await orchestrator.InvokeAsync("", runtime, cancellationToken);
+        }
+        finally
+        {
+            await runtime.StopAsync(cancellationToken);
+        }
     }
 }

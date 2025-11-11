@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 internal sealed class NarrativeContext
 {
+    [JsonIgnore]
+    public string AdventureId { get; set; }
+    
     [JsonPropertyName("story_summary")]
     public string StorySummary { get; set; }
 

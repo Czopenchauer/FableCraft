@@ -1,6 +1,6 @@
 ﻿namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class TrackerAgent : AgentBase
+internal sealed class FormatterAgent : AgentBase
 {
     protected override string Name { get; }
 

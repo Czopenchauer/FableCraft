@@ -9,11 +9,7 @@ using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-/// <summary>
-/// Story Weaver: Narrative Director + Writer
-/// Orchestrates scene planning, entity requests, roleplay direction, and prose composition
-/// </summary>
-internal class NarrativeAgent : AgentBase
+internal sealed class NarrativeAgent : AgentBase
 {
     private readonly ILogger _logger;
 
@@ -22,9 +18,9 @@ internal class NarrativeAgent : AgentBase
         _logger = logger;
     }
 
-    public override string Name { get; } = "Story Weaver";
+    protected override string Name { get; } = "Story Weaver";
 
-    public override string Description { get; } = "Narrative Director + Writer";
+    protected override string Description { get; } = "Narrative Director + Writer";
 
     protected override string BuildInstruction(NarrativeContext context)
     {

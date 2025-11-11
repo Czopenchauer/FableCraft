@@ -3,13 +3,22 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent : AgentBase
 {
-    public override string Name { get; }
+    private readonly ILogger _logger;
 
-    public override string Description { get; }
+    public WriterAgent(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    protected override string Name { get; } = nameof(WriterAgent);
+
+    protected override string Description { get; }
 
     protected override string BuildInstruction(NarrativeContext context)
     {
@@ -19,8 +28,10 @@ internal sealed class WriterAgent : AgentBase
     public override ChatCompletionAgent BuildAgent(Kernel kernel, NarrativeContext context)
     {
         var writerKernel = kernel.Clone();
-        // var criticPlugin = new CriticPlugin(context, writerKernel);
-        // writerKernel.Plugins.Add(KernelPluginFactory.CreateFromObject(criticPlugin));
+        var criticPlugin = new CriticPlugin(context, writerKernel, _logger);
+        var characterPlugin = new CharacterPlugin(context, writerKernel, _logger);
+        writerKernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        writerKernel.Plugins.Add(KernelPluginFactory.CreateFromObject(criticPlugin));
 
         return base.BuildAgent(writerKernel, context);
     }
