@@ -12,6 +12,8 @@ var serverDatabase = builder
     .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
+var cosmosDb = builder.AddCosmosDb();
+
 var neo4j = builder
     .AddContainer("fablecraft-neo4j", "neo4j", "community")
     .WithVolume("neo4j-data", "/data")
@@ -54,6 +56,7 @@ var graphRagApi = builder
 var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithOtlpExporter()
+    .WithReference(cosmosDb)
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
     .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)

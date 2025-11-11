@@ -6,7 +6,10 @@ internal sealed class NarrativeContext
 {
     [JsonIgnore]
     public string AdventureId { get; set; }
-    
+
+    [JsonPropertyName("metadata")]
+    public Metadata Metadata { get; set; }
+
     [JsonPropertyName("story_summary")]
     public string StorySummary { get; set; }
 
@@ -22,22 +25,14 @@ internal sealed class NarrativeContext
     [JsonPropertyName("narrative_state")]
     public NarrativeState NarrativeState { get; set; }
 
-    [JsonPropertyName("causal_chain")]
-    public List<CausalChainEvent> CausalChain { get; set; }
-
     [JsonPropertyName("style_and_tone")]
     public StyleAndTone StyleAndTone { get; set; }
-
-    [JsonPropertyName("metadata")]
-    public Metadata Metadata { get; set; }
 }
 
 internal sealed class CurrentSceneTracker
 {
     // Current scene time in ISO 8601 format
     public DateTime DateTime { get; set; }
-
-    public string Season { get; set; }
 
     public string Location { get; set; }
 
@@ -304,27 +299,6 @@ internal sealed class TensionSource
 
     [JsonPropertyName("intensity")]
     public int Intensity { get; set; }
-}
-
-internal sealed class CausalChainEvent
-{
-    [JsonPropertyName("event_id")]
-    public string EventId { get; set; }
-
-    [JsonPropertyName("scene_id")]
-    public string SceneId { get; set; }
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; }
-
-    [JsonPropertyName("caused_by")]
-    public List<string> CausedBy { get; set; }
-
-    [JsonPropertyName("consequences")]
-    public List<string> Consequences { get; set; }
-
-    [JsonPropertyName("affected_entities")]
-    public List<string> AffectedEntities { get; set; }
 }
 
 internal sealed class StyleAndTone
