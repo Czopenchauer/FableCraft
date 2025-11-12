@@ -1,4 +1,5 @@
 ﻿using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.AdventureImport;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Queue;
@@ -14,11 +15,16 @@ namespace FableCraft.Server.Controllers;
 public class AdventureController : ControllerBase
 {
     private readonly IAdventureCreationService _adventureCreationService;
+    private readonly AdventureImportService _adventureImportService;
     private readonly IMessageDispatcher _messageDispatcher;
 
-    public AdventureController(IAdventureCreationService adventureCreationService, IMessageDispatcher messageDispatcher)
+    public AdventureController(
+        IAdventureCreationService adventureCreationService,
+        AdventureImportService adventureImportService,
+        IMessageDispatcher messageDispatcher)
     {
         _adventureCreationService = adventureCreationService;
+        _adventureImportService = adventureImportService;
         _messageDispatcher = messageDispatcher;
     }
 
@@ -143,6 +149,89 @@ public class AdventureController : ControllerBase
         catch (AdventureNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    [HttpPost("import")]
+    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [RequestSizeLimit(100_000_000)] // 100MB limit for file uploads
+    [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000)]
+    public async Task<IActionResult> ImportAdventure(
+        [FromForm] IFormFile lorebookFile,
+        [FromForm] IFormFile adventureFile,
+        [FromForm] IFormFile characterFile,
+        [FromForm] string adventureName,
+        CancellationToken cancellationToken)
+    {
+        if (lorebookFile == null || adventureFile == null || characterFile == null)
+        {
+            return BadRequest(new ValidationProblemDetails
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    ["files"] = new[] { "All three files (lorebook, adventure, character) must be provided" }
+                }
+            });
+        }
+
+        if (string.IsNullOrWhiteSpace(adventureName))
+        {
+            return BadRequest(new ValidationProblemDetails
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    ["adventureName"] = new[] { "Adventure name is required" }
+                }
+            });
+        }
+
+        try
+        {
+            string lorebookJson;
+            using (var reader = new StreamReader(lorebookFile.OpenReadStream()))
+            {
+                lorebookJson = await reader.ReadToEndAsync(cancellationToken);
+            }
+
+            string adventureJson;
+            using (var reader = new StreamReader(adventureFile.OpenReadStream()))
+            {
+                adventureJson = await reader.ReadToEndAsync(cancellationToken);
+            }
+
+            string characterJson;
+            using (var reader = new StreamReader(characterFile.OpenReadStream()))
+            {
+                characterJson = await reader.ReadToEndAsync(cancellationToken);
+            }
+
+            var adventure = await _adventureImportService.ImportAdventureAsync(
+                lorebookJson,
+                adventureJson,
+                characterJson,
+                adventureName,
+                cancellationToken);
+
+            return Ok(adventure);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ValidationProblemDetails
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    ["import"] = new[] { ex.Message }
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "An error occurred while importing the adventure",
+                Detail = ex.Message
+            });
         }
     }
 }
