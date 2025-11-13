@@ -2,6 +2,7 @@
 using FableCraft.Application.AdventureImport;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
@@ -153,18 +154,15 @@ public class AdventureController : ControllerBase
     }
 
     [HttpPost("import")]
-    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Adventure), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [RequestSizeLimit(100_000_000)] // 100MB limit for file uploads
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000)]
     public async Task<IActionResult> ImportAdventure(
-        [FromForm] IFormFile lorebookFile,
-        [FromForm] IFormFile adventureFile,
-        [FromForm] IFormFile characterFile,
-        [FromForm] string adventureName,
+        [FromForm] ImportAdventure importAdventure,
         CancellationToken cancellationToken)
     {
-        if (lorebookFile == null || adventureFile == null || characterFile == null)
+        if (importAdventure.Lorebook == null || importAdventure.AdventureName == null || importAdventure.Character == null)
         {
             return BadRequest(new ValidationProblemDetails
             {
@@ -175,7 +173,7 @@ public class AdventureController : ControllerBase
             });
         }
 
-        if (string.IsNullOrWhiteSpace(adventureName))
+        if (string.IsNullOrWhiteSpace(importAdventure.AdventureName))
         {
             return BadRequest(new ValidationProblemDetails
             {
@@ -188,29 +186,8 @@ public class AdventureController : ControllerBase
 
         try
         {
-            string lorebookJson;
-            using (var reader = new StreamReader(lorebookFile.OpenReadStream()))
-            {
-                lorebookJson = await reader.ReadToEndAsync(cancellationToken);
-            }
-
-            string adventureJson;
-            using (var reader = new StreamReader(adventureFile.OpenReadStream()))
-            {
-                adventureJson = await reader.ReadToEndAsync(cancellationToken);
-            }
-
-            string characterJson;
-            using (var reader = new StreamReader(characterFile.OpenReadStream()))
-            {
-                characterJson = await reader.ReadToEndAsync(cancellationToken);
-            }
-
             var adventure = await _adventureImportService.ImportAdventureAsync(
-                lorebookJson,
-                adventureJson,
-                characterJson,
-                adventureName,
+                importAdventure,
                 cancellationToken);
 
             return Ok(adventure);

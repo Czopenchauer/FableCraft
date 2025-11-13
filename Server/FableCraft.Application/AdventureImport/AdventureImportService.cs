@@ -7,7 +7,20 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
+using Microsoft.AspNetCore.Http;
+
 namespace FableCraft.Application.AdventureImport;
+
+public class ImportAdventure
+{
+    public IFormFile Lorebook { get; set; }
+    
+    public IFormFile Adventure { get; set; }
+    
+    public IFormFile Character { get; set; }
+    
+    public string AdventureName { get; set; }
+}
 
 public class AdventureImportService
 {
@@ -30,19 +43,34 @@ public class AdventureImportService
     }
 
     public async Task<Adventure> ImportAdventureAsync(
-        string lorebookJson,
-        string adventureJson,
-        string characterJson,
-        string adventureName,
+        ImportAdventure importAdventure,
         CancellationToken cancellationToken)
     {
+        string lorebookJson;
+        using (var reader = new StreamReader(importAdventure.Lorebook.OpenReadStream()))
+        {
+            lorebookJson = await reader.ReadToEndAsync(cancellationToken);
+        }
+
+        string adventureJson;
+        using (var reader = new StreamReader(importAdventure.Adventure.OpenReadStream()))
+        {
+            adventureJson = await reader.ReadToEndAsync(cancellationToken);
+        }
+
+        string characterJson;
+        using (var reader = new StreamReader(importAdventure.Character.OpenReadStream()))
+        {
+            characterJson = await reader.ReadToEndAsync(cancellationToken);
+        }
+
         var character = ParseCharacterAsync(characterJson);
         var lorebook = ParseLorebookAsync(lorebookJson);
         var scenes = ParseAdventureMessagesAsync(adventureJson);
         var now = _timeProvider.GetUtcNow();
         var adventure = new Adventure
         {
-            Name = adventureName,
+            Name = importAdventure.AdventureName,
             AuthorNotes = string.Empty,
             Character = character,
             Lorebook = lorebook,
@@ -74,7 +102,6 @@ public class AdventureImportService
             Description = importedChar.Description,
             Background = string.Empty
         };
-        ;
 
         return character;
     }
@@ -119,9 +146,9 @@ public class AdventureImportService
         var lines = adventureJson.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         var sceneSequenceNumber = 0;
-        foreach (var line in lines)
+        foreach (var line in lines.Chunk(2))
         {
-            var trimmedLine = line.Trim();
+            var trimmedLine = line[0].Trim();
             if (string.IsNullOrEmpty(trimmedLine))
             {
                 continue;
@@ -134,7 +161,12 @@ public class AdventureImportService
                 {
                     SequenceNumber = sceneSequenceNumber,
                     NarrativeText = message.Mes,
-                    SceneStateJson = JsonSerializer.Serialize(message.Tracker)
+                    SceneStateJson = JsonSerializer.Serialize(message.Tracker),
+                    CharacterActions = line.Skip(1).Select(x => new CharacterAction
+                    {
+                        ActionDescription = JsonSerializer.Deserialize<AdventureMessageDto>(x.Trim(), JsonOptions)!.Mes,
+                        Selected = true
+                    }).ToList()
                 };
 
                 sceneSequenceNumber++;

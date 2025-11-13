@@ -22,13 +22,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
     private const int MaxChunkSize = 128;
+    private const int MaxRps = 7;
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
         var adventure = await dbContext.Adventures
             .Include(x => x.Character)
             .Include(x => x.Lorebook)
-            .Include(x => x.Scenes)
+            .Include(x => x.Scenes).ThenInclude(scene => scene.CharacterActions)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken: cancellationToken);
 
         var existingCharacterChunks = await dbContext.Chunks
@@ -84,19 +85,20 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     Chunk = chunk,
                 });
 
-        foreach (var chunk in lorebookChunksGrouped.Where(x => string.IsNullOrEmpty(x.Chunk.ContextualizedChunk)))
+        foreach (var chunk in lorebookChunksGrouped.Where(x => string.IsNullOrEmpty(x.Chunk.ContextualizedChunk)).Chunk(MaxRps))
         {
-            var contextualizedChunk = await knowledgeGraphService.ContextualizeChunkAsync(
-                chunk.Chunk.RawChunk,
-                chunk.LorebookChunk.Content,
-                cancellationToken);
-
-            chunk.Chunk.ContextualizedChunk = contextualizedChunk;
-            await dbContext.Chunks
-                .Where(c => c.Id == chunk.Chunk.Id)
-                .ExecuteUpdateAsync(
-                    x => x.SetProperty(c => c.ContextualizedChunk, contextualizedChunk),
-                    cancellationToken);
+            var contextualizedChunkTask = chunk.Select(arg => knowledgeGraphService.ContextualizeChunkAsync(
+                    arg.Chunk.RawChunk,
+                    arg.LorebookChunk.Content,
+                    cancellationToken).ContinueWith(x =>
+                    {
+                        arg.Chunk.ContextualizedChunk = x.Result;
+                    },
+                    cancellationToken)
+            ).ToList();
+            await Task.WhenAll(contextualizedChunkTask);
+            dbContext.Chunks.UpdateRange(chunk.Select(x => x.Chunk).ToList());
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var entireCharacterText = $"Main Character Description: {adventure.Character.Description}\n"
@@ -118,12 +120,20 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 Description = $"Main Character, {adventure.Character.Name}, Description",
                 Order = idx,
             }).ToList();
-            foreach (Chunk characterChunk in characterChunks)
+
+            foreach (var characterChunk in characterChunks.Chunk(MaxRps))
             {
-                characterChunk.ContextualizedChunk = await knowledgeGraphService.ContextualizeChunkAsync(
-                    characterChunk.RawChunk,
-                    entireCharacterText,
-                    cancellationToken);
+                var contextualizedChunkTask = characterChunk.Select(arg => knowledgeGraphService.ContextualizeChunkAsync(
+                        arg.RawChunk,
+                        arg.Description,
+                        cancellationToken).ContinueWith(x =>
+                        {
+                            arg.ContextualizedChunk = x.Result;
+                            return arg;
+                        },
+                        cancellationToken)
+                ).ToList();
+                await Task.WhenAll(contextualizedChunkTask);
             }
 
             await dbContext.Chunks.AddRangeAsync(characterChunks, cancellationToken);
@@ -138,55 +148,61 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 .ToList();
 
             var order = 0;
-            foreach (var scene in scenesToProcess)
+            foreach (var scene in scenesToProcess.Chunk(MaxRps))
             {
-                var chunk = await knowledgeGraphService.ChunkTextAsync(
-                    scene.NarrativeText,
-                    MaxChunkSize,
-                    cancellationToken);
-
-                var sceneChunks = chunk.Select((text, idx) =>
+                var sceneChunkTasks = scene.Select(sceneItem =>
                 {
-                    order += idx;
-                    return new Chunk
-                    {
-                        RawChunk = text,
-                        EntityId = scene.Id,
-                        ProcessingStatus = ProcessingStatus.Pending,
-                        Name = "Scene number " + scene.SequenceNumber,
-                        Description = "Scene number " + scene.SequenceNumber,
-                        Order = order,
-                    };
+                    var sceneText = $"{sceneItem.NarrativeText}\n{sceneItem.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty}".Trim();
+                    return knowledgeGraphService.ChunkTextAsync(
+                        sceneText,
+                        MaxChunkSize,
+                        cancellationToken).ContinueWith(chunks => (sceneItem, chunks), cancellationToken);
                 }).ToList();
+                await Task.WhenAll(sceneChunkTasks);
+                foreach (var (sceneItem, chunkResult) in sceneChunkTasks.Select(t => t.Result))
+                {
+                    var chunks = await chunkResult;
+                    var sceneChunks = chunks.Select((text, idx) =>
+                    {
+                        order += idx;
+                        return new Chunk
+                        {
+                            RawChunk = text,
+                            EntityId = sceneItem.Id,
+                            ProcessingStatus = ProcessingStatus.Pending,
+                            Name = "Scene number " + sceneItem.SequenceNumber,
+                            Description = "Scene number " + sceneItem.SequenceNumber,
+                            Order = order,
+                        };
+                    }).ToList();
 
-                await dbContext.Chunks.AddRangeAsync(sceneChunks, cancellationToken);
-                await dbContext.SaveChangesAsync(CancellationToken.None);
-                existingSceneChunks.AddRange(sceneChunks);
+                    await dbContext.Chunks.AddRangeAsync(sceneChunks, cancellationToken);
+                    await dbContext.SaveChangesAsync(CancellationToken.None);
+                    existingSceneChunks.AddRange(sceneChunks);
+                }
             }
 
             var sceneChunksGrouped = existingSceneChunks
-                .Join(adventure.Lorebook,
+                .Join(adventure.Scenes,
                     chunk => chunk.EntityId,
-                    lorebook => lorebook.Id,
-                    (chunk, lorebook) => new
+                    scene => scene.Id,
+                    (chunk, scene) => new
                     {
-                        LorebookChunk = lorebook,
+                        Scene = scene,
                         Chunk = chunk,
                     });
 
-            foreach (var chunk in sceneChunksGrouped.Where(x => string.IsNullOrEmpty(x.Chunk.ContextualizedChunk)))
+            foreach (var chunk in sceneChunksGrouped.Where(x => string.IsNullOrEmpty(x.Chunk.ContextualizedChunk)).Chunk(MaxRps))
             {
-                var contextualizedChunk = await knowledgeGraphService.ContextualizeChunkAsync(
-                    chunk.Chunk.RawChunk,
-                    chunk.LorebookChunk.Content,
-                    cancellationToken);
+                var contextualizedChunkTask = chunk.Select(arg => knowledgeGraphService.ContextualizeChunkAsync(
+                        arg.Chunk.RawChunk,
+                        arg.Scene.NarrativeText,
+                        cancellationToken).ContinueWith(x => arg.Chunk.ContextualizedChunk = x.Result, cancellationToken)
+                ).ToList();
+                await Task.WhenAll(contextualizedChunkTask);
 
-                chunk.Chunk.ContextualizedChunk = contextualizedChunk;
-                await dbContext.Chunks
-                    .Where(c => c.Id == chunk.Chunk.Id)
-                    .ExecuteUpdateAsync(
-                        x => x.SetProperty(c => c.ContextualizedChunk, contextualizedChunk),
-                        cancellationToken);
+                dbContext.Chunks.UpdateRange(chunk.Select(x => x.Chunk).ToList());
+                await dbContext.SaveChangesAsync(cancellationToken);
             }
         }
 
@@ -207,10 +223,13 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
         await knowledgeGraphService.BuildCommunitiesAsync(adventure.Id.ToString(), cancellationToken);
 
-        await messageDispatcher.PublishAsync(new AdventureCreatedEvent
-            {
-                AdventureId = adventure.Id
-            },
-            cancellationToken);
+        if (adventure.Scenes.Count == 0)
+        {
+            await messageDispatcher.PublishAsync(new AdventureCreatedEvent
+                {
+                    AdventureId = adventure.Id
+                },
+                cancellationToken);
+        }
     }
 }

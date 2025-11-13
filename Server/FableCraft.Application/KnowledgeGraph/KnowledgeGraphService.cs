@@ -50,19 +50,24 @@ internal class KnowledgeGraphService
         _logger = logger;
 
         _resiliencePipeline = new ResiliencePipelineBuilder()
-            .AddConcurrencyLimiter(new ConcurrencyLimiterOptions
+            .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
-                QueueLimit = 200,
-            })
+                AutoReplenishment = true,
+                PermitLimit = 5,
+                Window = TimeSpan.FromSeconds(1),
+                QueueLimit = 1000,
+            }))
             .AddRetry(new RetryStrategyOptions
             {
                 ShouldHandle = new PredicateBuilder()
                     .Handle<InvalidCastException>()
                     .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.TooManyRequests)
-                    .Handle<LlmEmptyResponseException>(),
+                    .Handle<LlmEmptyResponseException>()
+                    .Handle<HttpOperationException>(e => e.StatusCode == HttpStatusCode.TooManyRequests),
                 MaxRetryAttempts = MaxRetryAttempts,
-                Delay = TimeSpan.FromSeconds(5)
+                Delay = TimeSpan.FromSeconds(5),
+                BackoffType = DelayBackoffType.Constant,
+                UseJitter = true
             })
             .Build();
     }
@@ -80,7 +85,7 @@ internal class KnowledgeGraphService
                                     1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
                                     2. Split the text into chunks that:
                                        - Maintain semantic coherence (each chunk covers a complete thought or topic)
-                                       - Stay within the specified size limit of {maxChunkSize} characters
+                                       - Stay within the specified size limit of up to {maxChunkSize * 3} characters
                                        - Preserve context by avoiding mid-sentence breaks when possible
                                        - Keep related information together
                                        - avoid modifying text where possible
@@ -158,21 +163,21 @@ internal class KnowledgeGraphService
         var chatHistory = new ChatHistory();
 
         chatHistory.AddUserMessage($"""
-                                    <document>
+                                    <text>
                                     {fullText}
-                                    </document>
+                                    </text>
                                     """);
 
         chatHistory.AddUserMessage($"""
                                     Here is the chunk we want to situate within
-                                    the whole document:
+                                    the whole text:
                                     <chunk>
                                     {chunk}
                                     </chunk>
                                     Please give a short succinct context to situate
-                                    this chunk within the overall document for the
+                                    this chunk within the overall text for the
                                     purposes of improving search retrieval of the
-                                    chunk. If the document has a publication date,
+                                    chunk. If the text has a publication date,
                                     please include the date in your context. Answer
                                     only with the succinct context and nothing else.
                                     """);
