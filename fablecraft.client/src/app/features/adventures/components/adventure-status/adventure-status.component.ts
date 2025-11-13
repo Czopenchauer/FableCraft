@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, interval } from 'rxjs';
-import { takeUntil, switchMap, startWith } from 'rxjs/operators';
-import { AdventureService } from '../../services/adventure.service';
-import { AdventureCreationStatus, ComponentStatus } from '../../models/adventure.model';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {interval, Subject} from 'rxjs';
+import {startWith, switchMap, takeUntil} from 'rxjs/operators';
+import {AdventureService} from '../../services/adventure.service';
+import {AdventureCreationStatus, ComponentStatus} from '../../models/adventure.model';
 
 @Component({
   selector: 'app-adventure-status',
@@ -12,14 +12,12 @@ import { AdventureCreationStatus, ComponentStatus } from '../../models/adventure
   styleUrl: './adventure-status.component.css'
 })
 export class AdventureStatusComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-  private adventureId: string | null = null;
-
   status: AdventureCreationStatus | null = null;
   isLoading = true;
   hasError = false;
   errorMessage = '';
-
+  private destroy$ = new Subject<void>();
+  private adventureId: string | null = null;
   // Poll every 2 seconds
   private readonly POLL_INTERVAL = 2000;
 
@@ -27,7 +25,8 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private adventureService: AdventureService
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.adventureId = this.route.snapshot.paramMap.get('id');
@@ -45,45 +44,6 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private startPolling(): void {
-    interval(this.POLL_INTERVAL)
-      .pipe(
-        startWith(0), // Start immediately
-        switchMap(() => this.adventureService.getAdventureStatus(this.adventureId!)),
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        next: (status) => {
-          this.status = status;
-          this.isLoading = false;
-          this.checkStatusAndNavigate();
-        },
-        error: (error) => {
-          console.error('Error fetching adventure status:', error);
-          this.hasError = true;
-          this.errorMessage = 'Failed to fetch adventure status. Please try again.';
-          this.isLoading = false;
-        }
-      });
-  }
-
-  private checkStatusAndNavigate(): void {
-    if (!this.status) return;
-
-    const statuses = Object.values(this.status.componentStatuses);
-    const allCompleted = statuses.every(s => s === 'Completed');
-    const anyFailed = statuses.some(s => s === 'Failed');
-
-    if (allCompleted) {
-      // Stop polling and navigate to game panel
-      this.destroy$.next();
-      this.router.navigate(['/adventures/play', this.adventureId]);
-    } else if (anyFailed) {
-      // Stop polling to wait for user action
-      this.destroy$.next();
-    }
   }
 
   getStatusEntries(): Array<{ key: string; value: ComponentStatus }> {
@@ -158,5 +118,44 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
 
   goToAdventureList(): void {
     this.router.navigate(['/adventures']);
+  }
+
+  private startPolling(): void {
+    interval(this.POLL_INTERVAL)
+      .pipe(
+        startWith(0), // Start immediately
+        switchMap(() => this.adventureService.getAdventureStatus(this.adventureId!)),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (status) => {
+          this.status = status;
+          this.isLoading = false;
+          this.checkStatusAndNavigate();
+        },
+        error: (error) => {
+          console.error('Error fetching adventure status:', error);
+          this.hasError = true;
+          this.errorMessage = 'Failed to fetch adventure status. Please try again.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private checkStatusAndNavigate(): void {
+    if (!this.status) return;
+
+    const statuses = Object.values(this.status.componentStatuses);
+    const allCompleted = statuses.every(s => s === 'Completed');
+    const anyFailed = statuses.some(s => s === 'Failed');
+
+    if (allCompleted) {
+      // Stop polling and navigate to game panel
+      this.destroy$.next();
+      this.router.navigate(['/adventures/play', this.adventureId]);
+    } else if (anyFailed) {
+      // Stop polling to wait for user action
+      this.destroy$.next();
+    }
   }
 }

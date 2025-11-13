@@ -14,11 +14,11 @@ namespace FableCraft.Application.AdventureImport;
 public class ImportAdventure
 {
     public IFormFile Lorebook { get; set; }
-    
+
     public IFormFile Adventure { get; set; }
-    
+
     public IFormFile Character { get; set; }
-    
+
     public string AdventureName { get; set; }
 }
 
@@ -30,10 +30,10 @@ public class AdventureImportService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
-    
+
     private readonly ApplicationDbContext _context;
-    private readonly TimeProvider _timeProvider;
     private readonly IMessageDispatcher _dispatcher;
+    private readonly TimeProvider _timeProvider;
 
     public AdventureImportService(ApplicationDbContext context, TimeProvider timeProvider, IMessageDispatcher dispatcher)
     {
@@ -64,10 +64,10 @@ public class AdventureImportService
             characterJson = await reader.ReadToEndAsync(cancellationToken);
         }
 
-        var character = ParseCharacterAsync(characterJson);
+        Character character = ParseCharacterAsync(characterJson);
         var lorebook = ParseLorebookAsync(lorebookJson);
         var scenes = ParseAdventureMessagesAsync(adventureJson);
-        var now = _timeProvider.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         var adventure = new Adventure
         {
             Name = importAdventure.AdventureName,
@@ -96,7 +96,7 @@ public class AdventureImportService
             throw new InvalidOperationException("Failed to deserialize character JSON");
         }
 
-        var character = new Character()
+        var character = new Character
         {
             Name = importedChar.Name,
             Description = importedChar.Description,
@@ -117,14 +117,14 @@ public class AdventureImportService
 
         var lorebookEntries = new List<LorebookEntry>();
 
-        foreach (var (_, entry) in importedLorebook.Entries.OrderBy(e => e.Value.Order))
+        foreach ((var _, ImportLorebookEntryDto entry) in importedLorebook.Entries.OrderBy(e => e.Value.Order))
         {
             if (entry.Disable)
             {
                 continue;
             }
 
-            var lorebookEntry = new LorebookEntry()
+            var lorebookEntry = new LorebookEntry
             {
                 Description = entry.Comment,
                 Content = entry.Content,

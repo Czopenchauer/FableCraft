@@ -2,12 +2,13 @@
 
 <!-- Theme Switcher Button -->
 <button
-  class="theme-switcher"
   (click)="toggleTheme()"
   [title]="'Switch to ' + (currentTheme === 'medieval-fantasy' ? 'Modern Dark' : 'Medieval Fantasy') + ' theme'"
+  class="theme-switcher"
 >
-  <svg class="theme-icon" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-    <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" [attr.d]="getThemeIcon()"></path>
+  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="theme-icon" viewBox="0 0 24 24">
+    <path [attr.d]="getThemeIcon()" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+          [attr.stroke-width]="2"></path>
   </svg>
   <span class="theme-label">{{ getThemeLabel() }}</span>
 </button>

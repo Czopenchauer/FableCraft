@@ -7,10 +7,14 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
+using OpenAI.Chat;
+
 using Polly;
 using Polly.Retry;
 
 using Serilog;
+
+using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
@@ -81,8 +85,8 @@ internal sealed class CharacterCrafterPlugin
     {
         var result = await pipeline.ExecuteAsync(async token =>
                      {
-                         var result = await chatCompletionService.GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel, token);
-                         var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                         ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel, token);
+                         var replyInnerContent = result.InnerContent as ChatCompletion;
                          _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                              replyInnerContent?.Usage.InputTokenCount,
                              replyInnerContent?.Usage.OutputTokenCount,

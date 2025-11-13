@@ -12,13 +12,13 @@ public static class ConfigureCosmos
             .AddAzureCosmosDB(cosmosAccountName)
             .ConfigureInfrastructure(infra =>
             {
-                var cosmosDbAccount = infra.GetProvisionableResources()
+                CosmosDBAccount cosmosDbAccount = infra.GetProvisionableResources()
                     .OfType<CosmosDBAccount>()
                     .Single();
-            
-                cosmosDbAccount.ConsistencyPolicy = new()
+
+                cosmosDbAccount.ConsistencyPolicy = new ConsistencyPolicy
                 {
-                    DefaultConsistencyLevel = DefaultConsistencyLevel.BoundedStaleness,
+                    DefaultConsistencyLevel = DefaultConsistencyLevel.BoundedStaleness
                 };
                 cosmosDbAccount.CapacityTotalThroughputLimit = 1000;
             })
@@ -35,10 +35,10 @@ public static class ConfigureCosmos
         var cosmosDatabase = cosmosDb.AddCosmosDatabase(cosmosDatabaseName);
         cosmosDb.ConfigureInfrastructure(infra =>
         {
-            var database = infra.GetProvisionableResources()
+            CosmosDBSqlDatabase database = infra.GetProvisionableResources()
                 .OfType<CosmosDBSqlDatabase>()
                 .Single(x => x.Name.Value == cosmosDatabaseName);
-        
+
             database.Options.Throughput = 100;
             database.Options.AutoscaleMaxThroughput = 1000;
         });
@@ -47,10 +47,10 @@ public static class ConfigureCosmos
         _ = cosmosDatabase.AddContainer(adventureContainer, "/partitionKey");
         cosmosDb.ConfigureInfrastructure(infra =>
         {
-            var container = infra.GetProvisionableResources()
+            CosmosDBSqlContainer container = infra.GetProvisionableResources()
                 .OfType<CosmosDBSqlContainer>()
                 .Single(x => x.Name.Value == adventureContainer);
-        
+
             container.Resource.IndexingPolicy.IndexingMode = CosmosDBIndexingMode.Consistent;
         });
 

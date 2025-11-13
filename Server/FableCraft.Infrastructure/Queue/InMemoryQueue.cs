@@ -50,22 +50,23 @@ internal class InMemoryMessageReader : BackgroundService
                     {
                         ArgumentNullException.ThrowIfNull(message);
                         _ = Task.Run(async () =>
-                        {
-                            try
                             {
-                                Type messageType = message.GetType();
-                                Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
-                                await using AsyncServiceScope scope = _serviceProvider.CreateAsyncScope();
-                                var handler = scope.ServiceProvider.GetRequiredService(handlerType);
-                                MethodInfo? handleMethod =
-                                    handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
-                                await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Error(ex, "Error processing message of type {MessageType}", message.GetType().Name);
-                            }
-                        }, stoppingToken);
+                                try
+                                {
+                                    Type messageType = message.GetType();
+                                    Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
+                                    await using AsyncServiceScope scope = _serviceProvider.CreateAsyncScope();
+                                    var handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                                    MethodInfo? handleMethod =
+                                        handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
+                                    await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.Error(ex, "Error processing message of type {MessageType}", message.GetType().Name);
+                                }
+                            },
+                            stoppingToken);
                     }
                 }
             }

@@ -27,7 +27,7 @@ internal sealed class WriterAgent : AgentBase
 
     public override ChatCompletionAgent BuildAgent(Kernel kernel, NarrativeContext context)
     {
-        var writerKernel = kernel.Clone();
+        Kernel writerKernel = kernel.Clone();
         var criticPlugin = new CriticPlugin(context, writerKernel, _logger);
         var characterPlugin = new CharacterPlugin(context, writerKernel, _logger);
         writerKernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));

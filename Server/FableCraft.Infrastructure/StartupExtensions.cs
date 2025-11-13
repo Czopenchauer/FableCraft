@@ -4,6 +4,7 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
+using FableCraft.Infrastructure.Rag;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -61,6 +62,7 @@ public static class StartupExtensions
         }).AddServiceDiscovery();
 
         services.AddSingleton<IKernelBuilder, OpenAiKernelBuilder>();
+        services.AddRag();
 
         return services;
     }

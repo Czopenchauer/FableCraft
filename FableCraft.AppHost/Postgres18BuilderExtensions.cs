@@ -8,6 +8,7 @@ public static class Postgres18BuilderExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         return builder.WithVolume(name ?? VolumeNameGenerator.Generate(builder, "data"),
-            "/var/lib/postgresql/18/docker", isReadOnly);
+            "/var/lib/postgresql/18/docker",
+            isReadOnly);
     }
 }

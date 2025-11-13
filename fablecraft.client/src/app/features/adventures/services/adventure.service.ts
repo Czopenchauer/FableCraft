@@ -1,17 +1,17 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
 import {
   Adventure,
-  AdventureDto,
   AdventureCreationStatus,
-  GenerateLorebookDto,
-  GeneratedLorebookDto,
-  AvailableLorebookDto,
+  AdventureDto,
   AdventureListItemDto,
-  GameScene
+  AvailableLorebookDto,
+  GameScene,
+  GeneratedLorebookDto,
+  GenerateLorebookDto
 } from '../models/adventure.model';
-import { environment } from '../../../../environments/environment';
+import {environment} from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +19,8 @@ import { environment } from '../../../../environments/environment';
 export class AdventureService {
   private readonly apiUrl = `${environment.apiUrl}/api/adventure`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+  }
 
   /**
    * Get all adventures
@@ -114,7 +115,7 @@ export class AdventureService {
   submitAction(adventureId: string, actionText: string): Observable<GameScene> {
     return this.http.post<GameScene>(
       `${environment.apiUrl}/api/play/submit`,
-      { adventureId, actionText }
+      {adventureId, actionText}
     );
   }
 

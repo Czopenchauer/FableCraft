@@ -5,6 +5,7 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.Agents.Orchestration.Sequential;
 using Microsoft.SemanticKernel.Agents.Runtime.InProcess;
 
@@ -17,9 +18,9 @@ namespace FableCraft.Application.NarrativeEngine.Orchestration;
 internal sealed class SceneGenerationOrchestrator
 {
     private readonly IKernelBuilder _kernelBuilder;
-    private readonly IRagSearch _ragSearch;
 
     private readonly ILogger _logger;
+    private readonly IRagSearch _ragSearch;
 
     public SceneGenerationOrchestrator(IKernelBuilder kernelBuilder, IRagSearch ragSearch, ILogger logger)
     {
@@ -32,15 +33,15 @@ internal sealed class SceneGenerationOrchestrator
     public async Task GenerateSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var narrativeContext = new NarrativeContext();
-        var kernel = _kernelBuilder.WithBase();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
         var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString());
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var kernelWithKg = kernel.Build();
+        Kernel kernelWithKg = kernel.Build();
 
-        var trackerAgent = new TrackerAgent().BuildAgent(kernelWithKg, narrativeContext);
-        var narrativeAgent = new NarrativeAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
-        var writerAgent = new WriterAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
-        var formatterAgent = new FormatterAgent().BuildAgent(kernelWithKg, narrativeContext);
+        ChatCompletionAgent trackerAgent = new TrackerAgent().BuildAgent(kernelWithKg, narrativeContext);
+        ChatCompletionAgent narrativeAgent = new NarrativeAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
+        ChatCompletionAgent writerAgent = new WriterAgent(_logger).BuildAgent(kernelWithKg, narrativeContext);
+        ChatCompletionAgent formatterAgent = new FormatterAgent().BuildAgent(kernelWithKg, narrativeContext);
         var orchestrator = new SequentialOrchestration(trackerAgent, narrativeAgent, writerAgent, formatterAgent);
 
         var runtime = new InProcessRuntime();

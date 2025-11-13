@@ -10,10 +10,10 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
     {
         var fileParameters = context.MethodInfo
             .GetParameters()
-            .Where(p => p.ParameterType == typeof(IFormFile) || 
-                        p.ParameterType == typeof(IEnumerable<IFormFile>) ||
-                        p.ParameterType == typeof(List<IFormFile>) ||
-                        p.ParameterType == typeof(IFormFile[]))
+            .Where(p => p.ParameterType == typeof(IFormFile)
+                        || p.ParameterType == typeof(IEnumerable<IFormFile>)
+                        || p.ParameterType == typeof(List<IFormFile>)
+                        || p.ParameterType == typeof(IFormFile[]))
             .ToList();
 
         if (!fileParameters.Any())
@@ -23,7 +23,7 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
         {
             Content = new Dictionary<string, OpenApiMediaType>
             {
-                ["multipart/form-data"] = new OpenApiMediaType
+                ["multipart/form-data"] = new()
                 {
                     Schema = new OpenApiSchema
                     {
@@ -31,7 +31,7 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
                         Properties = context.MethodInfo.GetParameters()
                             .ToDictionary(
                                 p => p.Name,
-                                p => p.ParameterType == typeof(IFormFile) 
+                                p => p.ParameterType == typeof(IFormFile)
                                     ? new OpenApiSchema
                                     {
                                         Type = "string",

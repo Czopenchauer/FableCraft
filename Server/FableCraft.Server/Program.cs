@@ -4,8 +4,6 @@ using FableCraft.Infrastructure.Persistence.Cosmos;
 using FableCraft.Server;
 using FableCraft.ServiceDefaults;
 
-using Microsoft.OpenApi.Models;
-
 using Serilog;
 using Serilog.Events;
 

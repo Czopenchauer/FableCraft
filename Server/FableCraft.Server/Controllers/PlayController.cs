@@ -20,12 +20,12 @@ public class PlayController : ControllerBase
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     public async Task<ActionResult> GetCurrentScene(Guid adventureId, CancellationToken cancellationToken)
     {
-        var scene = await _gameService.GetCurrentSceneAsync(adventureId, cancellationToken);
+        GameScene? scene = await _gameService.GetCurrentSceneAsync(adventureId, cancellationToken);
         if (scene == null)
         {
             return NotFound();
         }
-        
+
         return Ok(scene);
     }
 
@@ -40,7 +40,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            var scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
+            GameScene scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)
@@ -79,7 +79,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            var scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
+            GameScene scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)

@@ -1,17 +1,18 @@
 using System.ComponentModel;
 
 using FableCraft.Infrastructure.Clients;
+
 using Microsoft.SemanticKernel;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 /// <summary>
-/// Plugin providing knowledge graph search capabilities to all agents
+///     Plugin providing knowledge graph search capabilities to all agents
 /// </summary>
 public class KnowledgeGraphPlugin
 {
-    private readonly IRagSearch _ragSearch;
     private readonly string _adventureId;
+    private readonly IRagSearch _ragSearch;
 
     public KnowledgeGraphPlugin(IRagSearch ragSearch, string adventureId)
     {
@@ -20,12 +21,13 @@ public class KnowledgeGraphPlugin
     }
 
     [KernelFunction("search_knowledge_graph")]
-    [Description("Search the knowledge graph for entities, relationships, and narrative data. Use this to query existing locations, characters, lore, items, events, and their relationships.")]
+    [Description(
+        "Search the knowledge graph for entities, relationships, and narrative data. Use this to query existing locations, characters, lore, items, events, and their relationships.")]
     public async Task<string> SearchKnowledgeGraphAsync(
         [Description("The search query describing what information to retrieve from the knowledge graph")]
         string query)
     {
-        var result = await _ragSearch.SearchAsync(_adventureId, query);
+        SearchResult result = await _ragSearch.SearchAsync(_adventureId, query);
         return result.Content ?? string.Empty;
     }
 }

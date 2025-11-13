@@ -1,5 +1,5 @@
-﻿import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+﻿import {Injectable} from '@angular/core';
+import {BehaviorSubject, Observable} from 'rxjs';
 
 export type Theme = 'medieval-fantasy' | 'modern-dark';
 
@@ -7,9 +7,9 @@ export type Theme = 'medieval-fantasy' | 'modern-dark';
   providedIn: 'root'
 })
 export class ThemeService {
+  public currentTheme$: Observable<Theme>;
   private readonly THEME_STORAGE_KEY = 'fablecraft-theme';
   private currentThemeSubject: BehaviorSubject<Theme>;
-  public currentTheme$: Observable<Theme>;
 
   constructor() {
     // Load theme from localStorage or default to medieval-fantasy
@@ -44,6 +44,24 @@ export class ThemeService {
     const currentTheme = this.getCurrentTheme();
     const newTheme: Theme = currentTheme === 'medieval-fantasy' ? 'modern-dark' : 'medieval-fantasy';
     this.setTheme(newTheme);
+  }
+
+  /**
+   * Get theme display name
+   */
+  getThemeDisplayName(theme: Theme): string {
+    const displayNames: Record<Theme, string> = {
+      'medieval-fantasy': 'Medieval Fantasy',
+      'modern-dark': 'Modern Dark'
+    };
+    return displayNames[theme];
+  }
+
+  /**
+   * Get all available themes
+   */
+  getAvailableThemes(): Theme[] {
+    return ['medieval-fantasy', 'modern-dark'];
   }
 
   /**
@@ -83,23 +101,5 @@ export class ThemeService {
       console.warn('Failed to retrieve theme preference:', error);
     }
     return 'medieval-fantasy'; // Default theme
-  }
-
-  /**
-   * Get theme display name
-   */
-  getThemeDisplayName(theme: Theme): string {
-    const displayNames: Record<Theme, string> = {
-      'medieval-fantasy': 'Medieval Fantasy',
-      'modern-dark': 'Modern Dark'
-    };
-    return displayNames[theme];
-  }
-
-  /**
-   * Get all available themes
-   */
-  getAvailableThemes(): Theme[] {
-    return ['medieval-fantasy', 'modern-dark'];
   }
 }

@@ -1,6 +1,6 @@
-namespace FableCraft.Application.NarrativeEngine;
-
 using System.Text.Json.Serialization;
+
+namespace FableCraft.Application.NarrativeEngine;
 
 internal sealed class NarrativeContext
 {

@@ -3,11 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Scene : IEntity
+public class Scene : IKnowledgeGraphEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     public Guid AdventureId { get; init; }
 
@@ -24,4 +21,17 @@ public class Scene : IEntity
     public DateTime CreatedAt { get; init; }
 
     public List<CharacterAction> CharacterActions { get; init; } = new();
+
+    [Key]
+    public Guid Id { get; set; }
+
+    public string GetContent()
+    {
+        return $"{NarrativeText}\n{CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty}".Trim();
+    }
+
+    public string GetContentDescription()
+    {
+        return $"Scene number {SequenceNumber}";
+    }
 }

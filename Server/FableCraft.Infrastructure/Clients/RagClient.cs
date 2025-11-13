@@ -40,27 +40,6 @@ internal class RagClient : IRagBuilder, IRagSearch
     }
 
     /// <summary>
-    ///     Search the graph database
-    /// </summary>
-    public async Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default)
-    {
-        SearchRequest request = new()
-        {
-            AdventureId = adventureId,
-            Query = query,
-        };
-
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<SearchResult>(cancellationToken)
-               ?? new SearchResult
-               {
-                   Content = string.Empty
-               };
-    }
-
-    /// <summary>
     ///     Add data to the graph database (returns immediately with task info)
     /// </summary>
     public async Task<AddDataResponse> AddDataAsync(AddDataRequest request)
@@ -101,7 +80,7 @@ internal class RagClient : IRagBuilder, IRagSearch
     /// </summary>
     public async Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.DeleteAsync($"/delete_data?episode_id={Uri.EscapeDataString(dataId)}", cancellationToken);
+        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete_data?episode_id={Uri.EscapeDataString(dataId)}", cancellationToken);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -137,6 +116,27 @@ internal class RagClient : IRagBuilder, IRagSearch
 
         return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
                ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
+    }
+
+    /// <summary>
+    ///     Search the graph database
+    /// </summary>
+    public async Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default)
+    {
+        SearchRequest request = new()
+        {
+            AdventureId = adventureId,
+            Query = query
+        };
+
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<SearchResult>(cancellationToken)
+               ?? new SearchResult
+               {
+                   Content = string.Empty
+               };
     }
 }
 
@@ -262,4 +262,3 @@ public class BuildCommunitiesResponse
     [JsonPropertyName("edges_count")]
     public int EdgesCount { get; set; }
 }
-

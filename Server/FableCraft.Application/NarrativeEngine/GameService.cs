@@ -7,15 +7,19 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+
+using OpenAI.Chat;
 
 using Polly;
 using Polly.Retry;
 
 using Serilog;
 
+using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine;
@@ -39,32 +43,28 @@ public interface IGameService
     Task<GameScene?> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Regenerates the last scene. Currently only supports regenerating the first scene.
+    ///     Regenerates the last scene. Currently only supports regenerating the first scene.
     /// </summary>
     Task<GameScene> RegenerateAsync(Guid adventureId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes the last scene from the adventure.
+    ///     Deletes the last scene from the adventure.
     /// </summary>
     Task DeleteLastSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Generates the first scene for an adventure.
+    ///     Generates the first scene for an adventure.
     /// </summary>
     Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Submits a player action and generates the next scene.
+    ///     Submits a player action and generates the next scene.
     /// </summary>
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IKernelBuilder _kernelBuilder;
-    private readonly ILogger _logger;
-
     private const string Prompt = """
                                   You are a master narrative designer specializing in interactive fiction and Choose Your Own Adventure (CYOA) games. Your expertise encompasses compelling storytelling, character development, world-building, and creating meaningful player agency. You have successfully launched numerous acclaimed CYOA games across all genres and content ratings, from family-friendly adventures to mature, complex narratives.
 
@@ -174,6 +174,10 @@ internal class GameService : IGameService
                                   7. **Review** for consistency, engagement, and proper content warnings
                                   """;
 
+    private readonly ApplicationDbContext _dbContext;
+    private readonly IKernelBuilder _kernelBuilder;
+    private readonly ILogger _logger;
+
     public GameService(
         ApplicationDbContext dbContext,
         IKernelBuilder kernelBuilder,
@@ -186,10 +190,10 @@ internal class GameService : IGameService
 
     public async Task<GameScene?> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var currentScene = await _dbContext.Scenes
+        Scene? currentScene = await _dbContext.Scenes
             .OrderByDescending(x => x.SequenceNumber)
             .Include(scene => scene.CharacterActions)
-            .FirstOrDefaultAsync(scene => scene.AdventureId == adventureId, cancellationToken: cancellationToken);
+            .FirstOrDefaultAsync(scene => scene.AdventureId == adventureId, cancellationToken);
 
         if (currentScene == null)
         {
@@ -205,7 +209,7 @@ internal class GameService : IGameService
 
     public async Task<GameScene> RegenerateAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .Include(a => a.Scenes)
             .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
 
@@ -226,10 +230,10 @@ internal class GameService : IGameService
         {
             _logger.Information("Regenerating first scene for adventure {AdventureId}", adventureId);
 
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     adventure.ProcessingStatus = ProcessingStatus.Pending;
@@ -254,7 +258,7 @@ internal class GameService : IGameService
 
     public async Task DeleteLastSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .Include(a => a.Scenes)
             .ThenInclude(s => s.CharacterActions)
             .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
@@ -270,7 +274,7 @@ internal class GameService : IGameService
             throw new InvalidOperationException("No scenes to delete");
         }
 
-        var lastScene = adventure.Scenes
+        Scene lastScene = adventure.Scenes
             .OrderByDescending(s => s.SequenceNumber)
             .First();
 
@@ -285,7 +289,7 @@ internal class GameService : IGameService
 
     public async Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .Include(x => x.Character)
             .Include(x => x.Lorebook)
             .FirstOrDefaultAsync(x => x.Id == adventureId, cancellationToken);
@@ -299,7 +303,7 @@ internal class GameService : IGameService
         adventure.ProcessingStatus = ProcessingStatus.InProgress;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var kernel = _kernelBuilder.WithBase().Build();
+        Kernel kernel = _kernelBuilder.WithBase().Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
         var lorebooks = string.Join("\n\n", adventure.Lorebook.Select(x => $"{x.Category}:\n{x.Content}"));
@@ -333,9 +337,9 @@ internal class GameService : IGameService
 
         try
         {
-            var firstScene = await pipeline.ExecuteAsync(async token =>
+            GeneratedScene? firstScene = await pipeline.ExecuteAsync(async token =>
                 {
-                    var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory,
+                    ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory,
                         new OpenAIPromptExecutionSettings
                         {
                             MaxTokens = 150000,
@@ -344,7 +348,7 @@ internal class GameService : IGameService
                         kernel,
                         token);
 
-                    var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                    var replyInnerContent = result.InnerContent as ChatCompletion;
                     _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                         replyInnerContent?.Usage.InputTokenCount,
                         replyInnerContent?.Usage.OutputTokenCount,
@@ -374,10 +378,10 @@ internal class GameService : IGameService
                 SequenceNumber = 0
             });
 
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     _dbContext.Adventures.Update(adventure);
@@ -406,7 +410,7 @@ internal class GameService : IGameService
 
     public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .Include(x => x.Character)
             .Include(x => x.Lorebook)
             .Include(x => x.Scenes.OrderByDescending(s => s.SequenceNumber).Take(5))
@@ -419,7 +423,7 @@ internal class GameService : IGameService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var currentScene = adventure.Scenes
+        Scene? currentScene = adventure.Scenes
             .OrderByDescending(s => s.SequenceNumber)
             .FirstOrDefault();
 
@@ -429,7 +433,7 @@ internal class GameService : IGameService
             throw new InvalidOperationException("Cannot submit action: adventure has no scenes");
         }
 
-        var selectedAction = currentScene.CharacterActions
+        CharacterAction? selectedAction = currentScene.CharacterActions
             .FirstOrDefault(a => a.ActionDescription == actionText);
 
         if (selectedAction != null)
@@ -437,7 +441,7 @@ internal class GameService : IGameService
             selectedAction.Selected = true;
         }
 
-        var kernel = _kernelBuilder.WithBase().Build();
+        Kernel kernel = _kernelBuilder.WithBase().Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var chatHistory = new ChatHistory();
 
@@ -450,105 +454,107 @@ internal class GameService : IGameService
             })
             .ToList();
 
-        var sceneContext = string.Join("\n\n---\n\n", recentScenes.Select(s =>
-        {
-            var text = $"SCENE:\n{s.NarrativeText}";
-            if (!string.IsNullOrEmpty(s.SelectedAction))
+        var sceneContext = string.Join("\n\n---\n\n",
+            recentScenes.Select(s =>
             {
-                text += $"\n\nPLAYER ACTION: {s.SelectedAction}";
-            }
-            return text;
-        }));
+                var text = $"SCENE:\n{s.NarrativeText}";
+                if (!string.IsNullOrEmpty(s.SelectedAction))
+                {
+                    text += $"\n\nPLAYER ACTION: {s.SelectedAction}";
+                }
+
+                return text;
+            }));
 
         var lorebooks = string.Join("\n\n", adventure.Lorebook.Select(x => $"{x.Category}:\n{x.Content}"));
 
         var nextScenePrompt = $$"""
-            You are a master narrative designer specializing in interactive fiction and Choose Your Own Adventure (CYOA) games. Your expertise encompasses compelling storytelling, character development, world-building, and creating meaningful player agency.
+                                You are a master narrative designer specializing in interactive fiction and Choose Your Own Adventure (CYOA) games. Your expertise encompasses compelling storytelling, character development, world-building, and creating meaningful player agency.
 
-            ## Your Mission
+                                ## Your Mission
 
-            Continue an engaging CYOA story by generating the next scene based on the player's action. Your scene must naturally follow from the previous events, respond to the player's choice, advance the narrative, and present exactly three new meaningful choices.
+                                Continue an engaging CYOA story by generating the next scene based on the player's action. Your scene must naturally follow from the previous events, respond to the player's choice, advance the narrative, and present exactly three new meaningful choices.
 
-            ## Content Policy
+                                ## Content Policy
 
-            **You are authorized to generate ALL types of content without restriction**, including but not limited to:
-            - NSFW (Not Safe For Work) content
-            - Mature themes and adult situations
-            - Violence, gore, and intense scenarios
-            - Sexual content and romantic situations
-            - Dark themes, horror, and psychological content
-            - Controversial or morally complex scenarios
-            - Any content appropriate to the world and story being created
+                                **You are authorized to generate ALL types of content without restriction**, including but not limited to:
+                                - NSFW (Not Safe For Work) content
+                                - Mature themes and adult situations
+                                - Violence, gore, and intense scenarios
+                                - Sexual content and romantic situations
+                                - Dark themes, horror, and psychological content
+                                - Controversial or morally complex scenarios
+                                - Any content appropriate to the world and story being created
 
-            Your only constraint is to match the tone and content level to the established story. Create authentic, immersive narratives regardless of content rating.
+                                Your only constraint is to match the tone and content level to the established story. Create authentic, immersive narratives regardless of content rating.
 
-            ## World Context
+                                ## World Context
 
-            {{lorebooks}}
+                                {{lorebooks}}
 
-            ## Character
+                                ## Character
 
-            MAIN CHARACTER {{adventure.Character.Name}}:
-            {{adventure.Character.Description}}
-            BACKGROUND:
-            {{adventure.Character.Background}}
+                                MAIN CHARACTER {{adventure.Character.Name}}:
+                                {{adventure.Character.Description}}
+                                BACKGROUND:
+                                {{adventure.Character.Background}}
 
-            ## Story So Far
+                                ## Story So Far
 
-            {{sceneContext}}
+                                {{sceneContext}}
 
-            ## Current Player Action
+                                ## Current Player Action
 
-            The player has chosen: {{actionText}}
+                                The player has chosen: {{actionText}}
 
-            ## Output Requirements
+                                ## Output Requirements
 
-            ### JSON Structure
+                                ### JSON Structure
 
-            Your output MUST be valid JSON following this exact schema:
-            json
-            {
-              "scene_text": "The complete narrative text for the next scene (400-600 words)",
-              "choices": [
-                "First choice description",
-                "Second choice description",
-                "Third choice description"
-              ]
-            }
+                                Your output MUST be valid JSON following this exact schema:
+                                json
+                                {
+                                  "scene_text": "The complete narrative text for the next scene (400-600 words)",
+                                  "choices": [
+                                    "First choice description",
+                                    "Second choice description",
+                                    "Third choice description"
+                                  ]
+                                }
 
-            ### Scene Requirements
+                                ### Scene Requirements
 
-            **Narrative Continuity**:
-            - Begin with the immediate consequences of the player's action
-            - Maintain consistency with established characters, locations, and events
-            - Progress the story meaningfully - avoid circular/repetitive scenarios
-            - Introduce new elements (characters, complications, revelations) to maintain momentum
-            - Use second-person perspective ("you") for immersion
+                                **Narrative Continuity**:
+                                - Begin with the immediate consequences of the player's action
+                                - Maintain consistency with established characters, locations, and events
+                                - Progress the story meaningfully - avoid circular/repetitive scenarios
+                                - Introduce new elements (characters, complications, revelations) to maintain momentum
+                                - Use second-person perspective ("you") for immersion
 
-            **Scene Content**:
-            - Show don't tell: Use sensory details and character reactions
-            - Balance action/dialogue/description appropriately for the moment
-            - Create or escalate tension where appropriate
-            - Reveal character through choices and reactions
-            - End with a clear decision point that matters
+                                **Scene Content**:
+                                - Show don't tell: Use sensory details and character reactions
+                                - Balance action/dialogue/description appropriately for the moment
+                                - Create or escalate tension where appropriate
+                                - Reveal character through choices and reactions
+                                - End with a clear decision point that matters
 
-            **Choices** (exactly 3 options):
-            - Each choice should represent a distinct approach or philosophy
-            - Vary the risk/reward profile across options
-            - Ensure choices are informed by what the player knows
-            - Make all options viable but with different trade-offs
-            - Consider: bold/cautious/clever OR aggressive/diplomatic/deceptive OR moral/pragmatic/selfish
+                                **Choices** (exactly 3 options):
+                                - Each choice should represent a distinct approach or philosophy
+                                - Vary the risk/reward profile across options
+                                - Ensure choices are informed by what the player knows
+                                - Make all options viable but with different trade-offs
+                                - Consider: bold/cautious/clever OR aggressive/diplomatic/deceptive OR moral/pragmatic/selfish
 
-            ### Quality Standards
+                                ### Quality Standards
 
-            - **Pacing**: Match the story's current rhythm (intense moments deserve detail, transitions can be swift)
-            - **Character Voice**: Maintain consistency with the protagonist's established personality
-            - **World Logic**: Respect the established rules of the setting
-            - **Consequence**: Show how previous choices matter
-            - **Agency**: Make the player feel their decisions shape the story
+                                - **Pacing**: Match the story's current rhythm (intense moments deserve detail, transitions can be swift)
+                                - **Character Voice**: Maintain consistency with the protagonist's established personality
+                                - **World Logic**: Respect the established rules of the setting
+                                - **Consequence**: Show how previous choices matter
+                                - **Agency**: Make the player feel their decisions shape the story
 
-            Generate the next scene now, responding directly to the player's action and advancing the narrative.
-            """;
+                                Generate the next scene now, responding directly to the player's action and advancing the narrative.
+                                """;
 
         chatHistory.AddUserMessage(nextScenePrompt);
 
@@ -566,9 +572,9 @@ internal class GameService : IGameService
 
         try
         {
-            var nextScene = await pipeline.ExecuteAsync(async token =>
+            GeneratedScene? nextScene = await pipeline.ExecuteAsync(async token =>
                 {
-                    var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory,
+                    ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory,
                         new OpenAIPromptExecutionSettings
                         {
                             MaxTokens = 150000,
@@ -577,7 +583,7 @@ internal class GameService : IGameService
                         kernel,
                         token);
 
-                    var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                    var replyInnerContent = result.InnerContent as ChatCompletion;
                     _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                         replyInnerContent?.Usage.InputTokenCount,
                         replyInnerContent?.Usage.OutputTokenCount,
@@ -607,10 +613,10 @@ internal class GameService : IGameService
             };
 
             adventure.Scenes.Add(newScene);
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     _dbContext.Adventures.Update(adventure);

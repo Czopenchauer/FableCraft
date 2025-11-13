@@ -9,7 +9,7 @@ public static class Extensions
     {
         const string connectionName = "fablecraft-cosmos";
         builder.AddAzureCosmosClient(connectionName);
-        builder.AddAzureCosmosDatabase(connectionName: connectionName,
+        builder.AddAzureCosmosDatabase(connectionName,
             settings =>
             {
                 settings.DatabaseName = "fablecraft";

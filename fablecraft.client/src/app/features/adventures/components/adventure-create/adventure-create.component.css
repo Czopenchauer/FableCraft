@@ -13,9 +13,8 @@
 }
 
 [data-theme="medieval-fantasy"] .create-container {
-  background:
-    radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.1) 0%, transparent 70%),
-    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.1) 0%, transparent 70%),
+  linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
 }
 
 /* Medieval texture overlay */
@@ -26,14 +25,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(184, 134, 11, 0.02) 2px,
-      rgba(184, 134, 11, 0.02) 4px
-    );
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(184, 134, 11, 0.02) 2px,
+    rgba(184, 134, 11, 0.02) 4px
+  );
   pointer-events: none;
 }
 
@@ -104,9 +102,8 @@
 /* Medieval theme ornate text */
 [data-theme="medieval-fantasy"] .page-title {
   color: var(--color-primary);
-  text-shadow:
-    2px 2px 0 var(--color-accent),
-    4px 4px 8px rgba(0, 0, 0, 0.6);
+  text-shadow: 2px 2px 0 var(--color-accent),
+  4px 4px 8px rgba(0, 0, 0, 0.6);
   letter-spacing: 0.05em;
 }
 
@@ -884,7 +881,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {

@@ -1,9 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AdventureService } from '../../services/adventure.service';
-import { AvailableLorebookDto, AdventureDto, LorebookGenerationState, GenerateLorebookDto } from '../../models/adventure.model';
-import { Subject, takeUntil } from 'rxjs';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {Router} from '@angular/router';
+import {AdventureService} from '../../services/adventure.service';
+import {
+  AdventureDto,
+  AvailableLorebookDto,
+  GenerateLorebookDto,
+  LorebookGenerationState
+} from '../../models/adventure.model';
+import {Subject, takeUntil} from 'rxjs';
 
 @Component({
   selector: 'app-adventure-create',
@@ -32,7 +37,16 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private adventureService: AdventureService,
     private router: Router
-  ) {}
+  ) {
+  }
+
+  get lorebookEntries(): FormArray {
+    return this.adventureForm.get('lorebook') as FormArray;
+  }
+
+  get characterGroup(): FormGroup {
+    return this.adventureForm.get('character') as FormGroup;
+  }
 
   ngOnInit(): void {
     this.initializeForm();
@@ -59,55 +73,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     if (nameControl?.valid) {
       this.currentStep = 1;
       this.errorMessage = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({top: 0, behavior: 'smooth'});
     }
-  }
-
-  private initializeForm(): void {
-    this.adventureForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      firstSceneDescription: ['', Validators.required],
-      authorNotes: ['', Validators.required],
-      character: this.fb.group({
-        name: ['', [Validators.required, Validators.minLength(2)]],
-        description: ['', Validators.required],
-        background: ['', Validators.required]
-      }),
-      lorebook: this.fb.array([])
-    });
-  }
-
-  private loadAvailableLorebooks(): void {
-    this.isLoading = true;
-    this.adventureService.getSupportedLorebooks()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (lorebooks) => {
-          this.availableLorebooks = lorebooks.sort((a, b) => a.priority - b.priority);
-          this.initializeLorebookEntries();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading lorebooks:', error);
-          this.errorMessage = 'Failed to load lorebook categories. Please try again.';
-          this.isLoading = false;
-        }
-      });
-  }
-
-  private initializeLorebookEntries(): void {
-    const lorebookArray = this.adventureForm.get('lorebook') as FormArray;
-    this.availableLorebooks.forEach(lorebook => {
-      lorebookArray.push(this.fb.group({
-        category: [lorebook.category],
-        description: [lorebook.description],
-        content: ['']
-      }));
-    });
-  }
-
-  get lorebookEntries(): FormArray {
-    return this.adventureForm.get('lorebook') as FormArray;
   }
 
   getLorebookAt(index: number): FormGroup {
@@ -122,7 +89,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     if (this.currentStep < this.totalSteps) {
       this.currentStep++;
       this.errorMessage = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({top: 0, behavior: 'smooth'});
     }
   }
 
@@ -130,7 +97,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     if (this.currentStep > 1) {
       this.currentStep--;
       this.errorMessage = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({top: 0, behavior: 'smooth'});
     }
   }
 
@@ -196,31 +163,28 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
 
   getStepTitle(): string {
     switch (this.currentStep) {
-      case 1: return 'World Building';
-      case 2: return 'Character Creation';
-      case 3: return 'Starting Scene';
-      default: return '';
+      case 1:
+        return 'World Building';
+      case 2:
+        return 'Character Creation';
+      case 3:
+        return 'Starting Scene';
+      default:
+        return '';
     }
   }
 
   getStepDescription(): string {
     switch (this.currentStep) {
-      case 1: return 'Add details about your world (optional)';
-      case 2: return 'Create your protagonist';
-      case 3: return 'Set the stage for your adventure';
-      default: return '';
+      case 1:
+        return 'Add details about your world (optional)';
+      case 2:
+        return 'Create your protagonist';
+      case 3:
+        return 'Set the stage for your adventure';
+      default:
+        return '';
     }
-  }
-
-  private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
-      control?.markAsTouched();
-
-      if (control instanceof FormGroup) {
-        this.markFormGroupTouched(control);
-      }
-    });
   }
 
   isFieldInvalid(fieldName: string, parentGroup?: FormGroup): boolean {
@@ -242,17 +206,13 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  get characterGroup(): FormGroup {
-    return this.adventureForm.get('character') as FormGroup;
-  }
-
   generateSingleLorebook(index: number): void {
     const lorebookGroup = this.getLorebookAt(index);
     const category = lorebookGroup.get('category')?.value;
     const additionalInstruction = lorebookGroup.get('content')?.value || undefined;
 
     // Mark as generating
-    this.lorebookGenerationStates.set(index, { status: 'generating' });
+    this.lorebookGenerationStates.set(index, {status: 'generating'});
     this.errorMessage = '';
 
     // Collect other lorebooks that have content (excluding the current one)
@@ -311,11 +271,91 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
 
     // Initialize all lorebooks as pending
     this.lorebookEntries.controls.forEach((_, index) => {
-      this.lorebookGenerationStates.set(index, { status: 'pending' });
+      this.lorebookGenerationStates.set(index, {status: 'pending'});
     });
 
     // Start sequential generation
     this.generateNextLorebook(0);
+  }
+
+  stopLorebookGeneration(): void {
+    this.stopGeneration$.next();
+    this.stopGeneration$.complete();
+    this.isGenerating = false;
+
+    // Mark all pending as completed (cancelled)
+    this.lorebookGenerationStates.forEach((state, index) => {
+      if (state.status === 'pending' || state.status === 'generating') {
+        this.lorebookGenerationStates.set(index, {status: 'completed'});
+      }
+    });
+  }
+
+  getLorebookState(index: number): LorebookGenerationState | undefined {
+    return this.lorebookGenerationStates.get(index);
+  }
+
+  isLorebookGenerating(index: number): boolean {
+    const state = this.lorebookGenerationStates.get(index);
+    return state?.status === 'generating' || state?.status === 'pending';
+  }
+
+  isGenerateAllDisabled(): boolean {
+    return this.isGenerating || !this.customInstruction.trim();
+  }
+
+  private initializeForm(): void {
+    this.adventureForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      firstSceneDescription: ['', Validators.required],
+      authorNotes: ['', Validators.required],
+      character: this.fb.group({
+        name: ['', [Validators.required, Validators.minLength(2)]],
+        description: ['', Validators.required],
+        background: ['', Validators.required]
+      }),
+      lorebook: this.fb.array([])
+    });
+  }
+
+  private loadAvailableLorebooks(): void {
+    this.isLoading = true;
+    this.adventureService.getSupportedLorebooks()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (lorebooks) => {
+          this.availableLorebooks = lorebooks.sort((a, b) => a.priority - b.priority);
+          this.initializeLorebookEntries();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading lorebooks:', error);
+          this.errorMessage = 'Failed to load lorebook categories. Please try again.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private initializeLorebookEntries(): void {
+    const lorebookArray = this.adventureForm.get('lorebook') as FormArray;
+    this.availableLorebooks.forEach(lorebook => {
+      lorebookArray.push(this.fb.group({
+        category: [lorebook.category],
+        description: [lorebook.description],
+        content: ['']
+      }));
+    });
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
   }
 
   private generateNextLorebook(index: number): void {
@@ -335,7 +375,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     }
 
     // Mark as generating
-    this.lorebookGenerationStates.set(index, { status: 'generating' });
+    this.lorebookGenerationStates.set(index, {status: 'generating'});
 
     // Collect other lorebooks that have content
     const existingLorebooks = this.lorebookEntries.controls
@@ -388,31 +428,5 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
           });
         }
       });
-  }
-
-  stopLorebookGeneration(): void {
-    this.stopGeneration$.next();
-    this.stopGeneration$.complete();
-    this.isGenerating = false;
-
-    // Mark all pending as completed (cancelled)
-    this.lorebookGenerationStates.forEach((state, index) => {
-      if (state.status === 'pending' || state.status === 'generating') {
-        this.lorebookGenerationStates.set(index, { status: 'completed' });
-      }
-    });
-  }
-
-  getLorebookState(index: number): LorebookGenerationState | undefined {
-    return this.lorebookGenerationStates.get(index);
-  }
-
-  isLorebookGenerating(index: number): boolean {
-    const state = this.lorebookGenerationStates.get(index);
-    return state?.status === 'generating' || state?.status === 'pending';
-  }
-
-  isGenerateAllDisabled(): boolean {
-    return this.isGenerating || !this.customInstruction.trim();
   }
 }

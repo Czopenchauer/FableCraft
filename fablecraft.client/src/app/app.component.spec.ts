@@ -1,7 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
-import { ThemeService } from './core/services/theme.service';
-import { of } from 'rxjs';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {AppComponent} from './app.component';
+import {ThemeService} from './core/services/theme.service';
+import {of} from 'rxjs';
 
 describe('AppComponent', () => {
   let component: AppComponent;
@@ -21,7 +21,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       declarations: [AppComponent],
       providers: [
-        { provide: ThemeService, useValue: themeServiceSpy }
+        {provide: ThemeService, useValue: themeServiceSpy}
       ]
     }).compileComponents();
 

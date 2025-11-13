@@ -2,6 +2,7 @@
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -13,11 +14,14 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
+using OpenAI.Chat;
+
 using Polly;
 using Polly.Retry;
 
 using Serilog;
 
+using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.AdventureGeneration;
@@ -52,13 +56,13 @@ public interface IAdventureCreationService
 
 internal class AdventureCreationService : IAdventureCreationService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IMessageDispatcher _messageDispatcher;
-    private readonly TimeProvider _timeProvider;
     private readonly IOptions<AdventureCreationConfig> _config;
+    private readonly ApplicationDbContext _dbContext;
     private readonly IKernelBuilder _kernelBuilder;
     private readonly ILogger _logger;
-    private readonly Infrastructure.Clients.IRagBuilder _ragBuilder;
+    private readonly IMessageDispatcher _messageDispatcher;
+    private readonly IRagBuilder _ragBuilder;
+    private readonly TimeProvider _timeProvider;
 
     public AdventureCreationService(
         ApplicationDbContext dbContext,
@@ -67,7 +71,7 @@ internal class AdventureCreationService : IAdventureCreationService
         IOptions<AdventureCreationConfig> config,
         IKernelBuilder kernelBuilder,
         ILogger logger,
-        Infrastructure.Clients.IRagBuilder ragBuilder)
+        IRagBuilder ragBuilder)
     {
         _dbContext = dbContext;
         _messageDispatcher = messageDispatcher;
@@ -80,7 +84,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
     public AvailableLorebookDto[] GetSupportedLorebook()
     {
-        var categories = _config.Value.Lorebooks.Select(x => new AvailableLorebookDto()
+        var categories = _config.Value.Lorebooks.Select(x => new AvailableLorebookDto
         {
             Category = x.Key,
             Description = x.Value.Description,
@@ -93,7 +97,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto,
         CancellationToken cancellationToken)
     {
-        var now = _timeProvider.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
 
         var adventure = new Adventure
         {
@@ -106,15 +110,15 @@ internal class AdventureCreationService : IAdventureCreationService
             {
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description,
-                Background = adventureDto.Character.Background,
+                Background = adventureDto.Character.Background
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
                 {
                     Description = entry.Description,
                     Content = entry.Content,
-                    Category = entry.Category,
+                    Category = entry.Category
                 })
-                .ToList(),
+                .ToList()
         };
 
         _dbContext.Adventures.Add(adventure);
@@ -131,14 +135,14 @@ internal class AdventureCreationService : IAdventureCreationService
         CancellationToken cancellationToken,
         string? additionalInstruction = null)
     {
-        if (!_config.Value.Lorebooks.TryGetValue(category, out var lorebookConfig))
+        if (!_config.Value.Lorebooks.TryGetValue(category, out LorebookConfig? lorebookConfig))
         {
             throw new ArgumentException($"Lorebook type '{category}' is not supported.", category);
         }
 
         try
         {
-            await using var stream = File.OpenRead(lorebookConfig.GetPromptFileName());
+            await using FileStream stream = File.OpenRead(lorebookConfig.GetPromptFileName());
             using var reader = new StreamReader(stream);
             var prompt = await reader.ReadToEndAsync(cancellationToken);
 
@@ -184,14 +188,14 @@ internal class AdventureCreationService : IAdventureCreationService
             var chatHistory = new ChatHistory();
             chatHistory.AddUserMessage(prompt);
             chatHistory.AddUserMessage(establishedWorld);
-            var kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
+            Kernel kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
             var promptExecutionSettings = new OpenAIPromptExecutionSettings
             {
                 Temperature = _config.Value.Temperature,
                 PresencePenalty = _config.Value.PresencePenalty,
                 FrequencyPenalty = _config.Value.FrequencyPenalty,
                 MaxTokens = _config.Value.MaxTokens,
-                TopP = _config.Value.TopP,
+                TopP = _config.Value.TopP
             };
             _logger.Debug("Generating lorebook for type {type} with prompt: {prompt}", category, establishedWorld);
             try
@@ -199,8 +203,8 @@ internal class AdventureCreationService : IAdventureCreationService
                 var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
                 return await pipeline.ExecuteAsync(async token =>
                            {
-                               var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                               var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
+                               ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                               var replyInnerContent = result.InnerContent as ChatCompletion;
                                _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                                    replyInnerContent?.Usage.InputTokenCount,
                                    replyInnerContent?.Usage.OutputTokenCount,
@@ -230,14 +234,17 @@ internal class AdventureCreationService : IAdventureCreationService
         var adventure = await _dbContext.Adventures
             .Include(w => w.Character)
             .Include(w => w.Lorebook)
+            .Include(x => x.Scenes)
             .Select(x => new
             {
-                x.Id, CharacterId = x.Character.Id, Lorebooks = x.Lorebook.Select(y =>
-                    new
-                    {
-                        LorebookId = y.Id,
-                        y.Category
-                    }),
+                x.Id,
+                CharacterId = x.Character.Id,
+                Lorebooks = x.Lorebook.Select(y => new
+                {
+                    LorebookId = y.Id,
+                    y.Category
+                }),
+                SceneIds = x.Scenes.Select(s => s.Id),
                 x.ProcessingStatus
             })
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
@@ -247,84 +254,70 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var characterChunks = await _dbContext.Chunks.Where(x => x.EntityId == adventure.CharacterId).ToListAsync(cancellationToken: cancellationToken);
-        var lorebookChunks = await _dbContext.Chunks.Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId)).ToListAsync(cancellationToken: cancellationToken);
-
-        var status = new Dictionary<string, string>();
-        if (lorebookChunks.Count > 0)
-        {
-            status = lorebookChunks.Join(
-                    adventure.Lorebooks,
-                    chunk => chunk.EntityId,
-                    lorebook => lorebook.LorebookId,
-                    (chunk, lorebook) => new
-                    {
-                        lorebook.LorebookId,
-                        lorebook.Category,
-                        chunk.ProcessingStatus
-                    })
-                .GroupBy(x => x.Category)
-                .ToDictionary(x => x.Key,
-                    x =>
-                    {
-                        var statuses = x.Select(y => y.ProcessingStatus).ToList();
-                        if (statuses.All(s => s == ProcessingStatus.Completed))
-                        {
-                            return nameof(ProcessingStatus.Completed);
-                        }
-
-                        if (statuses.Any(s => s == ProcessingStatus.Failed))
-                        {
-                            return nameof(ProcessingStatus.Failed);
-                        }
-
-                        if (statuses.Any(s => s == ProcessingStatus.InProgress))
-                        {
-                            return nameof(ProcessingStatus.InProgress);
-                        }
-
-                        return nameof(ProcessingStatus.Pending);
-                    });
-
-            foreach (var se in adventure.Lorebooks.Select(x => x.Category).Except(status.Keys))
+        var lorebookStatuses = await _dbContext.Chunks
+            .Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId))
+            .Join(adventure.Lorebooks,
+                chunk => chunk.EntityId,
+                lorebook => lorebook.LorebookId,
+                (chunk, lorebook) => new { lorebook.Category, chunk.ProcessingStatus })
+            .GroupBy(x => x.Category)
+            .Select(g => new
             {
-                status.Add(se, nameof(ProcessingStatus.Pending));
-            }
+                Category = g.Key,
+                Status = g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? nameof(ProcessingStatus.Completed) :
+                    g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? nameof(ProcessingStatus.Failed) :
+                    g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? nameof(ProcessingStatus.InProgress) :
+                    nameof(ProcessingStatus.Pending)
+            })
+            .ToDictionaryAsync(x => x.Category, x => x.Status, cancellationToken);
+
+        foreach (var category in adventure.Lorebooks.Select(x => x.Category).Except(lorebookStatuses.Keys))
+        {
+            lorebookStatuses.Add(category, nameof(ProcessingStatus.Pending));
+        }
+
+        var characterStatus = await _dbContext.Chunks
+                                  .Where(x => x.EntityId == adventure.CharacterId)
+                                  .GroupBy(x => x.EntityId)
+                                  .Select(g => g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? nameof(ProcessingStatus.Completed) :
+                                      g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? nameof(ProcessingStatus.Failed) :
+                                      g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? nameof(ProcessingStatus.InProgress) :
+                                      nameof(ProcessingStatus.Pending))
+                                  .FirstOrDefaultAsync(cancellationToken)
+                              ?? nameof(ProcessingStatus.Pending);
+
+        var sceneStatus = adventure.SceneIds.Any()
+            ? await _dbContext.Chunks
+                .Where(x => adventure.SceneIds.Contains(x.EntityId))
+                .GroupBy(x => x.EntityId)
+                .Select(g => g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? ProcessingStatus.Completed :
+                    g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? ProcessingStatus.Failed :
+                    g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? ProcessingStatus.InProgress :
+                    ProcessingStatus.Pending)
+                .Select(status => status.ToString())
+                .ToListAsync(cancellationToken)
+            : new List<string>();
+
+        var aggregatedSceneStatus = !sceneStatus.Any() ? string.Empty :
+            sceneStatus.All(s => s == nameof(ProcessingStatus.Completed)) ? nameof(ProcessingStatus.Completed) :
+            sceneStatus.Any(s => s == nameof(ProcessingStatus.Failed)) ? nameof(ProcessingStatus.Failed) :
+            sceneStatus.Any(s => s == nameof(ProcessingStatus.InProgress)) ? nameof(ProcessingStatus.InProgress) :
+            nameof(ProcessingStatus.Pending);
+
+        var status = new Dictionary<string, string>(lorebookStatuses)
+        {
+            ["Character"] = characterStatus
+        };
+
+        if (adventure.SceneIds.Any())
+        {
+            status.Add("Importing scenes", aggregatedSceneStatus);
         }
         else
         {
-            foreach (var se in adventure.Lorebooks.Select(x => x.Category))
-            {
-                status.Add(se, nameof(ProcessingStatus.Pending));
-            }
+            status.Add("Creating first scene", adventure.ProcessingStatus.ToString());
         }
 
-        if (!characterChunks.Any())
-        {
-            status.Add("Character", nameof(ProcessingStatus.Pending));
-        }
-        else
-        {
-            var characterStatus = characterChunks.Select(x => x.ProcessingStatus).ToList();
-            if (characterStatus.All(s => s == ProcessingStatus.Completed))
-            {
-                status.Add("Character", nameof(ProcessingStatus.Completed));
-            }
-            else if (characterStatus.Any(s => s == ProcessingStatus.Failed))
-            {
-                status.Add("Character", nameof(ProcessingStatus.Failed));
-            }
-            else if (characterStatus.Any(s => s == ProcessingStatus.InProgress))
-            {
-                status.Add("Character", nameof(ProcessingStatus.InProgress));
-            }
-            else
-            {
-                status.Add("Character", nameof(ProcessingStatus.Pending));
-            }
-        }
-        
-        status.Add(nameof(Adventure), adventure.ProcessingStatus.ToString());
         return new AdventureCreationStatus
         {
             AdventureId = adventureId,
@@ -335,7 +328,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
-        var adventureStatus = await GetAdventureCreationStatusAsync(adventureId, cancellationToken);
+        AdventureCreationStatus adventureStatus = await GetAdventureCreationStatusAsync(adventureId, cancellationToken);
 
         if (!adventureStatus.ComponentStatuses.ContainsValue(nameof(ProcessingStatus.Failed)))
         {
@@ -352,7 +345,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
     public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .Include(w => w.Character)
             .Include(w => w.Lorebook)
             .Include(x => x.Scenes)
@@ -368,7 +361,7 @@ internal class AdventureCreationService : IAdventureCreationService
         var chunks = new List<Chunk>();
         foreach (var guides in ids.Chunk(50))
         {
-            chunks = await _dbContext.Chunks.Where(x => guides.Contains(x.Id)).ToListAsync(cancellationToken: cancellationToken);
+            chunks = await _dbContext.Chunks.Where(x => guides.Contains(x.Id)).ToListAsync(cancellationToken);
             try
             {
                 var tasks = chunks.Select(chunk => _ragBuilder.DeleteDataAsync(chunk.EntityId.ToString(), cancellationToken));
@@ -404,7 +397,7 @@ internal class AdventureCreationService : IAdventureCreationService
                         : s.NarrativeText)
                     .FirstOrDefault(),
                 Created = a.CreatedAt,
-                LastPlayed = a.LastPlayedAt,
+                LastPlayed = a.LastPlayedAt
             })
             .ToListAsync(cancellationToken);
 

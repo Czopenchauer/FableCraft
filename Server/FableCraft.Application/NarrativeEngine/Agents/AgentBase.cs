@@ -18,7 +18,7 @@ internal abstract class AgentBase
             Name = Name,
             Description = Description,
             Instructions = BuildInstruction(context),
-            Kernel = kernel.Clone(),
+            Kernel = kernel.Clone()
         };
     }
 }

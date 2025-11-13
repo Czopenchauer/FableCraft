@@ -7,10 +7,14 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
+using OpenAI.Chat;
+
 using Polly;
 using Polly.Retry;
 
 using Serilog;
+
+using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
@@ -39,7 +43,7 @@ internal sealed class CharacterPlugin
         [Description("The name of the character whose action is to be emulated")]
         string characterName)
     {
-        if (!_chatHistory.TryGetValue(characterName, out var chatHistory))
+        if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
         {
             return "Character not found.";
         }
@@ -88,16 +92,16 @@ internal sealed class CharacterPlugin
         OpenAIPromptExecutionSettings promptExecutionSettings)
     {
         var result = await pipeline.ExecuteAsync(async token =>
-                         {
-                             var result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, _kernel, token);
-                             var replyInnerContent = result.InnerContent as OpenAI.Chat.ChatCompletion;
-                             _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                 replyInnerContent?.Usage.InputTokenCount,
-                                 replyInnerContent?.Usage.OutputTokenCount,
-                                 replyInnerContent?.Usage.TotalTokenCount);
-                             _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                             return result.Content?.RemoveThinkingBlock();
-                         })
+                     {
+                         ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, _kernel, token);
+                         var replyInnerContent = result.InnerContent as ChatCompletion;
+                         _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                             replyInnerContent?.Usage.InputTokenCount,
+                             replyInnerContent?.Usage.OutputTokenCount,
+                             replyInnerContent?.Usage.TotalTokenCount);
+                         _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                         return result.Content?.RemoveThinkingBlock();
+                     })
                      ?? string.Empty;
         chatHistory.AddAssistantMessage(result);
         return result;

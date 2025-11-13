@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Complete scene generation output matching required JSON structure
+///     Complete scene generation output matching required JSON structure
 /// </summary>
 public class SceneGenerationOutput
 {

@@ -23,7 +23,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
 
     public Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null)
     {
-        var builder = Kernel
+        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
             .CreateBuilder()
             .AddOpenAIChatCompletion(model ?? _configuration.Value.Model, new Uri(_configuration.Value.BaseUrl), _configuration.Value.ApiKey);
 

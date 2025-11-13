@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { ThemeService, Theme } from './core/services/theme.service';
+import {Component, OnInit} from '@angular/core';
+import {Theme, ThemeService} from './core/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +11,8 @@ export class AppComponent implements OnInit {
   title = 'FableCraft';
   currentTheme: Theme = 'medieval-fantasy';
 
-  constructor(public themeService: ThemeService) {}
+  constructor(public themeService: ThemeService) {
+  }
 
   ngOnInit(): void {
     this.themeService.currentTheme$.subscribe(theme => {

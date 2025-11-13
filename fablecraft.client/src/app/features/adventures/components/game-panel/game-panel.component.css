@@ -11,9 +11,8 @@
 }
 
 [data-theme="medieval-fantasy"] .game-panel-container {
-  background:
-    radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.08) 0%, transparent 70%),
-    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(184, 134, 11, 0.08) 0%, transparent 70%),
+  linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
 }
 
 .game-panel-content {
@@ -177,8 +176,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {

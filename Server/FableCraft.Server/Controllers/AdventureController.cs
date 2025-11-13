@@ -6,6 +6,7 @@ using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
+using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -53,14 +54,14 @@ public class AdventureController : ControllerBase
     public async Task<IActionResult> Create([FromBody] AdventureDto adventure,
         [FromServices] IValidator<AdventureDto> validator, CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(adventure, cancellationToken);
+        ValidationResult? validationResult = await validator.ValidateAsync(adventure, cancellationToken);
 
         if (!validationResult.IsValid)
         {
             return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
         }
 
-        var result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);
+        AdventureCreationStatus result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);
 
         return Ok(result);
     }
@@ -70,10 +71,10 @@ public class AdventureController : ControllerBase
     public async Task<IActionResult> Retry(Guid adventureId, CancellationToken cancellationToken)
     {
         await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand
-        {
-            AdventureId = adventureId
-        },
-        cancellationToken);
+            {
+                AdventureId = adventureId
+            },
+            cancellationToken);
 
         return Ok();
     }
@@ -84,7 +85,7 @@ public class AdventureController : ControllerBase
     {
         try
         {
-            var result = await _adventureCreationService.GetAdventureCreationStatusAsync(adventure, cancellationToken);
+            AdventureCreationStatus result = await _adventureCreationService.GetAdventureCreationStatusAsync(adventure, cancellationToken);
 
             return Ok(result);
         }
@@ -100,7 +101,7 @@ public class AdventureController : ControllerBase
     public async Task<IActionResult> GenerateLorebook([FromBody] GenerateLorebookDto dto,
         [FromServices] IValidator<GenerateLorebookDto> validator, CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        ValidationResult? validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -126,7 +127,7 @@ public class AdventureController : ControllerBase
     {
         try
         {
-            var result = await _adventureCreationService.RetryKnowledgeGraphProcessingAsync(adventure, cancellationToken);
+            AdventureCreationStatus result = await _adventureCreationService.RetryKnowledgeGraphProcessingAsync(adventure, cancellationToken);
 
             return RedirectToAction(nameof(GetGenerationStatus), new { adventure = result.AdventureId });
         }
@@ -186,7 +187,7 @@ public class AdventureController : ControllerBase
 
         try
         {
-            var adventure = await _adventureImportService.ImportAdventureAsync(
+            Adventure adventure = await _adventureImportService.ImportAdventureAsync(
                 importAdventure,
                 cancellationToken);
 
@@ -204,11 +205,12 @@ public class AdventureController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-            {
-                Title = "An error occurred while importing the adventure",
-                Detail = ex.Message
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ProblemDetails
+                {
+                    Title = "An error occurred while importing the adventure",
+                    Detail = ex.Message
+                });
         }
     }
 }

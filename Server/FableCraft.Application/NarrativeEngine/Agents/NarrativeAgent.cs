@@ -29,7 +29,7 @@ internal sealed class NarrativeAgent : AgentBase
 
     public override ChatCompletionAgent BuildAgent(Kernel kernel, NarrativeContext context)
     {
-        var narrativeKernel = kernel.Clone();
+        Kernel narrativeKernel = kernel.Clone();
         var loreCrafterPlugin = new LoreCrafterPlugin(context, kernel.Clone(), _logger);
         var characterCrafterPlugin = new CharacterCrafterPlugin(context, kernel.Clone(), _logger);
         narrativeKernel.Plugins.Add(KernelPluginFactory.CreateFromObject(loreCrafterPlugin));

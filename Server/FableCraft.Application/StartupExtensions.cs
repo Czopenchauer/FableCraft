@@ -1,6 +1,5 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.AdventureImport;
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Orchestration;
 using FableCraft.Application.NarrativeEngine.WelcomeScene;
@@ -27,7 +26,6 @@ public static class StartupExtensions
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddScoped<AdventureImportService>();
         services.AddScoped<IGameService, GameService>();
-        services.AddScoped<KnowledgeGraphService>();
         services.AddScoped<SceneGenerationOrchestrator>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<AdventureCreatedEvent, AdventureCreatedEventHandler>();

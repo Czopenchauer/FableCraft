@@ -46,12 +46,29 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
 }
 
-h1 { font-size: var(--font-size-6xl); }
-h2 { font-size: var(--font-size-5xl); }
-h3 { font-size: var(--font-size-4xl); }
-h4 { font-size: var(--font-size-3xl); }
-h5 { font-size: var(--font-size-2xl); }
-h6 { font-size: var(--font-size-xl); }
+h1 {
+  font-size: var(--font-size-6xl);
+}
+
+h2 {
+  font-size: var(--font-size-5xl);
+}
+
+h3 {
+  font-size: var(--font-size-4xl);
+}
+
+h4 {
+  font-size: var(--font-size-3xl);
+}
+
+h5 {
+  font-size: var(--font-size-2xl);
+}
+
+h6 {
+  font-size: var(--font-size-xl);
+}
 
 p {
   margin-bottom: var(--spacing-md);
@@ -168,6 +185,10 @@ a:hover {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

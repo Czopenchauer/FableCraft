@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { AdventureListItemDto } from '../../models/adventure.model';
-import { AdventureService } from '../../services/adventure.service';
+import {Component, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {AdventureListItemDto} from '../../models/adventure.model';
+import {AdventureService} from '../../services/adventure.service';
 
 @Component({
   selector: 'app-adventure-list',
@@ -22,7 +22,8 @@ export class AdventureListComponent implements OnInit {
   constructor(
     private adventureService: AdventureService,
     private router: Router
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.loadAdventures();
@@ -61,7 +62,7 @@ export class AdventureListComponent implements OnInit {
 
   deleteAdventure(event: Event, adventureId: string, adventureName: string): void {
     event.stopPropagation();
-    this.adventureToDelete = { id: adventureId, name: adventureName };
+    this.adventureToDelete = {id: adventureId, name: adventureName};
     this.showDeleteModal = true;
   }
 

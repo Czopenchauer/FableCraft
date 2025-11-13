@@ -19,7 +19,7 @@ internal sealed class ValidateLorebookPrompt : IHostedService
     public Task StartAsync(CancellationToken cancellationToken)
     {
         var missingFiles = new List<string>();
-        foreach (var (key, value) in _configuration.Value.Lorebooks)
+        foreach ((var key, LorebookConfig value) in _configuration.Value.Lorebooks)
         {
             if (!File.Exists(value.GetPromptFileName()))
             {

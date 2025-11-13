@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using FableCraft.Application.AdventureGeneration;
+
+using FluentValidation;
 
 namespace FableCraft.Application.Model;
 
@@ -6,7 +8,7 @@ public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDt
 {
     private readonly AvailableLorebookDto[] _supportedCategories;
 
-    public GenerateLorebookDtoValidator(AdventureGeneration.IAdventureCreationService adventureCreationService)
+    public GenerateLorebookDtoValidator(IAdventureCreationService adventureCreationService)
     {
         _supportedCategories = adventureCreationService.GetSupportedLorebook();
 
@@ -24,7 +26,8 @@ public class GenerateLorebookDtoValidator : AbstractValidator<GenerateLorebookDt
             {
                 lorebook.RuleFor(x => x.Category)
                     .Must((_, category) => BeSupportedCategory(category))
-                    .WithMessage((_, category) => $"Lorebook category '{category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Select(y => y.Category))}");
+                    .WithMessage((_, category) =>
+                        $"Lorebook category '{category}' is not supported. Supported categories are: {string.Join(", ", _supportedCategories.Select(y => y.Category))}");
             });
 
         RuleFor(x => x.Lorebooks)

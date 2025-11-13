@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil, finalize } from 'rxjs/operators';
-import { AdventureService } from '../../services/adventure.service';
-import { GameScene } from '../../models/adventure.model';
+import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {Subject} from 'rxjs';
+import {finalize, takeUntil} from 'rxjs/operators';
+import {AdventureService} from '../../services/adventure.service';
+import {GameScene} from '../../models/adventure.model';
 
 @Component({
   selector: 'app-game-panel',
@@ -12,8 +12,6 @@ import { GameScene } from '../../models/adventure.model';
   styleUrl: './game-panel.component.css'
 })
 export class GamePanelComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-
   adventureId: string | null = null;
   adventureName: string = '';
   currentScene: GameScene | null = null;
@@ -22,13 +20,15 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   isRegenerating = false;
   error: string | null = null;
   customAction = '';
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private adventureService: AdventureService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.adventureId = this.route.snapshot.paramMap.get('id');
