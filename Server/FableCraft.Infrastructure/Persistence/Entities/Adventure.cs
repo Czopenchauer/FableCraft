@@ -1,9 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class Adventure : IEntity
 {
+    [Key]
+    public Guid Id { get; set; }
+
     [Required]
     [MaxLength(200)]
     public string Name { get; init; } = null!;
@@ -23,10 +27,10 @@ public class Adventure : IEntity
 
     public required Character Character { get; init; }
 
+    [Column(TypeName = "jsonb")]
+    public string Tracker { get; init; } = null!;
+
     public required List<LorebookEntry> Lorebook { get; init; }
 
     public List<Scene> Scenes { get; init; } = [];
-
-    [Key]
-    public Guid Id { get; set; }
 }
