@@ -91,27 +91,25 @@ internal sealed class RagProcessor : IRagProcessor
                     cancellationToken)
             });
 
+        failedChunks.Where(x => string.IsNullOrEmpty(x.KnowledgeGraphNodeId) && x.ProcessingStatus == ProcessingStatus.Failed)
+            .ToList()
+            .ForEach(x => x.ProcessingStatus = ProcessingStatus.Pending);
+
         foreach (var chunk in committedChunks)
         {
-            var dbSet = _dbContext.Chunks.OfType<Chunk>();
             try
             {
                 EpisodeResponse chunkEpisodeId = await chunk.EpisodeId;
-                await dbSet.Where(e => e.Id == chunk.Chunk.Id)
-                    .ExecuteUpdateAsync(
-                        x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Completed)
-                            .SetProperty(e => e.KnowledgeGraphNodeId, chunkEpisodeId.Uuid),
-                        cancellationToken);
-
-                _logger.Debug("Successfully retrieved episode for Chunk {chunkId}", chunk.Chunk.Id);
+                chunk.Chunk.ProcessingStatus = ProcessingStatus.Completed;
+                chunk.Chunk.KnowledgeGraphNodeId = chunkEpisodeId.Uuid;
             }
             catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                await dbSet.Where(e => e.Id == chunk.Chunk.Id)
-                    .ExecuteUpdateAsync(
-                        x => x.SetProperty(e => e.ProcessingStatus, ProcessingStatus.Pending),
-                        cancellationToken);
+                chunk.Chunk.ProcessingStatus = ProcessingStatus.Pending;
             }
         }
+
+        _dbContext.Chunks.UpdateRange(failedChunks);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

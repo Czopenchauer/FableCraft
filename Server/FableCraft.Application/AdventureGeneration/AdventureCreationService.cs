@@ -256,9 +256,9 @@ internal class AdventureCreationService : IAdventureCreationService
 
         var lorebookStatuses = await _dbContext.Chunks
             .Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId))
-            .Join(adventure.Lorebooks,
+            .Join(_dbContext.LorebookEntries,
                 chunk => chunk.EntityId,
-                lorebook => lorebook.LorebookId,
+                lorebook => lorebook.Id,
                 (chunk, lorebook) => new { lorebook.Category, chunk.ProcessingStatus })
             .GroupBy(x => x.Category)
             .Select(g => new

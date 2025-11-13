@@ -44,9 +44,9 @@ internal sealed class KnowledgeGraphProcessor : ITextProcessorHandler
 
     public async Task ProcessChunkAsync<TEntity>(Context<TEntity> context, CancellationToken cancellationToken) where TEntity : IKnowledgeGraphEntity
     {
-        foreach (var processingContext in context.Chunks)
+        foreach (var processingContext in context.Chunks.OrderBy(x => x.Entity.Id))
         {
-            foreach (Chunk chunk in processingContext.Chunks)
+            foreach (Chunk chunk in processingContext.Chunks.OrderBy(x => x.Order))
             {
                 switch (chunk.ProcessingStatus)
                 {

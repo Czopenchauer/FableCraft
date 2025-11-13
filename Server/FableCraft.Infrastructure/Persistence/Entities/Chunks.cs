@@ -15,7 +15,7 @@ public class Chunk : IEntity
 
     public required int Order { get; set; }
 
-    public string? KnowledgeGraphNodeId { get; init; }
+    public string? KnowledgeGraphNodeId { get; set; }
 
     public ProcessingStatus ProcessingStatus { get; set; }
 
