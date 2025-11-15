@@ -1,6 +1,20 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
+
+public class Tracker : IEntity
+{
+    [Key]
+    public Guid Id { get; set; }
+    
+    [Required]
+    public string Name { get; set; }
+
+    [Column(TypeName = "jsonb")]
+    public TrackerStructure Structure { get; set; }
+}
 
 public enum FieldType
 {
@@ -10,49 +24,49 @@ public enum FieldType
     ForEachObject
 }
 
-public sealed class Tracker
+public sealed class TrackerStructure
 {
     public string TrackerName { get; set; }
-    
-    [JsonPropertyName("time")]
-    public FieldDefsetion Time { get; set; }
 
-    public FieldDefsetion Weather { get; set; }
+    [JsonPropertyName("time")]
+    public FieldDefinition Time { get; set; }
+
+    public FieldDefinition Weather { get; set; }
 
     [JsonPropertyName("location")]
-    public FieldDefsetion Location { get; set; }
+    public FieldDefinition Location { get; set; }
 
     [JsonPropertyName("characters_present")]
     public string[] CharactersPresent { get; set; }
 
     [JsonPropertyName("main_character")]
-    public TrackerDefsetion MainCharacterStats { get; set; }
+    public TrackerStructureDefinition MainCharacterStats { get; set; }
 
     [JsonPropertyName("characters")]
-    public TrackerDefsetion[] Characters { get; set; }
+    public TrackerStructureDefinition[] Characters { get; set; }
 }
 
-public sealed class TrackerDefsetion : Dictionary<string, FieldDefsetion>;
+public sealed class TrackerStructureDefinition : Dictionary<string, FieldDefinition>;
 
-public sealed class FieldDefsetion
+public sealed class FieldDefinition
 {
     public string Name { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public FieldType Type { get; set; }
 
     public string Prompt { get; set; }
 
-    public object[] DefaultValue { get; set; }
+    public object? DefaultValue { get; set; }
 
-    public List<object> ExampleValues { get; set; } = new List<object>();
+    public List<object>? ExampleValues { get; set; }
 
-    public TrackerDefsetion NestedFields { get; set; } = new TrackerDefsetion();
+    public TrackerStructureDefinition? NestedFields { get; set; }
 
     public bool IsValid()
     {
-        return !string.IsNullOrEmpty(Name) && 
-               !string.IsNullOrEmpty(Prompt);
+        return !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Prompt);
     }
 
-    public bool HasNestedFields => NestedFields != null && NestedFields.Count > 0;
+    public bool HasNestedFields => NestedFields is { Count: > 0 };
 }
