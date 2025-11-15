@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
@@ -8,7 +9,7 @@ public class Tracker : IEntity
 {
     [Key]
     public Guid Id { get; set; }
-    
+
     [Required]
     public string Name { get; set; }
 
@@ -26,24 +27,22 @@ public enum FieldType
 
 public sealed class TrackerStructure
 {
-    public string TrackerName { get; set; }
-
     [JsonPropertyName("time")]
-    public FieldDefinition Time { get; set; }
+    public FieldDefinition? Time { get; set; }
 
-    public FieldDefinition Weather { get; set; }
+    public FieldDefinition? Weather { get; set; }
 
     [JsonPropertyName("location")]
-    public FieldDefinition Location { get; set; }
+    public FieldDefinition? Location { get; set; }
 
     [JsonPropertyName("characters_present")]
-    public string[] CharactersPresent { get; set; }
+    public string[]? CharactersPresent { get; set; }
 
     [JsonPropertyName("main_character")]
-    public TrackerStructureDefinition MainCharacterStats { get; set; }
+    public TrackerStructureDefinition? MainCharacterStats { get; set; }
 
     [JsonPropertyName("characters")]
-    public TrackerStructureDefinition[] Characters { get; set; }
+    public TrackerStructureDefinition[]? Characters { get; set; }
 }
 
 public sealed class TrackerStructureDefinition : Dictionary<string, FieldDefinition>;
@@ -68,5 +67,6 @@ public sealed class FieldDefinition
         return !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Prompt);
     }
 
+    [MemberNotNullWhen(true, nameof(NestedFields))]
     public bool HasNestedFields => NestedFields is { Count: > 0 };
 }
