@@ -51,7 +51,7 @@ public static class StartupExtensions
 
             // LLM calls can take a while
             client.Timeout = TimeSpan.FromMinutes(10);
-        }).AddServiceDiscovery();
+        });
 
         services.AddHttpClient<IRagSearch, RagClient>(client =>
         {
@@ -59,7 +59,7 @@ public static class StartupExtensions
 
             // LLM calls can take a while
             client.Timeout = TimeSpan.FromMinutes(10);
-        }).AddServiceDiscovery();
+        });
 
         services.AddSingleton<IKernelBuilder, OpenAiKernelBuilder>();
         services.AddRag();

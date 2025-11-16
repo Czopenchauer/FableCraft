@@ -44,7 +44,7 @@ internal sealed class KnowledgeGraphProcessor : ITextProcessorHandler
 
     public async Task ProcessChunkAsync<TEntity>(Context<TEntity> context, CancellationToken cancellationToken) where TEntity : IKnowledgeGraphEntity
     {
-        foreach (var processingContext in context.Chunks.OrderBy(x => x.Entity.Id))
+        foreach (var processingContext in context.Chunks)
         {
             foreach (Chunk chunk in processingContext.Chunks.OrderBy(x => x.Order))
             {
@@ -109,9 +109,9 @@ internal sealed class KnowledgeGraphProcessor : ITextProcessorHandler
             }
         }
 
-        var taskId = context.AdventureId.ToString();
-        await _ragBuilder.BuildCommunitiesAsync(context.AdventureId.ToString(), taskId, cancellationToken);
-        await WaitForTaskCompletionAsync(taskId, cancellationToken);
+        // var taskId = context.AdventureId.ToString();
+        // await _ragBuilder.BuildCommunitiesAsync(context.AdventureId.ToString(), taskId, cancellationToken);
+        // await WaitForTaskCompletionAsync(taskId, cancellationToken);
     }
 
     private async Task<TaskStatusResponse> WaitForTaskCompletionAsync(string taskId, CancellationToken cancellationToken)

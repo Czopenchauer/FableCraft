@@ -6,13 +6,18 @@ using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
 
-using Serilog;
-
 namespace FableCraft.Infrastructure.Rag;
+
+public class ProcessingOptions
+{
+    public int MaxChunkSize { get; set; } = 128;
+}
 
 internal sealed class Context<TEntity> where TEntity : IKnowledgeGraphEntity
 {
     public required Guid AdventureId { get; init; }
+
+    public required ProcessingOptions ProcessingOptions { get; set; }
 
     public required IEnumerable<ProcessingContext<TEntity>> Chunks { get; init; }
 }
@@ -31,25 +36,33 @@ internal interface ITextProcessorHandler
 
 public interface IRagProcessor
 {
-    Task Add<TEntity>(Guid adventureId, TEntity[] entities, CancellationToken cancellationToken) where TEntity : IKnowledgeGraphEntity;
+    Task Add<TEntity>(Guid adventureId, TEntity[] entities, CancellationToken cancellationToken, ProcessingOptions? options = null) where TEntity : IKnowledgeGraphEntity;
 }
 
 internal sealed class RagProcessor : IRagProcessor
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IEnumerable<ITextProcessorHandler> _handlers;
-    private readonly ILogger _logger;
     private readonly IRagBuilder _ragBuilder;
 
-    public RagProcessor(IEnumerable<ITextProcessorHandler> handlers, ApplicationDbContext dbContext, IRagBuilder ragBuilder, ILogger logger)
+    public RagProcessor(IEnumerable<ITextProcessorHandler> handlers, ApplicationDbContext dbContext, IRagBuilder ragBuilder)
     {
         _handlers = handlers;
         _dbContext = dbContext;
         _ragBuilder = ragBuilder;
-        _logger = logger;
     }
 
-    public async Task Add<TEntity>(Guid adventureId, TEntity[] entities, CancellationToken cancellationToken) where TEntity : IKnowledgeGraphEntity
+    public async Task Add<TEntity>(Guid adventureId, TEntity[] entities, CancellationToken cancellationToken, ProcessingOptions? options = null)
+        where TEntity : IKnowledgeGraphEntity
+    {
+        await AddInternal(adventureId, entities, options, _handlers, cancellationToken);
+    }
+
+    private async Task AddInternal<TEntity>(
+        Guid adventureId, TEntity[] entities,
+        ProcessingOptions? options,
+        IEnumerable<ITextProcessorHandler> handlers,
+        CancellationToken cancellationToken) where TEntity : IKnowledgeGraphEntity
     {
         var existingChunks = await _dbContext.Set<Chunk>()
             .Where(x => entities.Select(y => y.Id).Contains(x.EntityId))
@@ -66,9 +79,10 @@ internal sealed class RagProcessor : IRagProcessor
         var context = new Context<TEntity>
         {
             AdventureId = adventureId,
-            Chunks = processingContexts
+            Chunks = processingContexts,
+            ProcessingOptions = options ?? new ProcessingOptions()
         };
-        foreach (ITextProcessorHandler textProcessorHandler in _handlers)
+        foreach (ITextProcessorHandler textProcessorHandler in handlers)
         {
             await textProcessorHandler.ProcessChunkAsync(context, cancellationToken);
         }

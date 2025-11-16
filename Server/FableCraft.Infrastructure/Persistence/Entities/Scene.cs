@@ -33,53 +33,47 @@ public class Scene : IKnowledgeGraphEntity
             ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
             : NarrativeText;
 
-        var textContent = new
-        {
-            NarrativeText = narrativeText,
-            Tracker = new Dictionary<string, object>()
-        };
-
         if (!string.IsNullOrEmpty(SceneStateJson))
         {
             try
             {
-                using var doc = JsonDocument.Parse(SceneStateJson);
-                if (doc.RootElement.TryGetProperty("tracker", out var tracker))
-                {
-                    foreach (var property in tracker.EnumerateObject())
-                    {
-                        if (property.Value.ValueKind == JsonValueKind.Array)
-                        {
-                            var arrayItems = property.Value.EnumerateArray()
-                                .Select(item => item.ToString())
-                                .ToList();
-                            textContent.Tracker[property.Name] = arrayItems;
-                        }
-                        else if (property.Value.ValueKind == JsonValueKind.Object)
-                        {
-                            var nestedObj = new Dictionary<string, object>();
-                            foreach (var nestedProp in property.Value.EnumerateObject())
-                            {
-                                nestedObj[nestedProp.Name] = nestedProp.Value.ValueKind == JsonValueKind.Array
-                                    ? nestedProp.Value.EnumerateArray().Select(i => i.ToString()).ToList()
-                                    : nestedProp.Value.ToString();
-                            }
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var sceneState = JsonSerializer.Deserialize<TrackerStructure>(SceneStateJson, options);
 
-                            textContent.Tracker[property.Name] = nestedObj;
-                        }
-                        else
-                        {
-                            textContent.Tracker[property.Name] = property.Value.ToString();
-                        }
+                if (sceneState != null)
+                {
+                    var timeField = sceneState.Story?.FirstOrDefault(f => f.Name == "Time");
+                    var locationField = sceneState.Story?.FirstOrDefault(f => f.Name == "Location");
+
+                    var metadata = new List<string>();
+
+                    if (timeField?.DefaultValue != null)
+                    {
+                        metadata.Add($"Time: {timeField.DefaultValue}");
+                    }
+
+                    if (locationField?.DefaultValue != null)
+                    {
+                        metadata.Add($"Location: {locationField.DefaultValue}");
+                    }
+
+                    if (sceneState.CharactersPresent?.Length > 0)
+                    {
+                        metadata.Add($"Characters Present: {string.Join(", ", sceneState.CharactersPresent)}");
+                    }
+
+                    if (metadata.Any())
+                    {
+                        narrativeText = $"{string.Join("\n", metadata)}\n\n{narrativeText}";
                     }
                 }
             }
-            catch(JsonException)
+            catch (JsonException)
             {
-                // Return content with empty tracker if JSON parsing fails
+                // Ignore deserialization errors and proceed without metadata
             }
         }
-        var text = JsonSerializer.Serialize(textContent, new JsonSerializerOptions { WriteIndented = true });
-        return new Content(text, $"Scene number {SequenceNumber}", ContentType.Json);
+
+        return new Content(narrativeText, $"Scene number {SequenceNumber}", ContentType.Text);
     }
 }

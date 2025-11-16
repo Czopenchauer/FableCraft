@@ -28,7 +28,7 @@ public class Adventure : IEntity
     public required Character Character { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public string Tracker { get; init; } = null!;
+    public string? Tracker { get; init; }
 
     public required List<LorebookEntry> Lorebook { get; init; }
 

@@ -27,9 +27,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .Include(x => x.Scenes).ThenInclude(scene => scene.CharacterActions)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken);
 
-        await ragProcessor.Add(adventure.Id, adventure.Lorebook.ToArray(), cancellationToken);
+        await ragProcessor.Add(adventure.Id, adventure.Lorebook.OrderBy(x => x.Priority).ToArray(), cancellationToken);
         await ragProcessor.Add(adventure.Id, [adventure.Character], cancellationToken);
-        await ragProcessor.Add(adventure.Id, adventure.Scenes.ToArray(), cancellationToken);
+        await ragProcessor.Add(adventure.Id, adventure.Scenes.OrderBy(x => x.SequenceNumber).ToArray(), cancellationToken);
 
         if (adventure.Scenes.Count == 0)
         {
@@ -38,6 +38,11 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     AdventureId = adventure.Id
                 },
                 cancellationToken);
+        }
+        else
+        {
+            await dbContext.Adventures.Where(x => x.Id == adventure.Id)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.ProcessingStatus, y => ProcessingStatus.Completed), cancellationToken);
         }
     }
 }

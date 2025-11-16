@@ -23,7 +23,6 @@ namespace FableCraft.Infrastructure.Rag.Processors;
 
 internal sealed class ChunkerProcessor : ITextProcessorHandler
 {
-    private const int ChunkSize = 128;
     private const int BatchSize = 10;
     private readonly ApplicationDbContext _dbContext;
     private readonly IKernelBuilder _kernelBuilder;
@@ -42,6 +41,7 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
         {
             var chunks = processingContext.Select(arg => ChunkTextAsync(
                     arg.Entity.GetContent().Text,
+                    context.ProcessingOptions.MaxChunkSize,
                     cancellationToken).ContinueWith(x =>
                     {
                         var chunks = x.Result.Select((text, idx) => new Chunk
@@ -74,7 +74,7 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
         }
     }
 
-    private async Task<List<string>> ChunkTextAsync(string text, CancellationToken cancellationToken)
+    private async Task<List<string>> ChunkTextAsync(string text, int chunkSize, CancellationToken cancellationToken)
     {
         Kernel kernel = _kernelBuilder.WithBase().Build();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
@@ -87,7 +87,7 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
                                     1. Analyze the input text structure and identify natural boundaries (paragraphs, sections, topic shifts)
                                     2. Split the text into chunks that:
                                        - Maintain semantic coherence (each chunk covers a complete thought or topic)
-                                       - Stay within the specified size limit of up to {ChunkSize * 3} characters
+                                       - Stay within the specified size limit of up to {chunkSize * 3} characters
                                        - Preserve context by avoiding mid-sentence breaks when possible
                                        - Keep related information together
                                        - avoid modifying text where possible

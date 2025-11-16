@@ -402,7 +402,7 @@ async def get_episode(episode_id: str):
         )
 
 
-@app.delete("/delete_data")
+@app.delete("/delete_data/{episode_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_data(episode_id: str):
     """Endpoint to delete data from the graph database"""
     try:

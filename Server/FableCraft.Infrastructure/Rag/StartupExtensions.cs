@@ -10,8 +10,9 @@ internal static class StartupExtensions
     {
         services
             .AddScoped<IRagProcessor, RagProcessor>()
-            // .AddScoped<ITextProcessorHandler, ChunkerProcessor>()
-            // .AddScoped<ITextProcessorHandler, ContextProcessor>()
+            .AddScoped<ITextProcessorHandler, RawProcessor>()
+            .AddScoped<ITextProcessorHandler, ChunkerProcessor>()
+            .AddScoped<ITextProcessorHandler, ContextProcessor>()
             .AddScoped<ITextProcessorHandler, KnowledgeGraphProcessor>();
 
         return services;
