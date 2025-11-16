@@ -27,25 +27,14 @@ public enum FieldType
 
 public sealed class TrackerStructure
 {
-    [JsonPropertyName("time")]
-    public FieldDefinition? Time { get; set; }
+    public FieldDefinition[] Story { get; set; }
 
-    public FieldDefinition? Weather { get; set; }
-
-    [JsonPropertyName("location")]
-    public FieldDefinition? Location { get; set; }
-
-    [JsonPropertyName("characters_present")]
     public string[]? CharactersPresent { get; set; }
 
-    [JsonPropertyName("main_character")]
-    public TrackerStructureDefinition? MainCharacterStats { get; set; }
+    public FieldDefinition[]? MainCharacterStats { get; set; }
 
-    [JsonPropertyName("characters")]
-    public TrackerStructureDefinition[]? Characters { get; set; }
+    public FieldDefinition[]? Character { get; set; }
 }
-
-public sealed class TrackerStructureDefinition : Dictionary<string, FieldDefinition>;
 
 public sealed class FieldDefinition
 {
@@ -60,7 +49,7 @@ public sealed class FieldDefinition
 
     public List<object>? ExampleValues { get; set; }
 
-    public TrackerStructureDefinition? NestedFields { get; set; }
+    public FieldDefinition[]? NestedFields { get; set; }
 
     public bool IsValid()
     {
@@ -68,5 +57,5 @@ public sealed class FieldDefinition
     }
 
     [MemberNotNullWhen(true, nameof(NestedFields))]
-    public bool HasNestedFields => NestedFields is { Count: > 0 };
+    public bool HasNestedFields => NestedFields is { Length: > 0 };
 }

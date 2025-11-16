@@ -17,6 +17,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.Server", "Server
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.ServiceDefaults", "Server\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj", "{50AE7391-4B94-4F11-B33F-C9D5A167B17F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FableCraft.Tests", "Server\FableCraft.Tests\FableCraft.Tests.csproj", "{6709669D-EF67-4BD2-A181-A3A772138622}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FAC20B63-6F94-4BDD-9A16-A0A374C201E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +51,8 @@ Global
 		{50AE7391-4B94-4F11-B33F-C9D5A167B17F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50AE7391-4B94-4F11-B33F-C9D5A167B17F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50AE7391-4B94-4F11-B33F-C9D5A167B17F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6709669D-EF67-4BD2-A181-A3A772138622}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6709669D-EF67-4BD2-A181-A3A772138622}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,5 +65,6 @@ Global
 		{3B76822F-D399-4DF8-8132-9FE6BB5DB315} = {BF5A60C4-048F-40D3-B076-810315DF221B}
 		{CBE7C076-617D-4935-BC4E-0ED5733E2839} = {BF5A60C4-048F-40D3-B076-810315DF221B}
 		{50AE7391-4B94-4F11-B33F-C9D5A167B17F} = {BF5A60C4-048F-40D3-B076-810315DF221B}
+		{6709669D-EF67-4BD2-A181-A3A772138622} = {FAC20B63-6F94-4BDD-9A16-A0A374C201E1}
 	EndGlobalSection
 EndGlobal
