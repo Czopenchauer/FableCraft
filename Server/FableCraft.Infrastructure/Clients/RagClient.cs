@@ -4,12 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Clients;
 
-public enum DataType
-{
-    Text,
-    Json
-}
-
 public interface IRagBuilder
 {
     Task<AddDataResponse> AddDataAsync(AddDataRequest request);

@@ -41,7 +41,7 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
         foreach (var processingContext in context.Chunks.Where(x => x.Chunks.Count == 0).Chunk(BatchSize))
         {
             var chunks = processingContext.Select(arg => ChunkTextAsync(
-                    arg.Entity.GetContent(),
+                    arg.Entity.GetContent().Text,
                     cancellationToken).ContinueWith(x =>
                     {
                         var chunks = x.Result.Select((text, idx) => new Chunk
@@ -49,8 +49,12 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
                             RawChunk = text,
                             EntityId = arg.Entity.Id,
                             ProcessingStatus = ProcessingStatus.Pending,
-                            Description = arg.Entity.GetContentDescription(),
-                            Order = idx
+                            Description = arg.Entity.GetContent()
+                                .Description,
+                            Order = idx,
+                            ContentType = arg.Entity.GetContent()
+                                .ContentType,
+                            ReferenceTime = default
                         });
                         arg.Chunks.AddRange(chunks);
                     },

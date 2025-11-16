@@ -64,7 +64,7 @@ internal sealed class ContextProcessor : ITextProcessorHandler
         {
             var contextualizedChunkTask = processingContext.SelectMany(x => x.Chunks).Select(arg => ContextualizeChunkAsync(
                     arg.RawChunk,
-                    processingContext.Single(x => x.Entity.Id == arg.EntityId).Entity.GetContent(),
+                    processingContext.Single(x => x.Entity.Id == arg.EntityId).Entity.GetContent().Text,
                     cancellationToken).ContinueWith(x =>
                     {
                         arg.ContextualizedChunk = x.Result;

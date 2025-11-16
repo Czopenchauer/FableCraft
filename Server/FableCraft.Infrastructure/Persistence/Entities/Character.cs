@@ -20,14 +20,12 @@ public class Character : IKnowledgeGraphEntity
     [Key]
     public Guid Id { get; set; }
 
-    public string GetContent()
+    public Content GetContent()
     {
-        return $"Main Character, {Name} Description: {Description}\n"
-               + (string.IsNullOrEmpty(Background) ? string.Empty : $"Main Character Background: {Background}");
-    }
-
-    public string GetContentDescription()
-    {
-        return $"Main Character, {Name} Description";
+        return new Content(
+            $"Main Character, {Name} Description: {Description}\n"
+            + (string.IsNullOrEmpty(Background) ? string.Empty : $"Main Character Background: {Background}"),
+            $"Main Character, {Name} Description",
+            ContentType.Text);
     }
 }

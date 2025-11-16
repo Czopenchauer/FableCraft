@@ -160,7 +160,7 @@ public class TrackerStructureTests
                                            "defaultValue": "No Child",
                                            "exampleValues": [
                                              "No Child",
-                                             "1st Born: Eve, Female ♀️, child with Harry"
+                                             "1st Born: Eve, Female, child with Harry"
                                            ]
                                          },
                                          {
@@ -294,7 +294,7 @@ public class TrackerStructureTests
                                            "defaultValue": "No Child",
                                            "exampleValues": [
                                              "No Child",
-                                             "1st Born: Eve, Female ♀️, child with Harry"
+                                             "1st Born: Eve, Female, child with Harry"
                                            ]
                                          }
                                        ]

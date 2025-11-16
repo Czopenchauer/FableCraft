@@ -2,11 +2,17 @@
 
 public class Chunk : IEntity
 {
+    public Guid Id { get; set; }
+
     public Guid EntityId { get; init; }
 
     public required string Description { get; set; }
 
     public required string RawChunk { get; set; } = null!;
+
+    public required string ContentType { get; set; }
+
+    public required DateTime ReferenceTime { get; set; }
 
     /// <summary>
     ///     Describe the chunk in the context of the overall text document it belongs to.
@@ -18,6 +24,9 @@ public class Chunk : IEntity
     public string? KnowledgeGraphNodeId { get; set; }
 
     public ProcessingStatus ProcessingStatus { get; set; }
-
-    public Guid Id { get; set; }
+    
+    public string GetContent()
+    {
+        return string.IsNullOrEmpty(ContextualizedChunk) ? RawChunk : $"{ContextualizedChunk}\n\n{RawChunk}";
+    }
 }

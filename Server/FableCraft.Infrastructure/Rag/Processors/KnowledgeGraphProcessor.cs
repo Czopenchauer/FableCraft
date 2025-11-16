@@ -89,12 +89,12 @@ internal sealed class KnowledgeGraphProcessor : ITextProcessorHandler
                 {
                     _ = await _ragBuilder.AddDataAsync(new AddDataRequest
                     {
-                        Content = $"{chunk.ContextualizedChunk}\n{chunk.RawChunk}",
-                        EpisodeType = nameof(DataType.Text),
+                        Content = chunk.GetContent(),
+                        EpisodeType = chunk.ContentType,
                         Description = chunk.Description,
                         GroupId = context.AdventureId.ToString(),
                         TaskId = chunk.Id.ToString(),
-                        ReferenceTime = DateTime.UtcNow
+                        ReferenceTime = chunk.ReferenceTime
                     });
 
                     await SetAsInProgressAsync(chunk, CancellationToken.None);

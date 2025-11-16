@@ -4,6 +4,7 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251116123514_TrackerRename")]
+    partial class TrackerRename
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,10 +124,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("ContextualizedChunk")
                         .HasColumnType("text");
 
@@ -148,9 +147,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<string>("RawChunk")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("ReferenceTime")
-                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Tracker : IEntity
+public class TrackerDefinition : IEntity
 {
     [Key]
     public Guid Id { get; set; }

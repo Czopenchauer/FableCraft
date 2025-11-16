@@ -23,13 +23,11 @@ public class LorebookEntry : IKnowledgeGraphEntity
     [Key]
     public Guid Id { get; set; }
 
-    public string GetContent()
+    public Content GetContent()
     {
-        return Content;
-    }
-
-    public string GetContentDescription()
-    {
-        return Description;
+        return new Content(
+            Content,
+            Description,
+            ContentType.Text);
     }
 }

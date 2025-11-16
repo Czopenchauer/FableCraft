@@ -23,7 +23,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Chunk> Chunks { get; set; }
 
-    public DbSet<Tracker> Trackers { get; set; }
+    public DbSet<TrackerDefinition> TrackerDefinitions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,13 +34,13 @@ public class ApplicationDbContext : DbContext
             p.HasIndex(x => x.EntityId);
             p.Property(c => c.ProcessingStatus).HasConversion<string>();
         });
-        
+
         modelBuilder.Entity<Adventure>(p =>
         {
             p.Property(c => c.ProcessingStatus).HasConversion<string>();
         });
 
-        modelBuilder.Entity<Tracker>()
+        modelBuilder.Entity<TrackerDefinition>()
             .HasIndex(x => x.Name);
     }
 }
