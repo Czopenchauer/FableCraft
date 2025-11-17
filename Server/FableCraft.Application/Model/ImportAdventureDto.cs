@@ -1,3 +1,5 @@
+using FableCraft.Infrastructure.Persistence.Entities;
+
 namespace FableCraft.Application.Model;
 
 /// <summary>
@@ -19,7 +21,7 @@ public class AdventureMessageDto
 
     public string? ForceAvatar { get; set; }
 
-    public object? Tracker { get; set; }
+    public Tracker? Tracker { get; set; }
 }
 
 /// <summary>

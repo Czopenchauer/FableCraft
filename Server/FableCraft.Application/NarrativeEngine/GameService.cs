@@ -375,7 +375,9 @@ internal class GameService : IGameService
                         ActionDescription = x
                     })
                     .ToList(),
-                SequenceNumber = 0
+                SequenceNumber = 0,
+                Tracker = new Infrastructure.Persistence.Entities.Tracker(),
+                CreatedAt = DateTime.UtcNow,
             });
 
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
@@ -609,7 +611,9 @@ internal class GameService : IGameService
                         ActionDescription = x
                     })
                     .ToList(),
-                SequenceNumber = currentScene.SequenceNumber + 1
+                SequenceNumber = currentScene.SequenceNumber + 1,
+                Tracker = null,
+                CreatedAt = default
             };
 
             adventure.Scenes.Add(newScene);

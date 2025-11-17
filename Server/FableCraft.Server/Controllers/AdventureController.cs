@@ -1,8 +1,6 @@
 ﻿using FableCraft.Application.AdventureGeneration;
-using FableCraft.Application.AdventureImport;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
@@ -17,16 +15,13 @@ namespace FableCraft.Server.Controllers;
 public class AdventureController : ControllerBase
 {
     private readonly IAdventureCreationService _adventureCreationService;
-    private readonly AdventureImportService _adventureImportService;
     private readonly IMessageDispatcher _messageDispatcher;
 
     public AdventureController(
         IAdventureCreationService adventureCreationService,
-        AdventureImportService adventureImportService,
         IMessageDispatcher messageDispatcher)
     {
         _adventureCreationService = adventureCreationService;
-        _adventureImportService = adventureImportService;
         _messageDispatcher = messageDispatcher;
     }
 
@@ -151,66 +146,6 @@ public class AdventureController : ControllerBase
         catch (AdventureNotFoundException)
         {
             return NotFound();
-        }
-    }
-
-    [HttpPost("import")]
-    [ProducesResponseType(typeof(Adventure), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [RequestSizeLimit(100_000_000)] // 100MB limit for file uploads
-    [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000)]
-    public async Task<IActionResult> ImportAdventure(
-        [FromForm] ImportAdventure importAdventure,
-        CancellationToken cancellationToken)
-    {
-        if (importAdventure.Lorebook == null || importAdventure.AdventureName == null || importAdventure.Character == null)
-        {
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["files"] = new[] { "All three files (lorebook, adventure, character) must be provided" }
-                }
-            });
-        }
-
-        if (string.IsNullOrWhiteSpace(importAdventure.AdventureName))
-        {
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["adventureName"] = new[] { "Adventure name is required" }
-                }
-            });
-        }
-
-        try
-        {
-            Adventure adventure = await _adventureImportService.ImportAdventureAsync(
-                importAdventure,
-                cancellationToken);
-
-            return Ok(adventure);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["import"] = new[] { ex.Message }
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ProblemDetails
-                {
-                    Title = "An error occurred while importing the adventure",
-                    Detail = ex.Message
-                });
         }
     }
 }

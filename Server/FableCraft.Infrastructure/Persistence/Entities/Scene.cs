@@ -1,11 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class Scene : IKnowledgeGraphEntity
 {
+    [Key]
+    public Guid Id { get; set; }
+
     [Required]
     public Guid AdventureId { get; init; }
 
@@ -17,14 +21,11 @@ public class Scene : IKnowledgeGraphEntity
     public required string NarrativeText { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public string? SceneStateJson { get; init; } = null!;
+    public required Tracker Tracker { get; init; }
 
-    public DateTime CreatedAt { get; init; }
+    public required DateTime CreatedAt { get; init; }
 
     public List<CharacterAction> CharacterActions { get; init; } = new();
-
-    [Key]
-    public Guid Id { get; set; }
 
     public Content GetContent()
     {
@@ -33,47 +34,47 @@ public class Scene : IKnowledgeGraphEntity
             ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
             : NarrativeText;
 
-        if (!string.IsNullOrEmpty(SceneStateJson))
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var sceneState = JsonSerializer.Deserialize<TrackerStructure>(SceneStateJson, options);
+        var scene = $"""
+                     Time: {Tracker.Story.Time}
+                     Location: {Tracker.Story.Location}
+                     Weather: {Tracker.Story.Weather}
+                     Characters Present: {string.Join(", ", Tracker.CharactersPresent)}
+                     Main Character: {Tracker.MainCharacter.Name}
 
-                if (sceneState != null)
-                {
-                    var timeField = sceneState.Story?.FirstOrDefault(f => f.Name == "Time");
-                    var locationField = sceneState.Story?.FirstOrDefault(f => f.Name == "Location");
+                     {narrativeText}
+                     """;
 
-                    var metadata = new List<string>();
-
-                    if (timeField?.DefaultValue != null)
-                    {
-                        metadata.Add($"Time: {timeField.DefaultValue}");
-                    }
-
-                    if (locationField?.DefaultValue != null)
-                    {
-                        metadata.Add($"Location: {locationField.DefaultValue}");
-                    }
-
-                    if (sceneState.CharactersPresent?.Length > 0)
-                    {
-                        metadata.Add($"Characters Present: {string.Join(", ", sceneState.CharactersPresent)}");
-                    }
-
-                    if (metadata.Any())
-                    {
-                        narrativeText = $"{string.Join("\n", metadata)}\n\n{narrativeText}";
-                    }
-                }
-            }
-            catch (JsonException)
-            {
-                // Ignore deserialization errors and proceed without metadata
-            }
-        }
-
-        return new Content(narrativeText, $"Scene number {SequenceNumber}", ContentType.Text);
+        return new Content(scene, $"Scene number {SequenceNumber}", ContentType.Text);
     }
+}
+
+public sealed class Tracker
+{
+    public StoryTracker Story { get; init; }
+
+    public string[] CharactersPresent { get; init; }
+
+    public CharacterTracker MainCharacter { get; init; }
+
+    public CharacterTracker[] Characters { get; init; }
+}
+
+public sealed class StoryTracker
+{
+    public DateTime Time { get; init; }
+
+    public string Location { get; init; }
+
+    public string Weather { get; init; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; }
+}
+
+public sealed class CharacterTracker
+{
+    public string Name { get; init; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; }
 }

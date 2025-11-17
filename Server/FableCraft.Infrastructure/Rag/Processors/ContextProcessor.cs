@@ -98,8 +98,8 @@ internal sealed class ContextProcessor : ITextProcessorHandler
                                     Please give a short succinct context to situate
                                     this chunk within the overall text for the
                                     purposes of improving search retrieval of the
-                                    chunk. If the text has a publication date,
-                                    please include the date in your context. Answer
+                                    chunk. If the text has a time, location, weather or character present,
+                                    please include it in your context. Answer
                                     only with the succinct context and nothing else.
                                     """);
 

@@ -27,13 +27,16 @@ public enum FieldType
 
 public sealed class TrackerStructure
 {
+    // Time, Location, Weather is required in Story fields
     public FieldDefinition[] Story { get; set; }
 
     public string[]? CharactersPresent { get; set; }
 
-    public FieldDefinition[]? MainCharacterStats { get; set; }
+    // Name is required
+    public FieldDefinition[]? MainCharacter { get; set; }
 
-    public FieldDefinition[]? Character { get; set; }
+    // Name is required
+    public FieldDefinition[]? Characters { get; set; }
 }
 
 public sealed class FieldDefinition
