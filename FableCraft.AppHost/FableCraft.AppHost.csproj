@@ -1,24 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-    <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.2" />
-
+    <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0"/>
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <UserSecretsId>dbda9c59-328c-47fd-8a43-23f80699ad32</UserSecretsId>
     </PropertyGroup>
-
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0" />
-        <PackageReference Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.0" />
-        <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
-        <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.0.0" />
-        <PackageReference Include="Aspire.Hosting.Python" Version="13.0.0" />
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0"/>
+        <PackageReference Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.0"/>
+        <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.2"/>
+        <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.0.0"/>
+        <PackageReference Include="Aspire.Hosting.Python" Version="13.0.0"/>
     </ItemGroup>
-
     <ItemGroup>
-        <ProjectReference Include="..\Server\FableCraft.Server\FableCraft.Server.csproj" />
+        <ProjectReference Include="..\Server\FableCraft.Server\FableCraft.Server.csproj"/>
     </ItemGroup>
-
 </Project>
