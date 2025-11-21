@@ -115,6 +115,11 @@ Write a narrative description with length based on importance:
 - **Arc Important**: 2-3 paragraphs (12-20 sentences)
 - **Scene Critical**: 3-4 paragraphs (20-30 sentences)
 
+Write description in <character_description> TAGS:
+<character_description>
+[Insert narrative description here]
+</character_description>
+
 Include as relevant to importance level:
 - Physical appearance and distinctive features
 - Mannerisms and behavioral quirks

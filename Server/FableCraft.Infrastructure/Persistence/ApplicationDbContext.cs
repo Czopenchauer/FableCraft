@@ -15,11 +15,13 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Character> Characters { get; set; }
 
+    public DbSet<CharacterState> CharacterStates { get; set; }
+
     public DbSet<Scene> Scenes { get; set; }
 
     public DbSet<LorebookEntry> LorebookEntries { get; set; }
 
-    public DbSet<CharacterAction> CharacterActions { get; set; }
+    public DbSet<MainCharacterAction> CharacterActions { get; set; }
 
     public DbSet<Chunk> Chunks { get; set; }
 
@@ -42,5 +44,14 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<TrackerDefinition>()
             .HasIndex(x => x.Name);
+
+        modelBuilder.Entity<Character>()
+            .HasIndex(x => x.Name);
+
+        modelBuilder.Entity<CharacterState>()
+            .HasIndex(x => x.SequenceNumber);
+
+        modelBuilder.Entity<Scene>()
+            .HasIndex(x => x.SequenceNumber);
     }
 }

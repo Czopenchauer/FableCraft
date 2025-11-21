@@ -106,11 +106,10 @@ internal class AdventureCreationService : IAdventureCreationService
             FirstSceneGuidance = adventureDto.FirstSceneDescription,
             LastPlayedAt = null,
             AuthorNotes = adventureDto.AuthorNotes,
-            Character = new Character
+            MainCharacter = new MainCharacter
             {
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description,
-                Background = adventureDto.Character.Background
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
                 {
@@ -118,7 +117,8 @@ internal class AdventureCreationService : IAdventureCreationService
                     Content = entry.Content,
                     Category = entry.Category
                 })
-                .ToList()
+                .ToList(),
+            TrackerStructure = null
         };
 
         _dbContext.Adventures.Add(adventure);
@@ -232,13 +232,13 @@ internal class AdventureCreationService : IAdventureCreationService
         CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures
-            .Include(w => w.Character)
+            .Include(w => w.MainCharacter)
             .Include(w => w.Lorebook)
             .Include(x => x.Scenes)
             .Select(x => new
             {
                 x.Id,
-                CharacterId = x.Character.Id,
+                CharacterId = x.MainCharacter.Id,
                 Lorebooks = x.Lorebook.Select(y => new
                 {
                     LorebookId = y.Id,
@@ -346,7 +346,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         Adventure? adventure = await _dbContext.Adventures
-            .Include(w => w.Character)
+            .Include(w => w.MainCharacter)
             .Include(w => w.Lorebook)
             .Include(x => x.Scenes)
             .ThenInclude(x => x.CharacterActions)
@@ -357,7 +357,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var ids = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.CharacterId]);
+        var ids = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.MainCharacter.Id]);
         var chunks = new List<Chunk>();
         foreach (var guides in ids.Chunk(50))
         {

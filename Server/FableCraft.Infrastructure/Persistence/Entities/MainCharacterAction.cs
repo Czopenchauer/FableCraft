@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class CharacterAction : IEntity
+public class MainCharacterAction : IEntity
 {
     [Required]
     public Guid SceneId { get; init; }

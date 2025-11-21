@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.Google;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace FableCraft.Infrastructure.Llm;
 
@@ -38,5 +40,18 @@ internal class OpenAiKernelBuilder : IKernelBuilder
         });
 
         return builder;
+    }
+    
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
+    {
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 200_000,
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
+            {
+                AllowConcurrentInvocation = true,
+                AllowParallelCalls = true,
+            })
+        };
     }
 }

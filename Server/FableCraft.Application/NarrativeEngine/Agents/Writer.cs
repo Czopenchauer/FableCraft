@@ -1,7 +1,10 @@
-﻿using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
+using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -16,37 +19,20 @@ using Serilog;
 
 using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
-namespace FableCraft.Application.NarrativeEngine.Plugins;
+namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterPlugin
+internal sealed class Writer
 {
-    private readonly Dictionary<string, ChatHistory> _chatHistory;
-    private readonly Kernel _kernel;
     private readonly ILogger _logger;
 
-    public CharacterPlugin(
-        NarrativeContext narrativeContext,
-        Kernel kernel,
-        ILogger logger)
+    public Writer(ILogger logger)
     {
-        _chatHistory = narrativeContext.GetCurrentSceneMetadata().Tracker.Characters.ToDictionary(x => x.Name, _ => new ChatHistory());
         _logger = logger;
-        _kernel = kernel;
     }
 
-    [KernelFunction("emulate_character_action")]
-    [Description(
-        "Emulate a character's action based on the character's personality, motivations, and the current situation. Use this to generate character dialogue, actions, reactions, or decisions that are consistent with their established traits and the narrative context.")]
-    public async Task<string> EmulateCharacterAction(
-        [Description("The current situation or context in which the character is acting")]
-        string situation,
-        [Description("The name of the character whose action is to be emulated")]
-        string characterName)
+    public async Task<GeneratedScene> Invoke(Kernel kernel, NarrativeContext context, NarrativeDirectorOutput narrativeDirectorOutput, CancellationToken cancellationToken)
     {
-        if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
-        {
-            return "Character not found.";
-        }
+        Kernel narrativeKernel = kernel.Clone();
 
         ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
@@ -65,35 +51,43 @@ internal sealed class CharacterPlugin
             })
             .Build();
 
-        // TODO add system prompt for character action emulation
-        chatHistory.AddUserMessage(situation);
+        var chatHistory = new ChatHistory();
+        var systemPrompt = await BuildInstruction();
+        chatHistory.AddSystemMessage(systemPrompt);
+        var promptContext = $"""
+                             <scene_direction>
+                             {narrativeDirectorOutput}
+                             </scene_direction>
+                             """;
+
+        chatHistory.AddUserMessage(promptContext);
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
-            Temperature = 0.9,
-            MaxTokens = 30000
+            MaxTokens = 200_000
         };
 
-        var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+        var chatCompletionService = narrativeKernel.GetRequiredService<IChatCompletionService>();
         try
         {
-            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
+            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings, kernel);
         }
         catch (InvalidCastException ex)
         {
             chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
-            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
+            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings, kernel);
         }
     }
 
-    private async Task<string> GetResponse(
+    private async Task<GeneratedScene> GetResponse(
         ChatHistory chatHistory,
         ResiliencePipeline pipeline,
         IChatCompletionService chatCompletionService,
-        OpenAIPromptExecutionSettings promptExecutionSettings)
+        OpenAIPromptExecutionSettings promptExecutionSettings,
+        Kernel kernel)
     {
         var result = await pipeline.ExecuteAsync(async token =>
                      {
-                         ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, _kernel, token);
+                         ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
                          var replyInnerContent = result.InnerContent as ChatCompletion;
                          _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                              replyInnerContent?.Usage.InputTokenCount,
@@ -104,6 +98,24 @@ internal sealed class CharacterPlugin
                      })
                      ?? string.Empty;
         chatHistory.AddAssistantMessage(result);
-        return result;
+        var match = Regex.Match(result, "<new_scene>(.*?)</new_scene>", RegexOptions.Singleline);
+        if (match.Success)
+        {
+            return JsonSerializer.Deserialize<GeneratedScene>(match.Groups[1].Value) ?? throw new InvalidOperationException();
+        }
+
+        throw new InvalidCastException("Failed to parse CharacterStats from response due to stats not being in correct tags.");
+    }
+
+    private async static Task<string> BuildInstruction()
+    {
+        var promptPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Agents",
+            "Prompts",
+            "WriterPrompt.md"
+        );
+
+        return await File.ReadAllTextAsync(promptPath);
     }
 }

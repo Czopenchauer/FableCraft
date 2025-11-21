@@ -4,6 +4,7 @@ using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 using FableCraft.Infrastructure.Rag;
 
+using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 
 namespace FableCraft.Application.AdventureGeneration;
@@ -22,13 +23,13 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
         Adventure adventure = await dbContext.Adventures
-            .Include(x => x.Character)
+            .Include(x => x.MainCharacter)
             .Include(x => x.Lorebook)
             .Include(x => x.Scenes).ThenInclude(scene => scene.CharacterActions)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken);
 
         await ragProcessor.Add(adventure.Id, adventure.Lorebook.OrderBy(x => x.Priority).ToArray(), cancellationToken);
-        await ragProcessor.Add(adventure.Id, [adventure.Character], cancellationToken);
+        await ragProcessor.Add(adventure.Id, [adventure.MainCharacter], cancellationToken);
         await ragProcessor.Add(adventure.Id, adventure.Scenes.OrderBy(x => x.SequenceNumber).ToArray(), cancellationToken);
 
         if (adventure.Scenes.Count == 0)

@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json;
 using System.Text.Json.Serialization;
+
+using FableCraft.Application.NarrativeEngine.Models;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
@@ -21,31 +22,51 @@ public class Scene : IKnowledgeGraphEntity
     public required string NarrativeText { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public required Tracker Tracker { get; init; }
+    public required SceneMetadata SceneMetadata { get; init; }
 
     public required DateTime CreatedAt { get; init; }
 
-    public List<CharacterAction> CharacterActions { get; init; } = new();
+    public List<CharacterState> CharacterStates { get; set; }
+
+    public List<MainCharacterAction> CharacterActions { get; init; } = new();
+
+    public string GetSceneWithSelectedAction()
+    {
+        var selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
+        return selectedAction != null
+            ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
+            : NarrativeText;
+    }
 
     public Content GetContent()
     {
-        var selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
-        var narrativeText = selectedAction != null
-            ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
-            : NarrativeText;
+        var narrativeText = GetSceneWithSelectedAction();
 
         var scene = $"""
-                     Time: {Tracker.Story.Time}
-                     Location: {Tracker.Story.Location}
-                     Weather: {Tracker.Story.Weather}
-                     Characters Present: {string.Join(", ", Tracker.CharactersPresent)}
-                     Main Character: {Tracker.MainCharacter.Name}
+                     Time: {SceneMetadata.Tracker.Story.Time}
+                     Location: {SceneMetadata.Tracker.Story.Location}
+                     Weather: {SceneMetadata.Tracker.Story.Weather}
+                     Characters Present: {string.Join(", ", SceneMetadata.Tracker.CharactersPresent)}
 
                      {narrativeText}
                      """;
 
         return new Content(scene, $"Scene number {SequenceNumber}", ContentType.Text);
     }
+}
+
+public sealed class SceneMetadata
+{
+    public NarrativeDirectorOutput NarrativeMetadata { get; set; }
+
+    public Tracker Tracker { get; set; }
+}
+
+public sealed class ContextGatherer
+{
+    public required string Knowledge { get; init; }
+
+    public required string KeyFindings { get; init; }
 }
 
 public sealed class Tracker

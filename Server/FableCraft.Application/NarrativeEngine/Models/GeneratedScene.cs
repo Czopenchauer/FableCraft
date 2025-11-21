@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FableCraft.Application.NarrativeEngine;
+namespace FableCraft.Application.NarrativeEngine.Models;
 
 internal class GeneratedScene
 {

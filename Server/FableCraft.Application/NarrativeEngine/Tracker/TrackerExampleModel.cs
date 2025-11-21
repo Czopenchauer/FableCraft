@@ -44,7 +44,6 @@ internal sealed class TrackerExampleModel : Dictionary<string, object>
                     dict[field.Name] = field.DefaultValue.ToString()!;
                 }
             }
-
             return dict;
         }
     }

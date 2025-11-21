@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using System.Reflection;
+using Microsoft.OpenApi;
 
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -27,19 +28,19 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
                 {
                     Schema = new OpenApiSchema
                     {
-                        Type = "object",
+                        Type = JsonSchemaType.Object,
                         Properties = context.MethodInfo.GetParameters()
-                            .ToDictionary(
+                            .ToDictionary<ParameterInfo, string, IOpenApiSchema>(
                                 p => p.Name,
                                 p => p.ParameterType == typeof(IFormFile)
                                     ? new OpenApiSchema
                                     {
-                                        Type = "string",
+                                        Type = JsonSchemaType.String,
                                         Format = "binary"
                                     }
                                     : new OpenApiSchema
                                     {
-                                        Type = "string"
+                                        Type = JsonSchemaType.String
                                     })
                     }
                 }

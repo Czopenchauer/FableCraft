@@ -23,12 +23,14 @@ public class Adventure : IEntity
 
     public required string? AuthorNotes { get; init; }
 
-    public Guid CharacterId { get; init; }
+    public string? Summary { get; set; }
 
-    public required Character Character { get; init; }
+    public required MainCharacter MainCharacter { get; set; }
+
+    public Character[] Characters { get; init; }
 
     [Column(TypeName = "jsonb")]
-    public string? Tracker { get; init; }
+    public required TrackerStructure TrackerStructure { get; init; }
 
     public required List<LorebookEntry> Lorebook { get; init; }
 
