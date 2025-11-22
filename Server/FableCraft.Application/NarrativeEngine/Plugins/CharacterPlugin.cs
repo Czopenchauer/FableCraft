@@ -29,7 +29,7 @@ internal sealed class CharacterPlugin
         Kernel kernel,
         ILogger logger)
     {
-        _chatHistory = narrativeContext.GetCurrentSceneMetadata().Tracker.Characters.ToDictionary(x => x.Name, _ => new ChatHistory());
+        _chatHistory = narrativeContext.GetCurrentSceneMetadata().Tracker!.Characters!.ToDictionary(x => x.Name, _ => new ChatHistory());
         _logger = logger;
         _kernel = kernel;
     }

@@ -10,9 +10,9 @@ public class TrackerDefinition : IEntity
     public Guid Id { get; set; }
 
     [Required]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
-    public TrackerStructure Structure { get; set; }
+    public required TrackerStructure Structure { get; set; }
 }
 
 public enum FieldType
@@ -25,7 +25,7 @@ public enum FieldType
 
 public sealed class TrackerStructure
 {
-    public FieldDefinition[] Story { get; set; }
+    public required FieldDefinition[] Story { get; set; }
 
     public string[]? CharactersPresent { get; set; }
 
@@ -36,12 +36,12 @@ public sealed class TrackerStructure
 
 public sealed class FieldDefinition
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public FieldType Type { get; set; }
 
-    public string Prompt { get; set; }
+    public required string Prompt { get; set; }
 
     public object? DefaultValue { get; set; }
 

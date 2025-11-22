@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+
 using Microsoft.OpenApi;
 
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -18,7 +19,9 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
             .ToList();
 
         if (!fileParameters.Any())
+        {
             return;
+        }
 
         operation.RequestBody = new OpenApiRequestBody
         {
@@ -31,7 +34,7 @@ internal sealed class FileUploadOperationFilter : IOperationFilter
                         Type = JsonSchemaType.Object,
                         Properties = context.MethodInfo.GetParameters()
                             .ToDictionary<ParameterInfo, string, IOpenApiSchema>(
-                                p => p.Name,
+                                p => p.Name!,
                                 p => p.ParameterType == typeof(IFormFile)
                                     ? new OpenApiSchema
                                     {

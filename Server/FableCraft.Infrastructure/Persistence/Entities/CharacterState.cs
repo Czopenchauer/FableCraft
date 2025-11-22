@@ -8,7 +8,7 @@ public sealed class CharacterState
 
     public Guid CharacterId { get; set; }
 
-    public Character Character { get; set; }
+    public Character Character { get; set; } = null!;
 
     public Guid SceneId { get; set; }
 
@@ -355,7 +355,7 @@ public class CurrentEmotions
     public List<string>? SecondaryEmotions { get; set; }
 
     [JsonPropertyName("intensity")]
-    public string Intensity { get; set; }
+    public string? Intensity { get; set; }
 }
 
 public class EmotionalTriggers

@@ -24,7 +24,7 @@ public class Scene : IKnowledgeGraphEntity
 
     public required DateTime CreatedAt { get; init; }
 
-    public List<CharacterState> CharacterStates { get; set; }
+    public List<CharacterState> CharacterStates { get; set; } = [];
 
     public List<MainCharacterAction> CharacterActions { get; init; } = new();
 
@@ -41,10 +41,10 @@ public class Scene : IKnowledgeGraphEntity
         var narrativeText = GetSceneWithSelectedAction();
 
         var scene = $"""
-                     Time: {SceneMetadata.Tracker.Story.Time}
-                     Location: {SceneMetadata.Tracker.Story.Location}
-                     Weather: {SceneMetadata.Tracker.Story.Weather}
-                     Characters Present: {string.Join(", ", SceneMetadata.Tracker.CharactersPresent)}
+                     Time: {SceneMetadata.Tracker?.Story.Time}
+                     Location: {SceneMetadata.Tracker?.Story.Location}
+                     Weather: {SceneMetadata.Tracker?.Story.Weather}
+                     Characters Present: {string.Join(", ", SceneMetadata?.Tracker?.CharactersPresent ?? [])}
 
                      {narrativeText}
                      """;
@@ -55,38 +55,38 @@ public class Scene : IKnowledgeGraphEntity
 
 public sealed class SceneMetadata
 {
-    public NarrativeDirectorOutput NarrativeMetadata { get; set; }
+    public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
-    public Tracker Tracker { get; set; }
+    public Tracker? Tracker { get; set; }
 }
 
 public sealed class Tracker
 {
-    public StoryTracker Story { get; init; }
+    public required StoryTracker Story { get; init; }
 
-    public string[] CharactersPresent { get; init; }
+    public string[] CharactersPresent { get; init; } = [];
 
-    public CharacterTracker MainCharacter { get; init; }
+    public CharacterTracker? MainCharacter { get; init; }
 
-    public CharacterTracker[] Characters { get; init; }
+    public CharacterTracker[]? Characters { get; init; }
 }
 
 public sealed class StoryTracker
 {
     public DateTime Time { get; init; }
 
-    public string Location { get; init; }
+    public required string Location { get; init; }
 
-    public string Weather { get; init; }
+    public required string Weather { get; init; }
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; }
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
 
 public sealed class CharacterTracker
 {
-    public string Name { get; init; }
+    public required string Name { get; init; }
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; }
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }

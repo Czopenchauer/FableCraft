@@ -15,7 +15,7 @@ public class Character : IKnowledgeGraphEntity
 
     public required string Description { get; init; }
 
-    public CharacterState[] CharacterStates { get; set; }
+    public required CharacterState[] CharacterStates { get; set; }
 
     public Content GetContent()
     {

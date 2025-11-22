@@ -19,7 +19,7 @@ internal sealed class NarrativeContext
 
     public required SceneContext[] SceneContext { get; set; }
 
-    public List<CharacterContext> Characters { get; set; }
+    public List<CharacterContext> Characters { get; set; } = new();
 
     public SceneMetadata GetCurrentSceneMetadata()
     {
@@ -29,22 +29,22 @@ internal sealed class NarrativeContext
 
 internal sealed class CharacterContext
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
-    public CharacterState CharacterState { get; set; }
+    public CharacterState CharacterState { get; set; } = null!;
 
-    public CharacterTracker CharacterTracker { get; set; }
+    public CharacterTracker? CharacterTracker { get; set; }
 }
 
 internal sealed class SceneContext
 {
-    public string SceneContent { get; set; }
+    public string SceneContent { get; set; } = null!;
 
-    public string PlayerChoice { get; set; }
+    public string PlayerChoice { get; set; } = null!;
 
-    public Character[] Characters { get; set; }
+    public Character[] Characters { get; set; } = [];
 
-    public SceneMetadata SceneMetadata { get; set; }
+    public SceneMetadata SceneMetadata { get; set; } = null!;
 }

@@ -37,7 +37,7 @@ app.UseSerilogRequestLogging(options =>
     // Attach additional properties to the request completion event
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
     {
-        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value!);
         diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
     };
 });
