@@ -55,10 +55,10 @@ internal sealed class Writer
         chatHistory.AddSystemMessage(systemPrompt);
         var promptContext = $"""
                              <scene_direction>
-                             {narrativeDirectorOutput}
+                             {narrativeDirectorOutput.SceneDirection}
                              </scene_direction>
                              """;
-
+        chatHistory.AddUserMessage(context.CommonContext);
         chatHistory.AddUserMessage(promptContext);
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
@@ -110,6 +110,7 @@ internal sealed class Writer
     {
         var promptPath = Path.Combine(
             AppContext.BaseDirectory,
+            "NarrativeEngine",
             "Agents",
             "Prompts",
             "WriterPrompt.md"

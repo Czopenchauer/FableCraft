@@ -118,7 +118,10 @@ internal class AdventureCreationService : IAdventureCreationService
                     Category = entry.Category
                 })
                 .ToList(),
-            TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure)!,
+            TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure, new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true
+            })!,
         };
 
         _dbContext.Adventures.Add(adventure);

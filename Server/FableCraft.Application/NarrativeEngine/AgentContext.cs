@@ -21,9 +21,9 @@ internal sealed class NarrativeContext
 
     public List<CharacterContext> Characters { get; set; } = new();
 
-    public SceneMetadata GetCurrentSceneMetadata()
+    public SceneMetadata? GetCurrentSceneMetadata()
     {
-        return SceneContext[^1].SceneMetadata;
+        return SceneContext.LastOrDefault()?.SceneMetadata;
     }
 }
 

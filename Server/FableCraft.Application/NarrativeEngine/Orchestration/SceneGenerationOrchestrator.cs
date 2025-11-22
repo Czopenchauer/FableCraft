@@ -58,6 +58,19 @@ internal sealed class SceneGenerationOrchestrator
                """;
         var commonContext = summary
                             + $"""
+                               <current_scene_number>
+                               {scenes.LastOrDefault()?.SequenceNumber}
+                               </current_scene_number>
+
+                               <current_scene_tracker>
+                               {scenes.LastOrDefault()?.SceneMetadata?.Tracker}
+                               </current_scene_tracker>
+
+                               <main_character>
+                               {adventure.MainCharacter.Name}
+                               {adventure.MainCharacter.Description}
+                               </main_character>
+
                                <last_scenes>
                                {string.Join("\n", scenes.Select(x =>
                                    $"""
@@ -65,22 +78,6 @@ internal sealed class SceneGenerationOrchestrator
                                     {x.GetSceneWithSelectedAction()}
                                     """))}
                                </last_scenes>
-
-                               <current_scene_number>
-                               {scenes[^1].SequenceNumber}
-                               </current_scene_number>
-
-                               <current_scene_tracker>
-                               {scenes[^1].SceneMetadata?.Tracker}
-                               </current_scene_tracker>
-
-                               <main_character>
-                               {adventure.MainCharacter.Name}
-                               </main_character>
-
-                               <player_action>
-                               {playerAction}
-                               </player_action>
                                """;
 
         var narrativeContext = new NarrativeContext
@@ -109,7 +106,7 @@ internal sealed class SceneGenerationOrchestrator
         narrativeContext.Characters.AddRange();
         var writer = new Writer(_logger);
         var sceneContent = await writer.Invoke(kernelWithKg, narrativeContext, narrativeDirectorOutput, cancellationToken);
-        
+
         var newScene = new Scene
         {
             AdventureId = adventureId,
@@ -144,10 +141,10 @@ internal sealed class SceneGenerationOrchestrator
                 throw;
             }
         });
-        
+
         return sceneContent;
     }
-    
+
     public async Task<GeneratedScene> GenerateInitialSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext
@@ -155,17 +152,17 @@ internal sealed class SceneGenerationOrchestrator
             .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance })
             .SingleAsync(x => x.Id == adventureId, cancellationToken: cancellationToken);
         var prompt = $"""
-                     Generate adventure's opening scene based on the following context.
-                     Guide about story style and tone:
-                     <adventure_author_notes>
-                     {adventure.AuthorNotes}
-                     </adventure_author_notes>
-                     
-                     Guide about the first scene specifics. How should it start, what mood to set, important elements to include:
-                     <first_scene_guidance>
-                     {adventure.FirstSceneGuidance}
-                     </first_scene_guidance>
-                     """;
+                      Generate adventure's opening scene based on the following context.
+                      Guide about story style and tone:
+                      <adventure_author_notes>
+                      {adventure.AuthorNotes}
+                      </adventure_author_notes>
+
+                      Guide about the first scene specifics. How should it start, what mood to set, important elements to include:
+                      <first_scene_guidance>
+                      {adventure.FirstSceneGuidance}
+                      </first_scene_guidance>
+                      """;
         return await GenerateSceneAsync(adventureId, prompt, cancellationToken);
     }
 }

@@ -370,9 +370,8 @@ Manage genre expectations and tropes:
 Generate ONLY valid JSON wrapped in `<narrative_scene_directive>` tags.
 
 ## Output Format
-
-You must output valid JSON wrapped in `<narrative_scene_directive>` tags. Use this exact structure:
-
+Output your thinking step by step and then produce the final JSON.
+Use double quotes for all JSON keys and string values. You must output valid JSON wrapped in `<narrative_scene_directive>` tags. Use this exact structure:
 <narrative_scene_directive>
 {
 "extra_context_gathered": [

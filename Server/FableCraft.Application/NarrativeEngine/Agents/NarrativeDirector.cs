@@ -53,14 +53,21 @@ internal sealed class NarrativeDirector
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
-        var narrativeDirection = JsonSerializer.Serialize(context.GetCurrentSceneMetadata().NarrativeMetadata);
-        var promptContext = $"""
-                             <last_scene_narrative_direction>
-                             {narrativeDirection}
-                             </last_scene_narrative_direction>
-                             """;
+        if (context.GetCurrentSceneMetadata() != null)
+        {
+            var narrativeDirection = JsonSerializer.Serialize(context.GetCurrentSceneMetadata()?.NarrativeMetadata);
+            var promptContext = $"""
+                                 <last_scene_narrative_direction>
+                                 {narrativeDirection}
+                                 </last_scene_narrative_direction>
+                                 """;
 
-        chatHistory.AddUserMessage(promptContext);
+            chatHistory.AddUserMessage(promptContext);
+        }
+
+        chatHistory.AddUserMessage(context.CommonContext);
+        chatHistory.AddUserMessage(context.PlayerAction);
+
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
             MaxTokens = 200_000
@@ -72,6 +79,11 @@ internal sealed class NarrativeDirector
             return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings, kernel);
         }
         catch (InvalidCastException ex)
+        {
+            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
+            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings, kernel);
+        }
+        catch (JsonException ex)
         {
             chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
             return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings, kernel);
@@ -111,6 +123,7 @@ internal sealed class NarrativeDirector
     {
         var promptPath = Path.Combine(
             AppContext.BaseDirectory,
+            "NarrativeEngine",
             "Agents",
             "Prompts",
             "NarrativePrompt.md"

@@ -7,7 +7,7 @@ internal sealed class TrackerExampleModel : Dictionary<string, object>
     public TrackerExampleModel(TrackerStructure structure)
     {
         var story = ConvertFieldsToDict(structure.Story);
-        Add(nameof(Infrastructure.Persistence.Entities.Tracker.MainCharacter), story);
+        Add(nameof(Infrastructure.Persistence.Entities.Tracker.Story), story);
 
         if (structure.CharactersPresent != null)
         {

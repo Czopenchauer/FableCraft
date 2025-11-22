@@ -171,16 +171,12 @@ internal class GameService : IGameService
 
     public async Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        return await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken)
-            .ContinueWith(task =>
-            {
-                GeneratedScene scene = task.Result;
-                return new GameScene
-                {
-                    Text = scene.Scene,
-                    Choices = scene.Choices.ToList()
-                };
-            }, cancellationToken);
+        var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
+        return new GameScene
+        {
+            Text = scene.Scene,
+            Choices = scene.Choices.ToList()
+        };
     }
 
     public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)

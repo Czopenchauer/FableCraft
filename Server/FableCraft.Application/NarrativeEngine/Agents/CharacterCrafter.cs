@@ -123,6 +123,7 @@ internal sealed class CharacterCrafter
     {
         var promptPath = Path.Combine(
             AppContext.BaseDirectory,
+            "NarrativeEngine",
             "Agents",
             "Prompts",
             "CharacterCrafterPrompt.md"
