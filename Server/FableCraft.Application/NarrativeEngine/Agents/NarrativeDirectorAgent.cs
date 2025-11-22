@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence.Entities;
 
@@ -16,9 +15,17 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel)
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
+
         if (context.GetCurrentSceneMetadata() != null)
         {
-            var narrativeDirection = JsonSerializer.Serialize(context.GetCurrentSceneMetadata()?.NarrativeMetadata);
+
+            var narrativeDirection = JsonSerializer.Serialize(context.GetCurrentSceneMetadata()?.NarrativeMetadata, options);
             var promptContext = $"""
                                  <last_scene_narrative_direction>
                                  {narrativeDirection}
@@ -35,7 +42,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel)
             var match = Regex.Match(response, "<narrative_scene_directive>(.*?)</narrative_scene_directive>", RegexOptions.Singleline);
             if (match.Success)
             {
-                return JsonSerializer.Deserialize<NarrativeDirectorOutput>(match.Groups[1].Value) ?? throw new InvalidOperationException();
+                return JsonSerializer.Deserialize<NarrativeDirectorOutput>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException();
             }
 
             throw new InvalidCastException("Failed to parse NarrativeDirectorOutput from response due to output not being in correct tags.");

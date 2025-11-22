@@ -136,7 +136,11 @@ Before creating the character, query relevant information:
 - **Should Have**: Incorporate these unless they conflict with "must enable" requirements
 - **Cannot Be**: Strictly avoid these traits, roles, or characteristics
 
-### 4. Output Format
+### 4. Initial Character Statistics
+- Generate initial character statistics for Character Tracker:
+{{character_tracker_format}}
+
+### 5. Output Format
 
 #### General Description
 
@@ -164,9 +168,9 @@ Include as relevant to importance level:
 
 #### JSON Character Data
 
-Generate a complete character profile using this schema, with complexity scaled to importance. PLACE JSON IN <character>
+Generate a complete character profile using this schema, with complexity scaled to importance. Also create initial 
+character_statistics according to the Character Tracker format. Place JSON in correct TAGS.
 TAGS:
-
 <character>
 {
   "character_identity": {
@@ -367,6 +371,10 @@ TAGS:
   }
 }
 </character>
+
+<character_statistics>
+{{character_tracker}}
+</character_statistics>
 
 ## Special Considerations
 

@@ -28,6 +28,9 @@ public static class StartupExtensions
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<WriterAgent>()
             .AddScoped<TrackerAgent>()
+            .AddScoped<CharacterCrafter>()
+            .AddScoped<LoreCrafter>()
+            .AddScoped<CharacterStateTracker>()
             .AddScoped<NarrativeDirectorAgent>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<AdventureCreatedEvent, AdventureCreatedEventHandler>();

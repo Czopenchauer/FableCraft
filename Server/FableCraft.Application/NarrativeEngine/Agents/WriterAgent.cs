@@ -16,9 +16,15 @@ internal sealed class WriterAgent(IAgentKernel agentKernel)
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
         var promptContext = $"""
                              <scene_direction>
-                             {narrativeDirectorOutput.SceneDirection}
+                             {JsonSerializer.Serialize(narrativeDirectorOutput.SceneDirection, options)}
                              </scene_direction>
                              """;
         chatHistory.AddUserMessage(context.CommonContext);
@@ -28,7 +34,7 @@ internal sealed class WriterAgent(IAgentKernel agentKernel)
             var match = Regex.Match(response, "<new_scene>(.*?)</new_scene>", RegexOptions.Singleline);
             if (match.Success)
             {
-                return JsonSerializer.Deserialize<GeneratedScene>(match.Groups[1].Value) ?? throw new InvalidOperationException();
+                return JsonSerializer.Deserialize<GeneratedScene>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException();
             }
 
             throw new InvalidCastException("Failed to parse CharacterStats from response due to stats not being in correct tags.");

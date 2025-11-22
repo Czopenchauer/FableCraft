@@ -2,7 +2,7 @@
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-internal class GeneratedScene
+public class GeneratedScene
 {
     [JsonPropertyName("scene_text")]
     public string Scene { get; init; } = null!;

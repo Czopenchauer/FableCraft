@@ -1,5 +1,6 @@
-﻿using FableCraft.Application.Exceptions;
-using FableCraft.Application.NarrativeEngine.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine.Orchestration;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -15,16 +16,20 @@ namespace FableCraft.Application.NarrativeEngine;
 
 public class GameScene
 {
-    public string Text { get; set; } = null!;
+    public required string Text { get; init; } = null!;
 
-    public List<string> Choices { get; set; } = null!;
+    public required List<string> Choices { get; init; } = null!;
+
+    public required Tracker Tracker { get; init; }
+
+    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
 }
 
 public class SubmitActionRequest
 {
-    public Guid AdventureId { get; set; }
+    public Guid AdventureId { get; init; }
 
-    public string ActionText { get; set; } = null!;
+    public string ActionText { get; init; } = null!;
 }
 
 public interface IGameService
@@ -70,6 +75,8 @@ internal class GameService : IGameService
         _sceneGenerationOrchestrator = sceneGenerationOrchestrator;
     }
 
+    [SuppressMessage("ReSharper", "EntityFramework.NPlusOne.IncompleteDataQuery")]
+    [SuppressMessage("ReSharper", "EntityFramework.NPlusOne.IncompleteDataUsage")]
     public async Task<GameScene?> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         Scene? currentScene = await _dbContext.Scenes
@@ -85,7 +92,9 @@ internal class GameService : IGameService
         return new GameScene
         {
             Text = currentScene.NarrativeText,
-            Choices = currentScene.CharacterActions.Select(x => x.ActionDescription).ToList()
+            Choices = currentScene.CharacterActions.Select(x => x.ActionDescription).ToList(),
+            Tracker = currentScene.Metadata.Tracker,
+            NarrativeDirectorOutput = currentScene.Metadata.NarrativeMetadata
         };
     }
 
@@ -105,7 +114,7 @@ internal class GameService : IGameService
         if (sceneCount == 0)
         {
             _logger.Warning("Adventure {AdventureId} has no scenes to regenerate", adventureId);
-            return new GameScene();
+            throw new AdventureNotFoundException(adventureId);
         }
 
         if (sceneCount == 1)
@@ -174,8 +183,10 @@ internal class GameService : IGameService
         var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
         return new GameScene
         {
-            Text = scene.Scene,
-            Choices = scene.Choices.ToList()
+            Text = scene.GeneratedScene.Scene,
+            Choices = scene.GeneratedScene.Choices.ToList(),
+            Tracker = scene.Tracker,
+            NarrativeDirectorOutput = scene.NarrativeDirectorOutput
         };
     }
 
@@ -212,11 +223,13 @@ internal class GameService : IGameService
 
         try
         {
-            GeneratedScene nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
+            var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
             return new GameScene
             {
-                Text = nextScene.Scene,
-                Choices = nextScene.Choices.ToList()
+                Text = nextScene.GeneratedScene.Scene,
+                Choices = nextScene.GeneratedScene.Choices.ToList(),
+                Tracker = nextScene.Tracker,
+                NarrativeDirectorOutput = nextScene.NarrativeDirectorOutput
             };
         }
         catch (Exception ex)

@@ -184,7 +184,7 @@ SceneGenerator. Go beyond simple instructions; provide artistic guidance.**
 
 * **`plot_points_to_hit`**: A clear, ordered list of 2-4 key developments that MUST occur for the narrative to advance.
     *
-    Example: ["Protagonist examines the strange flower.", "Touching the flower triggers a cryptic vision.", "A low growl is heard from the shadows."]
+  Example: ["Protagonist examines the strange flower.", "Touching the flower triggers a cryptic vision.", "A low growl is heard from the shadows."]
 
 * **`emotional_arc` & `tone_guidance`:** This is the soul of the brief.
     * Describe the intended emotional journey for the player, from start to finish. Example: "Guide the player from a
@@ -427,208 +427,188 @@ Output your thinking step by step in <thinking> tags and then produce the JSON.
 Use double quotes for all JSON keys and string values. You must output valid JSON wrapped in
 `<narrative_scene_directive>` tags. Use this exact structure:
 <narrative_scene_directive>
+
+```json
 {
-"extra_context_gathered": [
-{
-"knowledge": "Describe the specific KG query you performed. E.g., 'Queried current location details for [Location ID]'
-or 'Queried relationship history between player and [NPC ID]'.",
-"key_findings": "Summarize the crucial information learned from the query that will influence narrative decisions for
-THIS scene. E.g., 'Location has a hidden history of betrayal.' or 'NPC owes the player a debt.'"
+  "extra_context_gathered": [
+    {
+      "knowledge": "Describe the specific KG query you performed. E.g., 'Queried current location details for [Location ID]' or 'Queried relationship history between player and [NPC ID]'.",
+      "key_findings": "Summarize the crucial information learned from the query that will influence narrative decisions for THIS scene. E.g., 'Location has a hidden history of betrayal.' or 'NPC owes the player a debt.'"
+    }
+  ],
+  "scene_metadata": {
+    "scene_number": "[Integer] Increment the scene number from the previous directive.",
+    "narrative_act": "Choose one: setup | rising_action | climax | falling_action | resolution. Base this on the current scene number and overall story progression.",
+    "beat_type": "Choose one: discovery | challenge | choice_point | revelation | transformation | respite. Select a beat that provides variety compared to the last 2-3 scenes.",
+    "tension_level": "[Integer 1-10] Rate the intended tension for this scene. Respite is 1-2, Discovery is 2-4, Challenge is 5-8, Revelation/Climax is 8-10.",
+    "pacing": "Choose one: slow | building | intense | cooldown. Describe the intended rhythm of the scene's prose and action.",
+    "emotional_target": "Describe the desired emotional journey for the player, not just a single state. E.g., ' curiosity_to_dread', 'despair_to_hope', 'suspicion_to_trust'."
+  },
+  "objectives": {
+    "long_term": {
+      "name": "State the overarching goal of the entire adventure. E.g., 'Defeat the Shadow King'.",
+      "description": "Provide a 1-2 sentence summary of the epic quest.",
+      "status": "active | dormant | completed | failed",
+      "progress_percentage": "[Integer 0-100] Update based on completion of major mid-term objectives.",
+      "stakes": "What is at risk if this objective fails? E.g., 'The fate of the entire kingdom.'",
+      "milestones_completed": "[Array of strings] List the major story arcs (mid-term objectives) already completed.",
+      "milestones_remaining": "[Array of strings] List the major story arcs still required to complete this objective."
+    },
+    "mid_term": [
+      {
+        "name": "State the goal of the current story arc (5-10 scenes). E.g., 'Forge an Alliance with the Sky-Lords'.",
+        "description": "A brief summary of this multi-scene objective.",
+        "parent_objective": "The name of the long-term objective this serves.",
+        "status": "active | dormant | completed | failed",
+        "urgency": "immediate | pressing | background. How time-sensitive is this arc?",
+        "progress_percentage": "[Integer 0-100] Update based on required steps completed.",
+        "required_steps": "[Array of strings] List the high-level steps needed for this arc. E.g., ['Reach the Sky-Lords' domain', 'Gain an audience', 'Pass their trials'].",
+        "steps_completed": "[Array of strings] List the steps already finished.",
+        "estimated_scenes_remaining": "[Integer] How many scenes until this arc is likely resolved?"
+      }
+    ],
+    "short_term": [
+      {
+        "name": "State the immediate, concrete goal for the next 1-3 scenes. E.g., 'Find the secret entrance to the mountain pass'.",
+        "description": "A 1-sentence description of the immediate task.",
+        "parent_objective": "The name of the mid-term objective this serves.",
+        "can_complete_this_scene": "[boolean] Can the player achieve this objective in the upcoming scene?",
+        "urgency": "immediate | pressing | background",
+        "expiry_in_scenes": "[Integer 1-3] How many scenes does the player have to complete this before it expires?",
+        "failure_consequence": "What happens if this objective expires or is failed? Be specific. E.g., 'The patrol will be alerted to your presence.'"
+      }
+    ]
+  },
+  "conflicts": {
+    "immediate_danger": {
+      "description": "Describe the active threat the player must deal with in THIS scene. If none, state 'None - Respite scene'.",
+      "threat_level": "[Integer 0-10] How dangerous is this threat to the player right now?",
+      "can_be_avoided": "[boolean] Is it possible to circumvent this danger, or is confrontation mandatory?",
+      "resolution_options": "[Array of strings] List 2-4 distinct ways the player could handle this. E.g., ['Direct combat', 'Create a diversion', 'Negotiate', 'Use the environment']."
+    },
+    "emerging_threats": [
+      {
+        "description": "Describe a future threat that is a direct consequence of recent player actions or world events. E.g., ' The assassin's guild, angered by the player, has dispatched a hunter.'",
+        "scenes_until_active": "[Integer 2-8] In how many scenes will this threat become an immediate danger?",
+        "trigger_condition": "What makes this threat active? E.g., 'Player enters any major city', or 'After 4 scenes pass'.",
+        "threat_level": "[Integer 1-10] How dangerous will this threat be when it becomes active?"
+      }
+    ],
+    "looming_threats": [
+      {
+        "description": "Describe a large-scale background threat that applies pressure to the whole story. E.g., 'The Shadow King's army is marching south.'",
+        "current_distance": "far (10+ scenes) | approaching (5-9 scenes) | near (2-4 scenes)",
+        "escalation_rate": "slow | moderate | fast. How quickly is this threat growing?",
+        "player_awareness": "[boolean] Does the player know about this threat yet?"
+      }
+    ]
+  },
+  "story_threads": {
+    "active": [
+      {
+        "id": "A unique identifier for the story thread, e.g., ST001.",
+        "name": "A short, descriptive name for the thread. E.g., 'The Captain's Betrayal'.",
+        "status": "opening | developing | ready_to_close | background",
+        "user_investment": "[Integer] A rough measure of how much the player has interacted with this thread.",
+        "scenes_active": "[Integer] How many scenes has this thread been active for?",
+        "next_development": "Briefly state the next plot point for this thread.",
+        "connection_to_main": "How does this side story connect to the main objective?"
+      }
+    ],
+    "seeds_available": [
+      {
+        "trigger": "What player action or discovery would activate a new story thread? E.g., 'Player reads the old journal'.",
+        "thread_name": "What would the new thread be called? E.g., 'The Journal's Secret'.",
+        "potential_value": "low | medium | high. How important could this new thread become?"
+      }
+    ]
+  },
+  "creation_requests": {
+    "characters": [
+      "Fill only if a NEW character must be created for this scene. ALWAYS verify against KG first. Write in ARRAY"
+    ],
+    "lore": [
+      "Fill only if a NEW lore must be created for this scene. ALWAYS verify against KG first. Write in ARRAY"
+    ],
+    "items": [
+      "Fill only if a NEW item must be created for this scene. ALWAYS verify against KG first. Write in ARRAY"
+    ],
+    "locations": [
+      "Fill only if a NEW location must be created for this scene. ALWAYS verify against KG first. Write in ARRAY"
+    ]
+  },
+  "scene_direction": {
+    "opening_focus": "ARTISTIC BRIEF: Describe the scene's 'first camera shot.' What is the single most important image, sound, or sensation the player experiences in the first sentence? Be concrete and evocative.",
+    "required_elements": "[Array of strings] ARTISTIC BRIEF: List 3-5 non-negotiable details for the scene. Include key objects to describe, specific character mannerisms, and crucial sensory information (sights, sounds, smells).",
+    "plot_points_to_hit": "[Array of strings] List the 2-4 key plot developments or information reveals that MUST occur for the narrative to advance. This is the scene's logical spine.",
+    "tone_guidance": "ARTISTIC BRIEF: Provide direction for the prose itself. Describe the desired style, voice, and emotional arc. E.g., 'Adopt a prose style of mounting dread, with moments of gallows humor. Do not reveal the monster's full form.'",
+    "pacing_notes": "ARTISTIC BRIEF: Instruct on the scene's rhythm. E.g., 'Open with a slow, contemplative description, then accelerate sharply with a sudden event mid-scene. End on a cliffhanger.'",
+    "worldbuilding_opportunity": "Suggest one specific piece of lore to weave in naturally, tied to the current location, characters, or items. E.g., 'Mention the local superstition about crows.'",
+    "foreshadowing": "[Array of strings] List 1-3 subtle hints or images to plant for events that will occur 3-10 scenes in the future. Be specific but indirect."
+  },
+  "consequences_queue": {
+    "immediate": [
+      {
+        "description": "Describe the direct, immediate result of the player's last action.",
+        "effect": "How should this be reflected in the scene's opening text or character reactions?"
+      }
+    ],
+    "delayed": [
+      {
+        "scenes_until_trigger": "[Integer] Set timer for when this will become active.",
+        "description": "Describe a new delayed consequence created by the player's last action.",
+        "effect": "What will happen when this consequence triggers?"
+      }
+    ]
+  },
+  "pacing_calibration": {
+    "recent_scene_types": "[Array of strings] List the 'beat_type' of the last 3-5 scenes.",
+    "recommendation": "Based on the recent pattern, state what kind of scene is needed now (e.g., 'Need a challenge beat after two discoveries').",
+    "tension_trajectory": "Describe the intended tension flow across the last scene, this scene, and the next. E.g., ' Cooldown from last scene's fight -> Build tension slowly -> Lead into high-stakes choice point.'",
+    "user_pattern_observed": "Note any recurring player behaviors or preferences. E.g., 'Player consistently chooses negotiation over combat.'",
+    "adjustment": "How will you adapt to or challenge the player's pattern? E.g., 'Provide a negotiation option, but make a stealthy approach more rewarding.'"
+  },
+  "continuity_notes": {
+    "promises_to_keep": "[Array of strings] List any active narrative, player, or NPC promises that demand future resolution.",
+    "elements_to_reincorporate": [
+      {
+        "element": "Identify a 'Chekhov's Gun' from a past scene (an item, an NPC, a piece of information).",
+        "optimal_reintroduction": "In how many scenes should this element return to the story?",
+        "purpose": "Why is it returning? E.g., 'To provide a solution to an upcoming problem.'"
+      }
+    ],
+    "relationship_changes": [
+      {
+        "character": "Name of the NPC whose relationship with the player has changed.",
+        "previous_standing": "[Integer -10 to 10] Their standing before the last action.",
+        "new_standing": "[Integer -10 to 10] Their standing now.",
+        "reason": "The specific player action that caused the change."
+      }
+    ]
+  },
+  "world_evolution": {
+    "time_progressed": "Estimate the duration of the last scene. E.g., '30 minutes', '4 hours', '2 days'.",
+    "calendar_position": "Update the game world's date and time based on time progressed.",
+    "weather_shift": "Describe any changes in the weather or time of day that affect the atmosphere.",
+    "background_events": "[Array of strings] Describe 1-2 significant events happening 'off-screen' in the wider world that the player is not witnessing.",
+    "world_state_changes": [
+      {
+        "element": "The location, faction, or major world element that has changed.",
+        "previous": "Its state before the change.",
+        "current": "Its new, persistent state.",
+        "scenes_until_critical": "[Integer or null] In how many scenes will this change directly and critically impact the player?"
+      }
+    ]
+  },
+  "meta_narrative": {
+    "detected_patterns": "[Array of strings] Identify the current narrative tropes or structures in play. E.g., 'Hero's Journey: Meeting the Mentor', 'Murder Mystery: Discovering the second body'.",
+    "subversion_opportunity": "Is there a compelling opportunity to subvert a common trope you've set up? Describe it here.",
+    "genre_expectations_met": "[Array of strings] List the core genre elements fulfilled in recent scenes.",
+    "genre_expectations_needed": "[Array of strings] List core genre elements that have been absent for a while and should be incorporated soon to maintain genre satisfaction."
+  }
 }
-],
-"scene_metadata": {
-"scene_number": "[Integer] Increment the scene number from the previous directive.",
-"narrative_act": "Choose one: setup | rising_action | climax | falling_action | resolution. Base this on the current
-scene number and overall story progression.",
-"beat_type": "Choose one: discovery | challenge | choice_point | revelation | transformation | respite. Select a beat
-that provides variety compared to the last 2-3 scenes.",
-"tension_level": "[Integer 1-10] Rate the intended tension for this scene. Respite is 1-2, Discovery is 2-4, Challenge
-is 5-8, Revelation/Climax is 8-10.",
-"pacing": "Choose one: slow | building | intense | cooldown. Describe the intended rhythm of the scene's prose and
-action.",
-"emotional_target": "Describe the desired emotional *journey* for the player, not just a single state. E.g., '
-curiosity_to_dread', 'despair_to_hope', 'suspicion_to_trust'."
-},
-"objectives": {
-"long_term": {
-"name": "State the overarching goal of the entire adventure. E.g., 'Defeat the Shadow King'.",
-"description": "Provide a 1-2 sentence summary of the epic quest.",
-"status": "active | dormant | completed | failed",
-"progress_percentage": "[Integer 0-100] Update based on completion of major mid-term objectives.",
-"stakes": "What is at risk if this objective fails? E.g., 'The fate of the entire kingdom.'",
-"milestones_completed": "[Array of strings] List the major story arcs (mid-term objectives) already completed.",
-"milestones_remaining": "[Array of strings] List the major story arcs still required to complete this objective."
-},
-"mid_term": [
-{
-"name": "State the goal of the current story arc (5-10 scenes). E.g., 'Forge an Alliance with the Sky-Lords'.",
-"description": "A brief summary of this multi-scene objective.",
-"parent_objective": "The name of the long-term objective this serves.",
-"status": "active | dormant | completed | failed",
-"urgency": "immediate | pressing | background. How time-sensitive is this arc?",
-"progress_percentage": "[Integer 0-100] Update based on required steps completed.",
-"required_steps": "[Array of strings] List the high-level steps needed for this arc.
-E.g., ['Reach the Sky-Lords' domain', 'Gain an audience', 'Pass their trials'].",
-"steps_completed": "[Array of strings] List the steps already finished.",
-"estimated_scenes_remaining": "[Integer] How many scenes until this arc is likely resolved?"
-}
-],
-"short_term": [
-{
-"name": "State the immediate, concrete goal for the next 1-3 scenes. E.g., 'Find the secret entrance to the mountain
-pass'.",
-"description": "A 1-sentence description of the immediate task.",
-"parent_objective": "The name of the mid-term objective this serves.",
-"can_complete_this_scene": "[boolean] Can the player achieve this objective *in the upcoming scene*?",
-"urgency": "immediate | pressing | background",
-"expiry_in_scenes": "[Integer 1-3] How many scenes does the player have to complete this before it expires?",
-"failure_consequence": "What happens if this objective expires or is failed? Be specific. E.g., 'The patrol will be
-alerted to your presence.'"
-}
-]
-},
-"conflicts": {
-"immediate_danger": {
-"description": "Describe the active threat the player must deal with in THIS scene. If none, state 'None - Respite
-scene'.",
-"threat_level": "[Integer 0-10] How dangerous is this threat to the player right now?",
-"can_be_avoided": "[boolean] Is it possible to circumvent this danger, or is confrontation mandatory?",
-"resolution_options": "[Array of strings] List 2-4 distinct ways the player could handle this.
-E.g., ['Direct combat', 'Create a diversion', 'Negotiate', 'Use the environment']."
-},
-"emerging_threats": [
-{
-"description": "Describe a future threat that is a direct consequence of recent player actions or world events. E.g., '
-The assassin's guild, angered by the player, has dispatched a hunter.'",
-"scenes_until_active": "[Integer 2-8] In how many scenes will this threat become an immediate danger?",
-"trigger_condition": "What makes this threat active? E.g., 'Player enters any major city', or 'After 4 scenes pass'.",
-"threat_level": "[Integer 1-10] How dangerous will this threat be when it becomes active?"
-}
-],
-"looming_threats": [
-{
-"description": "Describe a large-scale background threat that applies pressure to the whole story. E.g., 'The Shadow
-King's army is marching south.'",
-"current_distance": "far (10+ scenes) | approaching (5-9 scenes) | near (2-4 scenes)",
-"escalation_rate": "slow | moderate | fast. How quickly is this threat growing?",
-"player_awareness": "[boolean] Does the player know about this threat yet?"
-}
-]
-},
-"story_threads": {
-"active": [
-{
-"id": "A unique identifier for the story thread, e.g., ST001.",
-"name": "A short, descriptive name for the thread. E.g., 'The Captain's Betrayal'.",
-"status": "opening | developing | ready_to_close | background",
-"user_investment": "[Integer] A rough measure of how much the player has interacted with this thread.",
-"scenes_active": "[Integer] How many scenes has this thread been active for?",
-"next_development": "Briefly state the next plot point for this thread.",
-"connection_to_main": "How does this side story connect to the main objective?"
-}
-],
-"seeds_available": [
-{
-"trigger": "What player action or discovery would activate a new story thread? E.g., 'Player reads the old journal'.",
-"thread_name": "What would the new thread be called? E.g., 'The Journal's Secret'.",
-"potential_value": "low | medium | high. How important could this new thread become?"
-}
-]
-},
-"creation_requests": {
-"characters": "[Fill only if a NEW character is essential for this scene. ALWAYS verify against KG first.]",
-"lore": "[Fill only if NEW lore is needed to explain something in this scene. ALWAYS verify against KG first.]",
-"items": "[Fill only if a NEW item must be introduced in this scene. ALWAYS verify against KG first.]",
-"locations": "[Fill only if a NEW location must be created for this scene. ALWAYS verify against KG first.]"
-},
-"scene_direction": {
-"opening_focus": "ARTISTIC BRIEF: Describe the scene's 'first camera shot.' What is the single most important image,
-sound, or sensation the player experiences in the first sentence? Be concrete and evocative.",
-"required_elements": "[Array of strings] ARTISTIC BRIEF: List 3-5 non-negotiable details for the scene. Include key
-objects to describe, specific character mannerisms, and crucial sensory information (sights, sounds, smells).",
-"plot_points_to_hit": "[Array of strings] List the 2-4 key plot developments or information reveals that MUST occur for
-the narrative to advance. This is the scene's logical spine.",
-"tone_guidance": "ARTISTIC BRIEF: Provide direction for the prose itself. Describe the desired style, voice, and
-emotional arc. E.g., 'Adopt a prose style of mounting dread, with moments of gallows humor. Do not reveal the monster's
-full form.'",
-"pacing_notes": "ARTISTIC BRIEF: Instruct on the scene's rhythm. E.g., 'Open with a slow, contemplative description,
-then accelerate sharply with a sudden event mid-scene. End on a cliffhanger.'",
-"worldbuilding_opportunity": "Suggest one specific piece of lore to weave in naturally, tied to the current location,
-characters, or items. E.g., 'Mention the local superstition about crows.'",
-"foreshadowing": "[Array of strings] List 1-3 subtle hints or images to plant for events that will occur 3-10 scenes in
-the future. Be specific but indirect."
-},
-"consequences_queue": {
-"immediate": [
-{
-"description": "Describe the direct, immediate result of the player's last action.",
-"effect": "How should this be reflected in the scene's opening text or character reactions?"
-}
-],
-"delayed": [
-{
-"scenes_until_trigger": "[Integer] Set timer for when this will become active.",
-"description": "Describe a new delayed consequence created by the player's last action.",
-"effect": "What will happen when this consequence triggers?"
-}
-]
-},
-"pacing_calibration": {
-"recent_scene_types": "[Array of strings] List the 'beat_type' of the last 3-5 scenes.",
-"recommendation": "Based on the recent pattern, state what kind of scene is needed now (e.g., 'Need a challenge beat
-after two discoveries').",
-"tension_trajectory": "Describe the intended tension flow across the last scene, this scene, and the next. E.g., '
-Cooldown from last scene's fight -> Build tension slowly -> Lead into high-stakes choice point.'",
-"user_pattern_observed": "Note any recurring player behaviors or preferences. E.g., 'Player consistently chooses
-negotiation over combat.'",
-"adjustment": "How will you adapt to or challenge the player's pattern? E.g., 'Provide a negotiation option, but make a
-stealthy approach more rewarding.'"
-},
-"continuity_notes": {
-"promises_to_keep": "[Array of strings] List any active narrative, player, or NPC promises that demand future
-resolution.",
-"elements_to_reincorporate": [
-{
-"element": "Identify a 'Chekhov's Gun' from a past scene (an item, an NPC, a piece of information).",
-"optimal_reintroduction": "In how many scenes should this element return to the story?",
-"purpose": "Why is it returning? E.g., 'To provide a solution to an upcoming problem.'"
-}
-],
-"relationship_changes": [
-{
-"character": "Name of the NPC whose relationship with the player has changed.",
-"previous_standing": "[Integer -10 to 10] Their standing before the last action.",
-"new_standing": "[Integer -10 to 10] Their standing now.",
-"reason": "The specific player action that caused the change."
-}
-]
-},
-"world_evolution": {
-"time_progressed": "Estimate the duration of the last scene. E.g., '30 minutes', '4 hours', '2 days'.",
-"calendar_position": "Update the game world's date and time based on time progressed.",
-"weather_shift": "Describe any changes in the weather or time of day that affect the atmosphere.",
-"background_events": "[Array of strings] Describe 1-2 significant events happening 'off-screen' in the wider world that
-the player is not witnessing.",
-"world_state_changes": [
-{
-"element": "The location, faction, or major world element that has changed.",
-"previous": "Its state before the change.",
-"current": "Its new, persistent state.",
-"scenes_until_critical": "[Integer or null] In how many scenes will this change directly and critically impact the
-player?"
-}
-]
-},
-"meta_narrative": {
-"detected_patterns": "[Array of strings] Identify the current narrative tropes or structures in play. E.g., 'Hero's
-Journey: Meeting the Mentor', 'Murder Mystery: Discovering the second body'.",
-"subversion_opportunity": "Is there a compelling opportunity to subvert a common trope you've set up? Describe it
-here.",
-"genre_expectations_met": "[Array of strings] List the core genre elements fulfilled in recent scenes.",
-"genre_expectations_needed": "[Array of strings] List core genre elements that have been absent for a while and should
-be incorporated soon to maintain genre satisfaction."
-}
-}
+```
+
 </narrative_scene_directive>
 
 ## Strategic Principles

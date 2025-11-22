@@ -55,7 +55,7 @@ public sealed class Metadata
 {
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
-    public Tracker? Tracker { get; set; }
+    public required Tracker Tracker { get; set; }
 }
 
 public sealed class Tracker

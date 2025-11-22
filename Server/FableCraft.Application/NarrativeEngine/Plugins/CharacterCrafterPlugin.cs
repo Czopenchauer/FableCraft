@@ -25,7 +25,6 @@ internal sealed class CharacterCrafterPlugin
     private readonly ILogger _logger;
 
     public CharacterCrafterPlugin(
-        NarrativeContext narrativeContext,
         Kernel kernel,
         ILogger logger)
     {
@@ -38,7 +37,7 @@ internal sealed class CharacterCrafterPlugin
     [Description(
         "Create a character based on the provided description. Use this to generate new characters with detailed personalities, backgrounds, abilities, and characteristics for the narrative.")]
     public async Task<string> CreateCharacter(
-        [Description("The query or description for the character to be created")]
+        [Description("Creation request describing the character to be created")]
         string description)
     {
         ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
