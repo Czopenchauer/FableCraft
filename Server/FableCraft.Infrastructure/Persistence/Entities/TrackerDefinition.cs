@@ -27,11 +27,11 @@ public sealed class TrackerStructure
 {
     public required FieldDefinition[] Story { get; set; }
 
-    public string[]? CharactersPresent { get; set; }
+    public required FieldDefinition CharactersPresent { get; set; }
 
-    public FieldDefinition[]? MainCharacter { get; set; }
+    public required FieldDefinition[] MainCharacter { get; set; }
 
-    public FieldDefinition[]? Characters { get; set; }
+    public required FieldDefinition[] Characters { get; set; }
 }
 
 public sealed class FieldDefinition

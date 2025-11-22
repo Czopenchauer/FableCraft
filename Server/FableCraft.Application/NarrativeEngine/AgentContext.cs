@@ -2,12 +2,16 @@ using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities;
 
+using Microsoft.SemanticKernel;
+
 namespace FableCraft.Application.NarrativeEngine;
 
 internal sealed class NarrativeContext
 {
     [JsonIgnore]
-    public required string AdventureId { get; set; }
+    public required Guid AdventureId { get; set; }
+
+    public required Kernel KernelKg { get; set; }
 
     public required string? StorySummary { get; set; }
 
@@ -15,15 +19,13 @@ internal sealed class NarrativeContext
 
     public required string CommonContext { get; set; }
 
-    public required TrackerStructure TrackerStructure { get; set; }
-
     public required SceneContext[] SceneContext { get; set; }
 
     public List<CharacterContext> Characters { get; set; } = new();
 
-    public SceneMetadata? GetCurrentSceneMetadata()
+    public Metadata? GetCurrentSceneMetadata()
     {
-        return SceneContext.LastOrDefault()?.SceneMetadata;
+        return SceneContext.LastOrDefault()?.Metadata;
     }
 }
 
@@ -46,5 +48,5 @@ internal sealed class SceneContext
 
     public Character[] Characters { get; set; } = [];
 
-    public SceneMetadata SceneMetadata { get; set; } = null!;
+    public Metadata Metadata { get; set; } = null!;
 }

@@ -1,8 +1,5 @@
 ﻿using System.Text.Json;
 
-using FableCraft.Application.NarrativeEngine.Tracker;
-using FableCraft.Infrastructure.Persistence.Entities;
-
 namespace FableCraft.Tests.Tracker;
 
 public class TrackerConverterTests
@@ -17,9 +14,8 @@ public class TrackerConverterTests
     {
         // var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
         //
-        // var kek = new TrackerExampleModel(structure);
+        // var kek = new TrackerPromptBuilder(structure!);
         // var serializedKeke = JsonSerializer.Serialize(kek, JsonOptions);
-        // var tracker = JsonSerializer.Deserialize<TrackerModel>(serializedKeke);
         // Assert.True(kek.Equals(structure));
     }
 }

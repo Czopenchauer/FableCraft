@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-using FableCraft.Application.NarrativeEngine.Models;
-
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class Scene : IKnowledgeGraphEntity
@@ -20,7 +18,7 @@ public class Scene : IKnowledgeGraphEntity
     [Required]
     public required string NarrativeText { get; init; }
 
-    public required SceneMetadata SceneMetadata { get; init; }
+    public required Metadata Metadata { get; init; }
 
     public required DateTime CreatedAt { get; init; }
 
@@ -41,10 +39,10 @@ public class Scene : IKnowledgeGraphEntity
         var narrativeText = GetSceneWithSelectedAction();
 
         var scene = $"""
-                     Time: {SceneMetadata.Tracker?.Story.Time}
-                     Location: {SceneMetadata.Tracker?.Story.Location}
-                     Weather: {SceneMetadata.Tracker?.Story.Weather}
-                     Characters Present: {string.Join(", ", SceneMetadata?.Tracker?.CharactersPresent ?? [])}
+                     Time: {Metadata.Tracker?.Story.Time}
+                     Location: {Metadata.Tracker?.Story.Location}
+                     Weather: {Metadata.Tracker?.Story.Weather}
+                     Characters Present: {string.Join(", ", Metadata?.Tracker?.CharactersPresent ?? [])}
 
                      {narrativeText}
                      """;
@@ -53,7 +51,7 @@ public class Scene : IKnowledgeGraphEntity
     }
 }
 
-public sealed class SceneMetadata
+public sealed class Metadata
 {
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 

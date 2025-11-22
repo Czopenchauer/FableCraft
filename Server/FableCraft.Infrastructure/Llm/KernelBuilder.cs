@@ -9,6 +9,8 @@ namespace FableCraft.Infrastructure.Llm;
 public interface IKernelBuilder
 {
     Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null);
+
+    PromptExecutionSettings GetDefaultPromptExecutionSettings();
 }
 
 internal class OpenAiKernelBuilder : IKernelBuilder
@@ -32,7 +34,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
 
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
-            hp.ConfigureHttpClient((sp, c) =>
+            hp.ConfigureHttpClient((_, c) =>
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
             });
@@ -40,7 +42,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
 
         return builder;
     }
-    
+
     public PromptExecutionSettings GetDefaultPromptExecutionSettings()
     {
         return new OpenAIPromptExecutionSettings

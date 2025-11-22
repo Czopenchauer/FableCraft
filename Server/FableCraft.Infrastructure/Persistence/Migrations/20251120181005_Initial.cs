@@ -134,7 +134,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
                     NarrativeText = table.Column<string>(type: "text", nullable: false),
-                    SceneMetadata = table.Column<SceneMetadata>(type: "jsonb", nullable: false),
+                    SceneMetadata = table.Column<Metadata>(type: "jsonb", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>

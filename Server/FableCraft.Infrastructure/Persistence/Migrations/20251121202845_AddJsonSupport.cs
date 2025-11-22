@@ -24,7 +24,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 table: "Scenes",
                 type: "text",
                 nullable: false,
-                oldClrType: typeof(SceneMetadata),
+                oldClrType: typeof(Metadata),
                 oldType: "jsonb");
 
             migrationBuilder.AlterColumn<string>(
@@ -63,7 +63,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 oldClrType: typeof(string),
                 oldType: "text");
 
-            migrationBuilder.AlterColumn<SceneMetadata>(
+            migrationBuilder.AlterColumn<Metadata>(
                 name: "SceneMetadata",
                 table: "Scenes",
                 type: "jsonb",

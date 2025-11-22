@@ -12,7 +12,6 @@ using Microsoft.SemanticKernel;
 using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-using SceneMetadata = FableCraft.Infrastructure.Persistence.Entities.SceneMetadata;
 
 namespace FableCraft.Application.NarrativeEngine.Orchestration;
 
@@ -22,14 +21,26 @@ internal sealed class SceneGenerationOrchestrator
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly IRagSearch _ragSearch;
-    private const int NumberOfScenesToInclude = 30;
+    private readonly WriterAgent _writerAgent;
+    private readonly TrackerAgent _trackerAgent;
+    private readonly NarrativeDirectorAgent _narrativeDirectorAgent;
+    private const int NumberOfScenesToInclude = 20;
 
-    public SceneGenerationOrchestrator(IKernelBuilder kernelBuilder, IRagSearch ragSearch, ILogger logger, ApplicationDbContext dbContext)
+    public SceneGenerationOrchestrator(
+        IKernelBuilder kernelBuilder,
+        IRagSearch ragSearch,
+        ILogger logger,
+        ApplicationDbContext dbContext,
+        NarrativeDirectorAgent narrativeDirectorAgent,
+        WriterAgent writerAgent, TrackerAgent trackerAgent)
     {
         _kernelBuilder = kernelBuilder;
         _ragSearch = ragSearch;
         _logger = logger;
         _dbContext = dbContext;
+        _narrativeDirectorAgent = narrativeDirectorAgent;
+        _writerAgent = writerAgent;
+        _trackerAgent = trackerAgent;
     }
 
     public async Task<GeneratedScene> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
@@ -63,7 +74,7 @@ internal sealed class SceneGenerationOrchestrator
                                </current_scene_number>
 
                                <current_scene_tracker>
-                               {scenes.LastOrDefault()?.SceneMetadata?.Tracker}
+                               {scenes.LastOrDefault()?.Metadata?.Tracker}
                                </current_scene_tracker>
 
                                <main_character>
@@ -80,33 +91,34 @@ internal sealed class SceneGenerationOrchestrator
                                </last_scenes>
                                """;
 
+        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString(), _logger);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
         var narrativeContext = new NarrativeContext
         {
-            AdventureId = adventureId.ToString(),
-            TrackerStructure = adventure.TrackerStructure,
+            AdventureId = adventureId,
             SceneContext = scenes.Select(x => new SceneContext
                 {
                     SceneContent = x.NarrativeText,
                     PlayerChoice = x.CharacterActions.Single(y => y.Selected)
                         .ActionDescription,
-                    SceneMetadata = x.SceneMetadata
+                    Metadata = x.Metadata
                 })
                 .ToArray(),
             StorySummary = adventure.Summary,
             PlayerAction = playerAction,
             CommonContext = commonContext,
+            KernelKg = kernelWithKg,
         };
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString());
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        Kernel kernelWithKg = kernel.Build();
-        var narrativeAgent = new NarrativeDirector(_logger);
-        var narrativeDirectorOutput = await narrativeAgent.Invoke(kernelWithKg, narrativeContext);
-        narrativeContext.Characters.AddRange();
-        var writer = new Writer(_logger);
-        var sceneContent = await writer.Invoke(kernelWithKg, narrativeContext, narrativeDirectorOutput, cancellationToken);
-
+        var narrativeDirectorOutput = await _narrativeDirectorAgent.Invoke(narrativeContext, cancellationToken);
+        // TODO create character and lore from narrativeDirectorOutput
+        var sceneContent = await _writerAgent.Invoke(narrativeContext, narrativeDirectorOutput, cancellationToken);
+        var tracker = await _trackerAgent.Invoke(
+            narrativeContext,
+            sceneContent,
+            cancellationToken);
         var newScene = new Scene
         {
             AdventureId = adventureId,
@@ -116,13 +128,13 @@ internal sealed class SceneGenerationOrchestrator
                     ActionDescription = x
                 })
                 .ToList(),
-            SequenceNumber = scenes[^1].SequenceNumber + 1,
-            SceneMetadata = new SceneMetadata()
+            SequenceNumber = scenes.LastOrDefault()?.SequenceNumber ?? 0 + 1,
+            Metadata = new Metadata
             {
                 NarrativeMetadata = narrativeDirectorOutput,
-                Tracker = null
+                Tracker = tracker
             },
-            CreatedAt = default
+            CreatedAt = DateTime.UtcNow
         };
 
         IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();

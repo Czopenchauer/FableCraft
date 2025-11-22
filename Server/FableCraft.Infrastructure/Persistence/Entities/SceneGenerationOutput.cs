@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FableCraft.Application.NarrativeEngine.Models;
+namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class NarrativeDirectorOutput
 {

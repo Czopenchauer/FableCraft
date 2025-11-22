@@ -465,10 +465,17 @@ internal class AdventureCreationService : IAdventureCreationService
                                                   "exampleValues": ["Professional", "Supportive", "Casual"]
                                                 }
                                               ],
-                                              "charactersPresent": [
-                                                "Emma Thompson",
-                                                "James Miller"
-                                              ],
+                                              "charactersPresent": 
+                                              {
+                                              "name": "CharactersPresent",
+                                              "type": "Array",
+                                              "prompt": "List of all characters present in the scene.",
+                                              "defaultValue": ["No Characters"],
+                                              "exampleValues": [[
+                                              "Emma Thompson",
+                                              "James Miller"
+                                            ]]
+                                            },
                                               "MainCharacter": [
                                               {
                                               "name": "Name",

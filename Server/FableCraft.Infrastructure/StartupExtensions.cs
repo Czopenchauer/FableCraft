@@ -61,7 +61,8 @@ public static class StartupExtensions
             client.Timeout = TimeSpan.FromMinutes(10);
         });
 
-        services.AddSingleton<IKernelBuilder, OpenAiKernelBuilder>();
+        services.AddTransient<IKernelBuilder, OpenAiKernelBuilder>();
+        services.AddTransient<IAgentKernel, AgentKernel>();
         services.AddRag();
 
         return services;

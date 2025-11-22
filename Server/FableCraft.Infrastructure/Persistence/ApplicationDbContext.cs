@@ -64,7 +64,7 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Scene>(p =>
         {
-            p.Property(x => x.SceneMetadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<SceneMetadata>(x)!).Metadata.SetProviderClrType(null);
+            p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x)!).Metadata.SetProviderClrType(null);
             p.HasIndex(x => x.SequenceNumber);
         });
     }

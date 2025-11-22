@@ -5,6 +5,7 @@
 Before generating the character, you have access to a comprehensive knowledge graph containing:
 
 ### Available Knowledge Domains:
+
 - **World Lore**: Historical events, mythology, cultural practices, religions, magical systems
 - **Geography**: Locations, settlements, landmarks, regional characteristics, travel routes
 - **Factions & Organizations**: Guilds, governments, secret societies, military units, merchant companies
@@ -14,9 +15,11 @@ Before generating the character, you have access to a comprehensive knowledge gr
 - **Player History**: Past actions, reputation, completed quests, faction standings
 
 ### Query Format:
+
 When you need world information, query the knowledge graph using Function Calls.
 
 ## Input Structure
+
 You will receive a JSON specification with the following structure:
 
 ```json
@@ -28,18 +31,38 @@ You will receive a JSON specification with the following structure:
     "archetype": "[Character archetype description - personality/role template]",
     "alignment": "[Moral alignment and behavioral tendencies]",
     "power_level": "[much_stronger|stronger|equal|weaker|much_weaker - relative to protagonist]",
-    "key_traits": ["[core personality trait 1]", "[trait 2]", "[trait 3]", "[trait 4]"],
+    "key_traits": [
+      "[core personality trait 1]",
+      "[trait 2]",
+      "[trait 3]",
+      "[trait 4]"
+    ],
     "relationship_to_player": "[hostile|wary|neutral|friendly|allied]",
     "narrative_purpose": "[What this character must accomplish in the story]",
     "backstory_depth": "[minimal|moderate|extensive]"
   },
   "constraints": {
-    "must_enable": ["[required story/gameplay function 1]", "[function 2]", "[function 3]"],
-    "should_have": ["[recommended characteristic 1]", "[characteristic 2]", "[characteristic 3]"],
-    "cannot_be": ["[prohibited trait/role 1]", "[restriction 2]", "[restriction 3]"]
+    "must_enable": [
+      "[required story/gameplay function 1]",
+      "[function 2]",
+      "[function 3]"
+    ],
+    "should_have": [
+      "[recommended characteristic 1]",
+      "[characteristic 2]",
+      "[characteristic 3]"
+    ],
+    "cannot_be": [
+      "[prohibited trait/role 1]",
+      "[restriction 2]",
+      "[restriction 3]"
+    ]
   },
   "scene_role": "[Specific function in current/upcoming scene]",
-  "connection_to_existing": ["[Relationship to existing character/faction/location]", "[Another connection]"],
+  "connection_to_existing": [
+    "[Relationship to existing character/faction/location]",
+    "[Another connection]"
+  ],
   "location_context": "[Current location where character appears]",
   "temporal_context": "[Current time/date in world, relevant recent events]"
 }
@@ -52,12 +75,14 @@ You will receive a JSON specification with the following structure:
 Before creating the character, query relevant information:
 
 **Required Queries**:
+
 - Local context where character will appear
 - Mentioned existing characters/factions in connections
 - Recent events that might affect character's knowledge/state
 - Player reputation if relationship is not neutral
 
 **Optional Queries** (based on role):
+
 - Historical/lore context for backstory
 - Regional dialect/cultural practices for personality
 - Economic/political situation for merchants/officials
@@ -66,6 +91,7 @@ Before creating the character, query relevant information:
 ### 2. Depth Scaling by Importance Level
 
 **Cameo** (Minimal Detail):
+
 - Basic identity and appearance
 - Single defining trait
 - Simple, immediate goal
@@ -75,6 +101,7 @@ Before creating the character, query relevant information:
 - KG queries: 1-2 essential only
 
 **Background** (Moderate Detail):
+
 - Full identity with possible alias
 - 3-4 personality traits
 - Primary goal with 1-2 secondary goals
@@ -84,6 +111,7 @@ Before creating the character, query relevant information:
 - KG queries: 3-4 for context
 
 **Arc Important** (Full Detail):
+
 - Complete identity with history
 - Full personality profile with Five Factor Model
 - Multiple layered goals with progress tracking
@@ -93,6 +121,7 @@ Before creating the character, query relevant information:
 - KG queries: 5-7 for deep integration
 
 **Scene Critical** (Focused Detail):
+
 - Identity relevant to scene
 - Personality traits that drive scene
 - Immediate goals and motivations
@@ -108,8 +137,11 @@ Before creating the character, query relevant information:
 - **Cannot Be**: Strictly avoid these traits, roles, or characteristics
 
 ### 4. Output Format
+
 #### General Description
+
 Write a narrative description with length based on importance:
+
 - **Cameo**: 1 paragraph (3-5 sentences)
 - **Background**: 2 paragraphs (8-12 sentences)
 - **Arc Important**: 2-3 paragraphs (12-20 sentences)
@@ -121,6 +153,7 @@ Write description in <character_description> TAGS:
 </character_description>
 
 Include as relevant to importance level:
+
 - Physical appearance and distinctive features
 - Mannerisms and behavioral quirks
 - Current situation and concerns
@@ -131,7 +164,8 @@ Include as relevant to importance level:
 
 #### JSON Character Data
 
-Generate a complete character profile using this schema, with complexity scaled to importance. PLACE JSON IN <character> TAGS:
+Generate a complete character profile using this schema, with complexity scaled to importance. PLACE JSON IN <character>
+TAGS:
 
 <character>
 {
@@ -339,31 +373,37 @@ Generate a complete character profile using this schema, with complexity scaled 
 ### Knowledge Graph Integration Points:
 
 **For Quest Givers**:
+
 - Query recent events that might create quest opportunities
 - Check player reputation for trust level determination
 - Verify quest targets exist in KG
 
 **For Merchants**:
+
 - Query economic conditions and trade routes
 - Check regional specialties and goods
 - Verify currency and pricing from KG
 
 **For Guards/Officials**:
+
 - Query local laws and regulations
 - Check recent criminal activity
 - Verify chain of command from KG
 
 **For Locals**:
+
 - Query local rumors and gossip
 - Check recent events they'd witnessed
 - Verify local customs and traditions
 
 ### For Combat NPCs:
+
 - Query combat systems and power scaling from KG
 - Check faction hostilities
 - Verify equipment availability in region
 
 ### For Information Brokers:
+
 - Query multiple KG domains for diverse knowledge
 - Check information flow and communication methods
 - Verify what secrets are learnable vs. protected
@@ -380,8 +420,11 @@ Generate a complete character profile using this schema, with complexity scaled 
 ## Knowledge Graph Error Handling
 
 If KG queries return incomplete or contradictory information:
+
 1. Flag the inconsistency in output
 2. Make reasonable assumptions based on archetype and role
 3. Mark uncertain elements with confidence levels
 
-Generate the character to feel like a living part of the world, with desires and concerns beyond just their interaction with the protagonist. Even cameo characters should feel like they have a life outside the current scene, connected to the living world represented in the knowledge graph.
+Generate the character to feel like a living part of the world, with desires and concerns beyond just their interaction
+with the protagonist. Even cameo characters should feel like they have a life outside the current scene, connected to
+the living world represented in the knowledge graph.
