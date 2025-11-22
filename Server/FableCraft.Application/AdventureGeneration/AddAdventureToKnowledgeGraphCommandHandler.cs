@@ -4,7 +4,6 @@ using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 using FableCraft.Infrastructure.Rag;
 
-using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 
 namespace FableCraft.Application.AdventureGeneration;

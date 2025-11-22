@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
@@ -29,7 +28,6 @@ public class Adventure : IEntity
 
     public Character[] Characters { get; init; }
 
-    [Column(TypeName = "jsonb")]
     public required TrackerStructure TrackerStructure { get; init; }
 
     public required List<LorebookEntry> Lorebook { get; init; }

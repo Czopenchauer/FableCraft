@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
@@ -15,10 +14,8 @@ public sealed class CharacterState
 
     public int SequenceNumber { get; set; }
 
-    [Column(TypeName = "jsonb")]
     public CharacterStats CharacterStats { get; init; } = null!;
 
-    [Column(TypeName = "jsonb")]
     public CharacterTracker Tracker { get; init; } = null!;
 }
 
@@ -187,7 +184,7 @@ public class KnowledgeAndBeliefs
     public List<BeliefAboutProtagonist>? BeliefsAboutProtagonist { get; set; }
 
     [JsonPropertyName("secrets_held")]
-    public List<Microsoft.AspNetCore.DataProtection.Secret>? SecretsHeld { get; set; }
+    public List<Secret>? SecretsHeld { get; set; }
 }
 
 public class WorldKnowledge

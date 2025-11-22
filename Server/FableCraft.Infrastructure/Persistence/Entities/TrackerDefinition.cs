@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
@@ -13,7 +12,6 @@ public class TrackerDefinition : IEntity
     [Required]
     public string Name { get; set; }
 
-    [Column(TypeName = "jsonb")]
     public TrackerStructure Structure { get; set; }
 }
 
@@ -27,15 +25,12 @@ public enum FieldType
 
 public sealed class TrackerStructure
 {
-    // Time, Location, Weather is required in Story fields
     public FieldDefinition[] Story { get; set; }
 
     public string[]? CharactersPresent { get; set; }
 
-    // Name is required
     public FieldDefinition[]? MainCharacter { get; set; }
 
-    // Name is required
     public FieldDefinition[]? Characters { get; set; }
 }
 

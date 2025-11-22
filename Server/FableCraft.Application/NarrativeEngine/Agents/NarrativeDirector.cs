@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Llm;
-using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;

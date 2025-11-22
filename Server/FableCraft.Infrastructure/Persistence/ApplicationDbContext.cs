@@ -1,4 +1,6 @@
-﻿using FableCraft.Infrastructure.Persistence.Entities;
+﻿using System.Text.Json;
+
+using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -40,18 +42,30 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Adventure>(p =>
         {
             p.Property(c => c.ProcessingStatus).HasConversion<string>();
+            p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
         });
 
-        modelBuilder.Entity<TrackerDefinition>()
-            .HasIndex(x => x.Name);
+        modelBuilder.Entity<TrackerDefinition>(p =>
+        {
+            p.Property(x => x.Structure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
+            p.HasIndex(x => x.Name);
+        });
 
         modelBuilder.Entity<Character>()
             .HasIndex(x => x.Name);
 
-        modelBuilder.Entity<CharacterState>()
-            .HasIndex(x => x.SequenceNumber);
+        modelBuilder.Entity<CharacterState>(p =>
+        {
+            p.Property(x => x.CharacterStats).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterStats>(x)!);
+            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!);
+            
+            p.HasIndex(x => x.SequenceNumber);
+        });
 
-        modelBuilder.Entity<Scene>()
-            .HasIndex(x => x.SequenceNumber);
+        modelBuilder.Entity<Scene>(p =>
+        {
+            p.Property(x => x.SceneMetadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<SceneMetadata>(x)!).Metadata.SetProviderClrType(null);
+            p.HasIndex(x => x.SequenceNumber);
+        });
     }
 }

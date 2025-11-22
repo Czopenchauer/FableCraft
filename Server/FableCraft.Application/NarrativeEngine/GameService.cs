@@ -1,29 +1,15 @@
-﻿using System.Net;
-using System.Text.Json;
-
-using FableCraft.Application.Exceptions;
+﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Orchestration;
-using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-
-using OpenAI.Chat;
-
-using Polly;
-using Polly.Retry;
 
 using Serilog;
 
-using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-using SceneMetadata = FableCraft.Infrastructure.Persistence.Entities.SceneMetadata;
 
 namespace FableCraft.Application.NarrativeEngine;
 
@@ -183,9 +169,18 @@ internal class GameService : IGameService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken)
+    public async Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken)
+            .ContinueWith(task =>
+            {
+                GeneratedScene scene = task.Result;
+                return new GameScene
+                {
+                    Text = scene.Scene,
+                    Choices = scene.Choices.ToList()
+                };
+            }, cancellationToken);
     }
 
     public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)

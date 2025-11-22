@@ -1,8 +1,5 @@
 ﻿using System.Text.Json;
 
-using FableCraft.Application.NarrativeEngine.Tracker;
-using FableCraft.Infrastructure.Persistence.Entities;
-
 namespace FableCraft.Tests.Tracker;
 
 public class TrackerConverterTests

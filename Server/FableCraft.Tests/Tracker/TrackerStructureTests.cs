@@ -27,7 +27,7 @@ public class TrackerStructureTests
 
         foreach (var expectedField in expectedFields)
         {
-            Assert.Contains(expectedField, (IEnumerable<string>)actualFieldNames);
+            Assert.Contains(expectedField, actualFieldNames);
         }
 
         Assert.All(structure.Story,

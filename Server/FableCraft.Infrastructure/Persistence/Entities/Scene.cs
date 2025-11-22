@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -21,7 +20,6 @@ public class Scene : IKnowledgeGraphEntity
     [Required]
     public required string NarrativeText { get; init; }
 
-    [Column(TypeName = "jsonb")]
     public required SceneMetadata SceneMetadata { get; init; }
 
     public required DateTime CreatedAt { get; init; }
@@ -60,13 +58,6 @@ public sealed class SceneMetadata
     public NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
     public Tracker Tracker { get; set; }
-}
-
-public sealed class ContextGatherer
-{
-    public required string Knowledge { get; init; }
-
-    public required string KeyFindings { get; init; }
 }
 
 public sealed class Tracker
