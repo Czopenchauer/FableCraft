@@ -52,7 +52,7 @@ internal sealed class LoreCrafter
             "NarrativeEngine",
             "Agents",
             "Prompts",
-            "CharacterCrafterPrompt.md"
+            "LoreCrafterPrompt.md"
         );
 
         return await File.ReadAllTextAsync(promptPath);

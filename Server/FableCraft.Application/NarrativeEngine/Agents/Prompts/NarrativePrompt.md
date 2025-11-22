@@ -573,7 +573,7 @@ Use double quotes for all JSON keys and string values. You must output valid JSO
     "elements_to_reincorporate": [
       {
         "element": "Identify a 'Chekhov's Gun' from a past scene (an item, an NPC, a piece of information).",
-        "optimal_reintroduction": "In how many scenes should this element return to the story?",
+        "optimal_reintroduction": "[STRING] In how many scenes should this element return to the story? E.g.,'In 2-3scenes'.",
         "purpose": "Why is it returning? E.g., 'To provide a solution to an upcoming problem.'"
       }
     ],

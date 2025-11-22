@@ -545,7 +545,7 @@ public class ElementToReincorporate
     public string Element { get; set; } = string.Empty;
 
     [JsonPropertyName("optimal_reintroduction")]
-    public int OptimalReintroduction { get; set; } // Number of scenes until reintroduction
+    public string OptimalReintroduction { get; set; } = null!;
 
     [JsonPropertyName("purpose")]
     public string Purpose { get; set; } = string.Empty;
