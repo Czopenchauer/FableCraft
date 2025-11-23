@@ -128,22 +128,17 @@ internal sealed class SceneGenerationOrchestrator
                                     """))}
                                </last_scenes>
                                """;
-//         var contextBases = await _contextGatherer.Invoke(adventureId, commonContext, cancellationToken);
-//         commonContext += $"""
-//                           <additional_context>
-//                           {string.Join("\n\n", contextBases.Select(x => $"""
-//                                                                          QUESTION:
-//                                                                          {x.Query}
-//                                                                          ANSWER:
-//                                                                          {x.Response}
-//                                                                          """))}
-//                           </additional_context>
-//                           """;
-
-        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString(), _logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        Kernel kernelWithKg = kernel.Build();
+        var contextBases = await _contextGatherer.Invoke(adventureId, commonContext, cancellationToken);
+        commonContext += $"""
+                          <additional_context>
+                          {string.Join("\n\n", contextBases.Select(x => $"""
+                                                                         QUESTION:
+                                                                         {x.Query}
+                                                                         ANSWER:
+                                                                         {x.Response}
+                                                                         """))}
+                          </additional_context>
+                          """;
 
         var charactersOnScene = await GetCharacters(scenes, cancellationToken);
         if (charactersOnScene.Any())
@@ -154,11 +149,17 @@ internal sealed class SceneGenerationOrchestrator
                                                                                      <character>
                                                                                      {x.Name}
                                                                                      {x.Description}
+                                                                                     {x.CharacterTracker}
                                                                                      </character>
                                                                                      """))}
                                  </characters_on_scene>
                               """;
         }
+
+        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString(), _logger);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
 
         var narrativeContext = new NarrativeContext
         {
@@ -190,11 +191,18 @@ internal sealed class SceneGenerationOrchestrator
         var characterCreations = await Task.WhenAll(characterCreationTasks);
         narrativeContext.Characters.AddRange(characterCreations);
 
-        var sceneContent = await _writerAgent.Invoke(narrativeContext, narrativeDirectorOutput, cancellationToken);
-        var tracker = await _trackerAgent.Invoke(
+        var sceneContent = await _writerAgent.Invoke(narrativeContext, characterCreations, newLore, narrativeDirectorOutput, cancellationToken);
+        var trackerTask = _trackerAgent.Invoke(
             narrativeContext,
             sceneContent,
             cancellationToken);
+        var characterUpdatesTask = charactersOnScene
+            .ExceptBy(characterCreations.Select(x => x.Name), x => x.Name)
+            .Select(x => _characterStateTracker.Invoke(adventureId, narrativeContext, x, sceneContent, cancellationToken))
+            .ToList();
+
+        var tracker = await trackerTask;
+        var characterUpdates = await Task.WhenAll(characterUpdatesTask);
 
         var newScene = new Scene
         {
@@ -211,8 +219,50 @@ internal sealed class SceneGenerationOrchestrator
                 NarrativeMetadata = narrativeDirectorOutput,
                 Tracker = tracker
             },
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
+
+        var characters = await _dbContext.Characters
+            .Where(x => characterUpdates.Select(y => y.Name).Contains(x.Name))
+            .Include(character => character.CharacterStates)
+            .ToListAsync(cancellationToken: cancellationToken);
+        foreach (var updatedCharacter in characterUpdates)
+        {
+            var characterEntity = characters.Single(x => x.Name == updatedCharacter.Name);
+            characterEntity.CharacterStates.Add(new CharacterState
+            {
+                CharacterStats = updatedCharacter.CharacterState,
+                Tracker = updatedCharacter.CharacterTracker!,
+                SequenceNumber = characterEntity.CharacterStates.Last().SequenceNumber + 1,
+                SceneId = newScene.Id,
+            });
+        }
+
+        var newCharacters = characterCreations.Select(x => new Character
+        {
+            Name = x.Name,
+            Description = x.Description,
+            AdventureId = adventureId,
+            CharacterStates =
+            [
+                new CharacterState
+                {
+                    CharacterStats = x.CharacterState,
+                    Tracker = x.CharacterTracker!,
+                    SequenceNumber = 0,
+                    SceneId = newScene.Id
+                }
+            ]
+        }).ToList();
+
+        var newLoreEntities = newLore.Select(x => new LorebookEntry
+        {
+            AdventureId = adventureId,
+            Description = x.Summary,
+            Category = x.Title,
+            Content = JsonSerializer.Serialize(x, options),
+            ContentType = ContentType.Json,
+        }).ToList();
 
         IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
@@ -221,6 +271,9 @@ internal sealed class SceneGenerationOrchestrator
             try
             {
                 await _dbContext.Scenes.AddAsync(newScene, cancellationToken);
+                _dbContext.Characters.AddRange(newCharacters);
+                _dbContext.LorebookEntries.AddRange(newLoreEntities);
+                _dbContext.Characters.UpdateRange(characters);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -268,7 +321,7 @@ internal sealed class SceneGenerationOrchestrator
     {
         var adventure = await _dbContext
             .Adventures
-            .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance })
+            .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance, x.AdventureStartTime })
             .SingleAsync(x => x.Id == adventureId, cancellationToken: cancellationToken);
         var prompt = $"""
                       Generate adventure's opening scene based on the following context.
@@ -281,6 +334,11 @@ internal sealed class SceneGenerationOrchestrator
                       <first_scene_guidance>
                       {adventure.FirstSceneGuidance}
                       </first_scene_guidance>
+
+                      Start time of the adventure:
+                      <adventure_start_time>
+                      {adventure.AdventureStartTime:o}
+                      </adventure_start_time>
                       """;
         return await GenerateSceneAsync(adventureId, prompt, cancellationToken);
     }

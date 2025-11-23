@@ -20,6 +20,8 @@ public class LorebookEntry : IKnowledgeGraphEntity
     [Required]
     public string Category { get; init; } = null!;
 
+    public ContentType ContentType { get; init; }
+
     [Key]
     public Guid Id { get; set; }
 
@@ -28,6 +30,6 @@ public class LorebookEntry : IKnowledgeGraphEntity
         return new Content(
             Content,
             Description,
-            ContentType.Text);
+            ContentType);
     }
 }

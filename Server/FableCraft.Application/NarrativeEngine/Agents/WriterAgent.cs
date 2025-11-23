@@ -15,7 +15,12 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent(IAgentKernel agentKernel, ILogger logger)
 {
-    public async Task<GeneratedScene> Invoke(NarrativeContext context, NarrativeDirectorOutput narrativeDirectorOutput, CancellationToken cancellationToken)
+    public async Task<GeneratedScene> Invoke(
+        NarrativeContext context,
+        CharacterContext[] characterContexts,
+        GeneratedLore[] newLore,
+        NarrativeDirectorOutput narrativeDirectorOutput,
+        CancellationToken cancellationToken)
     {
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
@@ -30,6 +35,15 @@ internal sealed class WriterAgent(IAgentKernel agentKernel, ILogger logger)
                              <scene_direction>
                              {JsonSerializer.Serialize(narrativeDirectorOutput.SceneDirection, options)}
                              </scene_direction>
+
+                             <new_lore>
+                             {JsonSerializer.Serialize(newLore, options)}
+                             </new_lore>
+
+                             Newly created characters. Should be emulated as well as existing ones:
+                             <new_characters>
+                             {JsonSerializer.Serialize(characterContexts, options)}
+                             </new_characters>
                              """;
         chatHistory.AddUserMessage(context.CommonContext);
         chatHistory.AddUserMessage(promptContext);

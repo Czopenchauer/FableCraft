@@ -14,9 +14,17 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterStateTracker(IAgentKernel agentKernel, ApplicationDbContext dbContext, IKernelBuilder kernelBuilder)
+internal sealed class CharacterStateTracker(
+    IAgentKernel agentKernel,
+    ApplicationDbContext dbContext,
+    IKernelBuilder kernelBuilder)
 {
-    public async Task<(CharacterTracker tracker, CharacterState state)> Invoke(Guid adventureId, CharacterContext context, GeneratedScene scene, CancellationToken cancellationToken)
+    public async Task<CharacterContext> Invoke(
+        Guid adventureId,
+        NarrativeContext narrativeContext,
+        CharacterContext context,
+        GeneratedScene scene,
+        CancellationToken cancellationToken)
     {
         var trackerStructure = await dbContext
             .Adventures
@@ -33,42 +41,47 @@ internal sealed class CharacterStateTracker(IAgentKernel agentKernel, Applicatio
             AllowTrailingCommas = true
         };
 
-//         var prompt = $"""
-//                          <previous_trackers>
-//                          {string.Join("\n\n", context.SceneContext.TakeLast(5).Select(s => $"""
-//                                                                                             CONTENT:
-//                                                                                             {s.SceneContent}
-//                                                                                             TRACKER:
-//                                                                                             {JsonSerializer.Serialize(s.Metadata, options)}
-//                                                                                             """))}
-//                          </previous_trackers>
-//
-//                          <scene_content>
-//                          {scene}
-//                          </scene_content>
-//                       """;
-//         chatHistory.AddUserMessage(prompt);
+        var prompt = $"""
+                      <previous_character_state>
+                      {JsonSerializer.Serialize(context.CharacterState, options)}
+                      </previous_character_state>
+
+                      <previous_statistics>
+                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
+                      </previous_statistics>
+
+                      <recent_scenes>
+                      {string.Join("\n\n---\n\n", narrativeContext.SceneContext.TakeLast(3).Select(s => s.SceneContent))}
+                      </recent_scenes>
+
+                      <current_scene>
+                      {scene.Scene}
+                      </current_scene>
+                      """;
+        chatHistory.AddUserMessage(prompt);
         var instruction = "Update the tracker based on the new scene content and previous tracker state.";
         chatHistory.AddUserMessage(instruction);
 
-        var outputFunc = new Func<string, (CharacterTracker tracker, CharacterState state)>(response =>
+        var outputFunc = new Func<string, (CharacterTracker tracker, CharacterStats state)>(response =>
         {
-            var match = Regex.Match(response, "<statistics>(.*?)</statistics>", RegexOptions.Singleline);
+            var match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
             CharacterTracker tracker;
             if (match.Success)
             {
-                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException();
+                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                          ?? throw new InvalidOperationException();
             }
             else
             {
                 throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
             }
 
-            match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
-            CharacterState state;
+            match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
+            CharacterStats state;
             if (match.Success)
             {
-                state = JsonSerializer.Deserialize<CharacterState>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException();
+                state = JsonSerializer.Deserialize<CharacterStats>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                        ?? throw new InvalidOperationException();
             }
             else
             {
@@ -79,7 +92,14 @@ internal sealed class CharacterStateTracker(IAgentKernel agentKernel, Applicatio
         });
         var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
+        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
+        return new CharacterContext
+        {
+            CharacterTracker = result.tracker,
+            CharacterState = result.state,
+            Name = context.Name,
+            Description = context.Description
+        };
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
@@ -100,9 +120,9 @@ internal sealed class CharacterStateTracker(IAgentKernel agentKernel, Applicatio
         };
 
         var prompt = await File.ReadAllTextAsync(promptPath);
-        return prompt.Replace("{{character_tracker_format}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
+        return prompt.Replace("{{character_tracker_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
             .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
-            .Replace("[Target Character]", characterName);
+            .Replace("{CHARACTER_NAME}", characterName);
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
