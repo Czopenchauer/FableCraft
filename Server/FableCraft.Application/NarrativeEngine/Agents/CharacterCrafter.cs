@@ -14,8 +14,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbContext dbContext)
 {
-
-    public async Task<(CharacterStats characterStats, string description, CharacterTracker tracker)> Invoke(
+    public async Task<CharacterContext> Invoke(
         Kernel kernel,
         NarrativeContext context,
         CharacterRequest request,
@@ -88,7 +87,14 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
             throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
         });
 
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
+        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
+        return new CharacterContext
+        {
+            CharacterState = result.characterStats,
+            Description = result.description,
+            CharacterTracker = result.tracker,
+            Name = result.characterStats.CharacterIdentity.FullName!
+        };
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure structure)

@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FableCraft.ServiceDefaults;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -38,6 +41,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
             });
+            hp.AddDefaultLlmResiliencePolicies();
         });
 
         return builder;

@@ -104,7 +104,7 @@ internal sealed class AgentKernel : IAgentKernel
                 throw new LlmEmptyResponseException();
             }
 
-            chatHistory.AddAssistantMessage(result);
+            chatHistory.AddUserMessage(result);
             return outputFunc(result);
         }
     }

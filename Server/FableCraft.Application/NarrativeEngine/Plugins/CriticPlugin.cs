@@ -50,7 +50,7 @@ internal sealed class CriticPlugin
                 {
                     _logger.Warning("Attempt {attempt}: Retrying generation for type {type} due to error: {error}",
                         args.AttemptNumber,
-                        nameof(CharacterCrafterPlugin),
+                        nameof(CriticPlugin),
                         args.Outcome.Exception?.Message);
                     return default;
                 }

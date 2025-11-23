@@ -432,3 +432,4 @@ You are strictly bound by the`scene_direction` object in the Input.
 3. **Tone**: Your vocabulary choice must align with`tone_guidance`.
 4. **Inclusions**: You must include the`worldbuilding_opportunity` and`foreshadowing` items within the narrative flow,
    not as an appended list.
+5. Every character on scene must act and should behave according to their profile, using CharacterSimulator for dialogue and actions. Character should be active participants, not passive observers reacting on main character action.

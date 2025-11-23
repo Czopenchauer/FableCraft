@@ -22,6 +22,6 @@ public static class LlmOutputFormatter
         }
 
         var match = Regex.Match(input, @"```json\s*(.*?)\s*```", RegexOptions.Singleline);
-        return match.Success ? match.Groups[1].Value.Trim() : string.Empty;
+        return match.Success ? match.Groups[1].Value.Trim() : input.Trim();
     }
 }

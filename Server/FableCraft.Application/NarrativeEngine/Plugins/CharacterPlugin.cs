@@ -5,33 +5,50 @@ using FableCraft.Infrastructure.Llm;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-
-using OpenAI.Chat;
-
-using Polly;
-using Polly.Retry;
 
 using Serilog;
 
-using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
-
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
-internal sealed class CharacterPlugin
+internal sealed class CharacterPlugin(
+    IAgentKernel agentKernel,
+    ILogger logger)
 {
-    private readonly Dictionary<string, ChatHistory> _chatHistory;
-    private readonly Kernel _kernel;
-    private readonly ILogger _logger;
+    private Dictionary<string, ChatHistory> _chatHistory = new();
+    private NarrativeContext _narrativeContext = null!;
 
-    public CharacterPlugin(
-        NarrativeContext narrativeContext,
-        Kernel kernel,
-        ILogger logger)
+    public async Task Setup(NarrativeContext narrativeContext)
     {
-        _chatHistory = new();
-        _logger = logger;
-        _kernel = kernel;
+        _narrativeContext = narrativeContext;
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
+        var promptTemplate = await BuildInstruction();
+        _chatHistory = narrativeContext.Characters.ToDictionary(character => character.Name,
+            context =>
+            {
+                var systemPrompt = promptTemplate.Replace("{CHARACTER_NAME}", context.Name);
+                var chatHistory = new ChatHistory(systemPrompt);
+                chatHistory.AddUserMessage(
+                    $"""
+                     <character_description>
+                     {context.Description}
+                     </character_description>
+
+                     <character_state>
+                     {JsonSerializer.Serialize(context.CharacterState, options)}
+                     </character_state>
+
+                     <character_tracker>
+                     {JsonSerializer.Serialize(context.CharacterTracker, options)}
+                     </character_tracker>
+                     """);
+
+                return chatHistory;
+            });
     }
 
     [KernelFunction("emulate_character_action")]
@@ -40,70 +57,30 @@ internal sealed class CharacterPlugin
     public async Task<string> EmulateCharacterAction(
         [Description("The current situation or context in which the character is acting")]
         string situation,
-        [Description("The name of the character whose action is to be emulated")]
+        [Description("The name of the character whose action is to be emulated. Use exactly the same name as defined in the character context.")]
         string characterName)
     {
+        logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
         if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
         {
             return "Character not found.";
         }
 
-        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions
-            {
-                ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(),
-                MaxRetryAttempts = 1,
-                Delay = TimeSpan.FromSeconds(5),
-                OnRetry = args =>
-                {
-                    _logger.Warning("Attempt {attempt}: Retrying generation for type {type} due to error: {error}",
-                        args.AttemptNumber,
-                        nameof(CharacterCrafterPlugin),
-                        args.Outcome.Exception?.Message);
-                    return default;
-                }
-            })
-            .Build();
-
-        // TODO add system prompt for character action emulation
         chatHistory.AddUserMessage(situation);
-        var promptExecutionSettings = new OpenAIPromptExecutionSettings
-        {
-            Temperature = 0.9,
-            MaxTokens = 30000
-        };
-
-        var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
-        try
-        {
-            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
-        }
-        catch (InvalidCastException ex)
-        {
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
-            return await GetResponse(chatHistory, pipeline, chatCompletionService, promptExecutionSettings);
-        }
+        var outputFunc = new Func<string, string>(response => response);
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, CancellationToken.None, kernel: _narrativeContext.KernelKg.Clone());
     }
 
-    private async Task<string> GetResponse(
-        ChatHistory chatHistory,
-        ResiliencePipeline pipeline,
-        IChatCompletionService chatCompletionService,
-        OpenAIPromptExecutionSettings promptExecutionSettings)
+    private async static Task<string> BuildInstruction()
     {
-        var result = await pipeline.ExecuteAsync(async token =>
-                     {
-                         ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, _kernel, token);
-                         var replyInnerContent = result.InnerContent as ChatCompletion;
-                         _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                             replyInnerContent?.Usage.InputTokenCount,
-                             replyInnerContent?.Usage.OutputTokenCount,
-                             replyInnerContent?.Usage.TotalTokenCount);
-                         _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                         return result.Content?.RemoveThinkingBlock();
-                     })
-                     ?? string.Empty;
-        chatHistory.AddAssistantMessage(result);
-        return result;
+        var promptPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "NarrativeEngine",
+            "Agents",
+            "Prompts",
+            "CharacterPrompt.md"
+        );
+
+        return await File.ReadAllTextAsync(promptPath);
     }
 }

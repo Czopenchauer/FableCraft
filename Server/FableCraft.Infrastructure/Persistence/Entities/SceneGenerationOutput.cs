@@ -74,7 +74,7 @@ public class SceneMetadata
 public class Objectives
 {
     [JsonPropertyName("long_term")]
-    public LongTermObjective LongTerm { get; set; } = new();
+    public List<LongTermObjective> LongTerm { get; set; } = new();
 
     [JsonPropertyName("mid_term")]
     public List<MidTermObjective> MidTerm { get; set; } = new();

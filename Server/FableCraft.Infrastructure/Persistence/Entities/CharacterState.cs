@@ -22,7 +22,7 @@ public sealed class CharacterState
 public class CharacterStats
 {
     [JsonPropertyName("character_identity")]
-    public CharacterIdentity? CharacterIdentity { get; set; }
+    public required CharacterIdentity CharacterIdentity { get; set; }
 
     [JsonPropertyName("personality")]
     public Personality? Personality { get; set; }

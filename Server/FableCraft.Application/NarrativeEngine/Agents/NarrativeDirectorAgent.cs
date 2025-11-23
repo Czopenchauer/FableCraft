@@ -24,7 +24,6 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel)
 
         if (context.GetCurrentSceneMetadata() != null)
         {
-
             var narrativeDirection = JsonSerializer.Serialize(context.GetCurrentSceneMetadata()?.NarrativeMetadata, options);
             var promptContext = $"""
                                  <last_scene_narrative_direction>

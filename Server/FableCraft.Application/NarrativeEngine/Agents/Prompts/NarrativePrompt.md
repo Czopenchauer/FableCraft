@@ -71,7 +71,7 @@ Evaluate the player's choice:
 
 Maintain a three-tier objective hierarchy:
 
-**Long-Term Objective (1 active)**
+**Long-Term Objective (1-3 active)**
 
 * Epic scope requiring 20-30+ scenes
 * Defines the adventure's overall purpose
@@ -445,7 +445,7 @@ Use double quotes for all JSON keys and string values. You must output valid JSO
     "emotional_target": "Describe the desired emotional journey for the player, not just a single state. E.g., ' curiosity_to_dread', 'despair_to_hope', 'suspicion_to_trust'."
   },
   "objectives": {
-    "long_term": {
+    "long_term": [{
       "name": "State the overarching goal of the entire adventure. E.g., 'Defeat the Shadow King'.",
       "description": "Provide a 1-2 sentence summary of the epic quest.",
       "status": "active | dormant | completed | failed",
@@ -453,7 +453,7 @@ Use double quotes for all JSON keys and string values. You must output valid JSO
       "stakes": "What is at risk if this objective fails? E.g., 'The fate of the entire kingdom.'",
       "milestones_completed": "[Array of strings] List the major story arcs (mid-term objectives) already completed.",
       "milestones_remaining": "[Array of strings] List the major story arcs still required to complete this objective."
-    },
+    }],
     "mid_term": [
       {
         "name": "State the goal of the current story arc (5-10 scenes). E.g., 'Forge an Alliance with the Sky-Lords'.",

@@ -1,10 +1,12 @@
-﻿using System.Threading.Channels;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading.Channels;
 
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 using FableCraft.Infrastructure.Rag;
+using FableCraft.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +18,7 @@ namespace FableCraft.Infrastructure;
 
 public static class StartupExtensions
 {
+    [Experimental("EXTEXP0001")]
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -46,20 +49,24 @@ public static class StartupExtensions
                               ?? configuration["services:graph-rag-api:graphRagApi:0"];
         ArgumentException.ThrowIfNullOrEmpty(graphApiBaseUrl);
         services.AddHttpClient<IRagBuilder, RagClient>(client =>
-        {
-            client.BaseAddress = new Uri(graphApiBaseUrl);
+            {
+                client.BaseAddress = new Uri(graphApiBaseUrl);
 
-            // LLM calls can take a while
-            client.Timeout = TimeSpan.FromMinutes(10);
-        });
+                // LLM calls can take a while
+                client.Timeout = TimeSpan.FromMinutes(10);
+            })
+            .RemoveAllResilienceHandlers()
+            .AddDefaultLlmResiliencePolicies();
 
         services.AddHttpClient<IRagSearch, RagClient>(client =>
-        {
-            client.BaseAddress = new Uri(graphApiBaseUrl);
+            {
+                client.BaseAddress = new Uri(graphApiBaseUrl);
 
-            // LLM calls can take a while
-            client.Timeout = TimeSpan.FromMinutes(10);
-        });
+                // LLM calls can take a while
+                client.Timeout = TimeSpan.FromMinutes(10);
+            })
+            .RemoveAllResilienceHandlers()
+            .AddDefaultLlmResiliencePolicies();
 
         services.AddTransient<IKernelBuilder, OpenAiKernelBuilder>();
         services.AddTransient<IAgentKernel, AgentKernel>();

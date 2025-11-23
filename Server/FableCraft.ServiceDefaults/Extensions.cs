@@ -59,6 +59,27 @@ public static class Extensions
 
         return builder;
     }
+    
+    public static IHttpStandardResiliencePipelineBuilder AddDefaultLlmResiliencePolicies(this IHttpClientBuilder builder)
+    {
+        // Configure default resilience policies for LLM HTTP calls
+        return builder.AddStandardResilienceHandler(options =>
+        {
+            options.AttemptTimeout = new HttpTimeoutStrategyOptions
+            {
+                Timeout = TimeSpan.FromMinutes(5)
+            };
+
+            options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
+            {
+                Timeout = TimeSpan.FromMinutes(10)
+            };
+
+            options.Retry.MaxRetryAttempts = 5;
+            options.Retry.Delay = TimeSpan.FromSeconds(5);
+            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(10);
+        });
+    }
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder

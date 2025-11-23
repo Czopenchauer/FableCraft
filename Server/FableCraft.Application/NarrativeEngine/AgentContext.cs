@@ -21,7 +21,7 @@ internal sealed class NarrativeContext
 
     public required SceneContext[] SceneContext { get; set; }
 
-    public List<CharacterContext> Characters { get; set; } = new();
+    public required List<CharacterContext> Characters { get; set; } = new();
 
     public Metadata? GetCurrentSceneMetadata()
     {
@@ -35,7 +35,7 @@ internal sealed class CharacterContext
 
     public string Description { get; set; } = null!;
 
-    public CharacterState CharacterState { get; set; } = null!;
+    public CharacterStats CharacterState { get; set; } = null!;
 
     public CharacterTracker? CharacterTracker { get; set; }
 }

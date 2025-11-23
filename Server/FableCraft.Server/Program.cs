@@ -11,8 +11,10 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+#pragma warning disable EXTEXP0001
 builder.Services
     .AddInfrastructureServices(builder.Configuration)
+#pragma warning restore EXTEXP0001
     .AddApplicationServices(builder.Configuration);
 
 builder.Services.AddControllers();
