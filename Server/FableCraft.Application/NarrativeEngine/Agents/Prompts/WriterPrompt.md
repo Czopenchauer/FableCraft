@@ -36,8 +36,9 @@ Query for any established information about:
 - World events, cultural details, magic systems
 - Previous player actions and their consequences
 
-### CharacterSimulator Plugin
+### emulate_character_action function
 
+!USE FOR EVERY CHARACTER BEFORE THEY SPEAK OR ACT! DO NOT ACT ON CHARACTER'S BEHALF WITHOUT RUNNING THIS FIRST.
 Simulates authentic character behavior based on their:
 
 - Personality traits and moral alignment

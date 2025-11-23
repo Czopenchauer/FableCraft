@@ -47,6 +47,9 @@ public class CharacterStats
 
     [JsonPropertyName("behavioral_state")]
     public BehavioralState? BehavioralState { get; set; }
+
+    [JsonPropertyName("kg_integration")]
+    public KgIntegration? KgIntegration { get; set; }
 }
 
 public class CharacterIdentity
@@ -185,6 +188,9 @@ public class KnowledgeAndBeliefs
 
     [JsonPropertyName("secrets_held")]
     public List<Secret>? SecretsHeld { get; set; }
+
+    [JsonPropertyName("skills_and_expertise")]
+    public SkillsAndExpertise? SkillsAndExpertise { get; set; }
 }
 
 public class WorldKnowledge
@@ -200,6 +206,9 @@ public class WorldKnowledge
 
     [JsonPropertyName("learned_at_scene")]
     public string? LearnedAtScene { get; set; }
+
+    [JsonPropertyName("kg_reference")]
+    public string? KgReference { get; set; }
 }
 
 public class BeliefAboutProtagonist
@@ -229,6 +238,18 @@ public class Secret
     public List<string>? RevealConditions { get; set; }
 }
 
+public class SkillsAndExpertise
+{
+    [JsonPropertyName("magical_abilities")]
+    public List<string>? MagicalAbilities { get; set; }
+
+    [JsonPropertyName("mundane_skills")]
+    public List<string>? MundaneSkills { get; set; }
+
+    [JsonPropertyName("skill_levels")]
+    public Dictionary<string, double>? SkillLevels { get; set; }
+}
+
 public class Relationships
 {
     [JsonPropertyName("with_protagonist")]
@@ -236,6 +257,9 @@ public class Relationships
 
     [JsonPropertyName("with_other_characters")]
     public List<RelationshipWithOther>? WithOtherCharacters { get; set; }
+
+    [JsonPropertyName("faction_affiliations")]
+    public List<FactionAffiliation>? FactionAffiliations { get; set; }
 }
 
 public class RelationshipWithProtagonist
@@ -258,6 +282,9 @@ public class RelationshipWithProtagonist
     [JsonPropertyName("first_met_scene")]
     public string? FirstMetScene { get; set; }
 
+    [JsonPropertyName("reputation_influence")]
+    public string? ReputationInfluence { get; set; }
+
     [JsonPropertyName("shared_experiences")]
     public List<SharedExperience>? SharedExperiences { get; set; }
 
@@ -275,6 +302,9 @@ public class SharedExperience
 
     [JsonPropertyName("experience_type")]
     public string? ExperienceType { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
 
     [JsonPropertyName("emotional_impact")]
     public string? EmotionalImpact { get; set; }
@@ -303,6 +333,9 @@ public class RelationshipWithOther
     [JsonPropertyName("relationship_type")]
     public string? RelationshipType { get; set; }
 
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
     [JsonPropertyName("trust_level")]
     public int TrustLevel { get; set; }
 
@@ -313,11 +346,23 @@ public class RelationshipWithOther
     public string? ConflictReason { get; set; }
 }
 
+public class FactionAffiliation
+{
+    [JsonPropertyName("faction_name")]
+    public string? FactionName { get; set; }
+
+    [JsonPropertyName("standing")]
+    public int Standing { get; set; }
+
+    [JsonPropertyName("rank_or_role")]
+    public string? RankOrRole { get; set; }
+
+    [JsonPropertyName("kg_faction_id")]
+    public string? KgFactionId { get; set; }
+}
+
 public class MemoryEntry
 {
-    [JsonPropertyName("timestamp")]
-    public DateTime Timestamp { get; set; }
-
     [JsonPropertyName("scene_reference")]
     public string? SceneReference { get; set; }
 
@@ -335,6 +380,9 @@ public class MemoryEntry
 
     [JsonPropertyName("outcomes")]
     public List<string>? Outcomes { get; set; }
+
+    [JsonPropertyName("kg_event_reference")]
+    public string? KgEventReference { get; set; }
 }
 
 public class EmotionalState
@@ -355,7 +403,7 @@ public class CurrentEmotions
     public List<string>? SecondaryEmotions { get; set; }
 
     [JsonPropertyName("intensity")]
-    public string? Intensity { get; set; }
+    public double Intensity { get; set; }
 }
 
 public class EmotionalTriggers
@@ -372,6 +420,9 @@ public class CharacterArc
     [JsonPropertyName("arc_type")]
     public string? ArcType { get; set; }
 
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
     [JsonPropertyName("current_stage")]
     public string? CurrentStage { get; set; }
 
@@ -386,6 +437,12 @@ public class ArcStage
 {
     [JsonPropertyName("stage_name")]
     public string? StageName { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("key_events")]
+    public List<string>? KeyEvents { get; set; }
 
     [JsonPropertyName("completed")]
     public bool Completed { get; set; }
@@ -415,7 +472,7 @@ public class CurrentPlan
     public List<string>? Steps { get; set; }
 
     [JsonPropertyName("expected_duration_scenes")]
-    public int ExpectedDurationScenes { get; set; }
+    public string ExpectedDurationScenes { get; set; } = string.Empty;
 
     [JsonPropertyName("contingency_plans")]
     public Dictionary<string, string>? ContingencyPlans { get; set; }
@@ -440,4 +497,19 @@ public class Availability
 
     [JsonPropertyName("conditions_for_encounter")]
     public List<string>? ConditionsForEncounter { get; set; }
+}
+
+public class KgIntegration
+{
+    [JsonPropertyName("relevant_lore")]
+    public List<string>? RelevantLore { get; set; }
+
+    [JsonPropertyName("recent_events_aware_of")]
+    public List<string>? RecentEventsAwareOf { get; set; }
+
+    [JsonPropertyName("location_knowledge")]
+    public List<string>? LocationKnowledge { get; set; }
+
+    [JsonPropertyName("cultural_background")]
+    public string? CulturalBackground { get; set; }
 }

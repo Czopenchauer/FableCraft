@@ -174,200 +174,199 @@ TAGS:
 <character>
 {
   "character_identity": {
-    "full_name": "[First and last name, culturally appropriate from KG lore]",
-    "aliases": ["[Nickname]", "[Title]", "[How others refer to them]"],
-    "archetype": "[Character archetype as specified]"
+    "full_name": "[STRING: First and last name, culturally appropriate from KG lore]",
+    "aliases": ["[STRING: Nickname]", "[STRING: Title]", "[STRING: How others refer to them]"],
+    "archetype": "[STRING: Character archetype as specified]"
   },
   "personality": {
     "five_factor_model": {
-      "openness": "[0.0-1.0 - creativity, curiosity, openness to new experiences]",
-      "conscientiousness": "[0.0-1.0 - organization, dependability, self-discipline]",
-      "extraversion": "[0.0-1.0 - sociability, assertiveness, emotional expression]",
-      "agreeableness": "[0.0-1.0 - cooperation, trust, empathy]",
-      "neuroticism": "[0.0-1.0 - emotional instability, anxiety, moodiness]"
+      "openness": 0.0,  // FLOAT 0.0-1.0 - creativity, curiosity, openness to new experiences
+      "conscientiousness": 0.0,  // FLOAT 0.0-1.0 - organization, dependability, self-discipline
+      "extraversion": 0.0,  // FLOAT 0.0-1.0 - sociability, assertiveness, emotional expression
+      "agreeableness": 0.0,  // FLOAT 0.0-1.0 - cooperation, trust, empathy
+      "neuroticism": 0.0  // FLOAT 0.0-1.0 - emotional instability, anxiety, moodiness
     },
-    "core_traits": ["[trait1]", "[trait2]", "[trait3]", "[trait4 if arc_important]"],
+    "core_traits": ["[STRING: trait1]", "[STRING: trait2]", "[STRING: trait3]", "[STRING: trait4 if arc_important]"],
     "speech_patterns": {
-      "formality_level": "Description of how formal/informal their speech is",
-      "accent_or_dialect": "[from KG regional information]"
+      "formality_level": "[STRING: Description of how formal/informal their speech is]",
+      "accent_or_dialect": "[STRING: from KG regional information]"
     },
     "moral_alignment": {
-      "lawful_chaotic_axis": "[0.0-1.0 where 0=chaotic, 0.5=neutral, 1.0=lawful]",
-      "good_evil_axis": "[0.0-1.0 where 0=evil, 0.5=neutral, 1.0=good]"
+      "lawful_chaotic_axis": 0.5,  // FLOAT 0.0-1.0 where 0=chaotic, 0.5=neutral, 1.0=lawful
+      "good_evil_axis": 0.5  // FLOAT 0.0-1.0 where 0=evil, 0.5=neutral, 1.0=good
     }
   },
   "goals_and_motivations": {
     "primary_goal": {
-      "description": "[What they're currently trying to achieve]",
-      "goal_type": "[protective|acquisitive|destructive|creative|social|knowledge|survival]",
-      "priority": "[1-10 where 10 is highest]",
-      "time_sensitivity": "[immediate|urgent|moderate|eventual]",
-      "progress_percentage": "[0-100]",
-      "success_conditions": ["[condition1]", "[condition2]"],
-      "failure_conditions": ["[failure1]", "[failure2]"]
+      "description": "[STRING: What they're currently trying to achieve]",
+      "goal_type": "[STRING: protective|acquisitive|destructive|creative|social|knowledge|survival]",
+      "priority": 5,  // INTEGER 1-10 where 10 is highest
+      "time_sensitivity": "[STRING: immediate|urgent|moderate|eventual]",
+      "progress_percentage": 0,  // INTEGER 0-100
+      "success_conditions": ["[STRING: condition1]", "[STRING: condition2]"],
+      "failure_conditions": ["[STRING: failure1]", "[STRING: failure2]"]
     },
     "secondary_goals": [
       {
-        "description": "[Secondary objective]",
-        "goal_type": "[type]",
-        "priority": "[1-10]",
-        "prerequisites": ["[what must happen first]"]
+        "description": "[STRING: Secondary objective]",
+        "goal_type": "[STRING: type]",
+        "priority": 5,  // INTEGER 1-10
+        "prerequisites": ["[STRING: what must happen first]"]
       }
     ],
     "motivations": {
-      "intrinsic": ["[internal drive 1]", "[internal drive 2]"],
-      "extrinsic": ["[external pressure 1 from KG context]", "[external pressure 2]"]
+      "intrinsic": ["[STRING: internal drive 1]", "[STRING: internal drive 2]"],
+      "extrinsic": ["[STRING: external pressure 1 from KG context]", "[STRING: external pressure 2]"]
     }
   },
   "knowledge_and_beliefs": {
     "world_knowledge": [
       {
-        "fact": "[Something from KG they know about the world/situation]",
-        "confidence_level": "[0.0-1.0]",
-        "source": "[how they learned this - KG source]",
-        "learned_at_scene": "[when/where they learned it]",
-        "kg_reference": "[link to KG entry if applicable]"
+        "fact": "[STRING: Something from KG they know about the world/situation]",
+        "confidence_level": 0.8,  // FLOAT 0.0-1.0
+        "source": "[STRING: how they learned this - KG source]",
+        "learned_at_scene": "[STRING: when/where they learned it]",
+        "kg_reference": "[STRING: link to KG entry if applicable]"
       }
     ],
     "beliefs_about_protagonist": [
       {
-        "belief": "[Based on KG player history/reputation]",
-        "confidence_level": "[0.0-1.0]",
-        "evidence": ["[observation1]", "[KG reputation data]"],
-        "formed_at_scene": "[when this belief formed]"
+        "belief": "[STRING: Based on KG player history/reputation]",
+        "confidence_level": 0.5,  // FLOAT 0.0-1.0
+        "evidence": ["[STRING: observation1]", "[STRING: KG reputation data]"],
+        "formed_at_scene": "[STRING: when this belief formed]"
       }
     ],
     "secrets_held": [
       {
-        "secret_content": "[Information they haven't shared, possibly from KG]",
-        "willingness_to_share": "[0.0-1.0]",
-        "reveal_conditions": ["[condition1]", "[condition2]"]
+        "secret_content": "[STRING: Information they haven't shared, possibly from KG]",
+        "willingness_to_share": 0.0,  // FLOAT 0.0-1.0
+        "reveal_conditions": ["[STRING: condition1]", "[STRING: condition2]"]
       }
     ],
     "skills_and_expertise": {
-      "magical_abilities": ["[ability1 from KG magic system]", "[ability2]", "[if applicable]"],
-      "mundane_skills": ["[skill1]", "[skill2]", "[skill3]"],
+      "magical_abilities": ["[STRING: ability1 from KG magic system]", "[STRING: ability2]", "[STRING: if applicable]"],
+      "mundane_skills": ["[STRING: skill1]", "[STRING: skill2]", "[STRING: skill3]"],
       "skill_levels": {
-        "[skill_name]": "[0.0-1.0 proficiency]"
+        "[skill_name]": 0.7  // FLOAT 0.0-1.0 proficiency
       }
     }
   },
   "relationships": {
     "with_protagonist": {
-      "relationship_type": "[stranger|acquaintance|colleague|friend|rival|enemy|mentor|student]",
-      "trust_level": "[0-100, influenced by KG reputation data]",
-      "affection_level": "[0-100]",
-      "respect_level": "[0-100]",
-      "relationship_tags": ["[descriptor1]", "[descriptor2]", "[descriptor3]"],
-      "first_met_scene": "[scene reference or 'not_yet_met']",
-      "reputation_influence": "[how KG player reputation affects this]",
+      "relationship_type": "[STRING: stranger|acquaintance|colleague|friend|rival|enemy|mentor|student]",
+      "trust_level": 50,  // INTEGER 0-100, influenced by KG reputation data
+      "affection_level": 50,  // INTEGER 0-100
+      "respect_level": 50,  // INTEGER 0-100
+      "relationship_tags": ["[STRING: descriptor1]", "[STRING: descriptor2]", "[STRING: descriptor3]"],
+      "first_met_scene": "[STRING: scene reference or 'not_yet_met']",
+      "reputation_influence": "[STRING: how KG player reputation affects this]",
       "shared_experiences": [
         {
-          "scene_reference": "[when this happened]",
-          "experience_type": "[cooperation|conflict|observation|conversation]",
-          "description": "[brief overview of relationship]",
-          "emotional_impact": "[positive|negative|neutral|mixed]",
-          "trust_change": "[-100 to +100]"
+          "scene_reference": "[STRING: when this happened]",
+          "experience_type": "[STRING: cooperation|conflict|observation|conversation]",
+          "description": "[STRING: brief overview of relationship]",
+          "emotional_impact": "[STRING: positive|negative|neutral|mixed]",
+          "trust_change": 0  // INTEGER -100 to +100
         }
       ],
       "promises_made": [
         {
-          "promise": "[what was promised]",
-          "scene_made": "[when promised]",
-          "is_fulfilled": "[true|false]"
+          "promise": "[STRING: what was promised]",
+          "scene_made": "[STRING: when promised]",
+          "is_fulfilled": false  // BOOLEAN true|false
         }
       ],
       "debts_and_obligations": []
     },
     "with_other_characters": [
       {
-        "character_reference": "[from KG existing NPCs]",
-        "relationship_type": "[nature of relationship]",
-        "description": "[brief overview of relationship]",
-        "trust_level": "[0-100]",
-        "current_status": "[active|strained|broken|evolving]",
-        "conflict_reason": "[if applicable]"
+        "character_reference": "[STRING: from KG existing NPCs]",
+        "relationship_type": "[STRING: nature of relationship]",
+        "description": "[STRING: brief overview of relationship]",
+        "trust_level": 50,  // INTEGER 0-100
+        "current_status": "[STRING: active|strained|broken|evolving]",
+        "conflict_reason": "[STRING: if applicable]"
       }
     ],
     "faction_affiliations": [
       {
-        "faction_name": "[from KG factions]",
-        "standing": "[-100 to 100]",
-        "rank_or_role": "[position within faction]",
-        "kg_faction_id": "[reference to KG entry]"
+        "faction_name": "[STRING: from KG factions]",
+        "standing": 0,  // INTEGER -100 to 100
+        "rank_or_role": "[STRING: position within faction]",
+        "kg_faction_id": "[STRING: reference to KG entry]"
       }
     ]
   },
   "memory_stream": [
     {
-      "timestamp": "[ISO 8601 datetime]",
-      "scene_reference": "[scene identifier]",
-      "memory_type": "[interaction|observation|revelation|decision|loss|victory]",
-      "description": "[what happened, can reference KG events]",
-      "emotional_valence": "[emotional response]",
-      "participants": ["[who was involved]"],
-      "outcomes": ["[what resulted from this]"],
-      "kg_event_reference": "[if memory relates to KG event]"
+      "scene_reference": "[STRING: scene identifier]",
+      "memory_type": "[STRING: interaction|observation|revelation|decision|loss|victory]",
+      "description": "[STRING: what happened, can reference KG events]",
+      "emotional_valence": "[STRING: emotional response]",
+      "participants": ["[STRING: who was involved]"],
+      "outcomes": ["[STRING: what resulted from this]"],
+      "kg_event_reference": "[STRING: if memory relates to KG event]"
     }
   ],
   "emotional_state": {
     "current_emotions": {
-      "primary_emotion": "[dominant emotion]",
-      "secondary_emotions": ["[emotion1]", "[emotion2]"],
-      "intensity": "[0.0-1.0]"
+      "primary_emotion": "[STRING: dominant emotion]",
+      "secondary_emotions": ["[STRING: emotion1]", "[STRING: emotion2]"],
+      "intensity": 0.5  // FLOAT 0.0-1.0
     },
     "emotional_triggers": {
-      "positive": ["[what makes them feel positive]", "[another trigger]"],
-      "negative": ["[what makes them feel negative]", "[another trigger]"]
+      "positive": ["[STRING: what makes them feel positive]", "[STRING: another trigger]"],
+      "negative": ["[STRING: what makes them feel negative]", "[STRING: another trigger]"]
     }
   },
   "character_arc": {
-    "arc_type": "[redemption|corruption|coming_of_age|fall_from_grace|etc.]",
-    "description": "[overview of their character arc]",
-    "current_stage": "[stage name]",
+    "arc_type": "[STRING: redemption|corruption|coming_of_age|fall_from_grace|etc.]",
+    "description": "[STRING: overview of their character arc]",
+    "current_stage": "[STRING: stage name]",
     "arc_stages": [
       {
-        "stage_name": "[stage identifier]",
-        "description": "[what happens in this stage]",
-        "key_events": ["[event1]", "[event2], ..."],
-        "completed": "[true|false]",
-        "progress_percentage": "[0-100 if in progress]"
+        "stage_name": "[STRING: stage identifier]",
+        "description": "[STRING: what happens in this stage]",
+        "key_events": ["[STRING: event1]", "[STRING: event2], ..."],
+        "completed": false,  // BOOLEAN true|false
+        "progress_percentage": 0  // INTEGER 0-100 if in progress
       }
     ],
     "key_decisions_pending": [
-      "[decision they need to make]",
-      "[another pending choice]"
+      "[STRING: decision they need to make]",
+      "[STRING: another pending choice]"
     ]
   },
   "behavioral_state": {
     "current_plan": {
-      "intention": "[what they're trying to do right now]",
+      "intention": "[STRING: what they're trying to do right now]",
       "steps": [
-        "[step1]",
-        "[step2]",
-        "[step3]"
+        "[STRING: step1]",
+        "[STRING: step2]",
+        "[STRING: step3]"
       ],
-      "expected_duration_scenes": "[number]",
+      "expected_duration_scenes": "[STRING: number]",
       "contingency_plans": {
-        "[if_condition]": "[what they'll do]",
-        "[if_other_condition]": "[alternative action]"
+        "[if_condition]": "[STRING: what they'll do]",
+        "[if_other_condition]": "[STRING: alternative action]"
       }
     },
     "action_tendencies": {
-      "default_response_to_aggression": "[how they typically respond to threats]",
-      "response_to_deception": "[how they handle being lied to]",
-      "response_to_kindness": "[how they react to genuine kindness]"
+      "default_response_to_aggression": "[STRING: how they typically respond to threats]",
+      "response_to_deception": "[STRING: how they handle being lied to]",
+      "response_to_kindness": "[STRING: how they react to genuine kindness]"
     },
     "availability": {
-      "current_location": "[where they can be found, from KG locations]",
-      "conditions_for_encounter": ["[when/how they can be encountered]", "[other condition]"]
+      "current_location": "[STRING: where they can be found, from KG locations]",
+      "conditions_for_encounter": ["[STRING: when/how they can be encountered]", "[STRING: other condition]"]
     }
   },
   "kg_integration": {
-    "relevant_lore": ["[KG lore entry that affects character]"],
-    "recent_events_aware_of": ["[KG events they would know about]"],
-    "location_knowledge": ["[KG locations they're familiar with]"],
-    "cultural_background": "[KG cultural context]"
+    "relevant_lore": ["[STRING: KG lore entry that affects character]"],
+    "recent_events_aware_of": ["[STRING: KG events they would know about]"],
+    "location_knowledge": ["[STRING: KG locations they're familiar with]"],
+    "cultural_background": "[STRING: KG cultural context]"
   }
 }
 </character>

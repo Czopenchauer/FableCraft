@@ -123,10 +123,7 @@ internal sealed class CharacterStateTracker(IAgentKernel agentKernel, Applicatio
                 }
                 else if (field.DefaultValue != null)
                 {
-                    dict[field.Name] = new
-                    {
-                        Value = GetDefaultValue(field)
-                    };
+                    dict[field.Name] = GetDefaultValue(field);
                 }
             }
 

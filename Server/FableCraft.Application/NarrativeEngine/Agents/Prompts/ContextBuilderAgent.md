@@ -45,7 +45,7 @@ Generate up to 20 strategic queries that will retrieve essential world-building 
 
 ## Required JSON Output Format
 
-Your output must be a valid JSON array containing 15-20 query objects. Each object follows this structure:
+Your output must be a valid JSON array containing 15-20 queries. Follows this structure:
 
 ```json
 [

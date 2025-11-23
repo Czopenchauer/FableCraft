@@ -128,17 +128,17 @@ internal sealed class SceneGenerationOrchestrator
                                     """))}
                                </last_scenes>
                                """;
-        var contextBases = await _contextGatherer.Invoke(adventureId, commonContext, cancellationToken);
-        commonContext += $"""
-                          <additional_context>
-                          {string.Join("\n\n", contextBases.Select(x => $"""
-                                                                         QUESTION:
-                                                                         {x.Query}
-                                                                         ANSWER:
-                                                                         {x.Response}
-                                                                         """))}
-                          </additional_context>
-                          """;
+//         var contextBases = await _contextGatherer.Invoke(adventureId, commonContext, cancellationToken);
+//         commonContext += $"""
+//                           <additional_context>
+//                           {string.Join("\n\n", contextBases.Select(x => $"""
+//                                                                          QUESTION:
+//                                                                          {x.Query}
+//                                                                          ANSWER:
+//                                                                          {x.Response}
+//                                                                          """))}
+//                           </additional_context>
+//                           """;
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
         var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString(), _logger);

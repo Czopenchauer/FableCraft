@@ -136,10 +136,7 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
                 }
                 else if (field.DefaultValue != null)
                 {
-                    dict[field.Name] = new
-                    {
-                        Value = GetDefaultValue(field)
-                    };
+                    dict[field.Name] = GetDefaultValue(field);
                 }
             }
 
