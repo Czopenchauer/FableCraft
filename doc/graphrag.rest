@@ -1,0 +1,9 @@
+﻿### Search Direct
+POST http://localhost:8112/search_direct
+Content-Type: application/json
+
+{
+  "adventure_id": "adventure_123",
+  "query": "What happened in the tavern?"
+}
+

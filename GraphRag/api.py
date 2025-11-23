@@ -189,6 +189,42 @@ async def search(request: SearchRequest):
     return SearchResult(content=result["final_answer"])
 
 
+@app.post("/search_direct")
+async def search_direct(request: SearchRequest):
+    """Endpoint to search the graph database directly via graphiti"""
+    from graphiti_core.search.search import SearchConfig
+    from graphiti_core.search.search_config import (
+        NodeSearchConfig, EdgeReranker, EdgeSearchMethod,
+        EdgeSearchConfig, NodeSearchMethod, NodeReranker
+    )
+
+    search_config = SearchConfig(
+        edge_config=EdgeSearchConfig(
+            search_methods=[
+                EdgeSearchMethod.bm25,
+                EdgeSearchMethod.cosine_similarity,
+            ],
+            reranker=EdgeReranker.episode_mentions,
+        ),
+        node_config=NodeSearchConfig(
+            search_methods=[
+                NodeSearchMethod.cosine_similarity,
+                NodeSearchMethod.bfs,
+            ],
+            reranker=NodeReranker.cross_encoder,
+        ),
+        limit=10,
+    )
+
+    results = await graphiti.search_(
+        group_ids=[request.adventure_id],
+        query=request.query,
+        config=search_config
+    )
+
+    return results
+
+
 @app.post("/build_communities", status_code=status.HTTP_202_ACCEPTED)
 async def build_communities(request: BuildCommunitiesRequest, background_tasks: BackgroundTasks):
     """Endpoint to build communities for a specific group_id as a background task
