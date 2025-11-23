@@ -1,4 +1,6 @@
-﻿langchain-openai
+﻿opentelemetry-instrumentation-openai
+graphiti-core
+langchain-openai
 langchain-litellm
 litellm
 langchain-core
