@@ -28,12 +28,14 @@ public class KnowledgeGraphPlugin
     [Description(
         "Search the knowledge graph for entities, relationships, and narrative data. Use this to query existing locations, characters, lore, items, events, and their relationships.")]
     public async Task<string> SearchKnowledgeGraphAsync(
-        [Description("Short description what information to retrieve from the knowledge graph")]
-        string query)
+        [Description("Description what information to retrieve from the knowledge graph")]
+        string query,
+        [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
+        string levelOfDetails)
     {
         _logger.Information("Performing knowledge graph search with query: {query}", query);
-        List<string> results = await _ragSearch.SearchAsync(_adventureId, query);
-        
+        List<string> results = await _ragSearch.SearchAsync(_adventureId, $"{query}, level of details: {levelOfDetails}");
+
         if (results.Count == 0)
         {
             return "Knowledge graph does not contain any data yet.";

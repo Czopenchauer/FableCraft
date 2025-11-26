@@ -128,7 +128,7 @@ async def search(request: SearchRequest):
 
     try:
 
-        search_results = await cognee.search(datasets=[request.adventure_id], query_type=SearchType.GRAPH_COMPLETION_CONTEXT_EXTENSION, query_text=request.query)
+        search_results = await cognee.search(datasets=[request.adventure_id], query_type=SearchType.GRAPH_COMPLETION, query_text=request.query)
 
         return search_results
 

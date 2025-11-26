@@ -15,7 +15,7 @@ using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
-namespace FableCraft.Application.NarrativeEngine.Orchestration;
+namespace FableCraft.Application.NarrativeEngine;
 
 public class SceneGenerationOutput
 {
