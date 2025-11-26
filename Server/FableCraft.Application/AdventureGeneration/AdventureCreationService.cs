@@ -360,24 +360,18 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var ids = adventure.Lorebook.Select(x => x.Id).Concat(adventure.Scenes.Select(x => x.Id)).Concat([adventure.MainCharacter.Id]);
-        var chunks = new List<Chunk>();
-        foreach (var guides in ids.Chunk(50))
+        try
         {
-            chunks = await _dbContext.Chunks.Where(x => guides.Contains(x.Id)).ToListAsync(cancellationToken);
-            try
-            {
-                var tasks = chunks.Select(chunk => _ragBuilder.DeleteDataAsync(chunk.EntityId.ToString(), cancellationToken));
-                await Task.WhenAll(tasks);
-                chunks.Clear();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex,
-                    "Failed to delete adventure {adventureId} from knowledge graph.",
-                    adventure.Id);
-                throw;
-            }
+            await _ragBuilder.DeleteDatasetAsync(adventure.Id.ToString(), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex,
+                "Failed to delete adventure {adventureId} from knowledge graph.",
+                adventure.Id);
+            // We don't throw here to ensure the adventure is deleted from DB even if RAG deletion fails? 
+            // The original code threw exception. So I should probably throw.
+            throw;
         }
 
         _dbContext.Adventures.Remove(adventure);

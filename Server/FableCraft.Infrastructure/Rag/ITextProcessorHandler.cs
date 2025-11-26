@@ -1,6 +1,4 @@
-﻿using System.Net;
-
-using FableCraft.Infrastructure.Clients;
+﻿using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
@@ -43,13 +41,11 @@ internal sealed class RagProcessor : IRagProcessor
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IEnumerable<ITextProcessorHandler> _handlers;
-    private readonly IRagBuilder _ragBuilder;
 
-    public RagProcessor(IEnumerable<ITextProcessorHandler> handlers, ApplicationDbContext dbContext, IRagBuilder ragBuilder)
+    public RagProcessor(IEnumerable<ITextProcessorHandler> handlers, ApplicationDbContext dbContext)
     {
         _handlers = handlers;
         _dbContext = dbContext;
-        _ragBuilder = ragBuilder;
     }
 
     public async Task Add<TEntity>(Guid adventureId, TEntity[] entities, CancellationToken cancellationToken, ProcessingOptions? options = null)
@@ -96,33 +92,7 @@ internal sealed class RagProcessor : IRagProcessor
             return;
         }
 
-        var committedChunks = failedChunks
-            .Where(x => !string.IsNullOrEmpty(x.KnowledgeGraphNodeId))
-            .Select(x => new
-            {
-                Chunk = x,
-                EpisodeId = Task.Run(() => _ragBuilder.GetEpisodeAsync(x.KnowledgeGraphNodeId!.ToString(), cancellationToken),
-                    cancellationToken)
-            });
-
-        failedChunks.Where(x => string.IsNullOrEmpty(x.KnowledgeGraphNodeId) && x.ProcessingStatus == ProcessingStatus.Failed)
-            .ToList()
-            .ForEach(x => x.ProcessingStatus = ProcessingStatus.Pending);
-
-        foreach (var chunk in committedChunks)
-        {
-            try
-            {
-                EpisodeResponse chunkEpisodeId = await chunk.EpisodeId;
-                chunk.Chunk.ProcessingStatus = ProcessingStatus.Completed;
-                chunk.Chunk.KnowledgeGraphNodeId = chunkEpisodeId.Uuid;
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                chunk.Chunk.ProcessingStatus = ProcessingStatus.Pending;
-            }
-        }
-
+        failedChunks.ForEach(x => x.ProcessingStatus = ProcessingStatus.Pending);
         _dbContext.Chunks.UpdateRange(failedChunks);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

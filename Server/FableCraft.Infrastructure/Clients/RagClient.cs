@@ -1,27 +1,22 @@
-﻿using System.Net;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Clients;
 
 public interface IRagBuilder
 {
-    Task<AddDataResponse> AddDataAsync(AddDataRequest request);
+    Task<AddDataResponse> AddDataAsync(string content, string adventureId, CancellationToken cancellationToken = default);
 
-    Task<TaskStatusResponse> GetTaskStatusAsync(string taskId, CancellationToken cancellationToken = default);
+    Task DeleteNodeAsync(string datasetId, string dataId, CancellationToken cancellationToken = default);
 
-    Task<EpisodeResponse> GetEpisodeAsync(string episodeId, CancellationToken cancellationToken = default);
+    Task DeleteDatasetAsync(string datasetId, CancellationToken cancellationToken = default);
 
-    Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default);
-
-    Task ClearAsync(CancellationToken cancellationToken = default);
-
-    Task<AddDataResponse> BuildCommunitiesAsync(string groupId, string taskId, CancellationToken cancellationToken = default);
+    Task CleanAsync(CancellationToken cancellationToken = default);
 }
 
 public interface IRagSearch
 {
-    Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default);
+    Task<List<string>> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default);
 }
 
 internal class RagClient : IRagBuilder, IRagSearch
@@ -33,91 +28,42 @@ internal class RagClient : IRagBuilder, IRagSearch
         _httpClient = httpClient;
     }
 
-    /// <summary>
-    ///     Add data to the graph database (returns immediately with task info)
-    /// </summary>
-    public async Task<AddDataResponse> AddDataAsync(AddDataRequest request)
+    public async Task<AddDataResponse> AddDataAsync(string content, string adventureId, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<AddDataResponse>()
-               ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
-    }
-
-    /// <summary>
-    ///     Get the status of a background task
-    /// </summary>
-    public async Task<TaskStatusResponse> GetTaskStatusAsync(string taskId, CancellationToken cancellationToken = default)
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync($"/task/{Uri.EscapeDataString(taskId)}", cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<TaskStatusResponse>(cancellationToken)
-               ?? throw new InvalidOperationException("Failed to deserialize TaskStatusResponse");
-    }
-
-    /// <summary>
-    ///     Get episode details by episode ID
-    /// </summary>
-    public async Task<EpisodeResponse> GetEpisodeAsync(string episodeId, CancellationToken cancellationToken = default)
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync($"/episode/{Uri.EscapeDataString(episodeId)}", cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<EpisodeResponse>(cancellationToken)
-               ?? throw new InvalidOperationException("Failed to deserialize EpisodeResponse");
-    }
-
-    /// <summary>
-    ///     Delete data from the graph database by episode ID
-    /// </summary>
-    public async Task DeleteDataAsync(string dataId, CancellationToken cancellationToken = default)
-    {
-        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete_data?episode_id={Uri.EscapeDataString(dataId)}", cancellationToken);
-        try
+        var request = new AddDataRequest
         {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            // Good to go, data already doesn't exist
-        }
-    }
-
-    /// <summary>
-    ///     Clear all data from the graph database
-    /// </summary>
-    public async Task ClearAsync(CancellationToken cancellationToken = default)
-    {
-        HttpResponseMessage response = await _httpClient.DeleteAsync("/clear", cancellationToken);
-        response.EnsureSuccessStatusCode();
-    }
-
-    /// <summary>
-    ///     Build communities for a specific group/adventure (returns immediately with task info)
-    /// </summary>
-    public async Task<AddDataResponse> BuildCommunitiesAsync(string groupId, string taskId, CancellationToken cancellationToken = default)
-    {
-        BuildCommunitiesRequest request = new()
-        {
-            GroupId = groupId,
-            TaskId = taskId
+            Content = content,
+            AdventureId = adventureId
         };
 
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/build_communities", request, cancellationToken);
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken)
+        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken: cancellationToken)
                ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
     }
 
-    /// <summary>
-    ///     Search the graph database
-    /// </summary>
-    public async Task<SearchResult> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default)
+    public async Task DeleteNodeAsync(string datasetId, string dataId, CancellationToken cancellationToken = default)
     {
-        SearchRequest request = new()
+        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetId)}/{Uri.EscapeDataString(dataId)}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+    
+    public async Task DeleteDatasetAsync(string datasetId, CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(datasetId)}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task CleanAsync(CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.DeleteAsync("/nuke", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<string>> SearchAsync(string adventureId, string query, CancellationToken cancellationToken = default)
+    {
+        var request = new SearchRequest
         {
             AdventureId = adventureId,
             Query = query
@@ -126,12 +72,18 @@ internal class RagClient : IRagBuilder, IRagSearch
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<SearchResult>(cancellationToken)
-               ?? new SearchResult
-               {
-                   Content = string.Empty
-               };
+        return await response.Content.ReadFromJsonAsync<List<string>>(cancellationToken: cancellationToken)
+               ?? new List<string>();
     }
+}
+
+public class AddDataRequest
+{
+    [JsonPropertyName("content")]
+    public required string Content { get; set; }
+
+    [JsonPropertyName("adventure_id")]
+    public required string AdventureId { get; set; }
 }
 
 public class SearchRequest
@@ -141,118 +93,52 @@ public class SearchRequest
 
     [JsonPropertyName("query")]
     public required string Query { get; set; }
-
-    [JsonPropertyName("character_name")]
-    public string? CharacterName { get; set; }
-}
-
-public class SearchResult
-{
-    [JsonPropertyName("content")]
-    public string? Content { get; set; }
-}
-
-public class AddDataRequest
-{
-    [JsonPropertyName("episode_type")]
-    public required string EpisodeType { get; set; }
-
-    [JsonPropertyName("description")]
-    public required string Description { get; set; }
-
-    [JsonPropertyName("content")]
-    public required string Content { get; set; }
-
-    [JsonPropertyName("group_id")]
-    public required string GroupId { get; set; }
-
-    [JsonPropertyName("task_id")]
-    public required string TaskId { get; set; }
-
-    [JsonPropertyName("reference_time")]
-    public DateTime? ReferenceTime { get; set; }
 }
 
 public class AddDataResponse
 {
     [JsonPropertyName("status")]
-    public string? Status { get; set; }
+    public required string Status { get; set; }
+
+    [JsonPropertyName("pipeline_run_id")]
+    public required string PipelineRunId { get; set; }
+
+    [JsonPropertyName("dataset_id")]
+    public required string DatasetId { get; set; }
+
+    [JsonPropertyName("dataset_name")]
+    public required string DatasetName { get; set; }
+
+    [JsonPropertyName("data_ingestion_info")]
+    public List<DataIngestionInfo>? DataIngestionInfo { get; set; }
 }
 
-public enum TaskStatus
+public class DataIngestionInfo
 {
-    Pending,
-    Processing,
-    Completed,
-    Failed
+    [JsonPropertyName("run_info")]
+    public RunInfo? RunInfo { get; set; }
+
+    [JsonPropertyName("data_id")]
+    public required string DataId { get; set; }
 }
 
-public class TaskStatusResponse
+public class RunInfo
 {
-    [JsonPropertyName("episode_id")]
-    public required string EpisodeId { get; set; }
-
     [JsonPropertyName("status")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public TaskStatus Status { get; set; }
+    public required string Status { get; set; }
 
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
+    [JsonPropertyName("pipeline_run_id")]
+    public required string PipelineRunId { get; set; }
 
-    [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; set; }
+    [JsonPropertyName("dataset_id")]
+    public required string DatasetId { get; set; }
 
-    [JsonPropertyName("completed_at")]
-    public DateTime? CompletedAt { get; set; }
+    [JsonPropertyName("dataset_name")]
+    public required string DatasetName { get; set; }
 
-    [JsonPropertyName("error")]
-    public string? Error { get; set; }
-}
+    [JsonPropertyName("payload")]
+    public object? Payload { get; set; }
 
-public class EpisodeResponse
-{
-    [JsonPropertyName("uuid")]
-    public required string Uuid { get; set; }
-
-    [JsonPropertyName("name")]
-    public required string Name { get; set; }
-
-    [JsonPropertyName("group_id")]
-    public required string GroupId { get; set; }
-
-    [JsonPropertyName("source")]
-    public required string Source { get; set; }
-
-    [JsonPropertyName("source_description")]
-    public required string SourceDescription { get; set; }
-
-    [JsonPropertyName("content")]
-    public required string Content { get; set; }
-
-    [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; set; }
-
-    [JsonPropertyName("valid_at")]
-    public DateTime ValidAt { get; set; }
-
-    [JsonPropertyName("entity_edges")]
-    public required List<string> EntityEdges { get; set; }
-}
-
-public class BuildCommunitiesRequest
-{
-    [JsonPropertyName("group_id")]
-    public required string GroupId { get; set; }
-
-    [JsonPropertyName("task_id")]
-    public required string TaskId { get; set; }
-}
-
-public class BuildCommunitiesResponse
-{
-    [JsonPropertyName("communities_count")]
-    public int CommunitiesCount { get; set; }
-
-    [JsonPropertyName("edges_count")]
-    public int EdgesCount { get; set; }
+    [JsonPropertyName("data_ingestion_info")]
+    public object? DataIngestionInfo { get; set; }
 }

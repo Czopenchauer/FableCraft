@@ -47,13 +47,16 @@ internal sealed class ContextGatherer(
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
         var queries = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
         var tasks = queries
-            .Select(x => ragSearch.SearchAsync(adventureId.ToString(), x, cancellationToken)
-                .ContinueWith(task => new ContextBase
-                    {
-                        Query = x,
-                        Response = task.Result.Content!
-                    },
-                    cancellationToken)).ToList();
+            .Select(async x =>
+            {
+                var searchResults = await ragSearch.SearchAsync(adventureId.ToString(), x, cancellationToken);
+                return new ContextBase
+                {
+                    Query = x,
+                    Response = string.Join("\n\n", searchResults)
+                };
+            })
+            .ToList();
 
         List<ContextBase> results = [];
         foreach (var task in tasks)

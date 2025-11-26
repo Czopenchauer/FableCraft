@@ -51,6 +51,7 @@ var graphRagApi = builder
     .WithEnvironment("EMBEDDING_DIMENSIONS", embeddingDimensions)
     .WithEnvironment("EMBEDDING_MAX_TOKENS", embeddingMaxTokens)
     .WithEnvironment("EMBEDDING_BATCH_SIZE", embeddingBatchSize)
+    .WithEnvironment("ENABLE_BACKEND_ACCESS_CONTROL", "true")
     .WithEnvironment("TELEMETRY_DISABLED", "true")
     .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer);
 #pragma warning restore ASPIREHOSTINGPYTHON001

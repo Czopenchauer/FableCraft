@@ -47,7 +47,6 @@ class SearchRequest(BaseModel):
     query: str
 
 
-# Response Models
 class PipelineRunInfo(BaseModel):
     status: str
     pipeline_run_id: str
@@ -79,23 +78,43 @@ class VisualizeRequest(BaseModel):
     path: str
 
 
-@app.post("/add", status_code=status.HTTP_200_OK, response_model=Dict[str, AddDataResponse])
+@app.post("/add", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
 async def add_data(data: AddDataRequest):
 
-    await cognee.add(data.content, dataset_name=data.adventure_id)
-    result = await cognee.cognify(datasets=[data.adventure_id])
-    await cognee.memify(dataset=data.adventure_id)
-    return result
+    try:
+        await cognee.add(data.content, dataset_name=data.adventure_id)
+        result = await cognee.cognify(datasets=[data.adventure_id])
+        await cognee.memify(dataset=data.adventure_id)
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d["name"] == data.adventure_id), None)
+
+        return result[dataset.id]
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )
 
 
-@app.post("/add-batch", status_code=status.HTTP_200_OK, response_model=Dict[str, AddDataResponse])
+@app.get("/datasets")
+async def get_datasets():
+
+    datasets = await cognee.datasets.list_datasets()
+    return datasets
+
+
+@app.post("/add-batch", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
 async def add_data(data: AddDataRequestBatch):
 
     try:
         await cognee.add(data.content, dataset_name=data.adventure_id)
         result = await cognee.cognify(datasets=[data.adventure_id])
         await cognee.memify(dataset=data.adventure_id)
-        return result
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d["name"] == data.adventure_id), None)
+
+        return result[dataset.id]
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
         raise HTTPException(
@@ -134,10 +153,24 @@ async def nuke():
         )
 
 
-@app.delete("/delete/node/{dataset_id}/{data_id}")
-async def clear_adventure(dataset_id: UUID, data_id: UUID):
+@app.delete("/delete/node/{dataset_name}/{data_id}")
+async def clear_adventure(dataset_name: str, data_id: UUID):
     try:
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d["name"] == dataset_name), None)
+
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Dataset with name '{dataset_name}' not found"
+            )
+
+        dataset_id = UUID(dataset["id"])
         await cognee.delete(data_id=data_id, dataset_id=dataset_id)
+
+        return {"message": f"Successfully deleted node {data_id} from dataset {dataset_name}"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error clearing adventure: {str(e)}")
         raise HTTPException(
@@ -148,7 +181,17 @@ async def clear_adventure(dataset_id: UUID, data_id: UUID):
 @app.delete("/delete/{adventure_id}")
 async def clear_adventure(adventure_id: str):
     try:
-        await cognee.datasets.delete_dataset(dataset_id=adventure_id)
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d["name"] == adventure_id), None)
+
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Dataset with name '{adventure_id}' not found"
+            )
+
+        dataset_id = dataset["id"]
+        await cognee.datasets.delete_dataset(dataset_id=dataset_id)
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error clearing adventure: {str(e)}")
         raise HTTPException(
