@@ -1,15 +1,12 @@
 ﻿import logging
 import os
-from contextlib import asynccontextmanager
-from datetime import datetime
-from enum import Enum
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import cognee
 import uvicorn
 from cognee.modules.search.types import SearchType
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -18,7 +15,6 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
 from starlette import status
 
-# OpenTelemetry setup
 otlp_exporter = OTLPSpanExporter()
 processor = BatchSpanProcessor(otlp_exporter)
 tracer_provider = TracerProvider()
@@ -29,13 +25,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
-
 app = FastAPI(
     title="GraphRAG API (Cognee)",
     description="API for GraphRAG operations using Cognee framework with SQLite, Kuzu, and LanceDB",
     version="2.0.0",
 )
 FastAPIInstrumentor.instrument_app(app)
+
 
 class AddDataRequest(BaseModel):
     content: str
@@ -51,14 +47,39 @@ class SearchRequest(BaseModel):
     query: str
 
 
-class SearchResult(BaseModel):
-    content: str
+# Response Models
+class PipelineRunInfo(BaseModel):
+    status: str
+    pipeline_run_id: str
+    dataset_id: str
+    dataset_name: str
+    payload: Optional[Any] = None
+    data_ingestion_info: Optional[Any] = None
+
+
+class DataIngestionInfo(BaseModel):
+    run_info: PipelineRunInfo
+    data_id: str
+
+
+class AddDataResponse(BaseModel):
+    status: str
+    pipeline_run_id: str
+    dataset_id: str
+    dataset_name: str
+    payload: Optional[Any] = None
+    data_ingestion_info: Optional[List[DataIngestionInfo]] = None
+
+
+class SearchResponse(BaseModel):
+    results: List[str]
 
 
 class VisualizeRequest(BaseModel):
     path: str
 
-@app.post("/add", status_code=status.HTTP_200_OK)
+
+@app.post("/add", status_code=status.HTTP_200_OK, response_model=Dict[str, AddDataResponse])
 async def add_data(data: AddDataRequest):
 
     await cognee.add(data.content, dataset_name=data.adventure_id)
@@ -67,18 +88,23 @@ async def add_data(data: AddDataRequest):
     return result
 
 
-@app.post("/add-batch", status_code=status.HTTP_200_OK)
+@app.post("/add-batch", status_code=status.HTTP_200_OK, response_model=Dict[str, AddDataResponse])
 async def add_data(data: AddDataRequestBatch):
 
-    for content in data.content:
-        await cognee.add(content, dataset_name=data.adventure_id)
+    try:
+        await cognee.add(data.content, dataset_name=data.adventure_id)
+        result = await cognee.cognify(datasets=[data.adventure_id])
+        await cognee.memify(dataset=data.adventure_id)
+        return result
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )
 
-    result = await cognee.cognify(datasets=[data.adventure_id])
-    await cognee.memify(dataset=data.adventure_id)
-    return result
 
-
-@app.post("/search")
+@app.post("/search", response_model=List[str])
 async def search(request: SearchRequest):
 
     try:
@@ -95,10 +121,11 @@ async def search(request: SearchRequest):
         )
 
 
-@app.delete("/clear")
-async def clear():
+@app.delete("/nuke")
+async def nuke():
     try:
         await cognee.prune.prune_data()
+        await cognee.prune.prune_system(metadata=True)
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error clearing data: {str(e)}")
         raise HTTPException(
