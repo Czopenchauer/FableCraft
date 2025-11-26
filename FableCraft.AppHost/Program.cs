@@ -10,21 +10,24 @@ var serverDatabase = builder
     .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
-var cosmosDb = builder.AddCosmosDb();
-
-var neo4j = builder
-    .AddContainer("fablecraft-neo4j", "neo4j", "community")
-    .WithVolume("neo4j-data", "/data")
-    .WithHttpEndpoint(targetPort: 7474, port: 7474, name: "http")
-    .WithEndpoint(targetPort: 7687, port: 7687, name: "bolt")
-    .WithEnvironment("NEO4J_AUTH", "neo4j/SuperPassword")
-    .WithEnvironment("NEO4J_PLUGINS", "[\"apoc\", \"graph-data-science\"]");
-
 var llmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
 var llmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
-var llmEndpointKeySecret = builder.Configuration["FableCraft:Server:LLM:BaseUrl"]!;
+var llmProvider = builder.Configuration["FableCraft:Server:LLM:Provider"]!;
+var llmEndpoint = builder.Configuration["FableCraft:Server:LLM:BaseUrl"] ?? "";
+var llmApiVersion = builder.Configuration["FableCraft:Server:LLM:ApiVersion"] ?? "";
+var llmMaxTokens = builder.Configuration["FableCraft:Server:LLM:MaxTokens"] ?? "16384";
+
+var llmRateLimitEnabled = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitEnabled"] ?? "true";
+var llmRateLimitRequests = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitRequests"] ?? "60";
+var llmRateLimitInterval = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitInterval"] ?? "60";
+var embeddingProvider = builder.Configuration["FableCraft:GraphRag:Embedding:Provider"]!;
 var embeddingModel = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
-var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"]!;
+var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"] ?? "";
+var embeddingApiVersion = builder.Configuration["FableCraft:GraphRag:Embedding:ApiVersion"] ?? "";
+var embeddingDimensions = builder.Configuration["FableCraft:GraphRag:Embedding:Dimensions"] ?? "3072";
+var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:MaxTokens"] ?? "8191";
+var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "36";
+var huggingFaceTokenizer = builder.Configuration["FableCraft:GraphRag:HuggingFaceTokenizer"] ?? "";
 
 #pragma warning disable ASPIREHOSTINGPYTHON001
 var graphRagApi = builder
@@ -32,34 +35,34 @@ var graphRagApi = builder
     .WithHttpEndpoint(env: "PORT", port: 8111, name: "graphRagApi")
     .WithExternalHttpEndpoints()
     .WithOtlpExporter()
-    .WithEnvironment(context =>
-    {
-        EndpointReference boltEndpoint = neo4j.GetEndpoint("bolt");
-        context.EnvironmentVariables["NEO4J_URI"] = $"bolt://{boltEndpoint.Host}:{boltEndpoint.Port}";
-        context.EnvironmentVariables["NEO4J_USER"] = "neo4j";
-        context.EnvironmentVariables["NEO4J_PASSWORD"] = "SuperPassword";
-
-        EndpointReference httpEndpoint = neo4j.GetEndpoint("http");
-        context.EnvironmentVariables["NEO4J_HTTP_URI"] = $"http://{httpEndpoint.Host}:{httpEndpoint.Port}";
-    })
-    .WithEnvironment("LLM_MODEL", llmModel)
     .WithEnvironment("LLM_API_KEY", llmApiKeySecret)
-    .WithEnvironment("LLM_ENDPOINT", llmEndpointKeySecret)
+    .WithEnvironment("LLM_MODEL", llmModel)
+    .WithEnvironment("LLM_PROVIDER", llmProvider)
+    .WithEnvironment("LLM_ENDPOINT", llmEndpoint)
+    .WithEnvironment("LLM_API_VERSION", llmApiVersion)
+    .WithEnvironment("LLM_MAX_TOKENS", llmMaxTokens)
+    .WithEnvironment("LLM_RATE_LIMIT_ENABLED", llmRateLimitEnabled)
+    .WithEnvironment("LLM_RATE_LIMIT_REQUESTS", llmRateLimitRequests)
+    .WithEnvironment("LLM_RATE_LIMIT_INTERVAL", llmRateLimitInterval)
+    .WithEnvironment("EMBEDDING_PROVIDER", embeddingProvider)
     .WithEnvironment("EMBEDDING_MODEL", embeddingModel)
     .WithEnvironment("EMBEDDING_ENDPOINT", embeddingEndpoint)
-    .WithRelationship(neo4j.Resource, "uses")
-    .WaitFor(neo4j);
+    .WithEnvironment("EMBEDDING_API_VERSION", embeddingApiVersion)
+    .WithEnvironment("EMBEDDING_DIMENSIONS", embeddingDimensions)
+    .WithEnvironment("EMBEDDING_MAX_TOKENS", embeddingMaxTokens)
+    .WithEnvironment("EMBEDDING_BATCH_SIZE", embeddingBatchSize)
+    .WithEnvironment("TELEMETRY_DISABLED", "true")
+    .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer);
 #pragma warning restore ASPIREHOSTINGPYTHON001
 
 var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithOtlpExporter()
-    .WithReference(cosmosDb)
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
     .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)
     .WithEnvironment("FableCraft:Server:LLM:ApiKey", llmApiKeySecret)
-    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", llmEndpointKeySecret)
+    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", llmEndpoint)
     .WaitFor(graphRagApi)
     .WaitFor(serverDatabase);
 

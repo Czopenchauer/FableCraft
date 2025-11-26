@@ -1,12 +1,16 @@
-﻿# Cognee - Knowledge Graph RAG Framework
-cognee
-
-# FastAPI and server
+﻿opentelemetry-instrumentation-openai
+graphiti-core
+langchain-openai
+langchain-litellm
+litellm
+langchain-core
+langgraph
 uvicorn
-fastapi
 starlette
+fastapi
 pydantic
 python-dotenv
+litellm[proxy]
 
 # OpenTelemetry dependencies
 opentelemetry-sdk
@@ -14,5 +18,5 @@ opentelemetry-distro
 opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-logging
 opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-instrumentation-openai
-
+opentelemetry-instrumentation-flask
+gunicorn

@@ -1,9 +1,21 @@
-﻿### Search Direct
-POST http://localhost:8112/search_direct
+﻿
+
+### Add Data
+POST http://localhost:8111/add
 Content-Type: application/json
 
 {
-  "adventure_id": "adventure_123",
-  "query": "What happened in the tavern?"
+  "content": "Ariel is a human female in her early twenties, standing at 5'6 with an athletic yet voluptuous build that turns heads wherever she goes. Her most striking feature is her bright ginger hair—a cascade of copper, auburn, and warm red tones that flows in soft waves down to her mid-back, catching light like living flame. Her eyes are clear emerald green with tiny gold specks that seem to dance when she's excited or aroused, framed by long natural lashes that flutter against her fair, porcelain skin.\n\nHer body is a masterpiece of natural fitness and feminine curves. She possesses smooth, pale skin without blemishes, stretched over toned muscles that speak of an active lifestyle. Her face is delicately feminine with full, succulent lips that are naturally pink, a small adorable nose with a slight upturn, and high cheekbones. Her neck is slender and graceful. Her shoulders are gently rounded, leading to toned arms. Her breasts are full D-cups, heavy and perky with sensitive pink nipples that frequently become visible through her clothing, especially since she refuses to wear a bra whenever possible. The weight of them creates an enticing bounce and jiggle with every movement, and she's constantly aware of their presence. Her narrow waist creates a dramatic hourglass silhouette as it curves out to full, childbearing hips. Her backside is round, heart-shaped, and exceptionally firm—the kind that bounces enticingly with each step. Her legs are long, muscular, and shapely, with powerful thighs and defined calves. Between her legs, she keeps herself neatly groomed, with a small patch of fiery red hair. Her pussy lips are naturally pink and plump, and she's discovered they're extremely sensitive in this new world. Every aspect of her physique is balanced and healthy—zero excess fat, just toned muscle and smooth, even curves that demonstrate excellent self-care.\n\nAriel's personality is a fascinating contradiction wrapped in sharp intelligence. Despite her constantly perverted thoughts, she possesses a brilliant, analytical mind capable of learning languages quickly, solving complex problems, and adapting to new situations with remarkable speed. She's the type who can discuss philosophy, magic theory, or combat tactics with genuine insight—all while secretly clenching her thighs together because she's dripping wet from a taboo thought. Outwardly, she presents as curious, adventurous, and friendly—the kind of person who asks endless questions and wants to experience everything this new world offers, approaching challenges with clever solutions and quick thinking. However, beneath this innocent exterior lurks a deeply perverted mind. She's constantly having deviant thoughts that make her pussy clench with need, fantasizing about taboo scenarios she'd never admit aloud. She's an exhibitionist at heart, getting aroused by the thought of being watched or accidentally exposed. She's discovered she has an intense attraction to animals in this world, often catching herself staring at horses, dogs, or other creatures with inappropriate thoughts that make her blush furiously. She's slightly submissive, naturally deferring to stronger personalities and secretly craving to be dominated, used, or put in compromising positions. She's perpetually horny, her body seemingly on a hair-trigger since arriving in this world, and she often finds herself wet and aching without even being touched. She's also discovered she has an intense arousal response to watersports and scat—the taboo, dirty nature of it sends electric thrills through her body that she finds impossible to ignore. The thought of being marked, degraded, or used as a toilet makes her knees weak with shameful desire. Despite all this, she desperately tries to maintain a \"normal\" facade, hiding her depravity behind smiles and polite conversation, though her body often betrays her with hardened nipples, flushed skin, or the telltale scent of her arousal.",
+  "adventure_id": "019aac4d-78e4-7f46-9839-1c214a5ab4bf"
 }
 
+###
+
+### Search Direct
+POST http://localhost:8111/search
+Content-Type: application/json
+
+{
+  "adventure_id": "dataset",
+  "query": "How Ariel looks like"
+}
