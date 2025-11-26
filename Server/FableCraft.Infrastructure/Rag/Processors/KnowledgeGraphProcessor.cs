@@ -40,9 +40,7 @@ internal sealed class KnowledgeGraphProcessor : ITextProcessorHandler
 
                     var response = await _ragBuilder.AddDataAsync(chunk.GetContent(), context.AdventureId.ToString(), cancellationToken);
 
-                    var dataId = response.DataIngestionInfo?.FirstOrDefault()?.DataId 
-                                 ?? throw new InvalidOperationException("No data ID returned from RAG service");
-
+                    var dataId = response.GetDataId();
                     await SetAsProcessedAsync(chunk, dataId, cancellationToken);
                 }
                 catch (System.Exception ex)

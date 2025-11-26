@@ -7,6 +7,8 @@ public interface IRagBuilder
 {
     Task<AddDataResponse> AddDataAsync(string content, string adventureId, CancellationToken cancellationToken = default);
 
+    Task<AddDataResponse> AddDataBatchAsync(List<string> content, string adventureId, CancellationToken cancellationToken = default);
+
     Task DeleteNodeAsync(string datasetId, string dataId, CancellationToken cancellationToken = default);
 
     Task DeleteDatasetAsync(string datasetId, CancellationToken cancellationToken = default);
@@ -37,6 +39,21 @@ internal class RagClient : IRagBuilder, IRagSearch
         };
 
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken: cancellationToken)
+               ?? throw new InvalidOperationException("Failed to deserialize AddDataResponse");
+    }
+
+    public async Task<AddDataResponse> AddDataBatchAsync(List<string> content, string adventureId, CancellationToken cancellationToken = default)
+    {
+        var request = new AddDataBatchRequest
+        {
+            Content = content,
+            AdventureId = adventureId
+        };
+
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add-batch", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<AddDataResponse>(cancellationToken: cancellationToken)
@@ -86,6 +103,15 @@ public class AddDataRequest
     public required string AdventureId { get; set; }
 }
 
+public class AddDataBatchRequest
+{
+    [JsonPropertyName("content")]
+    public required List<string> Content { get; set; }
+
+    [JsonPropertyName("adventure_id")]
+    public required string AdventureId { get; set; }
+}
+
 public class SearchRequest
 {
     [JsonPropertyName("adventure_id")]
@@ -110,13 +136,15 @@ public class AddDataResponse
     public required string DatasetName { get; set; }
 
     [JsonPropertyName("data_ingestion_info")]
-    public List<DataIngestionInfo>? DataIngestionInfo { get; set; }
+    public List<DataIngestionInfo> DataIngestionInfo { get; set; } = new();
+    
+    public string GetDataId() => DataIngestionInfo.Single(x => x.RunInfo.Status == "PipelineRunCompleted").DataId;
 }
 
 public class DataIngestionInfo
 {
     [JsonPropertyName("run_info")]
-    public RunInfo? RunInfo { get; set; }
+    public required RunInfo RunInfo { get; set; }
 
     [JsonPropertyName("data_id")]
     public required string DataId { get; set; }
@@ -135,10 +163,4 @@ public class RunInfo
 
     [JsonPropertyName("dataset_name")]
     public required string DatasetName { get; set; }
-
-    [JsonPropertyName("payload")]
-    public object? Payload { get; set; }
-
-    [JsonPropertyName("data_ingestion_info")]
-    public object? DataIngestionInfo { get; set; }
 }
