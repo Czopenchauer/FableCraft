@@ -15,6 +15,8 @@ public class Scene : IKnowledgeGraphEntity
 
     public required int SequenceNumber { get; init; }
 
+    public string? Summary { get; set; }
+
     [Required]
     public required string NarrativeText { get; init; }
 

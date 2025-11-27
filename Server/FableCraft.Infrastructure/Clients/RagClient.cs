@@ -83,7 +83,8 @@ internal class RagClient : IRagBuilder, IRagSearch
         var request = new SearchRequest
         {
             AdventureId = adventureId,
-            Query = query
+            Query = query,
+            SearchType = "GRAPH_COMPLETION"
         };
 
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
@@ -119,6 +120,9 @@ public class SearchRequest
 
     [JsonPropertyName("query")]
     public required string Query { get; set; }
+    
+    [JsonPropertyName("search_type")]
+    public required string SearchType { get; set; }
 }
 
 public class AddDataResponse

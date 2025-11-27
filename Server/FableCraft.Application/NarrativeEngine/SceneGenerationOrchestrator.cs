@@ -37,6 +37,7 @@ internal sealed class SceneGenerationOrchestrator
     private readonly LoreCrafter _loreCrafter;
     private readonly CharacterCrafter _characterCrafter;
     private readonly CharacterStateTracker _characterStateTracker;
+    private readonly LocationCrafter _locationCrafter;
     private readonly ContextGatherer _contextGatherer;
     private readonly NarrativeDirectorAgent _narrativeDirectorAgent;
     private const int NumberOfScenesToInclude = 20;
@@ -52,6 +53,7 @@ internal sealed class SceneGenerationOrchestrator
         CharacterCrafter characterCrafter,
         LoreCrafter loreCrafter,
         CharacterStateTracker characterStateTracker,
+        LocationCrafter locationCrafter,
         ContextGatherer contextGatherer)
     {
         _kernelBuilder = kernelBuilder;
@@ -64,6 +66,7 @@ internal sealed class SceneGenerationOrchestrator
         _characterCrafter = characterCrafter;
         _loreCrafter = loreCrafter;
         _characterStateTracker = characterStateTracker;
+        _locationCrafter = locationCrafter;
         _contextGatherer = contextGatherer;
     }
 
@@ -72,7 +75,7 @@ internal sealed class SceneGenerationOrchestrator
         var adventure = await _dbContext
             .Adventures
             .Where(x => x.Id == adventureId)
-            .Select(x => new { x.TrackerStructure, x.Summary, x.MainCharacter })
+            .Select(x => new { x.TrackerStructure, x.MainCharacter })
             .SingleAsync(cancellationToken: cancellationToken);
 
         var scenes = await _dbContext
@@ -83,11 +86,11 @@ internal sealed class SceneGenerationOrchestrator
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
 
-        var summary = string.IsNullOrEmpty(adventure.Summary)
+        var summary = string.IsNullOrEmpty(scenes.LastOrDefault()?.Summary)
             ? string.Empty
             : $"""
                <story_summary>
-               {adventure.Summary}
+               {scenes.LastOrDefault()?.Summary}
                </story_summary>
 
                """;
@@ -132,10 +135,9 @@ internal sealed class SceneGenerationOrchestrator
         commonContext += $"""
                           <additional_context>
                           {string.Join("\n\n", contextBases.Select(x => $"""
-                                                                         QUESTION:
-                                                                         {x.Query}
-                                                                         ANSWER:
+                                                                         <{x.Query}>:
                                                                          {x.Response}
+                                                                         </{x.Query}>
                                                                          """))}
                           </additional_context>
                           """;
@@ -172,26 +174,33 @@ internal sealed class SceneGenerationOrchestrator
                     Metadata = x.Metadata
                 })
                 .ToArray(),
-            StorySummary = adventure.Summary,
+            StorySummary = scenes.LastOrDefault()?.Summary,
             PlayerAction = playerAction,
             CommonContext = commonContext,
             KernelKg = kernelWithKg,
             Characters = charactersOnScene,
+            NewLocations = [],
+            NewLore = []
         };
 
         var narrativeDirectorOutput = await _narrativeDirectorAgent.Invoke(narrativeContext, cancellationToken);
-        var newLoreTask = narrativeDirectorOutput.CreationRequests.Lore.Select(x => _loreCrafter.Invoke(kernelWithKg, x, cancellationToken)).ToList();
-        var newLore = await Task.WhenAll(newLoreTask);
         var characterCreationTasks = narrativeDirectorOutput.CreationRequests.Characters.Select(x => _characterCrafter.Invoke(
             kernelWithKg,
             narrativeContext,
             x,
-            newLore,
             cancellationToken)).ToList();
         var characterCreations = await Task.WhenAll(characterCreationTasks);
+        var newLoreTask = narrativeDirectorOutput.CreationRequests.Lore
+            .Select(x => _loreCrafter.Invoke(kernelWithKg, x, narrativeContext, characterCreations, cancellationToken)).ToList();
+        var newLocationTask = narrativeDirectorOutput.CreationRequests.Locations
+            .Select(location => _locationCrafter.Invoke(kernelWithKg, location, narrativeContext, characterCreations, cancellationToken)).ToList();
+        var newLore = await Task.WhenAll(newLoreTask);
+        var newLocation = await Task.WhenAll(newLocationTask);
+        narrativeContext.NewLore = newLore;
+        narrativeContext.NewLocations = newLocation;
         narrativeContext.Characters.AddRange(characterCreations);
 
-        var sceneContent = await _writerAgent.Invoke(narrativeContext, characterCreations, newLore, narrativeDirectorOutput, cancellationToken);
+        var sceneContent = await _writerAgent.Invoke(narrativeContext, characterCreations, narrativeDirectorOutput, cancellationToken);
         var trackerTask = _trackerAgent.Invoke(
             narrativeContext,
             sceneContent,
@@ -262,6 +271,17 @@ internal sealed class SceneGenerationOrchestrator
             Category = x.Title,
             Content = JsonSerializer.Serialize(x, options),
             ContentType = ContentType.Json,
+            Scene = newScene
+        }).ToList();
+
+        var newLocationsEntities = newLocation.Select(x => new LorebookEntry
+        {
+            AdventureId = adventureId,
+            Description = x.NarrativeData.ShortDescription,
+            Content = JsonSerializer.Serialize(x, options),
+            Category = x.EntityData.Name,
+            ContentType = ContentType.Json,
+            Scene = newScene
         }).ToList();
 
         IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
@@ -273,6 +293,7 @@ internal sealed class SceneGenerationOrchestrator
                 await _dbContext.Scenes.AddAsync(newScene, cancellationToken);
                 _dbContext.Characters.AddRange(newCharacters);
                 _dbContext.LorebookEntries.AddRange(newLoreEntities);
+                _dbContext.LorebookEntries.AddRange(newLocationsEntities);
                 _dbContext.Characters.UpdateRange(characters);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

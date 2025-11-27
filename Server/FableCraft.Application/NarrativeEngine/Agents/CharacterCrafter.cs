@@ -18,7 +18,6 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
         Kernel kernel,
         NarrativeContext context,
         CharacterRequest request,
-        GeneratedLore[] newLore,
         CancellationToken cancellationToken)
     {
         var chatHistory = new ChatHistory();
@@ -40,10 +39,6 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
                              <character_creation_context>
                              {JsonSerializer.Serialize(request, options)}
                              </character_creation_context>
-
-                             <new_lore>
-                             {JsonSerializer.Serialize(newLore, options)}
-                             </new_lore>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>(response =>

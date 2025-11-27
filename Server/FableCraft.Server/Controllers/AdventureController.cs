@@ -34,15 +34,6 @@ public class AdventureController : ControllerBase
         return Ok(adventures);
     }
 
-    [HttpGet("lorebook")]
-    [ProducesResponseType(typeof(AvailableLorebookDto[]), StatusCodes.Status200OK)]
-    public IActionResult GetSupportedLorebooks()
-    {
-        var result = _adventureCreationService.GetSupportedLorebook();
-
-        return Ok(result);
-    }
-
     [HttpPost("create-adventure")]
     [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -83,48 +74,6 @@ public class AdventureController : ControllerBase
             AdventureCreationStatus result = await _adventureCreationService.GetAdventureCreationStatusAsync(adventure, cancellationToken);
 
             return Ok(result);
-        }
-        catch (AdventureNotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    [HttpPost("generate-lorebook")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GenerateLorebook([FromBody] GenerateLorebookDto dto,
-        [FromServices] IValidator<GenerateLorebookDto> validator, CancellationToken cancellationToken)
-    {
-        ValidationResult? validationResult = await validator.ValidateAsync(dto, cancellationToken);
-
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
-        }
-
-        var result = await _adventureCreationService.GenerateLorebookAsync(
-            dto.Lorebooks,
-            dto.Category,
-            cancellationToken,
-            dto.AdditionalInstruction);
-
-        return Ok(new GeneratedLorebookDto
-        {
-            Content = result
-        });
-    }
-
-    [HttpPost("retry-knowledge-graph/{adventure:guid}")]
-    [ProducesResponseType(typeof(AdventureCreationStatus), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RetryKnowledgeGraphProcessing(Guid adventure, CancellationToken cancellationToken)
-    {
-        try
-        {
-            AdventureCreationStatus result = await _adventureCreationService.RetryKnowledgeGraphProcessingAsync(adventure, cancellationToken);
-
-            return RedirectToAction(nameof(GetGenerationStatus), new { adventure = result.AdventureId });
         }
         catch (AdventureNotFoundException)
         {

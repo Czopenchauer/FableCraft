@@ -10,17 +10,17 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class LoreCrafter
+internal sealed class LocationCrafter
 {
     private readonly IAgentKernel _agentKernel;
 
-    public LoreCrafter(IAgentKernel agentKernel)
+    public LocationCrafter(IAgentKernel agentKernel)
     {
         _agentKernel = agentKernel;
     }
 
-    public async Task<GeneratedLore> Invoke(Kernel kernel,
-        LoreRequest request,
+    public async Task<LocationGenerationResult> Invoke(Kernel kernel,
+        LocationRequest request,
         NarrativeContext narrativeContext,
         CharacterContext[] characterCreation,
         CancellationToken cancellationToken)
@@ -46,13 +46,22 @@ internal sealed class LoreCrafter
         }
 
         var contextPrompt = $"""
-                             <lore_creation_context>
+                             <location_request>
                              {JsonSerializer.Serialize(request, options)}
-                             </lore_creation_context>
+                             </location_request>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        var outputFunc = new Func<string, GeneratedLore>(response =>
-            JsonSerializer.Deserialize<GeneratedLore>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
+        
+        var outputFunc = new Func<string, LocationGenerationResult>(response =>
+        {
+            var match = Regex.Match(response, "<location>(.*?)</location>", RegexOptions.Singleline);
+            if (match.Success)
+            {
+                return JsonSerializer.Deserialize<LocationGenerationResult>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException();
+            }
+
+            throw new InvalidCastException("Failed to parse LocationGenerationResult from response due to output not being in correct tags.");
+        });
 
         return await _agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
     }
@@ -64,7 +73,7 @@ internal sealed class LoreCrafter
             "NarrativeEngine",
             "Agents",
             "Prompts",
-            "LoreCrafterPrompt.md"
+            "LocationCrafterPrompt.md"
         );
 
         return await File.ReadAllTextAsync(promptPath);

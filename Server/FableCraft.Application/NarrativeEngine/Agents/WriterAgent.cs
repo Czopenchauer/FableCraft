@@ -18,7 +18,6 @@ internal sealed class WriterAgent(IAgentKernel agentKernel, ILogger logger)
     public async Task<GeneratedScene> Invoke(
         NarrativeContext context,
         CharacterContext[] characterContexts,
-        GeneratedLore[] newLore,
         NarrativeDirectorOutput narrativeDirectorOutput,
         CancellationToken cancellationToken)
     {
@@ -37,8 +36,12 @@ internal sealed class WriterAgent(IAgentKernel agentKernel, ILogger logger)
                              </scene_direction>
 
                              <new_lore>
-                             {JsonSerializer.Serialize(newLore, options)}
+                             {JsonSerializer.Serialize(context.NewLore, options)}
                              </new_lore>
+                             
+                             <new_locations>
+                             {JsonSerializer.Serialize(context.NewLocations, options)}
+                             </new_locations>
 
                              Newly created characters. Should be emulated as well as existing ones:
                              <new_characters>

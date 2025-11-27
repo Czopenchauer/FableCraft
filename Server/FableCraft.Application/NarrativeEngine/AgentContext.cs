@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.SemanticKernel;
@@ -22,6 +23,10 @@ internal sealed class NarrativeContext
     public required SceneContext[] SceneContext { get; set; }
 
     public required List<CharacterContext> Characters { get; set; } = new();
+
+    public required LocationGenerationResult[] NewLocations { get; set; }
+
+    public required GeneratedLore[] NewLore { get; set; }
 
     public Metadata? GetCurrentSceneMetadata()
     {

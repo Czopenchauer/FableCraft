@@ -24,8 +24,6 @@ public class Adventure : IEntity
 
     public required string? AuthorNotes { get; init; }
 
-    public string? Summary { get; set; }
-
     public required MainCharacter MainCharacter { get; set; }
 
     public Character[] Characters { get; init; } = [];

@@ -4,8 +4,15 @@ namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class LorebookEntry : IKnowledgeGraphEntity
 {
+    [Key]
+    public Guid Id { get; set; }
+
     [Required]
     public Guid AdventureId { get; init; }
+
+    public Guid? SceneId { get; init; }
+
+    public Scene? Scene { get; init; }
 
     public Adventure Adventure { get; init; } = null!;
 
@@ -21,9 +28,6 @@ public class LorebookEntry : IKnowledgeGraphEntity
     public string Category { get; init; } = null!;
 
     public ContentType ContentType { get; init; }
-
-    [Key]
-    public Guid Id { get; set; }
 
     public Content GetContent()
     {

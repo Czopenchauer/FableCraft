@@ -11,6 +11,7 @@ using FableCraft.ServiceDefaults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 
 using Serilog;
 
@@ -53,10 +54,25 @@ public static class StartupExtensions
                 client.BaseAddress = new Uri(graphApiBaseUrl);
 
                 // LLM calls can take a while
-                client.Timeout = TimeSpan.FromMinutes(10);
+                client.Timeout = TimeSpan.FromMinutes(20);
             })
             .RemoveAllResilienceHandlers()
-            .AddDefaultLlmResiliencePolicies();
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout = new HttpTimeoutStrategyOptions
+                {
+                    Timeout = TimeSpan.FromMinutes(20)
+                };
+
+                options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
+                {
+                    Timeout = TimeSpan.FromMinutes(40)
+                };
+
+                options.Retry.MaxRetryAttempts = 5;
+                options.Retry.Delay = TimeSpan.FromSeconds(5);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(40);
+            });;
 
         services.AddHttpClient<IRagSearch, RagClient>(client =>
             {

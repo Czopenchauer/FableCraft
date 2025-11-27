@@ -35,19 +35,9 @@ public class AdventureCreationStatus
 
 public interface IAdventureCreationService
 {
-    AvailableLorebookDto[] GetSupportedLorebook();
-
-    Task<string> GenerateLorebookAsync(
-        LorebookEntryDto[] lorebooks,
-        string category,
-        CancellationToken cancellationToken,
-        string? additionalInstruction = null);
-
     Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto, CancellationToken cancellationToken);
 
     Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid worldId, CancellationToken cancellationToken);
-
-    Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId, CancellationToken cancellationToken);
 
     Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken);
 
@@ -56,9 +46,7 @@ public interface IAdventureCreationService
 
 internal class AdventureCreationService : IAdventureCreationService
 {
-    private readonly IOptions<AdventureCreationConfig> _config;
     private readonly ApplicationDbContext _dbContext;
-    private readonly IKernelBuilder _kernelBuilder;
     private readonly ILogger _logger;
     private readonly IMessageDispatcher _messageDispatcher;
     private readonly IRagBuilder _ragBuilder;
@@ -68,30 +56,14 @@ internal class AdventureCreationService : IAdventureCreationService
         ApplicationDbContext dbContext,
         IMessageDispatcher messageDispatcher,
         TimeProvider timeProvider,
-        IOptions<AdventureCreationConfig> config,
-        IKernelBuilder kernelBuilder,
         ILogger logger,
         IRagBuilder ragBuilder)
     {
         _dbContext = dbContext;
         _messageDispatcher = messageDispatcher;
         _timeProvider = timeProvider;
-        _config = config;
-        _kernelBuilder = kernelBuilder;
         _logger = logger;
         _ragBuilder = ragBuilder;
-    }
-
-    public AvailableLorebookDto[] GetSupportedLorebook()
-    {
-        var categories = _config.Value.Lorebooks.Select(x => new AvailableLorebookDto
-        {
-            Category = x.Key,
-            Description = x.Value.Description,
-            Priority = x.Value.Priority
-        }).OrderBy(x => x.Priority).ToArray();
-
-        return categories;
     }
 
     public async Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto,
@@ -118,10 +90,11 @@ internal class AdventureCreationService : IAdventureCreationService
                     Category = entry.Category
                 })
                 .ToList(),
-            TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure, new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true
-            })!,
+            TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure,
+                new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                })!,
         };
 
         _dbContext.Adventures.Add(adventure);
@@ -132,108 +105,10 @@ internal class AdventureCreationService : IAdventureCreationService
         return await GetAdventureCreationStatusAsync(adventure.Id, cancellationToken);
     }
 
-    public async Task<string> GenerateLorebookAsync(
-        LorebookEntryDto[] lorebooks,
-        string category,
-        CancellationToken cancellationToken,
-        string? additionalInstruction = null)
-    {
-        if (!_config.Value.Lorebooks.TryGetValue(category, out LorebookConfig? lorebookConfig))
-        {
-            throw new ArgumentException($"Lorebook type '{category}' is not supported.", category);
-        }
-
-        try
-        {
-            await using FileStream stream = File.OpenRead(lorebookConfig.GetPromptFileName());
-            using var reader = new StreamReader(stream);
-            var prompt = await reader.ReadToEndAsync(cancellationToken);
-
-            var orderedLorebooks = _config.Value.Lorebooks
-                .Where(x => x.Value.Priority <= lorebookConfig.Priority)
-                .OrderBy(x => x.Value.Priority)
-                .Join(lorebooks,
-                    x => x.Key,
-                    y => y.Category,
-                    (x, y) => new { config = x.Value, lorebookEntry = y })
-                .ToArray();
-
-            var establishedWorld = string.Empty;
-            if (orderedLorebooks.Length > 0)
-            {
-                establishedWorld = orderedLorebooks.Aggregate("Already established world:",
-                    (current, entry) =>
-                        current + $"\n{entry.lorebookEntry.Category}\n{entry.lorebookEntry.Content}\n");
-            }
-
-            if (!string.IsNullOrEmpty(additionalInstruction))
-            {
-                establishedWorld += $"\nInstruction:\n{additionalInstruction}\n";
-            }
-
-            ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-                .AddRetry(new RetryStrategyOptions
-                {
-                    ShouldHandle = new PredicateBuilder().Handle<InvalidCastException>(),
-                    MaxRetryAttempts = 1,
-                    Delay = TimeSpan.FromSeconds(5),
-                    OnRetry = args =>
-                    {
-                        _logger.Warning("Attempt {attempt}: Retrying lorebook generation for type {type} due to error: {error}",
-                            args.AttemptNumber,
-                            category,
-                            args.Outcome.Exception?.Message);
-                        return default;
-                    }
-                })
-                .Build();
-
-            var chatHistory = new ChatHistory();
-            chatHistory.AddUserMessage(prompt);
-            chatHistory.AddUserMessage(establishedWorld);
-            Kernel kernel = _kernelBuilder.WithBase(_config.Value.LlmModel).Build();
-            var promptExecutionSettings = new OpenAIPromptExecutionSettings
-            {
-                Temperature = _config.Value.Temperature,
-                PresencePenalty = _config.Value.PresencePenalty,
-                FrequencyPenalty = _config.Value.FrequencyPenalty,
-                MaxTokens = _config.Value.MaxTokens,
-                TopP = _config.Value.TopP
-            };
-            _logger.Debug("Generating lorebook for type {type} with prompt: {prompt}", category, establishedWorld);
-            try
-            {
-                var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-                return await pipeline.ExecuteAsync(async token =>
-                           {
-                               ChatMessageContent result = await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                               var replyInnerContent = result.InnerContent as ChatCompletion;
-                               _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                   replyInnerContent?.Usage.InputTokenCount,
-                                   replyInnerContent?.Usage.OutputTokenCount,
-                                   replyInnerContent?.Usage.TotalTokenCount);
-                               _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                               return result.Content?.RemoveThinkingBlock();
-                           },
-                           cancellationToken)
-                       ?? string.Empty;
-            }
-            catch (InvalidCastException ex)
-            {
-                _logger.Error(ex, "Failed to generate lorebook for type {type}", category);
-                throw;
-            }
-        }
-        catch (FileNotFoundException e)
-        {
-            _logger.Error(e, "Lorebook file for type {type} not found", category);
-            throw;
-        }
-    }
-
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
+        // Shit query due to materialization but whatever
         var adventure = await _dbContext.Adventures
             .Include(w => w.MainCharacter)
             .Include(w => w.Lorebook)
@@ -247,8 +122,7 @@ internal class AdventureCreationService : IAdventureCreationService
                     LorebookId = y.Id,
                     y.Category
                 }),
-                SceneIds = x.Scenes.Select(s => s.Id),
-                x.ProcessingStatus
+                SceneIds = x.Scenes.Select(s => s.Id)
             })
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
@@ -289,61 +163,18 @@ internal class AdventureCreationService : IAdventureCreationService
                                   .FirstOrDefaultAsync(cancellationToken)
                               ?? nameof(ProcessingStatus.Pending);
 
-        var sceneStatus = adventure.SceneIds.Any()
-            ? await _dbContext.Chunks
-                .Where(x => adventure.SceneIds.Contains(x.EntityId))
-                .GroupBy(x => x.EntityId)
-                .Select(g => g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? ProcessingStatus.Completed :
-                    g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? ProcessingStatus.Failed :
-                    g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? ProcessingStatus.InProgress :
-                    ProcessingStatus.Pending)
-                .Select(status => status.ToString())
-                .ToListAsync(cancellationToken)
-            : new List<string>();
-
-        var aggregatedSceneStatus = !sceneStatus.Any() ? string.Empty :
-            sceneStatus.All(s => s == nameof(ProcessingStatus.Completed)) ? nameof(ProcessingStatus.Completed) :
-            sceneStatus.Any(s => s == nameof(ProcessingStatus.Failed)) ? nameof(ProcessingStatus.Failed) :
-            sceneStatus.Any(s => s == nameof(ProcessingStatus.InProgress)) ? nameof(ProcessingStatus.InProgress) :
-            nameof(ProcessingStatus.Pending);
-
         var status = new Dictionary<string, string>(lorebookStatuses)
         {
             ["Character"] = characterStatus
         };
 
-        if (adventure.SceneIds.Any())
-        {
-            status.Add("Importing scenes", aggregatedSceneStatus);
-        }
-        else
-        {
-            status.Add("Creating first scene", adventure.ProcessingStatus.ToString());
-        }
+        status.Add("Creating first scene", adventure.SceneIds.Any() ? nameof(ProcessingStatus.Completed) : nameof(ProcessingStatus.Pending));
 
         return new AdventureCreationStatus
         {
             AdventureId = adventureId,
             ComponentStatuses = status
         };
-    }
-
-    public async Task<AdventureCreationStatus> RetryKnowledgeGraphProcessingAsync(Guid adventureId,
-        CancellationToken cancellationToken)
-    {
-        AdventureCreationStatus adventureStatus = await GetAdventureCreationStatusAsync(adventureId, cancellationToken);
-
-        if (!adventureStatus.ComponentStatuses.ContainsValue(nameof(ProcessingStatus.Failed)))
-        {
-            _logger.Information("No pending or failed items for adventure {AdventureId}, skipping retry", adventureId);
-            return adventureStatus;
-        }
-
-        _logger.Information("Retrying knowledge graph processing for adventure {AdventureId}", adventureId);
-        await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventureId },
-            cancellationToken);
-
-        return adventureStatus;
     }
 
     public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)

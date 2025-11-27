@@ -295,20 +295,17 @@ consistency_requirements": ["Must align with established timeline: war 200 years
 5. **Location Requests**
 
 {
-"kg_verification": "Player needs safe place to rest, queried KG for safe houses in Millhaven - none exist. City
-structure from KG shows residential district unexplored",
+"kg_verification": "Player needs safe place to rest, queried KG for safe houses in Millhaven - none exist. City structure from KG shows residential district unexplored",
 "priority": "required",
 "type": "structure",
 "scale": "building",
 "atmosphere": "Modest safety, temporary refuge, sense of being watched",
 "strategic_importance": "Provides respite location, introduces ally network, creates tension about surveillance",
-"
-features": ["Hidden basement entrance", "Magically warded windows", "Escape route to sewers", "Sparse furnishings suggesting transient use"],
+"features": ["Hidden basement entrance", "Magically warded windows", "Escape route to sewers", "Sparse furnishings suggesting transient use"],
 "inhabitant_types": ["Resistance sympathizers", "Refugees"],
 "danger_level": 3, // Not perfectly safe, informants could expose it
 "accessibility": "restricted", // Need introduction from trusted NPC
-"
-connection_to": ["Located in Millhaven Residential District (from KG)", "Near Temple District where player was chased"],
+"connection_to": ["Located in Millhaven Residential District (from KG)", "Near Temple District where player was chased"],
 "parent_location": "Millhaven"
 }
 

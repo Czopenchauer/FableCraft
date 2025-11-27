@@ -168,7 +168,6 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
 
         var charDict = ConvertFieldsToDict(structure.Characters);
-
         dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;

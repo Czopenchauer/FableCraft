@@ -1,6 +1,7 @@
-﻿import logging
+﻿import json
+import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 import cognee
@@ -45,12 +46,13 @@ class AddDataRequestBatch(BaseModel):
 class SearchRequest(BaseModel):
     adventure_id: str
     query: str
+    search_type: SearchType
 
 
 class PipelineRunInfo(BaseModel):
     status: str
-    pipeline_run_id: str
-    dataset_id: str
+    pipeline_run_id: UUID
+    dataset_id: UUID
     dataset_name: str
     payload: Optional[Any] = None
     data_ingestion_info: Optional[Any] = None
@@ -58,16 +60,17 @@ class PipelineRunInfo(BaseModel):
 
 class DataIngestionInfo(BaseModel):
     run_info: PipelineRunInfo
-    data_id: str
+    data_id: UUID
 
 
 class AddDataResponse(BaseModel):
     status: str
-    pipeline_run_id: str
-    dataset_id: str
+    pipeline_run_id: UUID
+    dataset_id: UUID
     dataset_name: str
     payload: Optional[Any] = None
     data_ingestion_info: Optional[List[DataIngestionInfo]] = None
+
 
 
 class SearchResponse(BaseModel):
@@ -78,59 +81,93 @@ class VisualizeRequest(BaseModel):
     path: str
 
 
+async def process_and_add_data(content, adventure_id: str) -> AddDataResponse:
+
+    logger.info("Starting process_and_add_data for %s", adventure_id)
+
+    await cognee.add(content, dataset_name=adventure_id)
+    logger.info("Add completed for %s", adventure_id)
+
+    result = await cognee.cognify(datasets=[adventure_id])
+    logger.info("Cognify result for %s: %s", adventure_id, result)
+
+    mem_result = await cognee.memify(dataset=adventure_id)
+    logger.info("Memify result for %s: %s", adventure_id, mem_result)
+
+    datasets = await cognee.datasets.list_datasets()
+    dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
+    logger.info("Datasets after processing %s: %s", adventure_id, dataset_summaries)
+
+    dataset = next((d for d in datasets if d.name == adventure_id), None)
+    if not dataset:
+        raise ValueError(f"Dataset '{adventure_id}' not found after processing")
+
+    await cognee.visualize_graph(f"./visualization/{adventure_id}_graph_visualization.html")
+
+    return result[dataset.id]
+
+
 @app.post("/add", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
 async def add_data(data: AddDataRequest):
-
     try:
-        await cognee.add(data.content, dataset_name=data.adventure_id)
-        result = await cognee.cognify(datasets=[data.adventure_id])
-        await cognee.memify(dataset=data.adventure_id)
-        datasets = await cognee.datasets.list_datasets()
-        dataset = next((d for d in datasets if d["name"] == data.adventure_id), None)
-
-        return result[dataset.id]
+        return await process_and_add_data(data.content, data.adventure_id)
     except Exception as e:
-        logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
+        logger.error(f"{type(e).__name__}: Error during add data: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}"
+            detail=f"Add data failed: {str(e)}"
         )
 
 
-@app.get("/datasets")
-async def get_datasets():
+@app.get("/datasets/{adventure_id}")
+async def get_datasets(adventure_id: str):
 
     datasets = await cognee.datasets.list_datasets()
+    dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
+    logger.info("Datasets after processing %s: %s", adventure_id, dataset_summaries)
+
+    dataset = next((d for d in datasets if d.name == adventure_id), None)
+    if not dataset:
+        raise ValueError(f"Dataset '{adventure_id}' not found after processing")
+
+    dataset_data = await cognee.datasets.list_data(dataset.id)
+    logger.info("Dataset data for %s: %s", adventure_id, dataset_data)
+    return datasets
+
+
+@app.get("/dataset/{pipeline_id}")
+async def get_datasets(pipeline_id: str):
+
+    datasets = await cognee.datasets.get_status([UUID(pipeline_id)])
     return datasets
 
 
 @app.post("/add-batch", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
 async def add_data(data: AddDataRequestBatch):
-
     try:
-        await cognee.add(data.content, dataset_name=data.adventure_id)
-        result = await cognee.cognify(datasets=[data.adventure_id])
-        await cognee.memify(dataset=data.adventure_id)
-        datasets = await cognee.datasets.list_datasets()
-        dataset = next((d for d in datasets if d["name"] == data.adventure_id), None)
-
-        return result[dataset.id]
+        return await process_and_add_data(data.content, data.adventure_id)
     except Exception as e:
-        logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
+        logger.error(f"{type(e).__name__}: Error during add batch: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}"
+            detail=f"Add batch failed: {str(e)}"
         )
 
 
-@app.post("/search", response_model=List[str])
-async def search(request: SearchRequest):
+@app.post("/search")
+async def search(request: SearchRequest, response_model=SearchResponse):
 
     try:
+        search_results = await cognee.search(datasets=[request.adventure_id], query_type=request.search_type, query_text=request.query)
 
-        search_results = await cognee.search(datasets=[request.adventure_id], query_type=SearchType.GRAPH_COMPLETION, query_text=request.query)
+        results = [
+            text
+            for result in search_results
+            if result.get("search_result")
+            for text in result["search_result"]
+        ]
 
-        return search_results
+        return SearchResponse(results=results)
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
@@ -157,7 +194,7 @@ async def nuke():
 async def clear_adventure(dataset_name: str, data_id: UUID):
     try:
         datasets = await cognee.datasets.list_datasets()
-        dataset = next((d for d in datasets if d["name"] == dataset_name), None)
+        dataset = next((d for d in datasets if d.name == dataset_name), None)
 
         if not dataset:
             raise HTTPException(
@@ -165,7 +202,7 @@ async def clear_adventure(dataset_name: str, data_id: UUID):
                 detail=f"Dataset with name '{dataset_name}' not found"
             )
 
-        dataset_id = UUID(dataset["id"])
+        dataset_id = UUID(dataset.id)
         await cognee.delete(data_id=data_id, dataset_id=dataset_id)
 
         return {"message": f"Successfully deleted node {data_id} from dataset {dataset_name}"}
@@ -182,7 +219,7 @@ async def clear_adventure(dataset_name: str, data_id: UUID):
 async def clear_adventure(adventure_id: str):
     try:
         datasets = await cognee.datasets.list_datasets()
-        dataset = next((d for d in datasets if d["name"] == adventure_id), None)
+        dataset = next((d for d in datasets if d.name == adventure_id), None)
 
         if not dataset:
             raise HTTPException(
@@ -190,7 +227,7 @@ async def clear_adventure(adventure_id: str):
                 detail=f"Dataset with name '{adventure_id}' not found"
             )
 
-        dataset_id = dataset["id"]
+        dataset_id = dataset.id
         await cognee.datasets.delete_dataset(dataset_id=dataset_id)
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error clearing adventure: {str(e)}")
@@ -200,7 +237,7 @@ async def clear_adventure(adventure_id: str):
         )
 
 
-@app.get("/visualization")
+@app.post("/visualization")
 async def visualization(request: VisualizeRequest):
     """Get visualization data for the knowledge graph"""
     try:
