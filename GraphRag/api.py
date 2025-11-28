@@ -81,41 +81,69 @@ class VisualizeRequest(BaseModel):
     path: str
 
 
-async def process_and_add_data(content, adventure_id: str) -> AddDataResponse:
-
-    logger.info("Starting process_and_add_data for %s", adventure_id)
-
-    await cognee.add(content, dataset_name=adventure_id)
-    logger.info("Add completed for %s", adventure_id)
-
-    result = await cognee.cognify(datasets=[adventure_id])
-    logger.info("Cognify result for %s: %s", adventure_id, result)
-
-    mem_result = await cognee.memify(dataset=adventure_id)
-    logger.info("Memify result for %s: %s", adventure_id, mem_result)
-
-    datasets = await cognee.datasets.list_datasets()
-    dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
-    logger.info("Datasets after processing %s: %s", adventure_id, dataset_summaries)
-
-    dataset = next((d for d in datasets if d.name == adventure_id), None)
-    if not dataset:
-        raise ValueError(f"Dataset '{adventure_id}' not found after processing")
-
-    await cognee.visualize_graph(f"./visualization/{adventure_id}_graph_visualization.html")
-
-    return result[dataset.id]
+class UpdateDataRequest(BaseModel):
+    adventure_id: str
+    data_id: UUID
+    content: str
 
 
-@app.post("/add", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
+@app.post("/add", status_code=status.HTTP_200_OK)
 async def add_data(data: AddDataRequest):
+    """Add data to a dataset without processing"""
     try:
-        return await process_and_add_data(data.content, data.adventure_id)
+        logger.info("Adding data to dataset %s", data.adventure_id)
+        result = await cognee.add(data.content, dataset_name=data.adventure_id)
+        logger.info("Add completed %s", data)
+
+        datasets = await cognee.datasets.list_datasets()
+        dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
+        logger.info("Datasets after processing %s: %s", data.adventure_id, dataset_summaries)
+
+        dataset = next((d for d in datasets if d.name == data.adventure_id), None)
+        if not dataset:
+            raise ValueError(f"Dataset '{data.adventure_id}' not found after processing")
+
+        await cognee.visualize_graph(f"./visualization/{data.adventure_id}_graph_visualization.html")
+
+        return result
+
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during add data: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Add data failed: {str(e)}"
+        )
+
+
+@app.post("/cognify/{adventure_id}", status_code=status.HTTP_200_OK)
+async def cognify_dataset(adventure_id: str):
+    """Run cognify processing on a dataset"""
+    try:
+        logger.info("Running cognify for dataset %s", adventure_id)
+        result = await cognee.cognify(datasets=[adventure_id])
+        logger.info("Cognify result for %s: %s", adventure_id, result)
+
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error during cognify: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Cognify failed: {str(e)}"
+        )
+
+
+@app.post("/memify/{adventure_id}", status_code=status.HTTP_200_OK)
+async def memify_dataset(adventure_id: str):
+    """Run memify processing on a dataset"""
+    try:
+        logger.info("Running memify for dataset %s", adventure_id)
+        mem_result = await cognee.memify(dataset=adventure_id)
+        logger.info("Memify result for %s: %s", adventure_id, mem_result)
+
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error during memify: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Memify failed: {str(e)}"
         )
 
 
@@ -132,20 +160,22 @@ async def get_datasets(adventure_id: str):
 
     dataset_data = await cognee.datasets.list_data(dataset.id)
     logger.info("Dataset data for %s: %s", adventure_id, dataset_data)
-    return datasets
+    return dataset_data
 
 
-@app.get("/dataset/{pipeline_id}")
-async def get_datasets(pipeline_id: str):
-
-    datasets = await cognee.datasets.get_status([UUID(pipeline_id)])
-    return datasets
-
-
-@app.post("/add-batch", status_code=status.HTTP_200_OK, response_model=AddDataResponse)
-async def add_data(data: AddDataRequestBatch):
+@app.post("/add-batch", status_code=status.HTTP_200_OK)
+async def add_data_batch(data: AddDataRequestBatch):
+    """Add batch data to a dataset without processing"""
     try:
-        return await process_and_add_data(data.content, data.adventure_id)
+        logger.info("Adding batch data to dataset %s", data.adventure_id)
+        add_result = await cognee.add(data.content, dataset_name=data.adventure_id)
+        logger.info("Batch add completed %s", add_result)
+
+        return {
+            "status": "success",
+            "message": f"Batch data added to dataset '{data.adventure_id}'",
+            "result": add_result
+        }
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during add batch: {str(e)}")
         raise HTTPException(
@@ -214,6 +244,32 @@ async def clear_adventure(dataset_name: str, data_id: UUID):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to clear adventure: {str(e)}"
         )
+
+
+@app.put("/update")
+async def clear_adventure(request: UpdateDataRequest):
+    try:
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d.name == request.adventure_id), None)
+
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Dataset with name '{request.adventure_id}' not found"
+            )
+
+        await cognee.update(data_id=request.data_id, dataset_id=dataset.id, data=request.content)
+        await cognee.cognify(datasets=request.adventure_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error clearing adventure: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clear adventure: {str(e)}"
+        )
+
 
 @app.delete("/delete/{adventure_id}")
 async def clear_adventure(adventure_id: str):
