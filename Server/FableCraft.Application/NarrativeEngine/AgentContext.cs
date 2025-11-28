@@ -51,7 +51,7 @@ internal sealed class SceneContext
 
     public string PlayerChoice { get; set; } = null!;
 
-    public Character[] Characters { get; set; } = [];
+    public required IEnumerable<CharacterContext> Characters { get; set; } = [];
 
     public Metadata Metadata { get; set; } = null!;
 }

@@ -49,7 +49,7 @@ internal sealed class ContextGatherer(
         var tasks = queries
             .Select(async x =>
             {
-                var searchResults = await ragSearch.SearchAsync(adventureId.ToString(), x, cancellationToken);
+                var searchResults = await ragSearch.SearchAsync(adventureId.ToString(), x, cancellationToken: cancellationToken);
                 return new ContextBase
                 {
                     Query = x,

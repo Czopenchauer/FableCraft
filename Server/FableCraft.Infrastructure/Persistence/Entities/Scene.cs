@@ -3,7 +3,14 @@ using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Scene : IKnowledgeGraphEntity
+public enum CommitStatus
+{
+    Uncommited,
+    Lock,
+    Commited
+}
+
+public class Scene : IEntity
 {
     [Key]
     public Guid Id { get; set; }
@@ -20,7 +27,7 @@ public class Scene : IKnowledgeGraphEntity
     [Required]
     public required string NarrativeText { get; init; }
 
-    public bool Commited { get; set; }
+    public CommitStatus CommitStatus { get; set; }
 
     public required Metadata Metadata { get; init; }
 
@@ -38,22 +45,6 @@ public class Scene : IKnowledgeGraphEntity
         return selectedAction != null
             ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
             : NarrativeText;
-    }
-
-    public Content GetContent()
-    {
-        var narrativeText = GetSceneWithSelectedAction();
-
-        var scene = $"""
-                     Time: {Metadata.Tracker?.Story.Time}
-                     Location: {Metadata.Tracker?.Story.Location}
-                     Weather: {Metadata.Tracker?.Story.Weather}
-                     Characters Present: {string.Join(", ", Metadata?.Tracker?.CharactersPresent ?? [])}
-
-                     {narrativeText}
-                     """;
-
-        return new Content(scene, $"Scene number {SequenceNumber}", ContentType.Txt);
     }
 }
 

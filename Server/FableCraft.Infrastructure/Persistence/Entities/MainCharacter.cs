@@ -1,15 +1,8 @@
 ﻿namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public sealed class MainCharacter : IKnowledgeGraphEntity
+public sealed class MainCharacter : IEntity
 {
     public Guid Id { get; set; }
-
-    public Content GetContent()
-    {
-        return new Content(Description,
-            Name,
-            ContentType.Txt);
-    }
 
     public Guid AdventureId { get; set; }
 

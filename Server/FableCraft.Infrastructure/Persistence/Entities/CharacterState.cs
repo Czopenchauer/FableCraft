@@ -1,5 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 
+using NpgsqlTypes;
+
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public sealed class CharacterState
@@ -14,9 +16,13 @@ public sealed class CharacterState
 
     public int SequenceNumber { get; set; }
 
+    public required string Description { get; set; }
+
     public CharacterStats CharacterStats { get; init; } = null!;
 
     public CharacterTracker Tracker { get; init; } = null!;
+
+    public NpgsqlTsVector SearchVector { get; set; } = null!;
 }
 
 public class CharacterStats

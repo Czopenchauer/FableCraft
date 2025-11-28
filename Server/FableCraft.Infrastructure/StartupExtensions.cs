@@ -5,7 +5,6 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
-using FableCraft.Infrastructure.Rag;
 using FableCraft.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +85,6 @@ public static class StartupExtensions
 
         services.AddTransient<IKernelBuilder, OpenAiKernelBuilder>();
         services.AddTransient<IAgentKernel, AgentKernel>();
-        services.AddRag();
 
         return services;
     }

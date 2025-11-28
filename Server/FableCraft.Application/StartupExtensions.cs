@@ -32,6 +32,7 @@ public static class StartupExtensions
             .AddScoped<NarrativeDirectorAgent>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<AdventureCreatedEvent, AdventureCreatedEventHandler>();
+        services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
 
         return services;
     }

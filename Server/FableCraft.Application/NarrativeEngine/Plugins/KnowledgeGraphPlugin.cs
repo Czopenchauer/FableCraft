@@ -34,9 +34,9 @@ public class KnowledgeGraphPlugin
         string levelOfDetails)
     {
         _logger.Information("Performing knowledge graph search with query: {query}", query);
-        List<string> results = await _ragSearch.SearchAsync(_adventureId, $"{query}, level of details: {levelOfDetails}");
+        var results = await _ragSearch.SearchAsync(_adventureId, $"{query}, level of details: {levelOfDetails}");
 
-        if (results.Count == 0)
+        if (results.Results.Count == 0)
         {
             return "Knowledge graph does not contain any data yet.";
         }

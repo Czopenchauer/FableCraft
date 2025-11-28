@@ -36,7 +36,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Chunk>(p =>
         {
             p.HasIndex(x => x.EntityId);
-            p.Property(c => c.ProcessingStatus).HasConversion<string>();
         });
 
         modelBuilder.Entity<Adventure>(p =>
@@ -56,16 +55,17 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<CharacterState>(p =>
         {
-            p.Property(x => x.CharacterStats).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterStats>(x)!);
-            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!);
-            
+            p.ComplexProperty(c => c.CharacterStats, d => d.ToJson());
+            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!).Metadata.SetProviderClrType(null);
             p.HasIndex(x => x.SequenceNumber);
         });
 
         modelBuilder.Entity<Scene>(p =>
         {
+            p.Property(c => c.CommitStatus).HasConversion<string>();
             p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x)!).Metadata.SetProviderClrType(null);
-            p.HasIndex(x => x.SequenceNumber);
+            p.HasIndex(x => new { x.AdventureId, x.SequenceNumber });
+            p.HasIndex(x => new { x.Id, x.SequenceNumber, x.CommitStatus });
         });
     }
 }

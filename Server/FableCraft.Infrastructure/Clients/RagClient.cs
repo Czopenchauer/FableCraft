@@ -13,7 +13,7 @@ public interface IRagBuilder
 
     Task<List<DatasetData>> GetDatasetsAsync(string adventureId, CancellationToken cancellationToken = default);
 
-    Task UpdateDataAsync(string adventureId, Guid dataId, string content, CancellationToken cancellationToken = default);
+    Task UpdateDataAsync(string adventureId, string dataId, string content, CancellationToken cancellationToken = default);
 
     Task DeleteNodeAsync(string datasetName, Guid dataId, CancellationToken cancellationToken = default);
 
@@ -72,12 +72,12 @@ internal class RagClient : IRagBuilder, IRagSearch
                ?? new List<DatasetData>();
     }
 
-    public async Task UpdateDataAsync(string adventureId, Guid dataId, string content, CancellationToken cancellationToken = default)
+    public async Task UpdateDataAsync(string adventureId, string dataId, string content, CancellationToken cancellationToken = default)
     {
         var request = new UpdateDataRequest
         {
             AdventureId = adventureId,
-            DataId = dataId,
+            DataId = Guid.Parse(dataId),
             Content = content
         };
 

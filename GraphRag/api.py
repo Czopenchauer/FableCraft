@@ -6,6 +6,7 @@ from uuid import UUID
 
 import cognee
 import uvicorn
+from cognee.exceptions import CogneeApiError
 from cognee.modules.search.types import SearchType
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
@@ -210,7 +211,7 @@ async def nuke():
 
 
 @app.delete("/delete/node/{dataset_name}/{data_id}")
-async def clear_adventure(dataset_name: str, data_id: UUID):
+async def delete_node(dataset_name: str, data_id: UUID):
     try:
         datasets = await cognee.datasets.list_datasets()
         dataset = next((d for d in datasets if d.name == dataset_name), None)
@@ -236,7 +237,7 @@ async def clear_adventure(dataset_name: str, data_id: UUID):
 
 
 @app.put("/update")
-async def clear_adventure(request: UpdateDataRequest):
+async def update_node(request: UpdateDataRequest):
     try:
         datasets = await cognee.datasets.list_datasets()
         dataset = next((d for d in datasets if d.name == request.adventure_id), None)
@@ -248,7 +249,6 @@ async def clear_adventure(request: UpdateDataRequest):
             )
 
         await cognee.update(data_id=request.data_id, dataset_id=dataset.id, data=request.content)
-        await cognee.cognify(datasets=request.adventure_id)
 
     except HTTPException:
         raise

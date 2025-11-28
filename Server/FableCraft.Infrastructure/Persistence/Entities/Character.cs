@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class Character : IKnowledgeGraphEntity
+public class Character : IEntity
 {
     [Key]
     public Guid Id { get; set; }
@@ -16,11 +16,4 @@ public class Character : IKnowledgeGraphEntity
     public required string Description { get; init; }
 
     public required List<CharacterState> CharacterStates { get; set; }
-
-    public Content GetContent()
-    {
-        return new Content(Description,
-            Name,
-            ContentType.Txt);
-    }
 }

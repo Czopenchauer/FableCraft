@@ -171,7 +171,14 @@ internal sealed class SceneGenerationOrchestrator
                     SceneContent = x.NarrativeText,
                     PlayerChoice = x.CharacterActions.Single(y => y.Selected)
                         .ActionDescription,
-                    Metadata = x.Metadata
+                    Metadata = x.Metadata,
+                    Characters = x.CharacterStates.Select(y => new CharacterContext
+                    {
+                        CharacterState = y.CharacterStats,
+                        CharacterTracker = y.Tracker,
+                        Description = y.Character.Description,
+                        Name = y.CharacterStats.CharacterIdentity.FullName!
+                    })
                 })
                 .ToArray(),
             StorySummary = scenes.LastOrDefault()?.AdventureSummary,
@@ -242,8 +249,11 @@ internal sealed class SceneGenerationOrchestrator
             {
                 CharacterStats = updatedCharacter.CharacterState,
                 Tracker = updatedCharacter.CharacterTracker!,
-                SequenceNumber = characterEntity.CharacterStates.Last().SequenceNumber + 1,
+                SequenceNumber = characterEntity.CharacterStates.Last()
+                                     .SequenceNumber
+                                 + 1,
                 SceneId = newScene.Id,
+                Description = updatedCharacter.Description,
             });
         }
 
@@ -259,7 +269,8 @@ internal sealed class SceneGenerationOrchestrator
                     CharacterStats = x.CharacterState,
                     Tracker = x.CharacterTracker!,
                     SequenceNumber = 0,
-                    SceneId = newScene.Id
+                    SceneId = newScene.Id,
+                    Description = x.Description
                 }
             ]
         }).ToList();
@@ -270,7 +281,7 @@ internal sealed class SceneGenerationOrchestrator
             Description = x.Summary,
             Category = x.Title,
             Content = JsonSerializer.Serialize(x, options),
-            ContentType = ContentType.Json,
+            ContentType = ContentType.json,
             Scene = newScene
         }).ToList();
 
@@ -280,7 +291,7 @@ internal sealed class SceneGenerationOrchestrator
             Description = x.NarrativeData.ShortDescription,
             Content = JsonSerializer.Serialize(x, options),
             Category = x.EntityData.Name,
-            ContentType = ContentType.Json,
+            ContentType = ContentType.json,
             Scene = newScene
         }).ToList();
 
