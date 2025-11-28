@@ -18,9 +18,6 @@ public static class StartupExtensions
     {
         services.AddValidatorsFromAssemblyContaining<AdventureCreationService>();
 
-        services.Configure<AdventureCreationConfig>(
-            configuration.GetSection("FableCraft:AdventureCreationConfig"));
-
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddScoped<IGameService, GameService>();
         services

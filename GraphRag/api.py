@@ -35,13 +35,9 @@ FastAPIInstrumentor.instrument_app(app)
 
 
 class AddDataRequest(BaseModel):
-    content: str
-    adventure_id: str
-
-
-class AddDataRequestBatch(BaseModel):
     content: List[str]
     adventure_id: str
+
 
 class SearchRequest(BaseModel):
     adventure_id: str
@@ -105,7 +101,21 @@ async def add_data(data: AddDataRequest):
 
         await cognee.visualize_graph(f"./visualization/{data.adventure_id}_graph_visualization.html")
 
-        return result
+        dataset_data = await cognee.datasets.list_data(dataset.id)
+
+        data_ids = set()
+        if result.get("data_ingestion_info"):
+            for info in result["data_ingestion_info"]:
+                data_ids.add(str(info["data_id"]))
+
+        file_name_to_id = {}
+        for item in dataset_data:
+            item_id = str(item.get("id", ""))
+            if item_id in data_ids:
+                file_name = item.get("name", "")
+                file_name_to_id[file_name] = item_id
+
+        return file_name_to_id
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during add data: {str(e)}")
@@ -161,27 +171,6 @@ async def get_datasets(adventure_id: str):
     dataset_data = await cognee.datasets.list_data(dataset.id)
     logger.info("Dataset data for %s: %s", adventure_id, dataset_data)
     return dataset_data
-
-
-@app.post("/add-batch", status_code=status.HTTP_200_OK)
-async def add_data_batch(data: AddDataRequestBatch):
-    """Add batch data to a dataset without processing"""
-    try:
-        logger.info("Adding batch data to dataset %s", data.adventure_id)
-        add_result = await cognee.add(data.content, dataset_name=data.adventure_id)
-        logger.info("Batch add completed %s", add_result)
-
-        return {
-            "status": "success",
-            "message": f"Batch data added to dataset '{data.adventure_id}'",
-            "result": add_result
-        }
-    except Exception as e:
-        logger.error(f"{type(e).__name__}: Error during add batch: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Add batch failed: {str(e)}"
-        )
 
 
 @app.post("/search")

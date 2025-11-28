@@ -22,7 +22,7 @@ internal sealed class RawProcessor : ITextProcessorHandler
                 RawChunk = content.Text,
                 EntityId = ctx.Entity.Id,
                 ProcessingStatus = ProcessingStatus.Pending,
-                Description = content
+                Name = content
                     .Description,
                 Order = idx,
                 ContentType = content

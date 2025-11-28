@@ -86,11 +86,11 @@ internal sealed class SceneGenerationOrchestrator
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
 
-        var summary = string.IsNullOrEmpty(scenes.LastOrDefault()?.Summary)
+        var summary = string.IsNullOrEmpty(scenes.LastOrDefault()?.AdventureSummary)
             ? string.Empty
             : $"""
                <story_summary>
-               {scenes.LastOrDefault()?.Summary}
+               {scenes.LastOrDefault()?.AdventureSummary}
                </story_summary>
 
                """;
@@ -174,7 +174,7 @@ internal sealed class SceneGenerationOrchestrator
                     Metadata = x.Metadata
                 })
                 .ToArray(),
-            StorySummary = scenes.LastOrDefault()?.Summary,
+            StorySummary = scenes.LastOrDefault()?.AdventureSummary,
             PlayerAction = playerAction,
             CommonContext = commonContext,
             KernelKg = kernelWithKg,

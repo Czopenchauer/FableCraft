@@ -4,9 +4,9 @@ public class Chunk : IEntity
 {
     public Guid Id { get; set; }
 
-    public Guid EntityId { get; init; }
+    public required Guid EntityId { get; init; }
 
-    public required string Description { get; set; }
+    public required string Name { get; set; }
 
     public required string RawChunk { get; set; } = null!;
 
@@ -19,12 +19,12 @@ public class Chunk : IEntity
     /// </summary>
     public string? ContextualizedChunk { get; set; }
 
-    public required int Order { get; set; }
+    public int Order { get; set; }
 
     public string? KnowledgeGraphNodeId { get; set; }
 
     public ProcessingStatus ProcessingStatus { get; set; }
-    
+
     public string GetContent()
     {
         return string.IsNullOrEmpty(ContextualizedChunk) ? RawChunk : $"{ContextualizedChunk}\n\n{RawChunk}";

@@ -49,7 +49,7 @@ internal sealed class ChunkerProcessor : ITextProcessorHandler
                             RawChunk = text,
                             EntityId = arg.Entity.Id,
                             ProcessingStatus = ProcessingStatus.Pending,
-                            Description = arg.Entity.GetContent()
+                            Name = arg.Entity.GetContent()
                                 .Description,
                             Order = idx,
                             ContentType = arg.Entity.GetContent()

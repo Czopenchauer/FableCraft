@@ -21,6 +21,6 @@ public class Character : IKnowledgeGraphEntity
     {
         return new Content(Description,
             Name,
-            ContentType.Text);
+            ContentType.Txt);
     }
 }

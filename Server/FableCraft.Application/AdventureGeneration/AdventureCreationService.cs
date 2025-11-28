@@ -87,7 +87,9 @@ internal class AdventureCreationService : IAdventureCreationService
                 {
                     Description = entry.Description,
                     Content = entry.Content,
-                    Category = entry.Category
+                    Category = entry.Category,
+                    ContentType = entry.ContentType,
+                    Priority = entry.Order
                 })
                 .ToList(),
             TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure,

@@ -27,7 +27,7 @@ public class Content
 public enum ContentType
 {
     Json,
-    Text
+    Txt
 }
 
 public interface IKnowledgeGraphEntity : IEntity

@@ -1,5 +1,4 @@
-﻿using FableCraft.Infrastructure.Clients;
-using FableCraft.Infrastructure.Persistence;
+﻿using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;

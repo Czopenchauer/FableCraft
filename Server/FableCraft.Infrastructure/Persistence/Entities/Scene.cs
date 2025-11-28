@@ -15,10 +15,12 @@ public class Scene : IKnowledgeGraphEntity
 
     public required int SequenceNumber { get; init; }
 
-    public string? Summary { get; set; }
+    public string? AdventureSummary { get; set; }
 
     [Required]
     public required string NarrativeText { get; init; }
+
+    public bool Commited { get; set; }
 
     public required Metadata Metadata { get; init; }
 
@@ -27,6 +29,8 @@ public class Scene : IKnowledgeGraphEntity
     public List<CharacterState> CharacterStates { get; set; } = [];
 
     public List<MainCharacterAction> CharacterActions { get; init; } = new();
+
+    public List<LorebookEntry> Lorebooks { get; init; } = new();
 
     public string GetSceneWithSelectedAction()
     {
@@ -49,7 +53,7 @@ public class Scene : IKnowledgeGraphEntity
                      {narrativeText}
                      """;
 
-        return new Content(scene, $"Scene number {SequenceNumber}", ContentType.Text);
+        return new Content(scene, $"Scene number {SequenceNumber}", ContentType.Txt);
     }
 }
 

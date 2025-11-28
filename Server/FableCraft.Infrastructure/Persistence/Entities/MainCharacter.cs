@@ -8,7 +8,7 @@ public sealed class MainCharacter : IKnowledgeGraphEntity
     {
         return new Content(Description,
             Name,
-            ContentType.Text);
+            ContentType.Txt);
     }
 
     public Guid AdventureId { get; set; }

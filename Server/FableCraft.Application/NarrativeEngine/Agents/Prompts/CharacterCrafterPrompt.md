@@ -243,14 +243,7 @@ TAGS:
         "willingness_to_share": 0.0,  // FLOAT 0.0-1.0
         "reveal_conditions": ["[STRING: condition1]", "[STRING: condition2]"]
       }
-    ],
-    "skills_and_expertise": {
-      "magical_abilities": ["[STRING: ability1 from KG magic system]", "[STRING: ability2]", "[STRING: if applicable]"],
-      "mundane_skills": ["[STRING: skill1]", "[STRING: skill2]", "[STRING: skill3]"],
-      "skill_levels": {
-        "[skill_name]": 0.7  // FLOAT 0.0-1.0 proficiency
-      }
-    }
+    ]
   },
   "relationships": {
     "with_protagonist": {
@@ -277,11 +270,22 @@ TAGS:
           "is_fulfilled": false  // BOOLEAN true|false
         }
       ],
-      "debts_and_obligations": []
+      "debts_and_obligations": [
+        {
+          "description": "[STRING: Narrative summary of the debt]",
+          "type": "[STRING: monetary|favor|life_debt|information|service|contractual|moral]",
+          "direction": "[STRING: owed_to|owed_by]",
+          "magnitude": "[STRING: trivial|minor|moderate|significant|life_altering]",
+          "origin_event": "[STRING: Scene reference or KG event where debt occurred]",
+          "status": "[STRING: active|called_in|partially_paid|fulfilled|forgiven|defaulted]",
+          "terms_of_repayment": "[STRING: Specific conditions required to clear the debt]",
+          "urgency": "[STRING: none|low|high|immediate]"
+        }
+      ]
     },
     "with_other_characters": [
       {
-        "character_reference": "[STRING: from KG existing NPCs]",
+        "character_reference": "[STRING: NPC name]",
         "relationship_type": "[STRING: nature of relationship]",
         "description": "[STRING: brief overview of relationship]",
         "trust_level": 50,  // INTEGER 0-100
@@ -293,8 +297,7 @@ TAGS:
       {
         "faction_name": "[STRING: from KG factions]",
         "standing": 0,  // INTEGER -100 to 100
-        "rank_or_role": "[STRING: position within faction]",
-        "kg_faction_id": "[STRING: reference to KG entry]"
+        "rank_or_role": "[STRING: position within faction]"
       }
     ]
   },
@@ -302,11 +305,11 @@ TAGS:
     {
       "scene_reference": "[STRING: scene identifier]",
       "memory_type": "[STRING: interaction|observation|revelation|decision|loss|victory]",
-      "description": "[STRING: what happened, can reference KG events]",
+      "description": "[STRING: what happened, can reference events]",
       "emotional_valence": "[STRING: emotional response]",
       "participants": ["[STRING: who was involved]"],
       "outcomes": ["[STRING: what resulted from this]"],
-      "kg_event_reference": "[STRING: if memory relates to KG event]"
+      "event_reference": "[STRING: if memory relates to event]"
     }
   ],
   "emotional_state": {
@@ -356,17 +359,13 @@ TAGS:
       "default_response_to_aggression": "[STRING: how they typically respond to threats]",
       "response_to_deception": "[STRING: how they handle being lied to]",
       "response_to_kindness": "[STRING: how they react to genuine kindness]"
-    },
-    "availability": {
-      "current_location": "[STRING: where they can be found, from KG locations]",
-      "conditions_for_encounter": ["[STRING: when/how they can be encountered]", "[STRING: other condition]"]
     }
   },
-  "kg_integration": {
-    "relevant_lore": ["[STRING: KG lore entry that affects character]"],
-    "recent_events_aware_of": ["[STRING: KG events they would know about]"],
-    "location_knowledge": ["[STRING: KG locations they're familiar with]"],
-    "cultural_background": "[STRING: KG cultural context]"
+  "integration": {
+    "relevant_lore": ["[STRING: lore entry that affects character]"],
+    "recent_events_aware_of": ["[STRING: events they would know about]"],
+    "location_knowledge": ["[STRING: locations they're familiar with]"],
+    "cultural_background": "[STRING: cultural context]"
   }
 }
 </character>
