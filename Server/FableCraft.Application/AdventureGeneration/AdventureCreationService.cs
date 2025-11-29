@@ -1,4 +1,6 @@
-﻿using FableCraft.Application.Exceptions;
+﻿using System.Text.Json;
+
+using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -58,6 +60,18 @@ internal class AdventureCreationService : IAdventureCreationService
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
+        var trackerStructure = JsonSerializer.Deserialize<TrackerStructure>(adventureDto.TrackerStructure, options);
+
+        if (trackerStructure is null)
+        {
+            throw new InvalidOperationException("Failed to deserialize tracker structure.");
+        }
 
         var adventure = new Adventure
         {
@@ -73,15 +87,15 @@ internal class AdventureCreationService : IAdventureCreationService
                 Description = adventureDto.Character.Description,
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
-            {
-                Description = entry.Description,
-                Content = entry.Content,
-                Category = entry.Category,
-                ContentType = entry.ContentType,
-                Priority = entry.Order
-            })
+                {
+                    Description = entry.Description,
+                    Content = entry.Content,
+                    Category = entry.Category,
+                    ContentType = entry.ContentType,
+                    Priority = entry.Order
+                })
                 .ToList(),
-            TrackerStructure = adventureDto.TrackerStructure
+            TrackerStructure = trackerStructure!
         };
 
         try

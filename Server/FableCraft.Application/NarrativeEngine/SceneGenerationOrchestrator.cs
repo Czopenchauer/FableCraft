@@ -388,7 +388,7 @@ internal sealed class SceneGenerationOrchestrator
 
                       Start time of the adventure:
                       <adventure_start_time>
-                      {adventure.AdventureStartTime:o}
+                      {adventure.AdventureStartTime}
                       </adventure_start_time>
                       """;
         return await GenerateSceneAsync(adventureId, prompt, cancellationToken);

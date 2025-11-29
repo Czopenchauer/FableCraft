@@ -14,7 +14,7 @@ public class Adventure : IEntity
     [Required]
     public required string FirstSceneGuidance { get; init; }
 
-    public DateTime AdventureStartTime { get; set; }
+    public required string AdventureStartTime { get; set; }
 
     public ProcessingStatus ProcessingStatus { get; set; } = ProcessingStatus.Pending;
 

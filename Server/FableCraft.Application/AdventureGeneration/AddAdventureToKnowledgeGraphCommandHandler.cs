@@ -117,7 +117,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             filesToCommit.Add((newCharacterChunk, characterContent));
         }
 
-        // Commit to database and RAG system
         if (filesToCommit.Count > 0)
         {
             await dbContext.Adventures.Where(x => x.Id == adventure.Id)
@@ -129,20 +128,21 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
                 Directory.CreateDirectory(@$"{DataDirectory}\{adventure.Id}");
 
-                foreach (var (chunk, _) in filesToCommit)
-                {
-                    dbContext.Chunks.Add(chunk);
-                }
-
                 await Task.WhenAll(filesToCommit.Select(x =>
                     File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
 
-                await _resiliencePipeline.ExecuteAsync(async ct =>
+                var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
                         await ragProcessor.AddDataAsync(
                             filesToCommit.Select(x => x.Chunk.Path).ToList(),
                             message.AdventureId.ToString(),
                             ct),
                     cancellationToken);
+
+                foreach (var (chunk, _) in filesToCommit)
+                {
+                    chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
+                    dbContext.Chunks.Add(chunk);
+                }
 
                 await _resiliencePipeline.ExecuteAsync(async ct =>
                         await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),

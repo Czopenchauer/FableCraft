@@ -10,16 +10,23 @@ var serverDatabase = builder
     .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
-var llmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
-var llmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
-var llmProvider = builder.Configuration["FableCraft:Server:LLM:Provider"]!;
-var llmEndpoint = builder.Configuration["FableCraft:Server:LLM:BaseUrl"] ?? "";
-var llmApiVersion = builder.Configuration["FableCraft:Server:LLM:ApiVersion"] ?? "";
-var llmMaxTokens = builder.Configuration["FableCraft:Server:LLM:MaxTokens"] ?? "16384";
+// Server LLM Configuration
+var serverLlmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
+var serverLlmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
+var serverLlmEndpoint = builder.Configuration["FableCraft:Server:LLM:BaseUrl"] ?? "";
+var serverLlmMaxTokens = builder.Configuration["FableCraft:Server:LLM:MaxTokens"] ?? "16384";
 
+// GraphRag LLM Configuration
+var graphRagLlmApiKey = builder.Configuration["FableCraft:GraphRag:LLM:ApiKey"]!;
+var graphRagLlmModel = builder.Configuration["FableCraft:GraphRag:LLM:Model"]!;
+var graphRagLlmProvider = builder.Configuration["FableCraft:GraphRag:LLM:Provider"]!;
+var graphRagLlmEndpoint = builder.Configuration["FableCraft:GraphRag:LLM:BaseUrl"] ?? "";
+var graphRagLlmApiVersion = builder.Configuration["FableCraft:GraphRag:LLM:ApiVersion"] ?? "";
 var llmRateLimitEnabled = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitEnabled"] ?? "true";
 var llmRateLimitRequests = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitRequests"] ?? "60";
 var llmRateLimitInterval = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitInterval"] ?? "60";
+
+// GraphRag Embedding Configuration
 var embeddingProvider = builder.Configuration["FableCraft:GraphRag:Embedding:Provider"]!;
 var embeddingModel = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
 var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"] ?? "";
@@ -35,12 +42,12 @@ var graphRagApi = builder
     .WithHttpEndpoint(env: "PORT", port: 8111, name: "graphRagApi")
     .WithExternalHttpEndpoints()
     .WithOtlpExporter()
-    .WithEnvironment("LLM_API_KEY", llmApiKeySecret)
-    .WithEnvironment("LLM_MODEL", llmModel)
-    .WithEnvironment("LLM_PROVIDER", llmProvider)
-    .WithEnvironment("LLM_ENDPOINT", llmEndpoint)
-    .WithEnvironment("LLM_API_VERSION", llmApiVersion)
-    .WithEnvironment("LLM_MAX_TOKENS", llmMaxTokens)
+    .WithEnvironment("LLM_API_KEY", graphRagLlmApiKey)
+    .WithEnvironment("LLM_MODEL", graphRagLlmModel)
+    .WithEnvironment("LLM_PROVIDER", graphRagLlmProvider)
+    .WithEnvironment("LLM_ENDPOINT", graphRagLlmEndpoint)
+    .WithEnvironment("LLM_API_VERSION", graphRagLlmApiVersion)
+    .WithEnvironment("LLM_MAX_TOKENS", serverLlmMaxTokens)
     .WithEnvironment("LLM_RATE_LIMIT_ENABLED", llmRateLimitEnabled)
     .WithEnvironment("LLM_RATE_LIMIT_REQUESTS", llmRateLimitRequests)
     .WithEnvironment("LLM_RATE_LIMIT_INTERVAL", llmRateLimitInterval)
@@ -61,9 +68,9 @@ var server = builder
     .WithOtlpExporter()
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
-    .WithEnvironment("FableCraft:Server:LLM:Model", llmModel)
-    .WithEnvironment("FableCraft:Server:LLM:ApiKey", llmApiKeySecret)
-    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", llmEndpoint)
+    .WithEnvironment("FableCraft:Server:LLM:Model", serverLlmModel)
+    .WithEnvironment("FableCraft:Server:LLM:ApiKey", serverLlmApiKeySecret)
+    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", serverLlmEndpoint)
     .WaitFor(graphRagApi)
     .WaitFor(serverDatabase);
 

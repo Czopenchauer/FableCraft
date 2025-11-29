@@ -90,7 +90,7 @@ async def add_data(data: AddDataRequest):
     try:
         logger.info("Adding data to dataset %s", data.adventure_id)
         result = await cognee.add(data.content, dataset_name=data.adventure_id)
-        logger.info("Add completed %s", data)
+        logger.info("Add completed %s", result)
 
         datasets = await cognee.datasets.list_datasets()
         dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
@@ -100,22 +100,27 @@ async def add_data(data: AddDataRequest):
         if not dataset:
             raise ValueError(f"Dataset '{data.adventure_id}' not found after processing")
 
-        await cognee.visualize_graph(f"./visualization/{data.adventure_id}_graph_visualization.html")
-
         dataset_data = await cognee.datasets.list_data(dataset.id)
 
         data_ids = set()
-        if result.get("data_ingestion_info"):
-            for info in result["data_ingestion_info"]:
-                data_ids.add(str(info["data_id"]))
+        result_obj = getattr(result, "result", None) if hasattr(result, "result") else result
+        data_ingestion_info = getattr(result_obj, "data_ingestion_info", None)
+
+        if data_ingestion_info:
+            for info in data_ingestion_info:
+                # info is a dict, not an object
+                data_id = info.get("data_id") if isinstance(info, dict) else getattr(info, "data_id", None)
+                if data_id:
+                    data_ids.add(str(data_id))
 
         file_name_to_id = {}
         for item in dataset_data:
-            item_id = str(item.get("id", ""))
+            item_id = str(getattr(item, "id", ""))
             if item_id in data_ids:
-                file_name = item.get("name", "")
+                file_name = getattr(item, "name", "")
                 file_name_to_id[file_name] = item_id
 
+        logger.info(file_name_to_id)
         return file_name_to_id
 
     except Exception as e:
@@ -133,6 +138,7 @@ async def cognify_dataset(adventure_id: str):
         logger.info("Running cognify for dataset %s", adventure_id)
         result = await cognee.cognify(datasets=[adventure_id])
         logger.info("Cognify result for %s: %s", adventure_id, result)
+        await cognee.visualize_graph(f"./visualization/{adventure_id}_cognify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during cognify: {str(e)}")
@@ -149,6 +155,7 @@ async def memify_dataset(adventure_id: str):
         logger.info("Running memify for dataset %s", adventure_id)
         mem_result = await cognee.memify(dataset=adventure_id)
         logger.info("Memify result for %s: %s", adventure_id, mem_result)
+        await cognee.visualize_graph(f"./visualization/{adventure_id}_memify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during memify: {str(e)}")
