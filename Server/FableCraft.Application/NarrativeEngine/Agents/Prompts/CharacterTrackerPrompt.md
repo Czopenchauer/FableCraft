@@ -150,14 +150,7 @@ Update this COMPLETE structure based on narrative events:
         "reveal_conditions": ["STRING array"]
       }
       // REMOVE if secret revealed, APPEND if new secret learned
-    ],
-    "skills_and_expertise": {
-      "magical_abilities": ["STRING array - append if new ability gained"],
-      "mundane_skills": ["STRING array - append if new skill demonstrated"],
-      "skill_levels": {
-        "skill_name": 0.0  // FLOAT 0.0-1.0 - increase with practice/training
-      }
-    }
+    ]
   },
   "relationships": {
     "with_protagonist": {
@@ -205,8 +198,7 @@ Update this COMPLETE structure based on narrative events:
       {
         "faction_name": "STRING",
         "standing": 0,  // INTEGER -100 to 100 - adjust based on actions
-        "rank_or_role": "STRING - update if promoted/demoted",
-        "kg_faction_id": "STRING"
+        "rank_or_role": "STRING - update if promoted/demoted"
       }
       // UPDATE standing based on faction-relevant actions
     ]
@@ -219,7 +211,7 @@ Update this COMPLETE structure based on narrative events:
       "emotional_valence": "STRING - their emotional response",
       "participants": ["STRING array - who was involved"],
       "outcomes": ["STRING array - results of this event"],
-      "kg_event_reference": "STRING - if applicable"
+      "event_reference": "STRING - if applicable"
     }
     // APPEND new memory entry if scene contains significant event for {CHARACTER_NAME}
     // Significant = affects goals, relationships, emotions, knowledge, or arc progress
@@ -269,13 +261,9 @@ Update this COMPLETE structure based on narrative events:
       "default_response_to_aggression": "STRING - update if behavior pattern changes",
       "response_to_deception": "STRING",
       "response_to_kindness": "STRING"
-    },
-    "availability": {
-      "current_location": "STRING - update if they move",
-      "conditions_for_encounter": ["STRING array"]
     }
   },
-  "kg_integration": {
+  "integration": {
     "relevant_lore": ["STRING array - append if new lore becomes relevant"],
     "recent_events_aware_of": ["STRING array - append KG events they learn about"],
     "location_knowledge": ["STRING array - append if they visit/learn new location"],
@@ -325,10 +313,9 @@ Update this COMPLETE structure based on narrative events:
 
 ### Behavioral State (Tactical Updates)
 - **current_plan**: Update steps as they execute them, create new plan when old completes
-- **current_location**: Update whenever they move in narrative
 - **action_tendencies**: Only update if narrative shows pattern change
 
-### KG Integration (Context Updates)
+### Integration (Context Updates)
 - **recent_events_aware_of**: Append if narrative mentions KG events they'd know about
 - **location_knowledge**: Append if they visit or discuss new locations
 
@@ -389,7 +376,7 @@ Return TWO complete JSON structures:
   "emotional_state": { ... },
   "character_arc": { ... },
   "behavioral_state": { ... },
-  "kg_integration": { ... }
+  "integration": { ... }
 }
 </character_state>
 
@@ -430,7 +417,6 @@ Return TWO complete JSON structures:
 - Establish baseline trust/affection/respect (typically 50 unless narrative indicates otherwise)
 
 **Character Death:**
-- Update `behavioral_state.availability.current_location` to "deceased"
 - Final `emotional_state` reflects last conscious moment
 - Final `memory_stream` entry describes death from their perspective
 
@@ -444,9 +430,6 @@ Return TWO complete JSON structures:
 - Create new primary_goal (promote from secondary or create new)
 - Add completion to appropriate arc_stage.key_events
 
-**Skill Development:**
-- Increment skill_levels when skill is used successfully
-- APPEND new skill to magical_abilities or mundane_skills when first demonstrated
 
 ---
 

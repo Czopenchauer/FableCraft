@@ -469,9 +469,6 @@ public class BehavioralState
 
     [JsonPropertyName("action_tendencies")]
     public ActionTendencies? ActionTendencies { get; set; }
-
-    [JsonPropertyName("availability")]
-    public Availability? Availability { get; set; }
 }
 
 public class CurrentPlan
@@ -501,14 +498,6 @@ public class ActionTendencies
     public string? ResponseToKindness { get; set; }
 }
 
-public class Availability
-{
-    [JsonPropertyName("current_location")]
-    public string? CurrentLocation { get; set; }
-
-    [JsonPropertyName("conditions_for_encounter")]
-    public List<string>? ConditionsForEncounter { get; set; }
-}
 
 public class Integration
 {

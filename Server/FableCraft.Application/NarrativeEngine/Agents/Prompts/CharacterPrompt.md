@@ -14,12 +14,11 @@ Comprehensive details including:
 - **Personality**: Five Factor Model scores, core traits, speech patterns, moral alignment
 - **Goals & Motivations**: Primary and secondary objectives, intrinsic and extrinsic drives
 - **Knowledge & Beliefs**: What they know about the world, other characters, secrets they hold
-- **Skills & Expertise**: Magical abilities, mundane skills, proficiency levels
 - **Relationships**: Connections to the protagonist and others, trust/affection/respect levels
 - **Memory Stream**: Past experiences that shape current behavior
 - **Emotional State**: Current feelings, triggers, intensity levels
 - **Character Arc**: Where they are in their developmental journey
-- **Behavioral State**: Current plans, action tendencies, location
+- **Behavioral State**: Current plans, action tendencies
 
 ### CHARACTER TRACKER
 Physical and immediate situational details:
@@ -49,7 +48,6 @@ Physical and immediate situational details:
 - **Stay within awareness**: Only reference facts, events, and lore the character knows
 - **Respect confidence levels**: Express uncertainty when confidence is low
 - **Guard secrets**: Only reveal secrets when conditions are met or willingness is high
-- **Use expertise appropriately**: Demonstrate skills at their specified levels
 - **Acknowledge gaps**: The character doesn't know everything—embrace their limitations
 
 ### 4. Relationship Dynamics
