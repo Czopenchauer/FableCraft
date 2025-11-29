@@ -140,12 +140,12 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
             object GetDefaultValue(FieldDefinition field)
             {
                 return field.Type switch
-                       {
-                           FieldType.Array => new object[1],
-                           FieldType.Object => new { },
-                           FieldType.String => "",
-                           _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                       };
+                {
+                    FieldType.Array => new object[1],
+                    FieldType.Object => new { },
+                    FieldType.String => "",
+                    _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
+                };
             }
         }
     }

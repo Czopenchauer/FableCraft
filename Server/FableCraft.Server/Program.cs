@@ -1,6 +1,5 @@
 using FableCraft.Application;
 using FableCraft.Infrastructure;
-using FableCraft.Infrastructure.Persistence.Cosmos;
 using FableCraft.Server;
 using FableCraft.ServiceDefaults;
 
@@ -24,7 +23,6 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.OperationFilter<FileUploadOperationFilter>();
 });
-builder.AddAzureCosmosDb();
 
 WebApplication app = builder.Build();
 

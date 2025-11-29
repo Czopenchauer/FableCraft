@@ -8,7 +8,7 @@ public class TrackerConverterTests
     {
         PropertyNameCaseInsensitive = true
     };
-    
+
     [Fact]
     public void TestMethod1()
     {

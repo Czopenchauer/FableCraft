@@ -99,8 +99,14 @@ internal class RagClient : IRagBuilder, IRagSearch
 
     public async Task DeleteDatasetAsync(string adventureId, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(adventureId)}", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(adventureId)}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+        }
     }
 
     public async Task CleanAsync(CancellationToken cancellationToken = default)

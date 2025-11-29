@@ -42,28 +42,40 @@ public class ApplicationDbContext : DbContext
         {
             p.Property(c => c.ProcessingStatus).HasConversion<string>();
             p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
+            p.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<TrackerDefinition>(p =>
         {
             p.Property(x => x.Structure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
-            p.HasIndex(x => x.Name);
+            p.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<Character>()
             .HasIndex(x => x.Name);
 
+        modelBuilder.Entity<Chunk>()
+            .HasIndex(x =>
+                new
+                {
+                    x.EntityId,
+                    x.ContentHash
+                })
+            .IsUnique();
+
         modelBuilder.Entity<CharacterState>(p =>
         {
             p.ComplexProperty(c => c.CharacterStats, d => d.ToJson());
-            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!).Metadata.SetProviderClrType(null);
+            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!).Metadata
+                .SetProviderClrType(null);
             p.HasIndex(x => x.SequenceNumber);
         });
 
         modelBuilder.Entity<Scene>(p =>
         {
             p.Property(c => c.CommitStatus).HasConversion<string>();
-            p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x)!).Metadata.SetProviderClrType(null);
+            p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x)!).Metadata
+                .SetProviderClrType(null);
             p.HasIndex(x => new { x.AdventureId, x.SequenceNumber });
             p.HasIndex(x => new { x.Id, x.SequenceNumber, x.CommitStatus });
         });

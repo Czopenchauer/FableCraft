@@ -51,7 +51,7 @@ internal sealed class LocationCrafter
                              </location_request>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        
+
         var outputFunc = new Func<string, LocationGenerationResult>(response =>
         {
             var match = Regex.Match(response, "<location>(.*?)</location>", RegexOptions.Singleline);

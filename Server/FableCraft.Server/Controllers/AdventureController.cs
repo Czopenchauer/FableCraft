@@ -57,9 +57,9 @@ public class AdventureController : ControllerBase
     public async Task<IActionResult> Retry(Guid adventureId, CancellationToken cancellationToken)
     {
         await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand
-            {
-                AdventureId = adventureId
-            },
+        {
+            AdventureId = adventureId
+        },
             cancellationToken);
 
         return Ok();

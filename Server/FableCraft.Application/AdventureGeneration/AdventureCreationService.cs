@@ -1,28 +1,15 @@
-﻿using System.Text.Json;
-
-using FableCraft.Application.Exceptions;
+﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Clients;
-using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-using OpenAI.Chat;
-
-using Polly;
-using Polly.Retry;
+using Npgsql;
 
 using Serilog;
-
-using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.AdventureGeneration;
 
@@ -30,7 +17,7 @@ public class AdventureCreationStatus
 {
     public required Guid AdventureId { get; init; }
 
-    public required Dictionary<string, string> ComponentStatuses { get; init; }
+    public required string Status { get; init; }
 }
 
 public interface IAdventureCreationService
@@ -66,7 +53,8 @@ internal class AdventureCreationService : IAdventureCreationService
         _ragBuilder = ragBuilder;
     }
 
-    public async Task<AdventureCreationStatus> CreateAdventureAsync(AdventureDto adventureDto,
+    public async Task<AdventureCreationStatus> CreateAdventureAsync(
+        AdventureDto adventureDto,
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
@@ -78,29 +66,35 @@ internal class AdventureCreationService : IAdventureCreationService
             FirstSceneGuidance = adventureDto.FirstSceneDescription,
             LastPlayedAt = null,
             AuthorNotes = adventureDto.AuthorNotes,
+            AdventureStartTime = adventureDto.ReferenceTime,
             MainCharacter = new MainCharacter
             {
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description,
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
-                {
-                    Description = entry.Description,
-                    Content = entry.Content,
-                    Category = entry.Category,
-                    ContentType = entry.ContentType,
-                    Priority = entry.Order
-                })
+            {
+                Description = entry.Description,
+                Content = entry.Content,
+                Category = entry.Category,
+                ContentType = entry.ContentType,
+                Priority = entry.Order
+            })
                 .ToList(),
-            TrackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructure,
-                new JsonSerializerOptions()
-                {
-                    PropertyNameCaseInsensitive = true
-                })!,
+            TrackerStructure = adventureDto.TrackerStructure
         };
 
-        _dbContext.Adventures.Add(adventure);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.Adventures.AddAsync(adventure, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is NpgsqlException { SqlState: "23505" })
+        {
+            _logger.Error(ex, "Adventure with name {Name} already exists.", adventureDto.Name);
+            throw new InvalidOperationException($"An adventure with the name '{adventureDto.Name}' already exists.", ex);
+        }
+
         await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventure.Id },
             cancellationToken);
 
@@ -110,22 +104,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
-        // Shit query due to materialization but whatever
         var adventure = await _dbContext.Adventures
-            .Include(w => w.MainCharacter)
-            .Include(w => w.Lorebook)
-            .Include(x => x.Scenes)
-            .Select(x => new
-            {
-                x.Id,
-                CharacterId = x.MainCharacter.Id,
-                Lorebooks = x.Lorebook.Select(y => new
-                {
-                    LorebookId = y.Id,
-                    y.Category
-                }),
-                SceneIds = x.Scenes.Select(s => s.Id)
-            })
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -133,49 +112,10 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var lorebookStatuses = await _dbContext.Chunks
-            .Where(x => adventure.Lorebooks.Select(y => y.LorebookId).Contains(x.EntityId))
-            .Join(_dbContext.LorebookEntries,
-                chunk => chunk.EntityId,
-                lorebook => lorebook.Id,
-                (chunk, lorebook) => new { lorebook.Category, chunk.ProcessingStatus })
-            .GroupBy(x => x.Category)
-            .Select(g => new
-            {
-                Category = g.Key,
-                Status = g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? nameof(ProcessingStatus.Completed) :
-                    g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? nameof(ProcessingStatus.Failed) :
-                    g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? nameof(ProcessingStatus.InProgress) :
-                    nameof(ProcessingStatus.Pending)
-            })
-            .ToDictionaryAsync(x => x.Category, x => x.Status, cancellationToken);
-
-        foreach (var category in adventure.Lorebooks.Select(x => x.Category).Except(lorebookStatuses.Keys))
-        {
-            lorebookStatuses.Add(category, nameof(ProcessingStatus.Pending));
-        }
-
-        var characterStatus = await _dbContext.Chunks
-                                  .Where(x => x.EntityId == adventure.CharacterId)
-                                  .GroupBy(x => x.EntityId)
-                                  .Select(g => g.All(s => s.ProcessingStatus == ProcessingStatus.Completed) ? nameof(ProcessingStatus.Completed) :
-                                      g.Any(s => s.ProcessingStatus == ProcessingStatus.Failed) ? nameof(ProcessingStatus.Failed) :
-                                      g.Any(s => s.ProcessingStatus == ProcessingStatus.InProgress) ? nameof(ProcessingStatus.InProgress) :
-                                      nameof(ProcessingStatus.Pending))
-                                  .FirstOrDefaultAsync(cancellationToken)
-                              ?? nameof(ProcessingStatus.Pending);
-
-        var status = new Dictionary<string, string>(lorebookStatuses)
-        {
-            ["Character"] = characterStatus
-        };
-
-        status.Add("Creating first scene", adventure.SceneIds.Any() ? nameof(ProcessingStatus.Completed) : nameof(ProcessingStatus.Pending));
-
         return new AdventureCreationStatus
         {
             AdventureId = adventureId,
-            ComponentStatuses = status
+            Status = adventure.ProcessingStatus.ToString()
         };
     }
 
@@ -201,9 +141,7 @@ internal class AdventureCreationService : IAdventureCreationService
         {
             _logger.Error(ex,
                 "Failed to delete adventure {adventureId} from knowledge graph.",
-                adventure.Id);
-            // We don't throw here to ensure the adventure is deleted from DB even if RAG deletion fails? 
-            // The original code threw exception. So I should probably throw.
+                adventureId);
             throw;
         }
 

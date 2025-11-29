@@ -24,11 +24,13 @@ internal sealed class SceneGeneratedEvent : IMessage
     public required Guid AdventureId { get; init; }
 }
 
+/// <summary>
+/// Commit generated scenes and related data to RAG system. Works on the assumption that "stale" date in KG is fine.
+/// </summary>
 internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGeneratedEvent>
 {
     private readonly ApplicationDbContext _dbContext;
     private const int MinScenesToCommit = 2;
-    private const string DataDirectory = @"C:\Disc\Dev\_projects\FableCraft\data";
     private readonly IRagBuilder _ragBuilder;
     private readonly ResiliencePipeline _resiliencePipeline;
 
@@ -101,7 +103,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content);
                         var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
                         var lorebookName = $"{lorebookHash:x16}";
-                        var lorebookPath = @$"{DataDirectory}\{scene.AdventureId}\{lorebookName}.{sceneLorebook.ContentType.ToString()}";
+                        var lorebookPath = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{lorebookName}.{sceneLorebook.ContentType.ToString()}";
                         var newLorebookChunk = new Chunk
                         {
                             EntityId = sceneLorebook.Id,
@@ -116,17 +118,17 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 }
 
                 var sceneContent = $"""
-                                    Time: {scene.Metadata.Tracker?.Story.Time}
-                                    Location: {scene.Metadata.Tracker?.Story.Location}
-                                    Weather: {scene.Metadata.Tracker?.Story.Weather}
-                                    Characters Present: {string.Join(", ", scene.Metadata?.Tracker?.CharactersPresent ?? [])}
+                                    Time: {scene.Metadata.Tracker.Story.Time}
+                                    Location: {scene.Metadata.Tracker.Story.Location}
+                                    Weather: {scene.Metadata.Tracker.Story.Weather}
+                                    Characters Present: {string.Join(", ", scene.Metadata.Tracker.CharactersPresent)}
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
                 var bytes = Encoding.UTF8.GetBytes(sceneContent);
                 var hash = XxHash64.HashToUInt64(bytes);
                 var name = $"{hash:x16}";
-                var path = @$"{DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
+                var path = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
                 var chunk = new Chunk
                 {
                     EntityId = scene.Id,
@@ -232,7 +234,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
         var bytes = Encoding.UTF8.GetBytes(fieldSelector(latestState));
         var hash = XxHash64.HashToUInt64(bytes);
         var name = $"{hash:x16}";
-        var path = @$"{DataDirectory}\{adventureId}\{name}.{contentType.ToString()}";
+        var path = @$"{StartupExtensions.DataDirectory}\{adventureId}\{name}.{contentType.ToString()}";
         var existingChunk = existingChunks.FirstOrDefault(x => hashes.Contains(x.ContentHash));
         var chunk = new Chunk
         {

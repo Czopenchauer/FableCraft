@@ -36,12 +36,12 @@ public static class Extensions
                 {
                     Timeout = TimeSpan.FromSeconds(20)
                 };
-    
-                options.TotalRequestTimeout = new HttpTimeoutStrategyOptions  
+
+                options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
                 {
                     Timeout = TimeSpan.FromMinutes(5)
                 };
-    
+
                 options.Retry.MaxRetryAttempts = 3;
                 options.Retry.Delay = TimeSpan.FromSeconds(2);
                 options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
@@ -59,7 +59,7 @@ public static class Extensions
 
         return builder;
     }
-    
+
     public static IHttpStandardResiliencePipelineBuilder AddDefaultLlmResiliencePolicies(this IHttpClientBuilder builder)
     {
         // Configure default resilience policies for LLM HTTP calls

@@ -9,8 +9,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine;
 
 public class GameScene
@@ -46,11 +44,6 @@ public interface IGameService
     Task DeleteLastSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
     /// <summary>
-    ///     Generates the first scene for an adventure.
-    /// </summary>
-    Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken);
-
-    /// <summary>
     ///     Submits a player action and generates the next scene.
     /// </summary>
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
@@ -59,17 +52,15 @@ public interface IGameService
 internal class GameService : IGameService
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly IKernelBuilder _kernelBuilder;
     private readonly ILogger _logger;
     private readonly SceneGenerationOrchestrator _sceneGenerationOrchestrator;
 
     public GameService(
         ApplicationDbContext dbContext,
-        IKernelBuilder kernelBuilder,
-        ILogger logger, SceneGenerationOrchestrator sceneGenerationOrchestrator)
+        ILogger logger,
+        SceneGenerationOrchestrator sceneGenerationOrchestrator)
     {
         _dbContext = dbContext;
-        _kernelBuilder = kernelBuilder;
         _logger = logger;
         _sceneGenerationOrchestrator = sceneGenerationOrchestrator;
     }
@@ -139,11 +130,20 @@ internal class GameService : IGameService
                 }
             });
 
-            return await GenerateFirstSceneAsync(adventureId, cancellationToken);
+            var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
+            return new GameScene
+            {
+                Text = scene.GeneratedScene.Scene,
+                Choices = scene.GeneratedScene.Choices.ToList(),
+                Tracker = scene.Tracker,
+                NarrativeDirectorOutput = scene.NarrativeDirectorOutput
+            };
         }
-
-        _logger.Warning("Regenerating scenes beyond the first is not yet supported (AdventureId: {AdventureId})", adventureId);
-        throw new NotImplementedException("Regenerating scenes beyond the first is not yet supported");
+        else
+        {
+            _logger.Warning("Regeneration of scenes beyond the first is not supported (AdventureId: {AdventureId})", adventureId);
+            throw new NotSupportedException("Regeneration of scenes beyond the first is not supported");
+        }
     }
 
     public async Task DeleteLastSceneAsync(Guid adventureId, CancellationToken cancellationToken)
@@ -164,9 +164,11 @@ internal class GameService : IGameService
             throw new InvalidOperationException("No scenes to delete");
         }
 
-        Scene lastScene = adventure.Scenes
-            .OrderByDescending(s => s.SequenceNumber)
-            .First();
+        Scene lastScene = adventure.Scenes.MaxBy(s => s.SequenceNumber)!;
+        if (lastScene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only delete the last uncommitted scene");
+        }
 
         _logger.Information("Deleting scene {SceneId} (sequence {SequenceNumber}) from adventure {AdventureId}",
             lastScene.Id,
@@ -175,18 +177,6 @@ internal class GameService : IGameService
 
         _dbContext.Scenes.Remove(lastScene);
         await _dbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<GameScene> GenerateFirstSceneAsync(Guid adventureId, CancellationToken cancellationToken)
-    {
-        var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
-        return new GameScene
-        {
-            Text = scene.GeneratedScene.Scene,
-            Choices = scene.GeneratedScene.Choices.ToList(),
-            Tracker = scene.Tracker,
-            NarrativeDirectorOutput = scene.NarrativeDirectorOutput
-        };
     }
 
     public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)
@@ -210,14 +200,6 @@ internal class GameService : IGameService
         {
             _logger.Warning("No scenes found for adventure {AdventureId}", adventureId);
             throw new InvalidOperationException("Cannot submit action: adventure has no scenes");
-        }
-
-        MainCharacterAction? selectedAction = currentScene.CharacterActions
-            .FirstOrDefault(a => a.ActionDescription == actionText);
-
-        if (selectedAction != null)
-        {
-            selectedAction.Selected = true;
         }
 
         try

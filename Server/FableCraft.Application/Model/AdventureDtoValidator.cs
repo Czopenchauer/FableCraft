@@ -14,15 +14,12 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
             .NotNull().WithMessage("Character is required")
             .SetValidator(new CharacterDtoValidator());
 
-        RuleFor(x => x.Lorebook)
-            .NotNull().WithMessage("Lorebook cannot be null");
-
         RuleForEach(x => x.Lorebook)
             .SetValidator(new LorebookEntryDtoValidator());
 
         RuleFor(x => x.Lorebook)
             .Must(HaveUniqueCategories)
-            .WithMessage("Lorebook entries must have unique categories");
+            .WithMessage("Lorebook entries must have unique content");
     }
 
     private static bool HaveUniqueCategories(List<LorebookEntryDto>? lorebook)
@@ -30,6 +27,6 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
         if (lorebook == null || lorebook.Count == 0)
             return true;
 
-        return lorebook.Count == lorebook.Select(x => x.Category).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        return lorebook.Count == lorebook.Select(x => x.Content).Distinct(StringComparer.OrdinalIgnoreCase).Count();
     }
 }

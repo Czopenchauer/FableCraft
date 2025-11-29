@@ -6,6 +6,7 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -40,6 +41,7 @@ internal sealed class SceneGenerationOrchestrator
     private readonly LocationCrafter _locationCrafter;
     private readonly ContextGatherer _contextGatherer;
     private readonly NarrativeDirectorAgent _narrativeDirectorAgent;
+    private readonly IMessageDispatcher _messageDispatcher;
     private const int NumberOfScenesToInclude = 20;
 
     public SceneGenerationOrchestrator(
@@ -54,7 +56,8 @@ internal sealed class SceneGenerationOrchestrator
         LoreCrafter loreCrafter,
         CharacterStateTracker characterStateTracker,
         LocationCrafter locationCrafter,
-        ContextGatherer contextGatherer)
+        ContextGatherer contextGatherer,
+        IMessageDispatcher messageDispatcher)
     {
         _kernelBuilder = kernelBuilder;
         _ragSearch = ragSearch;
@@ -68,6 +71,7 @@ internal sealed class SceneGenerationOrchestrator
         _characterStateTracker = characterStateTracker;
         _locationCrafter = locationCrafter;
         _contextGatherer = contextGatherer;
+        _messageDispatcher = messageDispatcher;
     }
 
     public async Task<SceneGenerationOutput> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
@@ -167,19 +171,19 @@ internal sealed class SceneGenerationOrchestrator
         {
             AdventureId = adventureId,
             SceneContext = scenes.Select(x => new SceneContext
-                {
-                    SceneContent = x.NarrativeText,
-                    PlayerChoice = x.CharacterActions.Single(y => y.Selected)
+            {
+                SceneContent = x.NarrativeText,
+                PlayerChoice = x.CharacterActions.Single(y => y.Selected)
                         .ActionDescription,
-                    Metadata = x.Metadata,
-                    Characters = x.CharacterStates.Select(y => new CharacterContext
-                    {
-                        CharacterState = y.CharacterStats,
-                        CharacterTracker = y.Tracker,
-                        Description = y.Character.Description,
-                        Name = y.CharacterStats.CharacterIdentity.FullName!
-                    })
+                Metadata = x.Metadata,
+                Characters = x.CharacterStates.Select(y => new CharacterContext
+                {
+                    CharacterState = y.CharacterStats,
+                    CharacterTracker = y.Tracker,
+                    Description = y.Character.Description,
+                    Name = y.CharacterStats.CharacterIdentity.FullName!
                 })
+            })
                 .ToArray(),
             StorySummary = scenes.LastOrDefault()?.AdventureSummary,
             PlayerAction = playerAction,
@@ -225,9 +229,9 @@ internal sealed class SceneGenerationOrchestrator
             AdventureId = adventureId,
             NarrativeText = sceneContent.Scene,
             CharacterActions = sceneContent.Choices.Select(x => new MainCharacterAction
-                {
-                    ActionDescription = x
-                })
+            {
+                ActionDescription = x
+            })
                 .ToList(),
             SequenceNumber = scenes.LastOrDefault()?.SequenceNumber ?? 0 + 1,
             Metadata = new Metadata
@@ -239,7 +243,7 @@ internal sealed class SceneGenerationOrchestrator
         };
 
         var characters = await _dbContext.Characters
-            .Where(x => characterUpdates.Select(y => y.Name).Contains(x.Name))
+            .Where(x => x.AdventureId == adventureId && characterUpdates.Select(y => y.Name).Contains(x.Name))
             .Include(character => character.CharacterStates)
             .ToListAsync(cancellationToken: cancellationToken);
         foreach (var updatedCharacter in characterUpdates)
@@ -301,6 +305,15 @@ internal sealed class SceneGenerationOrchestrator
             await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
+                var selectedAction = scenes
+                    .MaxBy(x => x.SequenceNumber)
+                    ?.CharacterActions
+                    .FirstOrDefault(x => x.ActionDescription == playerAction);
+                if (selectedAction != null)
+                {
+                    selectedAction.Selected = true;
+                }
+
                 await _dbContext.Scenes.AddAsync(newScene, cancellationToken);
                 _dbContext.Characters.AddRange(newCharacters);
                 _dbContext.LorebookEntries.AddRange(newLoreEntities);
@@ -316,6 +329,12 @@ internal sealed class SceneGenerationOrchestrator
             }
         });
 
+        await _messageDispatcher.PublishAsync(new SceneGeneratedEvent
+        {
+            AdventureId = adventureId,
+            SceneId = newScene.Id
+        },
+            cancellationToken);
         return new SceneGenerationOutput
         {
             Tracker = tracker,
