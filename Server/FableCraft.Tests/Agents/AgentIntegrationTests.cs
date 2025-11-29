@@ -2,8 +2,10 @@
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -11,27 +13,35 @@ using Microsoft.SemanticKernel;
 using Serilog;
 using Serilog.Extensions.Logging;
 
+using Testcontainers.PostgreSql;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 using ILogger = Serilog.ILogger;
 
 namespace FableCraft.Tests.Agents;
 
-/// <summary>
-/// Integration tests for NarrativeEngine agents.
-/// These tests verify that agents produce output that correctly maps to typed representations.
-/// Tests use real LLM interaction without mocking.
-/// </summary>
-[Collection("IntegrationTests")]
 public class AgentIntegrationTests : IAsyncLifetime
 {
+    private PostgreSqlContainer _postgresContainer = null!;
     private IAgentKernel _agentKernel = null!;
     private IKernelBuilder _kernelBuilder = null!;
     private ILogger _logger = null!;
     private IConfiguration _configuration = null!;
     private Kernel _kernel = null!;
+    private ApplicationDbContext _dbContext = null!;
+    private Guid _testAdventureId;
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
+        _postgresContainer = new PostgreSqlBuilder()
+            .WithImage("postgres:16-alpine")
+            .WithDatabase("fablecraft_test")
+            .WithUsername("postgres")
+            .WithPassword("postgres")
+            .Build();
+
+        await _postgresContainer.StartAsync();
+
         _configuration = new ConfigurationBuilder()
             .AddUserSecrets<AgentIntegrationTests>()
             .AddEnvironmentVariables()
@@ -39,7 +49,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
         var serilogLogger = new LoggerConfiguration()
             .MinimumLevel.Debug()
-            .WriteTo.Console()
+            .WriteTo.File("./logs/AgentIntegrationTests.log")
             .CreateLogger();
 
         _logger = serilogLogger;
@@ -59,12 +69,25 @@ public class AgentIntegrationTests : IAsyncLifetime
         _agentKernel = new AgentKernel(_kernelBuilder, _logger);
         _kernel = _kernelBuilder.WithBase().Build();
 
-        return Task.CompletedTask;
+        // Setup database with PostgreSQL TestContainer
+        var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(_postgresContainer.GetConnectionString())
+            .Options;
+
+        _dbContext = new ApplicationDbContext(dbOptions);
+        await _dbContext.Database.MigrateAsync();
+
+        // Seed test adventure with TrackerStructure
+        _testAdventureId = Guid.NewGuid();
+        var testAdventure = CreateTestAdventure(_testAdventureId);
+        _dbContext.Adventures.Add(testAdventure);
+        await _dbContext.SaveChangesAsync();
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return Task.CompletedTask;
+        await _postgresContainer.StopAsync();
+        await _postgresContainer.DisposeAsync();
     }
 
     #region NarrativeDirectorAgent Tests
@@ -180,11 +203,11 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region Helper Methods - Context Creation
 
-    private NarrativeContext CreateSampleNarrativeContext()
+    private NarrativeContext CreateSampleNarrativeContext(Guid? adventureId = null)
     {
         return new NarrativeContext
         {
-            AdventureId = Guid.NewGuid(),
+            AdventureId = adventureId ?? _testAdventureId,
             KernelKg = _kernel,
             StorySummary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
             PlayerAction = "I enter the tavern and look around for anyone who might have information.",
@@ -257,6 +280,263 @@ public class AgentIntegrationTests : IAsyncLifetime
             DangerLevel = 1,
             Accessibility = "open"
         };
+    }
+
+    private static Adventure CreateTestAdventure(Guid adventureId)
+    {
+        return new Adventure
+        {
+            Id = adventureId,
+            Name = $"Test Adventure {adventureId}",
+            FirstSceneGuidance = "The adventure begins in a mysterious tavern.",
+            AdventureStartTime = "Evening, late autumn",
+            ProcessingStatus = ProcessingStatus.Pending,
+            CreatedAt = DateTimeOffset.UtcNow,
+            AuthorNotes = "Test adventure for integration tests",
+            MainCharacter = new MainCharacter
+            {
+                Id = Guid.NewGuid(),
+                AdventureId = adventureId,
+                Name = "Aldric the Brave",
+                Description = "A young adventurer with a mysterious past, seeking to prove themselves."
+            },
+            TrackerStructure = CreateTestTrackerStructure(),
+            Lorebook = new List<LorebookEntry>()
+        };
+    }
+
+    private static TrackerStructure CreateTestTrackerStructure()
+    {
+        return new TrackerStructure
+        {
+            Story = new[]
+            {
+                new FieldDefinition
+                {
+                    Name = "Location",
+                    Type = FieldType.String,
+                    Prompt = "Current location in the story",
+                    DefaultValue = "Unknown"
+                },
+                new FieldDefinition
+                {
+                    Name = "Weather",
+                    Type = FieldType.String,
+                    Prompt = "Current weather conditions",
+                    DefaultValue = "Clear"
+                },
+                new FieldDefinition
+                {
+                    Name = "TimeOfDay",
+                    Type = FieldType.String,
+                    Prompt = "Current time of day",
+                    DefaultValue = "Day"
+                }
+            },
+            CharactersPresent = new FieldDefinition
+            {
+                Name = "CharactersPresent",
+                Type = FieldType.Array,
+                Prompt = "List of characters currently present in the scene",
+                DefaultValue = new List<string>()
+            },
+            MainCharacter = new[]
+            {
+                new FieldDefinition
+                {
+                    Name = "Health",
+                    Type = FieldType.String,
+                    Prompt = "Current health status",
+                    DefaultValue = "Healthy"
+                },
+                new FieldDefinition
+                {
+                    Name = "Mood",
+                    Type = FieldType.String,
+                    Prompt = "Current emotional state",
+                    DefaultValue = "Neutral"
+                }
+            },
+            Characters = new[]
+            {
+                new FieldDefinition
+                {
+                    Name = "Disposition",
+                    Type = FieldType.String,
+                    Prompt = "Character's disposition toward the player",
+                    DefaultValue = "Neutral"
+                },
+                new FieldDefinition
+                {
+                    Name = "Status",
+                    Type = FieldType.String,
+                    Prompt = "Character's current status",
+                    DefaultValue = "Active"
+                }
+            }
+        };
+    }
+
+    private static CharacterRequest CreateSampleCharacterRequest()
+    {
+        return new CharacterRequest
+        {
+            Role = "innkeeper",
+            Importance = "scene_critical",
+            Priority = "required",
+            SceneRole = "Information provider and potential ally",
+            Specifications = new CharacterSpecifications
+            {
+                Archetype = "wise mentor",
+                Alignment = "neutral good",
+                PowerLevel = "weaker",
+                KeyTraits = new List<string> { "observant", "cautious", "knowledgeable" },
+                RelationshipToPlayer = "neutral",
+                NarrativePurpose = "Provide exposition and hints about the mystery",
+                BackstoryDepth = "moderate"
+            },
+            Constraints = new CharacterConstraints
+            {
+                MustEnable = new List<string> { "information gathering" },
+                ShouldHave = new List<string> { "local knowledge", "secrets" },
+                CannotBe = new List<string> { "hostile", "overly helpful" }
+            },
+            ConnectionToExisting = new List<string> { "villagers", "disappearances" }
+        };
+    }
+
+    private static GeneratedScene CreateSampleGeneratedScene()
+    {
+        return new GeneratedScene
+        {
+            Scene = """
+                The tavern door creaks open as you step inside, revealing a dimly lit common room. 
+                Smoke curls lazily from a stone fireplace, casting dancing shadows across weathered wooden beams. 
+                A handful of patrons sit hunched over their drinks, their conversations falling silent as they 
+                turn to regard you with suspicious eyes.
+                
+                Behind the bar, a middle-aged woman with sharp eyes and graying hair polishes a mug, 
+                watching your every move. The air is thick with the smell of wood smoke and stale ale.
+                
+                "Stranger," she says, her voice carrying across the room. "We don't get many travelers 
+                this time of year. What brings you to Thornhaven?"
+                """,
+            Choices = new[]
+            {
+                "Ask about the disappearances directly",
+                "Order a drink and observe the room",
+                "Introduce yourself as a traveler seeking shelter"
+            }
+        };
+    }
+
+    private static CharacterContext CreateSampleCharacterContext()
+    {
+        return new CharacterContext
+        {
+            Name = "Martha the Innkeeper",
+            Description = "A sharp-eyed woman in her fifties who has run the Thornhaven tavern for decades.",
+            CharacterState = new CharacterStats
+            {
+                CharacterIdentity = new CharacterIdentity
+                {
+                    FullName = "Martha Thornwood",
+                    Aliases = new List<string> { "The Innkeeper", "Old Martha" },
+                    Archetype = "wise mentor"
+                },
+            },
+            CharacterTracker = new CharacterTracker
+            {
+                Name = "Martha the Innkeeper",
+                AdditionalProperties = new Dictionary<string, object>
+                {
+                    { "Disposition", "Cautious" },
+                    { "Status", "Active" }
+                }
+            }
+        };
+    }
+
+    #endregion
+
+    #region CharacterCrafter Tests
+
+    [Fact]
+    public async Task CharacterCrafter_OutputMapsToCharacterContext()
+    {
+        // Arrange
+        var agent = new CharacterCrafter(_agentKernel, _dbContext);
+        var context = CreateSampleNarrativeContext();
+        var characterRequest = CreateSampleCharacterRequest();
+
+        // Act
+        var result = await agent.Invoke(_kernel, context, characterRequest, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrEmpty(result.Name));
+        Assert.False(string.IsNullOrEmpty(result.Description));
+        Assert.NotNull(result.CharacterState);
+        Assert.NotNull(result.CharacterTracker);
+
+        _logger.Information("CharacterCrafter output successfully mapped to CharacterContext");
+        _logger.Information("Character Name: {Name}", result.Name);
+    }
+
+    #endregion
+
+    #region CharacterStateTracker Tests
+
+    [Fact]
+    public async Task CharacterStateTracker_OutputMapsToCharacterContext()
+    {
+        // Arrange
+        var agent = new CharacterStateTracker(_agentKernel, _dbContext, _kernelBuilder);
+        var narrativeContext = CreateSampleNarrativeContext();
+        var characterContext = CreateSampleCharacterContext();
+        var scene = CreateSampleGeneratedScene();
+
+        // Act
+        var result = await agent.Invoke(
+            _testAdventureId,
+            narrativeContext,
+            characterContext,
+            scene,
+            CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrEmpty(result.Name));
+        Assert.NotNull(result.CharacterState);
+        Assert.NotNull(result.CharacterTracker);
+
+        _logger.Information("CharacterStateTracker output successfully mapped to CharacterContext");
+        _logger.Information("Updated Character: {Name}", result.Name);
+    }
+
+    #endregion
+
+    #region TrackerAgent Tests
+
+    [Fact]
+    public async Task TrackerAgent_OutputMapsToTracker()
+    {
+        // Arrange
+        var agent = new TrackerAgent(_agentKernel, _dbContext, _kernelBuilder);
+        var context = CreateSampleNarrativeContext();
+        var scene = CreateSampleGeneratedScene();
+
+        // Act
+        var result = await agent.Invoke(context, scene, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Story);
+        Assert.False(string.IsNullOrEmpty(result.Story.Location));
+
+        _logger.Information("TrackerAgent output successfully mapped to Tracker");
+        _logger.Information("Story Location: {Location}, Weather: {Weather}", 
+            result.Story.Location, result.Story.Weather);
     }
 
     #endregion

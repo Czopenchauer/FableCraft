@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using NpgsqlTypes;
 
 #nullable disable
 
@@ -110,10 +109,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
-
-                    b.Property<NpgsqlTsVector>("SearchVector")
-                        .IsRequired()
-                        .HasColumnType("tsvector");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");

@@ -21,8 +21,6 @@ public sealed class CharacterState
     public CharacterStats CharacterStats { get; init; } = null!;
 
     public CharacterTracker Tracker { get; init; } = null!;
-
-    public NpgsqlTsVector SearchVector { get; set; } = null!;
 }
 
 public class CharacterStats
