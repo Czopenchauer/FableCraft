@@ -1,6 +1,6 @@
 ﻿using System;
-using FableCraft.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore.Migrations;
+using NpgsqlTypes;
 
 #nullable disable
 
@@ -19,12 +19,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     FirstSceneGuidance = table.Column<string>(type: "text", nullable: false),
+                    AdventureStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ProcessingStatus = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     LastPlayedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     AuthorNotes = table.Column<string>(type: "text", nullable: true),
-                    Summary = table.Column<string>(type: "text", nullable: true),
-                    TrackerStructure = table.Column<TrackerStructure>(type: "jsonb", nullable: false)
+                    TrackerStructure = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -37,14 +37,11 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    RawChunk = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    ContentHash = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
+                    Path = table.Column<string>(type: "text", nullable: false),
                     ContentType = table.Column<string>(type: "text", nullable: false),
-                    ReferenceTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ContextualizedChunk = table.Column<string>(type: "text", nullable: true),
-                    Order = table.Column<int>(type: "integer", nullable: false),
-                    KnowledgeGraphNodeId = table.Column<string>(type: "text", nullable: true),
-                    ProcessingStatus = table.Column<string>(type: "text", nullable: false)
+                    KnowledgeGraphNodeId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -57,7 +54,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Structure = table.Column<TrackerStructure>(type: "jsonb", nullable: false)
+                    Structure = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -78,28 +75,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     table.PrimaryKey("PK_Characters", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Characters_Adventures_AdventureId",
-                        column: x => x.AdventureId,
-                        principalTable: "Adventures",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LorebookEntries",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    Priority = table.Column<int>(type: "integer", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: false),
-                    Category = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LorebookEntries", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_LorebookEntries_Adventures_AdventureId",
                         column: x => x.AdventureId,
                         principalTable: "Adventures",
                         principalColumn: "Id",
@@ -133,8 +108,10 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
+                    AdventureSummary = table.Column<string>(type: "text", nullable: true),
                     NarrativeText = table.Column<string>(type: "text", nullable: false),
-                    SceneMetadata = table.Column<Metadata>(type: "jsonb", nullable: false),
+                    CommitStatus = table.Column<string>(type: "text", nullable: false),
+                    Metadata = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -176,8 +153,10 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     CharacterId = table.Column<Guid>(type: "uuid", nullable: false),
                     SceneId = table.Column<Guid>(type: "uuid", nullable: false),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
-                    CharacterStats = table.Column<CharacterStats>(type: "jsonb", nullable: false),
-                    Tracker = table.Column<CharacterTracker>(type: "jsonb", nullable: false)
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Tracker = table.Column<string>(type: "text", nullable: false),
+                    SearchVector = table.Column<NpgsqlTsVector>(type: "tsvector", nullable: false),
+                    CharacterStats = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -194,6 +173,35 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         principalTable: "Scenes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LorebookEntries",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SceneId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Priority = table.Column<int>(type: "integer", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Category = table.Column<string>(type: "text", nullable: false),
+                    ContentType = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LorebookEntries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LorebookEntries_Adventures_AdventureId",
+                        column: x => x.AdventureId,
+                        principalTable: "Adventures",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_LorebookEntries_Scenes_SceneId",
+                        column: x => x.SceneId,
+                        principalTable: "Scenes",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -237,20 +245,25 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 column: "AdventureId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_LorebookEntries_SceneId",
+                table: "LorebookEntries",
+                column: "SceneId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MainCharacter_AdventureId",
                 table: "MainCharacter",
                 column: "AdventureId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Scenes_AdventureId",
+                name: "IX_Scenes_AdventureId_SequenceNumber",
                 table: "Scenes",
-                column: "AdventureId");
+                columns: new[] { "AdventureId", "SequenceNumber" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Scenes_SequenceNumber",
+                name: "IX_Scenes_Id_SequenceNumber_CommitStatus",
                 table: "Scenes",
-                column: "SequenceNumber");
+                columns: new[] { "Id", "SequenceNumber", "CommitStatus" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TrackerDefinitions_Name",
