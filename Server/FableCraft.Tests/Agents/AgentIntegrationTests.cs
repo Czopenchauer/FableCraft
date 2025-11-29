@@ -23,16 +23,17 @@ namespace FableCraft.Tests.Agents;
 public class AgentIntegrationTests
 {
     private static PostgreSqlContainer _postgresContainer = null!;
-    private static IAgentKernel _agentKernel = null!;
-    private static IKernelBuilder _kernelBuilder = null!;
-    private static ILogger _logger = null!;
     private static IConfiguration _configuration = null!;
-    private static Kernel _kernel = null!;
-    private static ApplicationDbContext _dbContext = null!;
-    private static Guid _testAdventureId;
+    private static ILogger _logger = null!;
+
+    private IAgentKernel _agentKernel = null!;
+    private IKernelBuilder _kernelBuilder = null!;
+    private Kernel _kernel = null!;
+    private ApplicationDbContext _dbContext = null!;
+    private Guid _testAdventureId;
 
     [Before(Class)]
-    public async static Task InitializeAsync()
+    public async static Task InitializeClassAsync()
     {
         _postgresContainer = new PostgreSqlBuilder()
             .WithImage("postgres:16-alpine")
@@ -42,7 +43,12 @@ public class AgentIntegrationTests
             .Build();
 
         await _postgresContainer.StartAsync();
+        var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(_postgresContainer.GetConnectionString())
+            .Options;
 
+        await using var dbContext = new ApplicationDbContext(dbOptions);
+        await dbContext.Database.MigrateAsync();
         _configuration = new ConfigurationBuilder()
             .AddUserSecrets<AgentIntegrationTests>()
             .AddEnvironmentVariables()
@@ -54,8 +60,19 @@ public class AgentIntegrationTests
             .CreateLogger();
 
         _logger = serilogLogger;
+    }
 
-        var loggerFactory = new SerilogLoggerFactory(serilogLogger);
+    [After(Class)]
+    public async static Task DisposeClassAsync()
+    {
+        await _postgresContainer.StopAsync();
+        await _postgresContainer.DisposeAsync();
+    }
+
+    [Before(Test)]
+    public async Task SetupTestAsync()
+    {
+        var loggerFactory = new SerilogLoggerFactory(_logger);
 
         var llmConfig = new LlmConfiguration
         {
@@ -75,7 +92,7 @@ public class AgentIntegrationTests
             .Options;
 
         _dbContext = new ApplicationDbContext(dbOptions);
-        await _dbContext.Database.MigrateAsync();
+        await _dbContext.Database.EnsureCreatedAsync();
 
         // Seed test adventure with TrackerStructure
         _testAdventureId = Guid.NewGuid();
@@ -84,12 +101,10 @@ public class AgentIntegrationTests
         await _dbContext.SaveChangesAsync();
     }
 
-    [After(Class)]
-    public static async Task DisposeAsync()
+    [After(Test)]
+    public async Task TeardownTestAsync()
     {
         await _dbContext.DisposeAsync();
-        await _postgresContainer.StopAsync();
-        await _postgresContainer.DisposeAsync();
     }
 
     #region NarrativeDirectorAgent Tests
