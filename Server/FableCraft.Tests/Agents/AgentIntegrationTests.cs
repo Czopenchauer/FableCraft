@@ -20,18 +20,19 @@ using ILogger = Serilog.ILogger;
 
 namespace FableCraft.Tests.Agents;
 
-public class AgentIntegrationTests : IAsyncLifetime
+public class AgentIntegrationTests
 {
-    private PostgreSqlContainer _postgresContainer = null!;
-    private IAgentKernel _agentKernel = null!;
-    private IKernelBuilder _kernelBuilder = null!;
-    private ILogger _logger = null!;
-    private IConfiguration _configuration = null!;
-    private Kernel _kernel = null!;
-    private ApplicationDbContext _dbContext = null!;
-    private Guid _testAdventureId;
+    private static PostgreSqlContainer _postgresContainer = null!;
+    private static IAgentKernel _agentKernel = null!;
+    private static IKernelBuilder _kernelBuilder = null!;
+    private static ILogger _logger = null!;
+    private static IConfiguration _configuration = null!;
+    private static Kernel _kernel = null!;
+    private static ApplicationDbContext _dbContext = null!;
+    private static Guid _testAdventureId;
 
-    public async Task InitializeAsync()
+    [Before(Class)]
+    public async static Task InitializeAsync()
     {
         _postgresContainer = new PostgreSqlBuilder()
             .WithImage("postgres:16-alpine")
@@ -69,7 +70,6 @@ public class AgentIntegrationTests : IAsyncLifetime
         _agentKernel = new AgentKernel(_kernelBuilder, _logger);
         _kernel = _kernelBuilder.WithBase().Build();
 
-        // Setup database with PostgreSQL TestContainer
         var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_postgresContainer.GetConnectionString())
             .Options;
@@ -84,15 +84,17 @@ public class AgentIntegrationTests : IAsyncLifetime
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task DisposeAsync()
+    [After(Class)]
+    public static async Task DisposeAsync()
     {
+        await _dbContext.DisposeAsync();
         await _postgresContainer.StopAsync();
         await _postgresContainer.DisposeAsync();
     }
 
     #region NarrativeDirectorAgent Tests
 
-    [Fact]
+    [Test]
     public async Task NarrativeDirectorAgent_OutputMapsToNarrativeDirectorOutput()
     {
         // Arrange
@@ -103,15 +105,15 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(context, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.SceneMetadata);
-        Assert.NotNull(result.SceneDirection);
-        Assert.NotNull(result.Objectives);
-        Assert.NotNull(result.Conflicts);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.SceneMetadata).IsNotNull();
+        await Assert.That(result.SceneDirection).IsNotNull();
+        await Assert.That(result.Objectives).IsNotNull();
+        await Assert.That(result.Conflicts).IsNotNull();
         
-        Assert.True(result.SceneMetadata.SceneNumber >= 0);
-        Assert.False(string.IsNullOrEmpty(result.SceneMetadata.NarrativeAct));
-        Assert.False(string.IsNullOrEmpty(result.SceneMetadata.BeatType));
+        await Assert.That(result.SceneMetadata.SceneNumber).IsGreaterThanOrEqualTo(0);
+        await Assert.That(string.IsNullOrEmpty(result.SceneMetadata.NarrativeAct)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(result.SceneMetadata.BeatType)).IsFalse();
         
         _logger.Information("NarrativeDirectorAgent output successfully mapped to NarrativeDirectorOutput");
         _logger.Information("Scene Number: {SceneNumber}, Beat Type: {BeatType}", 
@@ -122,7 +124,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region WriterAgent Tests
 
-    [Fact]
+    [Test]
     public async Task WriterAgent_OutputMapsToGeneratedScene()
     {
         // Arrange
@@ -135,10 +137,10 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(context, characterContexts, narrativeDirectorOutput, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.False(string.IsNullOrEmpty(result.Scene));
-        Assert.NotNull(result.Choices);
-        Assert.NotEmpty(result.Choices);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.Scene)).IsFalse();
+        await Assert.That(result.Choices).IsNotNull();
+        await Assert.That(result.Choices).IsNotEmpty();
         
         _logger.Information("WriterAgent output successfully mapped to GeneratedScene");
         _logger.Information("Scene length: {Length} chars, Choices count: {Count}", 
@@ -149,7 +151,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region LoreCrafter Tests
 
-    [Fact]
+    [Test]
     public async Task LoreCrafter_OutputMapsToGeneratedLore()
     {
         // Arrange
@@ -162,10 +164,10 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(_kernel, loreRequest, context, characterContexts, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.False(string.IsNullOrEmpty(result.Title));
-        Assert.False(string.IsNullOrEmpty(result.Text));
-        Assert.False(string.IsNullOrEmpty(result.Summary));
+        await Assert.That(result).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.Title)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(result.Text)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(result.Summary)).IsFalse();
         
         _logger.Information("LoreCrafter output successfully mapped to GeneratedLore");
         _logger.Information("Lore Title: {Title}", result.Title);
@@ -175,7 +177,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region LocationCrafter Tests
 
-    [Fact]
+    [Test]
     public async Task LocationCrafter_OutputMapsToLocationGenerationResult()
     {
         // Arrange
@@ -188,11 +190,11 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(_kernel, locationRequest, context, characterContexts, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.EntityData);
-        Assert.NotNull(result.NarrativeData);
-        Assert.False(string.IsNullOrEmpty(result.EntityData.Name));
-        Assert.False(string.IsNullOrEmpty(result.NarrativeData.ShortDescription));
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.EntityData).IsNotNull();
+        await Assert.That(result.NarrativeData).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.EntityData.Name)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(result.NarrativeData.ShortDescription)).IsFalse();
         
         _logger.Information("LocationCrafter output successfully mapped to LocationGenerationResult");
         _logger.Information("Location Name: {Name}, Type: {Type}", 
@@ -461,7 +463,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region CharacterCrafter Tests
 
-    [Fact]
+    [Test]
     public async Task CharacterCrafter_OutputMapsToCharacterContext()
     {
         // Arrange
@@ -473,11 +475,11 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(_kernel, context, characterRequest, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.False(string.IsNullOrEmpty(result.Name));
-        Assert.False(string.IsNullOrEmpty(result.Description));
-        Assert.NotNull(result.CharacterState);
-        Assert.NotNull(result.CharacterTracker);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.Name)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(result.Description)).IsFalse();
+        await Assert.That(result.CharacterState).IsNotNull();
+        await Assert.That(result.CharacterTracker).IsNotNull();
 
         _logger.Information("CharacterCrafter output successfully mapped to CharacterContext");
         _logger.Information("Character Name: {Name}", result.Name);
@@ -487,7 +489,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region CharacterStateTracker Tests
 
-    [Fact]
+    [Test]
     public async Task CharacterStateTracker_OutputMapsToCharacterContext()
     {
         // Arrange
@@ -505,10 +507,10 @@ public class AgentIntegrationTests : IAsyncLifetime
             CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.False(string.IsNullOrEmpty(result.Name));
-        Assert.NotNull(result.CharacterState);
-        Assert.NotNull(result.CharacterTracker);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.Name)).IsFalse();
+        await Assert.That(result.CharacterState).IsNotNull();
+        await Assert.That(result.CharacterTracker).IsNotNull();
 
         _logger.Information("CharacterStateTracker output successfully mapped to CharacterContext");
         _logger.Information("Updated Character: {Name}", result.Name);
@@ -518,7 +520,7 @@ public class AgentIntegrationTests : IAsyncLifetime
 
     #region TrackerAgent Tests
 
-    [Fact]
+    [Test]
     public async Task TrackerAgent_OutputMapsToTracker()
     {
         // Arrange
@@ -530,9 +532,9 @@ public class AgentIntegrationTests : IAsyncLifetime
         var result = await agent.Invoke(context, scene, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Story);
-        Assert.False(string.IsNullOrEmpty(result.Story.Location));
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.Story).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.Story.Location)).IsFalse();
 
         _logger.Information("TrackerAgent output successfully mapped to Tracker");
         _logger.Information("Story Location: {Location}, Weather: {Weather}", 

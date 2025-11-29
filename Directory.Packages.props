@@ -10,6 +10,7 @@
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.0.1" />
     <PackageVersion Include="Aspire.Hosting.Python" Version="13.0.1" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.1" />
     <PackageVersion Include="FluentValidation" Version="12.1.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
@@ -38,8 +39,7 @@
     <PackageVersion Include="WolverineFx" Version="5.4.0" />
     <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.4.0" />
     <PackageVersion Include="WolverineFx.Postgresql" Version="5.4.0" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="TUnit" Version="0.6.123" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="Polly" Version="8.6.5" />
     <PackageVersion Include="Polly.RateLimiting" Version="8.6.5" />
