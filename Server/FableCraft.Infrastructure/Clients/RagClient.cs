@@ -15,7 +15,7 @@ public interface IRagBuilder
 
     Task UpdateDataAsync(string adventureId, string dataId, string content, CancellationToken cancellationToken = default);
 
-    Task DeleteNodeAsync(string datasetName, Guid dataId, CancellationToken cancellationToken = default);
+    Task DeleteNodeAsync(string datasetName, string dataId, CancellationToken cancellationToken = default);
 
     Task DeleteDatasetAsync(string adventureId, CancellationToken cancellationToken = default);
 
@@ -85,12 +85,18 @@ internal class RagClient : IRagBuilder, IRagSearch
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteNodeAsync(string datasetName, Guid dataId, CancellationToken cancellationToken = default)
+    public async Task DeleteNodeAsync(string datasetName, string dataId, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetName)}/{dataId}", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetName)}/{dataId}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+        }
     }
-    
+
     public async Task DeleteDatasetAsync(string adventureId, CancellationToken cancellationToken = default)
     {
         HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(adventureId)}", cancellationToken);
@@ -148,7 +154,7 @@ public class SearchRequest
 
     [JsonPropertyName("query")]
     public required string Query { get; set; }
-    
+
     [JsonPropertyName("search_type")]
     public required string SearchType { get; set; }
 }
