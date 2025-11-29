@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -112,8 +112,8 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
         var story = ConvertFieldsToDict(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
 
-        var characterPresent = ConvertFieldsToDict(structure.CharactersPresent);
-        dictionary.Add(nameof(Tracker.CharactersPresent), characterPresent);
+        // CharactersPresent is a single FieldDefinition of type Array, so output as array
+        dictionary.Add(nameof(Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
 
         var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
@@ -161,8 +161,12 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
         var story = ConvertFieldsToDict(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
 
-        var characterPresent = ConvertFieldsToDict(structure.CharactersPresent);
-        dictionary.Add(nameof(Tracker.CharactersPresent), characterPresent);
+        dictionary.Add(nameof(Tracker.CharactersPresent), new
+        {
+            structure.CharactersPresent.Prompt,
+            structure.CharactersPresent.DefaultValue,
+            structure.CharactersPresent.ExampleValues
+        });
 
         var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
