@@ -65,18 +65,6 @@ internal sealed class CharacterStateTracker(
         var outputFunc = new Func<string, (CharacterTracker tracker, CharacterStats state)>(response =>
         {
             var match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
-            CharacterTracker tracker;
-            if (match.Success)
-            {
-                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                          ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
-            }
-
-            match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
             CharacterStats state;
             if (match.Success)
             {
@@ -86,6 +74,18 @@ internal sealed class CharacterStateTracker(
             else
             {
                 throw new InvalidOperationException("Failed to parse CharacterState from response due to output not being in correct tags.");
+            }
+
+            match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
+            CharacterTracker tracker;
+            if (match.Success)
+            {
+                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                          ?? throw new InvalidOperationException();
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
             }
 
             return (tracker, state);
@@ -128,6 +128,12 @@ internal sealed class CharacterStateTracker(
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
     {
         var charDict = ConvertFieldsToDict(structure.Characters);
+        
+        // Ensure Name field is always included since it's required by CharacterTracker
+        if (!charDict.ContainsKey("Name"))
+        {
+            charDict["Name"] = "";
+        }
 
         return charDict;
 
