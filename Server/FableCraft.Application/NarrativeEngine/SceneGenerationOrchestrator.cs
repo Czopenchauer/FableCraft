@@ -62,13 +62,10 @@ internal sealed class SceneGenerationOrchestrator(
                 logger.Information("Completed step {GenerationProcessStep} for adventure {AdventureId}",
                     context.Context.GenerationProcessStep,
                     adventureId);
-                var rows = await dbContext.GenerationProcesses
+                await dbContext.GenerationProcesses
                     .Where(x => x.Id == context.ProcessId)
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
                         cancellationToken: cancellationToken);
-                logger.Information("Updated generation process context in database for adventure {AdventureId}, rows affected: {RowsAffected}",
-                    adventureId,
-                    rows);
             }
             catch (Exception ex)
             {

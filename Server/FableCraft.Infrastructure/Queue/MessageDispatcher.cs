@@ -1,6 +1,9 @@
 ﻿namespace FableCraft.Infrastructure.Queue;
 
-public interface IMessage;
+public interface IMessage
+{
+    public Guid AdventureId { get; set; }
+}
 
 public interface IMessageHandler<in TMessage> where TMessage : IMessage
 {

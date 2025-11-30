@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Text.Json;
 
+using FableCraft.Infrastructure.Queue;
+
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -20,7 +22,7 @@ public interface IAgentKernel
     Task<T> SendRequestAsync<T>(
         ChatHistory chatHistory,
         Func<string, T> outputFunc,
-        PromptExecutionSettings? promptExecutionSettings,
+        PromptExecutionSettings promptExecutionSettings,
         CancellationToken cancellationToken,
         Kernel? kernel = null);
 }
@@ -30,11 +32,13 @@ internal sealed class AgentKernel : IAgentKernel
     private readonly IKernelBuilder _builder;
     private readonly ILogger _logger;
     private readonly ResiliencePipeline _pipeline;
+    private readonly IMessageDispatcher _messageDispatcher;
 
-    public AgentKernel(IKernelBuilder builder, ILogger logger)
+    public AgentKernel(IKernelBuilder builder, ILogger logger, IMessageDispatcher messageDispatcher)
     {
         _builder = builder;
         _logger = logger;
+        _messageDispatcher = messageDispatcher;
         _pipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
@@ -60,10 +64,11 @@ internal sealed class AgentKernel : IAgentKernel
     public async Task<T> SendRequestAsync<T>(
         ChatHistory chatHistory,
         Func<string, T> outputFunc,
-        PromptExecutionSettings? promptExecutionSettings,
+        PromptExecutionSettings promptExecutionSettings,
         CancellationToken cancellationToken,
         Kernel? kernel = null)
     {
+        var callerName = GetCallerTypeName();
         Kernel agentKernel = kernel?.Clone() ?? _builder.WithBase().Build();
 
         var chatCompletionService = agentKernel.GetRequiredService<IChatCompletionService>();
@@ -85,18 +90,32 @@ internal sealed class AgentKernel : IAgentKernel
         async Task<T> GetResponse()
         {
             var result = await _pipeline.ExecuteAsync(async token =>
-                         {
-                             ChatMessageContent result =
-                                 await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                             var replyInnerContent = result.InnerContent as ChatCompletion;
-                             _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                 replyInnerContent?.Usage.InputTokenCount,
-                                 replyInnerContent?.Usage.OutputTokenCount,
-                                 replyInnerContent?.Usage.TotalTokenCount);
-                             _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                             return result.Content;
-                         },
-                         cancellationToken)
+                             {
+                                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                                 ChatMessageContent result =
+                                     await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                                 var replyInnerContent = result.InnerContent as ChatCompletion;
+                                 _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                                     replyInnerContent?.Usage.InputTokenCount,
+                                     replyInnerContent?.Usage.OutputTokenCount,
+                                     replyInnerContent?.Usage.TotalTokenCount);
+                                 await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+                                     {
+                                         AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
+                                         CallerName = callerName,
+                                         RequestContent = JsonSerializer.Serialize(chatHistory),
+                                         ResponseContent = JsonSerializer.Serialize(result),
+                                         InputToken = replyInnerContent?.Usage.InputTokenCount,
+                                         OutputToken = replyInnerContent?.Usage.OutputTokenCount,
+                                         TotalToken = replyInnerContent?.Usage.TotalTokenCount,
+                                         Duration = stopwatch.ElapsedMilliseconds,
+                                     },
+                                     token);
+
+                                 _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                                 return result.Content;
+                             },
+                             cancellationToken)
                          ?? string.Empty;
             if (string.IsNullOrEmpty(result))
             {
@@ -106,5 +125,11 @@ internal sealed class AgentKernel : IAgentKernel
             chatHistory.AddUserMessage(result);
             return outputFunc(result);
         }
+    }
+    private static string GetCallerTypeName()
+    {
+        var stackTrace = new System.Diagnostics.StackTrace();
+        var callerFrame = stackTrace.GetFrame(2);
+        return callerFrame?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
     }
 }

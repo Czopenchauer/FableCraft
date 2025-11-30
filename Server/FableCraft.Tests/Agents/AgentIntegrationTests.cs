@@ -81,7 +81,7 @@ public class AgentIntegrationTests
         var options = Options.Create(llmConfig);
 
         _kernelBuilder = new OpenAiKernelBuilder(options, loggerFactory);
-        _agentKernel = new AgentKernel(_kernelBuilder, _logger);
+        _agentKernel = new AgentKernel(_kernelBuilder, _logger, new MockMessageDispatcher());
         _ragSearch = new MockRagSearch();
 
         var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()

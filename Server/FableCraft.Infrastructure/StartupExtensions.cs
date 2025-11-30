@@ -39,15 +39,15 @@ public static class StartupExtensions
         var connectionString = configuration.GetConnectionString("fablecraftdb");
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         services.AddDbContextPool<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
-            sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
-            }))
+                sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+                }))
             .AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
-            sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
-            }));
+                sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+                }));
         services.AddHostedService<MigratorApplier>();
 
         var graphApiBaseUrl = configuration.GetConnectionString("graph-rag-api")
@@ -91,6 +91,7 @@ public static class StartupExtensions
 
         services.AddTransient<IKernelBuilder, OpenAiKernelBuilder>();
         services.AddTransient<IAgentKernel, AgentKernel>();
+        services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
 
         return services;
     }

@@ -20,7 +20,7 @@ namespace FableCraft.Application.AdventureGeneration;
 
 public class AddAdventureToKnowledgeGraphCommand : IMessage
 {
-    public Guid AdventureId { get; init; }
+    public required Guid AdventureId { get; set; }
 }
 
 internal class AddAdventureToKnowledgeGraphCommandHandler(
@@ -62,7 +62,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
-        var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         Adventure adventure = await dbContext.Adventures
             .Include(x => x.MainCharacter)
             .Include(x => x.Lorebook)

@@ -3,6 +3,7 @@ using System;
 using FableCraft.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130203749_SeparateStatusesForRagAndSceneGeneration")]
+    partial class SeparateStatusesForRagAndSceneGeneration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -312,48 +315,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GenerationProcesses");
-                });
-
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.LlmLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AdventureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CallerName")
-                        .HasColumnType("text");
-
-                    b.Property<long>("Duration")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("InputToken")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("OutputToken")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("ReceivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RequestContent")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ResponseContent")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("TotalToken")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdventureId");
-
-                    b.ToTable("LlmCallLogs");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.Character", b =>

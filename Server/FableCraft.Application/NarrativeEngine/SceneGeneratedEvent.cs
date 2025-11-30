@@ -22,7 +22,7 @@ internal sealed class SceneGeneratedEvent : IMessage
 {
     public required Guid SceneId { get; init; }
 
-    public required Guid AdventureId { get; init; }
+    public required Guid AdventureId { get; set; }
 }
 
 /// <summary>

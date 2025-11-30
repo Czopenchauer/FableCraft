@@ -30,6 +30,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<TrackerDefinition> TrackerDefinitions { get; set; }
 
+    public DbSet<LlmLog> LlmCallLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -81,6 +83,11 @@ public class ApplicationDbContext : DbContext
             p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x, options)!);
             p.HasIndex(x => new { x.AdventureId, x.SequenceNumber });
             p.HasIndex(x => new { x.Id, x.SequenceNumber, x.CommitStatus });
+        });
+
+        modelBuilder.Entity<LlmLog>(p =>
+        {
+            p.HasIndex(x => x.AdventureId);
         });
     }
 }
