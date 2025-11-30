@@ -69,7 +69,7 @@ internal sealed class AgentKernel : IAgentKernel
         PromptExecutionSettings promptExecutionSettings,
         CancellationToken cancellationToken,
         Kernel? kernel = null,
-        [CallerMemberName] string callerName = "")
+        [CallerFilePath] string callerName = "")
     {
         Kernel agentKernel = kernel?.Clone() ?? _builder.WithBase().Build();
         var caller = ProcessExecutionContext.Caller.Value ?? callerName;
@@ -127,11 +127,5 @@ internal sealed class AgentKernel : IAgentKernel
             chatHistory.AddUserMessage(result);
             return outputFunc(result);
         }
-    }
-    private static string GetCallerTypeName()
-    {
-        var stackTrace = new System.Diagnostics.StackTrace();
-        var callerFrame = stackTrace.GetFrame(2);
-        return callerFrame?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
     }
 }

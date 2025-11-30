@@ -82,7 +82,9 @@ internal sealed class CharacterPlugin(
 
         chatHistory.AddUserMessage(situation);
         var outputFunc = new Func<string, string>(response => response);
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), CancellationToken.None, kernelWithKg);
+        var response = await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), CancellationToken.None, kernelWithKg);
+        logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
+        return response;
     }
 
     private async static Task<string> BuildInstruction()

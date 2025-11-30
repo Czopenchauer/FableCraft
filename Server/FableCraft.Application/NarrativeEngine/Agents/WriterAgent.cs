@@ -62,6 +62,11 @@ internal sealed class WriterAgent(
                                   {context.MainCharacter.Description}
                                   </main_character>
                                   """);
+        stringBuilder.AppendLine($"""
+                                  <extra_context>
+                                  {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                  </extra_context>
+                                  """);
         if (context.SceneContext.Length > 0)
         {
             stringBuilder.AppendLine($"""

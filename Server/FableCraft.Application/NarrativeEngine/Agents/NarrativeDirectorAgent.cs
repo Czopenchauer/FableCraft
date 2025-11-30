@@ -84,6 +84,12 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
                                       """);
         }
 
+        stringBuilder.AppendLine($"""
+                                 <extra_context>
+                                 {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                 </extra_context>
+                                 """);
+
         chatHistory.AddUserMessage(stringBuilder.ToString());
         chatHistory.AddUserMessage(context.PlayerAction);
 

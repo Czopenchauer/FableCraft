@@ -177,9 +177,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                             await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),
                         cancellationToken);
 
-                    await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
-                        cancellationToken);
+                    // await _resiliencePipeline.ExecuteAsync(async ct =>
+                    //         await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
+                    //     cancellationToken);
 
                     adventure.RagProcessingStatus = ProcessingStatus.Completed;
                     await dbContext.SaveChangesAsync(cancellationToken);
