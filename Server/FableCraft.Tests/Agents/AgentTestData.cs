@@ -1,33 +1,27 @@
-﻿using FableCraft.Application.NarrativeEngine;
-using FableCraft.Application.NarrativeEngine.Models;
-using FableCraft.Infrastructure.Persistence.Entities;
+﻿using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
-
-using Microsoft.SemanticKernel;
 
 namespace FableCraft.Tests.Agents;
 
 internal static class AgentTestData
 {
-    internal static GenerationContext CreateSampleNarrativeContext(Guid adventureId, Kernel kernel)
+    internal static GenerationContext CreateSampleNarrativeContext(Guid adventureId, ApplicationDbContext dbContext)
     {
+        var adventure = dbContext.Adventures.Single(a => a.Id == adventureId);
+
         return new GenerationContext
         {
             AdventureId = adventureId,
-            KernelKg = kernel,
-            StorySummary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
             PlayerAction = "I enter the tavern and look around for anyone who might have information.",
-            CommonContext = """
-                Adventure Summary: A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.
-                
-                Current Scene: The protagonist has just arrived at the village of Thornhaven after a long journey.
-                
-                Setting: A medieval fantasy world with magic and mythical creatures.
-                """,
+            Summary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
             SceneContext = Array.Empty<SceneContext>(),
             Characters = new List<CharacterContext>(),
+            TrackerStructure = adventure.TrackerStructure,
+            MainCharacter = adventure.MainCharacter,
             NewLocations = Array.Empty<LocationGenerationResult>(),
-            NewLore = Array.Empty<GeneratedLore>()
+            NewLore = Array.Empty<GeneratedLore>(),
+            GenerationProcessStep = GenerationProcessStep.NotStarted
         };
     }
 
