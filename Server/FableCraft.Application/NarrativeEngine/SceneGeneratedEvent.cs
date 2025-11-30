@@ -101,7 +101,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     var lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.Id == sceneLorebook.Id);
                     if (lorebookChunk is null)
                     {
-                        var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content);
+                        var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content + message.AdventureId);
                         var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
                         var lorebookName = $"{lorebookHash:x16}";
                         var lorebookPath = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{lorebookName}.{sceneLorebook.ContentType.ToString()}";
@@ -126,7 +126,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
-                var bytes = Encoding.UTF8.GetBytes(sceneContent);
+                var bytes = Encoding.UTF8.GetBytes(sceneContent + message.AdventureId);
                 var hash = XxHash64.HashToUInt64(bytes);
                 var name = $"{hash:x16}";
                 var path = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
@@ -226,13 +226,13 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
     {
         var hashes = states.Select(x =>
         {
-            var bytes = Encoding.UTF8.GetBytes(fieldSelector(x));
+            var bytes = Encoding.UTF8.GetBytes(fieldSelector(x) + adventureId);
             var hash = XxHash64.HashToUInt64(bytes);
             return hash;
         });
 
         var latestState = states.MaxBy(x => x.SequenceNumber)!;
-        var bytes = Encoding.UTF8.GetBytes(fieldSelector(latestState));
+        var bytes = Encoding.UTF8.GetBytes(fieldSelector(latestState) + adventureId);
         var hash = XxHash64.HashToUInt64(bytes);
         var name = $"{hash:x16}";
         var path = @$"{StartupExtensions.DataDirectory}\{adventureId}\{name}.{contentType.ToString()}";

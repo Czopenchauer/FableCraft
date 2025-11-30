@@ -22,4 +22,3 @@ public sealed class LlmLog : IEntity
 
     public required long Duration { get; set; }
 }
-

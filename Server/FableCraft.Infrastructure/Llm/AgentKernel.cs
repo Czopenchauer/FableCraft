@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 using FableCraft.Infrastructure.Queue;
@@ -24,7 +25,8 @@ public interface IAgentKernel
         Func<string, T> outputFunc,
         PromptExecutionSettings promptExecutionSettings,
         CancellationToken cancellationToken,
-        Kernel? kernel = null);
+        Kernel? kernel = null,
+        [CallerMemberName] string callerName = "");
 }
 
 internal sealed class AgentKernel : IAgentKernel
@@ -66,11 +68,11 @@ internal sealed class AgentKernel : IAgentKernel
         Func<string, T> outputFunc,
         PromptExecutionSettings promptExecutionSettings,
         CancellationToken cancellationToken,
-        Kernel? kernel = null)
+        Kernel? kernel = null,
+        [CallerMemberName] string callerName = "")
     {
-        var callerName = GetCallerTypeName();
         Kernel agentKernel = kernel?.Clone() ?? _builder.WithBase().Build();
-
+        var caller = ProcessExecutionContext.Caller.Value ?? callerName;
         var chatCompletionService = agentKernel.GetRequiredService<IChatCompletionService>();
         try
         {
@@ -102,7 +104,7 @@ internal sealed class AgentKernel : IAgentKernel
                                  await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
                                      {
                                          AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
-                                         CallerName = callerName,
+                                         CallerName = caller,
                                          RequestContent = JsonSerializer.Serialize(chatHistory),
                                          ResponseContent = JsonSerializer.Serialize(result),
                                          InputToken = replyInnerContent?.Usage.InputTokenCount,

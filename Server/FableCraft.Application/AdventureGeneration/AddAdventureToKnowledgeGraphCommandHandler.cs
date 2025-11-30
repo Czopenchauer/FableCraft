@@ -87,7 +87,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             var existingChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == lorebookEntry.Id);
             if (existingChunk is null)
             {
-                var lorebookBytes = Encoding.UTF8.GetBytes(lorebookEntry.Content);
+                var lorebookBytes = Encoding.UTF8.GetBytes(lorebookEntry.Content + adventure.Id);
                 var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
                 var lorebookName = $"{lorebookHash:x16}";
                 var lorebookPath = @$"{DataDirectory}\{adventure.Id}\{lorebookName}.{lorebookEntry.ContentType.ToString()}";
@@ -116,7 +116,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                 {adventure.MainCharacter.Description}
                                 """;
 
-        var characterBytes = Encoding.UTF8.GetBytes(characterContent);
+        var characterBytes = Encoding.UTF8.GetBytes(characterContent + adventure.Id);
         var characterHash = XxHash64.HashToUInt64(characterBytes);
         var existingCharacterChunk = existingCharacterChunks.FirstOrDefault(x => x.ContentHash == characterHash);
 
@@ -137,7 +137,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             filesToCommit.Add((newCharacterChunk, characterContent));
         }
 
-        if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is ProcessingStatus.InProgress or ProcessingStatus.Failed)
+        if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is not ProcessingStatus.Completed)
         {
             await dbContext.Adventures.Where(x => x.Id == adventure.Id)
                 .ExecuteUpdateAsync(x => x.SetProperty(a => a.RagProcessingStatus, ProcessingStatus.InProgress),
