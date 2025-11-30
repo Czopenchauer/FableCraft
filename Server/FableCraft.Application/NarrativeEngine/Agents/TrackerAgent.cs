@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
@@ -40,11 +39,11 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                   {context.MainCharacter.Description}
                                   </main_character>
                                   """);
-        if (context.SceneContext.Length == 0)
+        if ((context.SceneContext?.Length ?? 0) == 0)
         {
             stringBuilder.AppendLine($"""
                                          <scene_content>
-                                         {context.NewScene!.Scene}
+                                         {context.NewScene?.Scene ?? context.PlayerAction}
                                          </scene_content>
                                       """);
             chatHistory.AddUserMessage(stringBuilder.ToString());
@@ -55,13 +54,13 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
         {
             stringBuilder.AppendLine($"""
                                       <previous_trackers>
-                                      {string.Join("\n\n", context.SceneContext.OrderByDescending(x => x.SequenceNumber).Take(1)
+                                      {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Take(1)
                                           .Select(s => $"""
                                                         {JsonSerializer.Serialize(s.Metadata.Tracker, options)}
                                                         """))}
                                       </previous_trackers>
                                       <last_scenes>
-                                      {string.Join("\n", context.SceneContext
+                                      {string.Join("\n", (context.SceneContext ?? Array.Empty<SceneContext>())
                                           .OrderByDescending(x => x.SequenceNumber)
                                           .Take(5)
                                           .Select(x =>

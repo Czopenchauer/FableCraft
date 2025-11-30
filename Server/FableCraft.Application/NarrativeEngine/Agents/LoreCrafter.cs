@@ -4,7 +4,6 @@ using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
@@ -31,7 +30,7 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kerne
             AllowTrailingCommas = true
         };
 
-        if (context.NewCharacters!.Length > 0)
+        if (context.NewCharacters?.Length > 0)
         {
             var createdCharactersJson = JsonSerializer.Serialize(context.NewCharacters, options);
             chatHistory.AddUserMessage($"""

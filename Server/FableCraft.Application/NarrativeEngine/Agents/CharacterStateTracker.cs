@@ -6,7 +6,6 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
@@ -53,7 +52,7 @@ internal sealed class CharacterStateTracker(
                       </previous_statistics>
 
                       <recent_scenes>
-                      {string.Join("\n\n---\n\n", generationContext.SceneContext
+                      {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
                           .OrderByDescending(x => x.SequenceNumber)
                           .TakeLast(3)
                           .Select(s => $"""
@@ -65,7 +64,7 @@ internal sealed class CharacterStateTracker(
                       </recent_scenes>
 
                       <current_scene>
-                      {generationContext.NewScene!.Scene}
+                      {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
                       </current_scene>
                       """;
         chatHistory.AddUserMessage(prompt);

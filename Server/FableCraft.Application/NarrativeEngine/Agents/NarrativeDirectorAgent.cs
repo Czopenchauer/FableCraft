@@ -6,7 +6,6 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;

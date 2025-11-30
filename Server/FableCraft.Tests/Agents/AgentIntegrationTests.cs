@@ -1,13 +1,11 @@
-﻿using FableCraft.Application.NarrativeEngine;
-using FableCraft.Application.NarrativeEngine.Agents;
-using FableCraft.Application.NarrativeEngine.Models;
+﻿using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using Microsoft.SemanticKernel;
 
 using Serilog;
 using Serilog.Extensions.Logging;
@@ -27,7 +25,7 @@ public class AgentIntegrationTests
 
     private IAgentKernel _agentKernel = null!;
     private IKernelBuilder _kernelBuilder = null!;
-    private Kernel _kernel = null!;
+    private IRagSearch _ragSearch = null!;
     private ApplicationDbContext _dbContext = null!;
     private Guid _testAdventureId;
 
@@ -84,7 +82,7 @@ public class AgentIntegrationTests
 
         _kernelBuilder = new OpenAiKernelBuilder(options, loggerFactory);
         _agentKernel = new AgentKernel(_kernelBuilder, _logger);
-        _kernel = _kernelBuilder.WithBase().Build();
+        _ragSearch = new MockRagSearch();
 
         var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_postgresContainer.GetConnectionString())
@@ -112,26 +110,26 @@ public class AgentIntegrationTests
     public async Task NarrativeDirectorAgent_OutputMapsToNarrativeDirectorOutput()
     {
         // Arrange
-        var agent = new NarrativeDirectorAgent(_agentKernel);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
+        var agent = new NarrativeDirectorAgent(_agentKernel, _kernelBuilder, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
 
         // Act
-        var result = await agent.Invoke(context, CancellationToken.None);
+        await agent.Invoke(context, CancellationToken.None);
 
         // Assert
-        await Assert.That(result).IsNotNull();
-        await Assert.That(result.SceneMetadata).IsNotNull();
-        await Assert.That(result.SceneDirection).IsNotNull();
-        await Assert.That(result.Objectives).IsNotNull();
-        await Assert.That(result.Conflicts).IsNotNull();
+        await Assert.That(context.NewNarrativeDirection).IsNotNull();
+        await Assert.That(context.NewNarrativeDirection!.SceneMetadata).IsNotNull();
+        await Assert.That(context.NewNarrativeDirection.SceneDirection).IsNotNull();
+        await Assert.That(context.NewNarrativeDirection.Objectives).IsNotNull();
+        await Assert.That(context.NewNarrativeDirection.Conflicts).IsNotNull();
         
-        await Assert.That(result.SceneMetadata.SceneNumber).IsGreaterThanOrEqualTo(0);
-        await Assert.That(string.IsNullOrEmpty(result.SceneMetadata.NarrativeAct)).IsFalse();
-        await Assert.That(string.IsNullOrEmpty(result.SceneMetadata.BeatType)).IsFalse();
+        await Assert.That(context.NewNarrativeDirection.SceneMetadata.SceneNumber).IsGreaterThanOrEqualTo(0);
+        await Assert.That(string.IsNullOrEmpty(context.NewNarrativeDirection.SceneMetadata.NarrativeAct)).IsFalse();
+        await Assert.That(string.IsNullOrEmpty(context.NewNarrativeDirection.SceneMetadata.BeatType)).IsFalse();
         
         _logger.Information("NarrativeDirectorAgent output successfully mapped to NarrativeDirectorOutput");
         _logger.Information("Scene Number: {SceneNumber}, Beat Type: {BeatType}", 
-            result.SceneMetadata.SceneNumber, result.SceneMetadata.BeatType);
+            context.NewNarrativeDirection.SceneMetadata.SceneNumber, context.NewNarrativeDirection.SceneMetadata.BeatType);
     }
 
     #endregion
@@ -142,23 +140,22 @@ public class AgentIntegrationTests
     public async Task WriterAgent_OutputMapsToGeneratedScene()
     {
         // Arrange
-        var agent = new WriterAgent(_agentKernel, _logger);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
-        var narrativeDirectorOutput = AgentTestData.CreateSampleNarrativeDirectorOutput();
-        var characterContexts = Array.Empty<CharacterContext>();
+        var agent = new WriterAgent(_agentKernel, _logger, _kernelBuilder, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        context.NewNarrativeDirection = AgentTestData.CreateSampleNarrativeDirectorOutput();
 
         // Act
-        var result = await agent.Invoke(context, characterContexts, narrativeDirectorOutput, CancellationToken.None);
+        await agent.Invoke(context, CancellationToken.None);
 
         // Assert
-        await Assert.That(result).IsNotNull();
-        await Assert.That(string.IsNullOrEmpty(result.Scene)).IsFalse();
-        await Assert.That(result.Choices).IsNotNull();
-        await Assert.That(result.Choices).IsNotEmpty();
+        await Assert.That(context.NewScene).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(context.NewScene!.Scene)).IsFalse();
+        await Assert.That(context.NewScene.Choices).IsNotNull();
+        await Assert.That(context.NewScene.Choices).IsNotEmpty();
         
         _logger.Information("WriterAgent output successfully mapped to GeneratedScene");
         _logger.Information("Scene length: {Length} chars, Choices count: {Count}", 
-            result.Scene.Length, result.Choices.Length);
+            context.NewScene.Scene.Length, context.NewScene.Choices.Length);
     }
 
     #endregion
@@ -169,13 +166,12 @@ public class AgentIntegrationTests
     public async Task LoreCrafter_OutputMapsToGeneratedLore()
     {
         // Arrange
-        var agent = new LoreCrafter(_agentKernel);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
+        var agent = new LoreCrafter(_agentKernel, _kernelBuilder, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
         var loreRequest = AgentTestData.CreateSampleLoreRequest();
-        var characterContexts = Array.Empty<CharacterContext>();
 
         // Act
-        var result = await agent.Invoke(_kernel, loreRequest, context, characterContexts, CancellationToken.None);
+        var result = await agent.Invoke(context, loreRequest, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
@@ -195,13 +191,12 @@ public class AgentIntegrationTests
     public async Task LocationCrafter_OutputMapsToLocationGenerationResult()
     {
         // Arrange
-        var agent = new LocationCrafter(_agentKernel);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
+        var agent = new LocationCrafter(_agentKernel, _kernelBuilder, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
         var locationRequest = AgentTestData.CreateSampleLocationRequest();
-        var characterContexts = Array.Empty<CharacterContext>();
 
         // Act
-        var result = await agent.Invoke(_kernel, locationRequest, context, characterContexts, CancellationToken.None);
+        var result = await agent.Invoke(context, locationRequest, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
@@ -223,12 +218,12 @@ public class AgentIntegrationTests
     public async Task CharacterCrafter_OutputMapsToCharacterContext()
     {
         // Arrange
-        var agent = new CharacterCrafter(_agentKernel, _dbContext);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
+        var agent = new CharacterCrafter(_agentKernel, _dbContext, _kernelBuilder, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
         var characterRequest = AgentTestData.CreateSampleCharacterRequest();
 
         // Act
-        var result = await agent.Invoke(_kernel, context, characterRequest, CancellationToken.None);
+        var result = await agent.Invoke(context, characterRequest, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
@@ -249,18 +244,12 @@ public class AgentIntegrationTests
     public async Task CharacterStateTracker_OutputMapsToCharacterContext()
     {
         // Arrange
-        var agent = new CharacterStateTracker(_agentKernel, _dbContext, _kernelBuilder);
-        var narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
+        var agent = new CharacterStateTracker(_agentKernel, _dbContext, _kernelBuilder, _ragSearch);
+        var narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
         var characterContext = AgentTestData.CreateSampleCharacterContext();
-        var scene = AgentTestData.CreateSampleGeneratedScene();
 
         // Act
-        var result = await agent.Invoke(
-            _testAdventureId,
-            narrativeContext,
-            characterContext,
-            scene,
-            CancellationToken.None);
+        var result = await agent.Invoke(narrativeContext, characterContext, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
@@ -281,11 +270,10 @@ public class AgentIntegrationTests
     {
         // Arrange
         var agent = new TrackerAgent(_agentKernel, _dbContext, _kernelBuilder);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _kernel);
-        var scene = AgentTestData.CreateSampleGeneratedScene();
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
 
         // Act
-        var result = await agent.Invoke(context, scene, CancellationToken.None);
+        var result = await agent.Invoke(context, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
