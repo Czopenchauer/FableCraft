@@ -76,20 +76,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AdventureId");
-
-                    b.HasIndex("Name");
 
                     b.ToTable("Characters");
                 });
@@ -133,15 +122,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                                             b3.Property<string>("ResponseToKindness")
                                                 .HasJsonPropertyName("response_to_kindness");
-                                        });
-
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "Availability", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.Availability#Availability", b3 =>
-                                        {
-                                            b3.PrimitiveCollection<string>("ConditionsForEncounter")
-                                                .HasJsonPropertyName("conditions_for_encounter");
-
-                                            b3.Property<string>("CurrentLocation")
-                                                .HasJsonPropertyName("current_location");
                                         });
 
                                     b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentPlan", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.CurrentPlan#CurrentPlan", b3 =>

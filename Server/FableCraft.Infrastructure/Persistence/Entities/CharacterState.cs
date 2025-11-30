@@ -1,7 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 
-using NpgsqlTypes;
-
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public sealed class CharacterState

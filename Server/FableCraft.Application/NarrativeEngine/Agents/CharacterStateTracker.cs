@@ -95,6 +95,7 @@ internal sealed class CharacterStateTracker(
         var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
         return new CharacterContext
         {
+            CharacterId = context.CharacterId,
             CharacterTracker = result.tracker,
             CharacterState = result.state,
             Name = context.Name,

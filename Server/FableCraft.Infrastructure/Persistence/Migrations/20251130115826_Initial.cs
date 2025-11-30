@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using NpgsqlTypes;
 
 #nullable disable
 
@@ -19,7 +18,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     FirstSceneGuidance = table.Column<string>(type: "text", nullable: false),
-                    AdventureStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    AdventureStartTime = table.Column<string>(type: "text", nullable: false),
                     ProcessingStatus = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     LastPlayedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -66,9 +65,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false)
+                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -155,7 +152,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Tracker = table.Column<string>(type: "text", nullable: false),
-                    SearchVector = table.Column<NpgsqlTsVector>(type: "tsvector", nullable: false),
                     CharacterStats = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
@@ -205,6 +201,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Adventures_Name",
+                table: "Adventures",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CharacterActions_SceneId",
                 table: "CharacterActions",
                 column: "SceneId");
@@ -213,11 +215,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 name: "IX_Characters_AdventureId",
                 table: "Characters",
                 column: "AdventureId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Characters_Name",
-                table: "Characters",
-                column: "Name");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CharacterStates_CharacterId",
@@ -238,6 +235,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 name: "IX_Chunks_EntityId",
                 table: "Chunks",
                 column: "EntityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Chunks_EntityId_ContentHash",
+                table: "Chunks",
+                columns: new[] { "EntityId", "ContentHash" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_LorebookEntries_AdventureId",
@@ -268,7 +271,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_TrackerDefinitions_Name",
                 table: "TrackerDefinitions",
-                column: "Name");
+                column: "Name",
+                unique: true);
         }
 
         /// <inheritdoc />

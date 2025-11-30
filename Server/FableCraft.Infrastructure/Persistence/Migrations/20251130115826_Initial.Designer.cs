@@ -7,14 +7,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using NpgsqlTypes;
 
 #nullable disable
 
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251129135305_Initial")]
+    [Migration("20251130115826_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -33,8 +32,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("AdventureStartTime")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("AdventureStartTime")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("AuthorNotes")
                         .HasColumnType("text");
@@ -64,6 +64,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Adventures");
                 });
 
@@ -76,20 +79,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AdventureId");
-
-                    b.HasIndex("Name");
 
                     b.ToTable("Characters");
                 });
@@ -109,10 +101,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
-
-                    b.Property<NpgsqlTsVector>("SearchVector")
-                        .IsRequired()
-                        .HasColumnType("tsvector");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
@@ -137,15 +125,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                                             b3.Property<string>("ResponseToKindness")
                                                 .HasJsonPropertyName("response_to_kindness");
-                                        });
-
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "Availability", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.Availability#Availability", b3 =>
-                                        {
-                                            b3.PrimitiveCollection<string>("ConditionsForEncounter")
-                                                .HasJsonPropertyName("conditions_for_encounter");
-
-                                            b3.Property<string>("CurrentLocation")
-                                                .HasJsonPropertyName("current_location");
                                         });
 
                                     b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentPlan", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.CurrentPlan#CurrentPlan", b3 =>
@@ -578,6 +557,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("EntityId");
 
+                    b.HasIndex("EntityId", "ContentHash")
+                        .IsUnique();
+
                     b.ToTable("Chunks");
                 });
 
@@ -723,7 +705,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name");
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("TrackerDefinitions");
                 });

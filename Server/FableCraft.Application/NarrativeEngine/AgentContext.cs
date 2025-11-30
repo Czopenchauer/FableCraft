@@ -36,6 +36,8 @@ internal sealed class NarrativeContext
 
 internal sealed class CharacterContext
 {
+    public required Guid CharacterId { get; set; }
+
     public string Name { get; set; } = null!;
 
     public string Description { get; set; } = null!;

@@ -85,6 +85,7 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
         var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
         return new CharacterContext
         {
+            CharacterId = Guid.Empty,
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
