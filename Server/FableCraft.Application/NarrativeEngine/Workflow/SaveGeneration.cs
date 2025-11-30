@@ -3,6 +3,7 @@
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;

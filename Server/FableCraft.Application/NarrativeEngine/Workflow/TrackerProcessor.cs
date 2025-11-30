@@ -7,22 +7,26 @@ internal sealed class TrackerProcessor(TrackerAgent trackerAgent, CharacterState
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var tracker = await trackerAgent.Invoke(
-            context,
-            cancellationToken);
-        context.NewTracker = tracker;
-        context.GenerationProcessStep = GenerationProcessStep.TrackerUpdatingFinished;
-        var characterUpdatesTask = tracker.CharactersPresent
-            .ExceptBy(context.NewCharacters!.Select(x => x.Name), x => x)
-            .ToList();
+        if (context.GenerationProcessStep < GenerationProcessStep.TrackerUpdatingFinished)
+        {
+            var tracker = await trackerAgent.Invoke(context, cancellationToken);
+            context.NewTracker = tracker;
+            context.GenerationProcessStep = GenerationProcessStep.TrackerUpdatingFinished;
+        }
 
-        var characterUpdateTask = context.Characters.Where(x => characterUpdatesTask.Contains(x.Name))
-            .Select(character => characterStateTracker.Invoke(
-                context,
-                character,
-                cancellationToken));
-        var characterUpdates = await Task.WhenAll(characterUpdateTask);
-        context.CharacterUpdates = characterUpdates;
-        context.GenerationProcessStep = GenerationProcessStep.CharacterStateTrackingFinished;
+        if (context.GenerationProcessStep < GenerationProcessStep.CharacterStateTrackingFinished)
+        {
+            var characterUpdatesTask = context.NewTracker!.CharactersPresent
+                .ExceptBy(context.NewCharacters!.Select(x => x.Name), x => x)
+                .ToList();
+
+            var characterUpdateTask = context.Characters
+                .Where(x => characterUpdatesTask.Contains(x.Name))
+                .Select(character => characterStateTracker.Invoke(context, character, cancellationToken));
+        
+            var characterUpdates = await Task.WhenAll(characterUpdateTask);
+            context.CharacterUpdates = characterUpdates;
+            context.GenerationProcessStep = GenerationProcessStep.CharacterStateTrackingFinished;
+        }
     }
 }

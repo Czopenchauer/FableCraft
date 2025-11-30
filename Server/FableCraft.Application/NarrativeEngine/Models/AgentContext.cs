@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 

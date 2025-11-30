@@ -48,6 +48,19 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GenerationProcesses",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Context = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GenerationProcesses", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TrackerDefinitions",
                 columns: table => new
                 {
@@ -58,24 +71,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TrackerDefinitions", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Characters",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Characters", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Characters_Adventures_AdventureId",
-                        column: x => x.AdventureId,
-                        principalTable: "Adventures",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -109,7 +104,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     NarrativeText = table.Column<string>(type: "text", nullable: false),
                     CommitStatus = table.Column<string>(type: "text", nullable: false),
                     Metadata = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -143,11 +138,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CharacterStates",
+                name: "Characters",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CharacterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdventureId = table.Column<Guid>(type: "uuid", nullable: false),
                     SceneId = table.Column<Guid>(type: "uuid", nullable: false),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
@@ -156,15 +152,15 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CharacterStates", x => x.Id);
+                    table.PrimaryKey("PK_Characters", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CharacterStates_Characters_CharacterId",
-                        column: x => x.CharacterId,
-                        principalTable: "Characters",
+                        name: "FK_Characters_Adventures_AdventureId",
+                        column: x => x.AdventureId,
+                        principalTable: "Adventures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CharacterStates_Scenes_SceneId",
+                        name: "FK_Characters_Scenes_SceneId",
                         column: x => x.SceneId,
                         principalTable: "Scenes",
                         principalColumn: "Id",
@@ -217,18 +213,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 column: "AdventureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CharacterStates_CharacterId",
-                table: "CharacterStates",
-                column: "CharacterId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CharacterStates_SceneId",
-                table: "CharacterStates",
+                name: "IX_Characters_SceneId",
+                table: "Characters",
                 column: "SceneId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CharacterStates_SequenceNumber",
-                table: "CharacterStates",
+                name: "IX_Characters_SequenceNumber",
+                table: "Characters",
                 column: "SequenceNumber");
 
             migrationBuilder.CreateIndex(
@@ -282,10 +273,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                 name: "CharacterActions");
 
             migrationBuilder.DropTable(
-                name: "CharacterStates");
+                name: "Characters");
 
             migrationBuilder.DropTable(
                 name: "Chunks");
+
+            migrationBuilder.DropTable(
+                name: "GenerationProcesses");
 
             migrationBuilder.DropTable(
                 name: "LorebookEntries");
@@ -295,9 +289,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "TrackerDefinitions");
-
-            migrationBuilder.DropTable(
-                name: "Characters");
 
             migrationBuilder.DropTable(
                 name: "Scenes");

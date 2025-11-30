@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251130115826_Initial")]
+    [Migration("20251130170835_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -79,19 +79,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdventureId");
-
-                    b.ToTable("Characters");
-                });
-
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.CharacterState", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("CharacterId")
                         .HasColumnType("uuid");
 
@@ -109,13 +96,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "CharacterStats", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats", b1 =>
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CharacterStats", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats", b1 =>
                         {
                             b1.IsRequired();
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "BehavioralState", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "BehavioralState", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.BehavioralState#BehavioralState", b2 =>
                                 {
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "ActionTendencies", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.ActionTendencies#ActionTendencies", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "ActionTendencies", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.BehavioralState#BehavioralState.ActionTendencies#ActionTendencies", b3 =>
                                         {
                                             b3.Property<string>("DefaultResponseToAggression")
                                                 .HasJsonPropertyName("default_response_to_aggression");
@@ -127,7 +114,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("response_to_kindness");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentPlan", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.BehavioralState#BehavioralState.CurrentPlan#CurrentPlan", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentPlan", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.BehavioralState#BehavioralState.CurrentPlan#CurrentPlan", b3 =>
                                         {
                                             b3.Property<Dictionary<string, string>>("ContingencyPlans")
                                                 .HasJsonPropertyName("contingency_plans");
@@ -144,7 +131,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "CharacterArc", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.CharacterArc#CharacterArc", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "CharacterArc", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.CharacterArc#CharacterArc", b2 =>
                                 {
                                     b2.Property<string>("ArcType")
                                         .HasJsonPropertyName("arc_type");
@@ -158,7 +145,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                     b2.PrimitiveCollection<string>("KeyDecisionsPending")
                                         .HasJsonPropertyName("key_decisions_pending");
 
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "ArcStages", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.CharacterArc#CharacterArc.ArcStages#ArcStage", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "ArcStages", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.CharacterArc#CharacterArc.ArcStages#ArcStage", b3 =>
                                         {
                                             b3.Property<bool>("Completed")
                                                 .HasJsonPropertyName("completed");
@@ -177,7 +164,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "CharacterIdentity", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.CharacterIdentity#CharacterIdentity", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "CharacterIdentity", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.CharacterIdentity#CharacterIdentity", b2 =>
                                 {
                                     b2.IsRequired();
 
@@ -191,9 +178,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         .HasJsonPropertyName("full_name");
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "EmotionalState", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.EmotionalState#EmotionalState", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "EmotionalState", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.EmotionalState#EmotionalState", b2 =>
                                 {
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentEmotions", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.EmotionalState#EmotionalState.CurrentEmotions#CurrentEmotions", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "CurrentEmotions", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.EmotionalState#EmotionalState.CurrentEmotions#CurrentEmotions", b3 =>
                                         {
                                             b3.Property<double>("Intensity")
                                                 .HasJsonPropertyName("intensity");
@@ -205,7 +192,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("secondary_emotions");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "EmotionalTriggers", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.EmotionalState#EmotionalState.EmotionalTriggers#EmotionalTriggers", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "EmotionalTriggers", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.EmotionalState#EmotionalState.EmotionalTriggers#EmotionalTriggers", b3 =>
                                         {
                                             b3.PrimitiveCollection<string>("Negative")
                                                 .HasJsonPropertyName("negative");
@@ -215,9 +202,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "GoalsAndMotivations", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "GoalsAndMotivations", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations", b2 =>
                                 {
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "Motivations", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.Motivations#Motivations", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "Motivations", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.Motivations#Motivations", b3 =>
                                         {
                                             b3.PrimitiveCollection<string>("Extrinsic")
                                                 .HasJsonPropertyName("extrinsic");
@@ -226,7 +213,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("intrinsic");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "PrimaryGoal", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.PrimaryGoal#PrimaryGoal", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "PrimaryGoal", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.PrimaryGoal#PrimaryGoal", b3 =>
                                         {
                                             b3.Property<string>("Description")
                                                 .HasJsonPropertyName("description");
@@ -250,7 +237,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("time_sensitivity");
                                         });
 
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "SecondaryGoals", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.SecondaryGoals#SecondaryGoal", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "SecondaryGoals", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.GoalsAndMotivations#GoalsAndMotivations.SecondaryGoals#SecondaryGoal", b3 =>
                                         {
                                             b3.Property<string>("Description")
                                                 .HasJsonPropertyName("description");
@@ -266,7 +253,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Integration", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Integration#Integration", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Integration", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Integration#Integration", b2 =>
                                 {
                                     b2.Property<string>("CulturalBackground")
                                         .HasJsonPropertyName("cultural_background");
@@ -281,9 +268,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         .HasJsonPropertyName("relevant_lore");
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "KnowledgeAndBeliefs", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "KnowledgeAndBeliefs", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs", b2 =>
                                 {
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "BeliefsAboutProtagonist", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.BeliefsAboutProtagonist#BeliefAboutProtagonist", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "BeliefsAboutProtagonist", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.BeliefsAboutProtagonist#BeliefAboutProtagonist", b3 =>
                                         {
                                             b3.Property<string>("Belief")
                                                 .HasJsonPropertyName("belief");
@@ -298,7 +285,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("formed_at_scene");
                                         });
 
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "SecretsHeld", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.SecretsHeld#Secret", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "SecretsHeld", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.SecretsHeld#Secret", b3 =>
                                         {
                                             b3.PrimitiveCollection<string>("RevealConditions")
                                                 .HasJsonPropertyName("reveal_conditions");
@@ -310,7 +297,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("willingness_to_share");
                                         });
 
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "WorldKnowledge", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.WorldKnowledge#WorldKnowledge", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "WorldKnowledge", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.KnowledgeAndBeliefs#KnowledgeAndBeliefs.WorldKnowledge#WorldKnowledge", b3 =>
                                         {
                                             b3.Property<double>("ConfidenceLevel")
                                                 .HasJsonPropertyName("confidence_level");
@@ -329,7 +316,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexCollection(typeof(List<Dictionary<string, object>>), "MemoryStream", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.MemoryStream#MemoryEntry", b2 =>
+                            b1.ComplexCollection(typeof(List<Dictionary<string, object>>), "MemoryStream", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.MemoryStream#MemoryEntry", b2 =>
                                 {
                                     b2.Property<string>("Description")
                                         .HasJsonPropertyName("description");
@@ -353,12 +340,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         .HasJsonPropertyName("scene_reference");
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Personality", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Personality#Personality", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Personality", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Personality#Personality", b2 =>
                                 {
                                     b2.PrimitiveCollection<string>("CoreTraits")
                                         .HasJsonPropertyName("core_traits");
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "FiveFactorModel", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Personality#Personality.FiveFactorModel#FiveFactorModel", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "FiveFactorModel", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Personality#Personality.FiveFactorModel#FiveFactorModel", b3 =>
                                         {
                                             b3.Property<double>("Agreeableness")
                                                 .HasJsonPropertyName("agreeableness");
@@ -376,7 +363,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("openness");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "MoralAlignment", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Personality#Personality.MoralAlignment#MoralAlignment", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "MoralAlignment", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Personality#Personality.MoralAlignment#MoralAlignment", b3 =>
                                         {
                                             b3.Property<double>("GoodEvilAxis")
                                                 .HasJsonPropertyName("good_evil_axis");
@@ -385,7 +372,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("lawful_chaotic_axis");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "SpeechPatterns", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Personality#Personality.SpeechPatterns#SpeechPatterns", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "SpeechPatterns", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Personality#Personality.SpeechPatterns#SpeechPatterns", b3 =>
                                         {
                                             b3.Property<string>("AccentOrDialect")
                                                 .HasJsonPropertyName("accent_or_dialect");
@@ -395,9 +382,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                         });
                                 });
 
-                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Relationships", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships", b2 =>
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Relationships", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships", b2 =>
                                 {
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "FactionAffiliations", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.FactionAffiliations#FactionAffiliation", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "FactionAffiliations", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.FactionAffiliations#FactionAffiliation", b3 =>
                                         {
                                             b3.Property<string>("FactionName")
                                                 .HasJsonPropertyName("faction_name");
@@ -409,7 +396,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("standing");
                                         });
 
-                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "WithOtherCharacters", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.WithOtherCharacters#RelationshipWithOther", b3 =>
+                                    b2.ComplexCollection(typeof(List<Dictionary<string, object>>), "WithOtherCharacters", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.WithOtherCharacters#RelationshipWithOther", b3 =>
                                         {
                                             b3.Property<string>("CharacterReference")
                                                 .HasJsonPropertyName("character_reference");
@@ -430,7 +417,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                 .HasJsonPropertyName("trust_level");
                                         });
 
-                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "WithProtagonist", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist", b3 =>
+                                    b2.ComplexProperty(typeof(Dictionary<string, object>), "WithProtagonist", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist", b3 =>
                                         {
                                             b3.Property<int>("AffectionLevel")
                                                 .HasJsonPropertyName("affection_level");
@@ -453,7 +440,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                             b3.Property<int>("TrustLevel")
                                                 .HasJsonPropertyName("trust_level");
 
-                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "DebtsAndObligations", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.DebtsAndObligations#DebtAndObligation", b4 =>
+                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "DebtsAndObligations", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.DebtsAndObligations#DebtAndObligation", b4 =>
                                                 {
                                                     b4.Property<string>("Description")
                                                         .HasJsonPropertyName("description");
@@ -480,7 +467,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                         .HasJsonPropertyName("urgency");
                                                 });
 
-                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "PromisesMade", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.PromisesMade#Promise", b4 =>
+                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "PromisesMade", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.PromisesMade#Promise", b4 =>
                                                 {
                                                     b4.Property<bool>("IsFulfilled")
                                                         .HasJsonPropertyName("is_fulfilled");
@@ -492,7 +479,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                                                         .HasJsonPropertyName("scene_made");
                                                 });
 
-                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "SharedExperiences", "FableCraft.Infrastructure.Persistence.Entities.CharacterState.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.SharedExperiences#SharedExperience", b4 =>
+                                            b3.ComplexCollection(typeof(List<Dictionary<string, object>>), "SharedExperiences", "FableCraft.Infrastructure.Persistence.Entities.Character.CharacterStats#CharacterStats.Relationships#Relationships.WithProtagonist#RelationshipWithProtagonist.SharedExperiences#SharedExperience", b4 =>
                                                 {
                                                     b4.Property<string>("Description")
                                                         .HasJsonPropertyName("description");
@@ -517,13 +504,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CharacterId");
+                    b.HasIndex("AdventureId");
 
                     b.HasIndex("SceneId");
 
                     b.HasIndex("SequenceNumber");
 
-                    b.ToTable("CharacterStates");
+                    b.ToTable("Characters");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Chunk", b =>
@@ -561,6 +548,24 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Chunks");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.GenerationProcess", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdventureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Context")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GenerationProcesses");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.LorebookEntry", b =>
@@ -666,7 +671,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Metadata")
@@ -718,23 +723,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AdventureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.CharacterState", b =>
-                {
-                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Character", "Character")
-                        .WithMany("CharacterStates")
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Scene", null)
                         .WithMany("CharacterStates")
                         .HasForeignKey("SceneId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.LorebookEntry", b =>
@@ -795,11 +789,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Scenes");
-                });
-
-            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Character", b =>
-                {
-                    b.Navigation("CharacterStates");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Scene", b =>

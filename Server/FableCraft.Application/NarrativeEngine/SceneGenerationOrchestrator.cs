@@ -2,66 +2,32 @@
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
-using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
-using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
-using FableCraft.Infrastructure.Queue;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.SemanticKernel;
 
 using Serilog;
-
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine;
 
 public class SceneGenerationOutput
 {
-    public required GeneratedScene GeneratedScene { get; set; }
+    public required GeneratedScene GeneratedScene { get; init; }
 
-    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; set; }
+    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
 
-    public required Tracker Tracker { get; set; }
+    public required Tracker Tracker { get; init; }
 }
 
-internal sealed class SceneGenerationOrchestrator
+internal sealed class SceneGenerationOrchestrator(
+    ILogger logger,
+    ApplicationDbContext dbContext,
+    IEnumerable<IProcessor> processors)
 {
-    private class WorkflowBuilder(IEnumerable<IProcessor> processors)
-    {
-        private readonly List<IProcessor> _workflow = new();
-
-        public WorkflowBuilder AddProcessor<T>() where T : IProcessor
-        {
-            var processor = processors.OfType<T>().FirstOrDefault();
-            ArgumentNullException.ThrowIfNull(processor);
-            _workflow.Add(processor);
-            return this;
-        }
-
-        public List<IProcessor> Build() => _workflow;
-    }
-
-    private readonly ApplicationDbContext _dbContext;
-    private readonly ILogger _logger;
-    private readonly IEnumerable<IProcessor> _processors;
-    private readonly IMessageDispatcher _messageDispatcher;
     private const int NumberOfScenesToInclude = 20;
-
-    public SceneGenerationOrchestrator(
-        ILogger logger,
-        ApplicationDbContext dbContext,
-        IMessageDispatcher messageDispatcher,
-        IEnumerable<IProcessor> processors)
-    {
-        _logger = logger;
-        _dbContext = dbContext;
-        _messageDispatcher = messageDispatcher;
-        _processors = processors;
-    }
 
     public async Task<SceneGenerationOutput> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
     {
@@ -69,7 +35,7 @@ internal sealed class SceneGenerationOrchestrator
 
         if (context.Context.GenerationProcessStep == GenerationProcessStep.Completed)
         {
-            await _dbContext.GenerationProcesses
+            await dbContext.GenerationProcesses
                 .Where(x => x.Id == context.ProcessId)
                 .ExecuteDeleteAsync(cancellationToken);
 
@@ -81,29 +47,22 @@ internal sealed class SceneGenerationOrchestrator
             };
         }
 
-        var workflow = new WorkflowBuilder(_processors)
-            .AddProcessor<ContextGatherer>()
-            .AddProcessor<NarrativeDirectorAgent>()
-            .AddProcessor<ContentGenerator>()
-            .AddProcessor<WriterAgent>()
-            .AddProcessor<TrackerProcessor>()
-            .AddProcessor<SaveGeneration>()
-            .Build();
+        var workflow = BuildWorkflow(processors, context.Context.GenerationProcessStep);
         foreach (IProcessor processor in workflow)
         {
             try
             {
                 await processor.Invoke(context.Context, cancellationToken);
-                await _dbContext.GenerationProcesses
+                await dbContext.GenerationProcesses
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
                         cancellationToken: cancellationToken);
             }
             catch (Exception ex)
             {
-                await _dbContext.GenerationProcesses
+                await dbContext.GenerationProcesses
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
                         cancellationToken: cancellationToken);
-                _logger.Error(ex,
+                logger.Error(ex,
                     "Error during scene generation for adventure {AdventureId} at step {GenerationProcessStep}",
                     adventureId,
                     context.Context.GenerationProcessStep);
@@ -111,7 +70,7 @@ internal sealed class SceneGenerationOrchestrator
             }
         }
 
-        await _dbContext.GenerationProcesses
+        await dbContext.GenerationProcesses
             .Where(x => x.Id == context.ProcessId)
             .ExecuteDeleteAsync(cancellationToken);
 
@@ -125,13 +84,13 @@ internal sealed class SceneGenerationOrchestrator
 
     private async Task<(GenerationContext Context, Guid ProcessId)> GetGenerationContext(Guid adventureId, string playerAction, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext
+        var adventure = await dbContext
             .Adventures
             .Where(x => x.Id == adventureId)
             .Select(x => new { x.TrackerStructure, x.MainCharacter })
             .SingleAsync(cancellationToken: cancellationToken);
 
-        var scenes = await _dbContext
+        var scenes = await dbContext
             .Scenes
             .Where(x => x.AdventureId == adventureId)
             .Include(x => x.CharacterActions)
@@ -140,7 +99,7 @@ internal sealed class SceneGenerationOrchestrator
             .ToListAsync(cancellationToken);
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
 
-        var generationProcess = await _dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
+        var generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
         GenerationContext context;
         if (generationProcess != null)
         {
@@ -184,18 +143,18 @@ internal sealed class SceneGenerationOrchestrator
                 Characters = adventureCharacters,
                 Summary = scenes.MaxBy(x => x.SequenceNumber)?.AdventureSummary
             };
-            var process = new GenerationProcess()
+            var process = new GenerationProcess
             {
                 AdventureId = adventureId,
                 Context = JsonSerializer.Serialize(newContext),
             };
-            await _dbContext.GenerationProcesses.AddAsync(new GenerationProcess
+            await dbContext.GenerationProcesses.AddAsync(new GenerationProcess
                 {
                     AdventureId = adventureId,
                     Context = JsonSerializer.Serialize(newContext),
                 },
                 cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
             return (process, newContext);
         }
 
@@ -221,6 +180,27 @@ internal sealed class SceneGenerationOrchestrator
         }
     }
 
+    private static List<IProcessor> BuildWorkflow(IEnumerable<IProcessor> processors, GenerationProcessStep currentStep)
+    {
+        var fullWorkflow = new (GenerationProcessStep step, Type processorType)[]
+        {
+            (GenerationProcessStep.NotStarted, typeof(ContextGatherer)),
+            (GenerationProcessStep.ContextGatheringFinished, typeof(NarrativeDirectorAgent)),
+            (GenerationProcessStep.NarrativeDirectionFinished, typeof(ContentGenerator)),
+            (GenerationProcessStep.CharacterCreationFinished, typeof(ContentGenerator)),
+            (GenerationProcessStep.LoreGenerationFinished, typeof(ContentGenerator)),
+            (GenerationProcessStep.LocationGenerationFinished, typeof(WriterAgent)),
+            (GenerationProcessStep.SceneGenerationFinished, typeof(TrackerProcessor)),
+            (GenerationProcessStep.TrackerUpdatingFinished, typeof(TrackerProcessor)),
+            (GenerationProcessStep.CharacterStateTrackingFinished, typeof(SaveGeneration))
+        };
+
+        return fullWorkflow
+            .Where(w => w.step >= currentStep)
+            .Select(w => processors.First(p => p.GetType() == w.processorType))
+            .ToList();
+    }
+
     /// <summary>
     /// Gets the latest character contexts for all characters in the adventure.
     /// </summary>
@@ -229,7 +209,7 @@ internal sealed class SceneGenerationOrchestrator
     /// <returns></returns>
     private async Task<List<CharacterContext>> GetCharacters(Guid adventureId, CancellationToken cancellationToken)
     {
-        var existingCharacters = await _dbContext
+        var existingCharacters = await dbContext
             .Characters
             .Where(x => x.AdventureId == adventureId)
             .GroupBy(x => x.CharacterId)
@@ -249,7 +229,7 @@ internal sealed class SceneGenerationOrchestrator
 
     public async Task<SceneGenerationOutput> GenerateInitialSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext
+        var adventure = await dbContext
             .Adventures
             .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance, x.AdventureStartTime })
             .SingleAsync(x => x.Id == adventureId, cancellationToken: cancellationToken);

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 

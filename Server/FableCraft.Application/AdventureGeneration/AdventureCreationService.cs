@@ -5,6 +5,7 @@ using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;

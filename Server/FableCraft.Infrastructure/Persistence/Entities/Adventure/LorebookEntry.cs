@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FableCraft.Infrastructure.Persistence.Entities;
+namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public class LorebookEntry : IEntity
 {

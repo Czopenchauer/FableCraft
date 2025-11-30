@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace FableCraft.Infrastructure.Persistence.Entities;
+namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public enum CommitStatus
 {

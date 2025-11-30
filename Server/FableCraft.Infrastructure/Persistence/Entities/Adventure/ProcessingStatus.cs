@@ -1,4 +1,4 @@
-﻿namespace FableCraft.Infrastructure.Persistence.Entities;
+﻿namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public enum ProcessingStatus
 {

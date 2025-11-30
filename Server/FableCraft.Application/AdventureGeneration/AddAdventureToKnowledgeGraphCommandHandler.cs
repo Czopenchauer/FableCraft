@@ -6,12 +6,15 @@ using FableCraft.Application.NarrativeEngine;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 
 using Polly;
 using Polly.Retry;
+
+using Adventure = FableCraft.Infrastructure.Persistence.Entities.Adventure.Adventure;
 
 namespace FableCraft.Application.AdventureGeneration;
 

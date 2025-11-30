@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
 
