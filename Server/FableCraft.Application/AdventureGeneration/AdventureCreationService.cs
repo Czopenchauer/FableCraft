@@ -4,7 +4,6 @@ using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
@@ -20,7 +19,9 @@ public class AdventureCreationStatus
 {
     public required Guid AdventureId { get; init; }
 
-    public required string Status { get; init; }
+    public required string RagProcessing { get; init; }
+
+    public required string SceneGeneration { get; init; }
 }
 
 public interface IAdventureCreationService
@@ -130,7 +131,8 @@ internal class AdventureCreationService : IAdventureCreationService
         return new AdventureCreationStatus
         {
             AdventureId = adventureId,
-            Status = adventure.ProcessingStatus.ToString()
+            RagProcessing = adventure.RagProcessingStatus.ToString(),
+            SceneGeneration = adventure.SceneGenerationStatus.ToString()
         };
     }
 

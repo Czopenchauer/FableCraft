@@ -24,12 +24,23 @@ public class AddAdventureToKnowledgeGraphCommand : IMessage
 }
 
 internal class AddAdventureToKnowledgeGraphCommandHandler(
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IRagBuilder ragProcessor,
     SceneGenerationOrchestrator sceneGenerationOrchestrator)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
     private const string DataDirectory = @"C:\Disc\Dev\_projects\FableCraft\data";
+
+    private readonly ResiliencePipeline _ioResiliencePipeline = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromMilliseconds(500),
+            BackoffType = DelayBackoffType.Exponential,
+            ShouldHandle = new PredicateBuilder()
+                .Handle<IOException>()
+        })
+        .Build();
 
     private readonly ResiliencePipeline _resiliencePipeline = new ResiliencePipelineBuilder()
         .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
@@ -51,12 +62,18 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
+        var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         Adventure adventure = await dbContext.Adventures
             .Include(x => x.MainCharacter)
             .Include(x => x.Lorebook)
             .Include(x => x.Scenes)
             .ThenInclude(scene => scene.CharacterActions)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken);
+        if (adventure.RagProcessingStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)
+            && adventure.SceneGenerationStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed))
+        {
+            return;
+        }
 
         var filesToCommit = new List<(Chunk Chunk, string Content)>();
 
@@ -120,46 +137,85 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             filesToCommit.Add((newCharacterChunk, characterContent));
         }
 
-        if (filesToCommit.Count > 0)
+        if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is ProcessingStatus.InProgress or ProcessingStatus.Failed)
         {
             await dbContext.Adventures.Where(x => x.Id == adventure.Id)
-                .ExecuteUpdateAsync(x => x.SetProperty(a => a.ProcessingStatus, ProcessingStatus.InProgress),
+                .ExecuteUpdateAsync(x => x.SetProperty(a => a.RagProcessingStatus, ProcessingStatus.InProgress),
                     cancellationToken);
             var strategy = dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-                Directory.CreateDirectory(@$"{DataDirectory}\{adventure.Id}");
-
-                await Task.WhenAll(filesToCommit.Select(x =>
-                    File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
-
-                var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await ragProcessor.AddDataAsync(
-                            filesToCommit.Select(x => x.Chunk.Path).ToList(),
-                            message.AdventureId.ToString(),
-                            ct),
-                    cancellationToken);
-
-                foreach (var (chunk, _) in filesToCommit)
+                try
                 {
-                    chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
-                    dbContext.Chunks.Add(chunk);
+                    await _ioResiliencePipeline.ExecuteAsync(async ct =>
+                        {
+                            Directory.CreateDirectory(@$"{DataDirectory}\{adventure.Id}");
+
+                            await Task.WhenAll(filesToCommit.Select(x =>
+                                File.WriteAllTextAsync(x.Chunk.Path, x.Content, ct)));
+                        },
+                        cancellationToken);
+
+                    await Task.WhenAll(filesToCommit.Select(x =>
+                        File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
+
+                    var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
+                            await ragProcessor.AddDataAsync(
+                                filesToCommit.Select(x => x.Chunk.Path).ToList(),
+                                message.AdventureId.ToString(),
+                                ct),
+                        cancellationToken);
+
+                    foreach (var (chunk, _) in filesToCommit)
+                    {
+                        chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
+                        dbContext.Chunks.Add(chunk);
+                    }
+
+                    await _resiliencePipeline.ExecuteAsync(async ct =>
+                            await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),
+                        cancellationToken);
+
+                    await _resiliencePipeline.ExecuteAsync(async ct =>
+                            await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
+                        cancellationToken);
+
+                    adventure.RagProcessingStatus = ProcessingStatus.Completed;
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 }
-
-                await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),
-                    cancellationToken);
-
-                await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
-                    cancellationToken);
-
-                await sceneGenerationOrchestrator.GenerateInitialSceneAsync(message.AdventureId, cancellationToken);
-                adventure.ProcessingStatus = ProcessingStatus.Completed;
-                await dbContext.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    adventure.RagProcessingStatus = ProcessingStatus.Failed;
+                    dbContext.Adventures.Update(adventure);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                    throw;
+                }
             });
         }
+
+        var executionStrategy = dbContext.Database.CreateExecutionStrategy();
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await sceneGenerationOrchestrator.GenerateInitialSceneAsync(message.AdventureId, cancellationToken);
+                adventure.SceneGenerationStatus = ProcessingStatus.Completed;
+                dbContext.Adventures.Update(adventure);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                adventure.SceneGenerationStatus = ProcessingStatus.Failed;
+                dbContext.Adventures.Update(adventure);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 }

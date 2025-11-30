@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
@@ -26,25 +25,25 @@ internal sealed class GenerationContext
     public required string PlayerAction { get; set; }
 
     [JsonIgnore]
-    public required string? Summary { get; set; }
+    public string? Summary { get; set; }
 
     /// <summary>
     /// Has to be refetched from DB as there's no point to store it
     /// </summary>
     [JsonIgnore]
-    public required SceneContext[] SceneContext { get; set; }
+    public SceneContext[] SceneContext { get; set; } = null!;
 
     /// <summary>
     /// List of the all Characters. Has to be refetched from DB as there's no point to store it
     /// </summary>
     [JsonIgnore]
-    public required List<CharacterContext> Characters { get; set; } = new();
+    public List<CharacterContext> Characters { get; set; } = new();
 
     [JsonIgnore]
-    public required TrackerStructure TrackerStructure { get; set; }
+    public TrackerStructure TrackerStructure { get; set; } = null!;
 
     [JsonIgnore]
-    public required MainCharacter MainCharacter { get; set; }
+    public MainCharacter MainCharacter { get; set; } = null!;
 
     public CharacterContext[]? NewCharacters { get; set; }
 

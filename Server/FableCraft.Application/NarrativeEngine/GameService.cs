@@ -2,7 +2,6 @@
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Infrastructure.Persistence;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
@@ -118,7 +117,7 @@ internal class GameService : IGameService
                 await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
-                    adventure.ProcessingStatus = ProcessingStatus.Pending;
+                    adventure.SceneGenerationStatus = ProcessingStatus.Pending;
                     adventure.Scenes.Clear();
                     await _dbContext.SaveChangesAsync(cancellationToken);
 

@@ -47,20 +47,34 @@ internal sealed class SceneGenerationOrchestrator(
             };
         }
 
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
         var workflow = BuildWorkflow(processors, context.Context.GenerationProcessStep);
         foreach (IProcessor processor in workflow)
         {
             try
             {
                 await processor.Invoke(context.Context, cancellationToken);
-                await dbContext.GenerationProcesses
-                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
+                logger.Information("Completed step {GenerationProcessStep} for adventure {AdventureId}",
+                    context.Context.GenerationProcessStep,
+                    adventureId);
+                var rows = await dbContext.GenerationProcesses
+                    .Where(x => x.Id == context.ProcessId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
                         cancellationToken: cancellationToken);
+                logger.Information("Updated generation process context in database for adventure {AdventureId}, rows affected: {RowsAffected}",
+                    adventureId,
+                    rows);
             }
             catch (Exception ex)
             {
                 await dbContext.GenerationProcesses
-                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
+                    .Where(x => x.Id == context.ProcessId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
                         cancellationToken: cancellationToken);
                 logger.Error(ex,
                     "Error during scene generation for adventure {AdventureId} at step {GenerationProcessStep}",
@@ -98,12 +112,17 @@ internal sealed class SceneGenerationOrchestrator(
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
-
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
         var generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
         GenerationContext context;
         if (generationProcess != null)
         {
-            context = JsonSerializer.Deserialize<GenerationContext>(generationProcess.Context)!;
+            context = JsonSerializer.Deserialize<GenerationContext>(generationProcess.Context, options)!;
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (context == null || context.PlayerAction != playerAction)
             {
@@ -115,7 +134,7 @@ internal sealed class SceneGenerationOrchestrator(
                 context.Characters = adventureCharacters;
                 context.TrackerStructure = adventure.TrackerStructure;
                 context.MainCharacter = adventure.MainCharacter;
-                context.Summary = scenes.MaxBy(x => x.SequenceNumber)?.AdventureSummary;
+                context.Summary = scenes.Where(x => !string.IsNullOrEmpty(x.AdventureSummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.AdventureSummary;
             }
         }
         else
@@ -141,18 +160,14 @@ internal sealed class SceneGenerationOrchestrator(
                 TrackerStructure = adventure.TrackerStructure,
                 MainCharacter = adventure.MainCharacter,
                 Characters = adventureCharacters,
-                Summary = scenes.MaxBy(x => x.SequenceNumber)?.AdventureSummary
+                Summary = scenes.Where(x => !string.IsNullOrEmpty(x.AdventureSummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.AdventureSummary
             };
             var process = new GenerationProcess
             {
                 AdventureId = adventureId,
-                Context = JsonSerializer.Serialize(newContext),
+                Context = JsonSerializer.Serialize(newContext, options),
             };
-            await dbContext.GenerationProcesses.AddAsync(new GenerationProcess
-                {
-                    AdventureId = adventureId,
-                    Context = JsonSerializer.Serialize(newContext),
-                },
+            await dbContext.GenerationProcesses.AddAsync(process,
                 cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return (process, newContext);

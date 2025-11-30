@@ -33,7 +33,9 @@ internal sealed class CharacterPlugin(
             AllowTrailingCommas = true
         };
         var promptTemplate = await BuildInstruction();
-        _chatHistory = generationContext.Characters.ToDictionary(character => character.Name,
+        var characters = new List<CharacterContext>(generationContext.Characters);
+        characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
+        _chatHistory = characters.ToDictionary(character => character.Name,
             context =>
             {
                 var systemPrompt = promptTemplate.Replace("{CHARACTER_NAME}", context.Name);

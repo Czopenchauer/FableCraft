@@ -34,6 +34,12 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
         modelBuilder.Entity<Chunk>(p =>
         {
             p.HasIndex(x => x.EntityId);
@@ -41,14 +47,15 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Adventure>(p =>
         {
-            p.Property(c => c.ProcessingStatus).HasConversion<string>();
-            p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
+            p.Property(c => c.RagProcessingStatus).HasConversion<string>();
+            p.Property(c => c.SceneGenerationStatus).HasConversion<string>();
+            p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
             p.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<TrackerDefinition>(p =>
         {
-            p.Property(x => x.Structure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x)!);
+            p.Property(x => x.Structure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
             p.HasIndex(x => x.Name).IsUnique();
         });
 
@@ -63,15 +70,15 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Character>(p =>
         {
-            p.ComplexProperty(c => c.CharacterStats, d => d.ToJson());
-            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!);
+            p.Property(x => x.CharacterStats).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterStats>(x, options)!);
+            p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x, options)!);
             p.HasIndex(x => x.SequenceNumber);
         });
 
         modelBuilder.Entity<Scene>(p =>
         {
             p.Property(c => c.CommitStatus).HasConversion<string>();
-            p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x)!);
+            p.Property(x => x.Metadata).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<Metadata>(x, options)!);
             p.HasIndex(x => new { x.AdventureId, x.SequenceNumber });
             p.HasIndex(x => new { x.Id, x.SequenceNumber, x.CommitStatus });
         });

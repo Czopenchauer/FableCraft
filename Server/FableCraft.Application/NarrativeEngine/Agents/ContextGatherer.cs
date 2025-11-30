@@ -68,7 +68,7 @@ internal sealed class ContextGatherer(
                 return new ContextBase
                 {
                     Query = x,
-                    Response = string.Join("\n\n", searchResults)
+                    Response = string.Join("\n\n", searchResults.Results)
                 };
             })
             .ToList();

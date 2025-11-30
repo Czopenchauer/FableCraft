@@ -38,7 +38,12 @@ public static class StartupExtensions
 
         var connectionString = configuration.GetConnectionString("fablecraftdb");
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
-        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
+        services.AddDbContextPool<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
+            sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+            }))
+            .AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
             sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
@@ -71,7 +76,8 @@ public static class StartupExtensions
                 options.Retry.MaxRetryAttempts = 5;
                 options.Retry.Delay = TimeSpan.FromSeconds(5);
                 options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(40);
-            }); ;
+            });
+        ;
 
         services.AddHttpClient<IRagSearch, RagClient>(client =>
             {

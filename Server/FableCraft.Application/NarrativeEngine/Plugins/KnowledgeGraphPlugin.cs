@@ -37,6 +37,6 @@ internal class KnowledgeGraphPlugin
             return "Knowledge graph does not contain any data yet.";
         }
 
-        return string.Join("\n\n", results);
+        return string.Join("\n\n", results.Results);
     }
 }

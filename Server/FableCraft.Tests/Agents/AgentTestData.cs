@@ -90,7 +90,8 @@ internal static class AgentTestData
             Name = $"Test Adventure {adventureId}",
             FirstSceneGuidance = "The adventure begins in a mysterious tavern.",
             AdventureStartTime = "Evening, late autumn",
-            ProcessingStatus = ProcessingStatus.Pending,
+            RagProcessingStatus = ProcessingStatus.Pending,
+            SceneGenerationStatus = ProcessingStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow,
             AuthorNotes = "Test adventure for integration tests",
             MainCharacter = new MainCharacter

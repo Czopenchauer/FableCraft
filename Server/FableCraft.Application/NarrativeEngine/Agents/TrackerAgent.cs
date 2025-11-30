@@ -38,7 +38,27 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                   {context.MainCharacter.Name}
                                   {context.MainCharacter.Description}
                                   </main_character>
+                                  <characters>
+                                  {string.Join("\n\n", context.Characters.Select(c => $"""
+                                                                                  {c.Name}
+                                                                                  {c.Description}
+                                                                                  """))}
+                                  </characters>
                                   """);
+        if (context.NewCharacters?.Length > 0)
+        {
+            stringBuilder.AppendLine($"""
+                                        <new_characters>
+                                        <character>
+                                        {string.Join("\n\n", context.NewCharacters.Select(c => $"""
+                                                                                                {c.Name}
+                                                                                                {c.Description}
+                                                                                                """))}
+                                        </character>
+                                        </new_characters>
+                                      """);
+        }
+
         if ((context.SceneContext?.Length ?? 0) == 0)
         {
             stringBuilder.AppendLine($"""

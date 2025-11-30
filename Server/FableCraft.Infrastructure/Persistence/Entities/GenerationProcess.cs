@@ -1,6 +1,6 @@
 ﻿namespace FableCraft.Infrastructure.Persistence.Entities;
 
-public class GenerationProcess
+public class GenerationProcess : IEntity
 {
     public Guid Id { get; set; }
 

@@ -16,7 +16,9 @@ public class Adventure : IEntity
 
     public required string AdventureStartTime { get; set; }
 
-    public ProcessingStatus ProcessingStatus { get; set; } = ProcessingStatus.Pending;
+    public ProcessingStatus RagProcessingStatus { get; set; }
+
+    public ProcessingStatus SceneGenerationStatus { get; set; }
 
     public DateTimeOffset CreatedAt { get; init; }
 

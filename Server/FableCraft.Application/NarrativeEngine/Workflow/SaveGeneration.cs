@@ -22,25 +22,25 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             AllowTrailingCommas = true
         };
 
-        var newLoreEntities = context.NewLore!.Select(x => new LorebookEntry
+        var newLoreEntities = context.NewLore?.Select(x => new LorebookEntry
         {
             AdventureId = context.AdventureId,
             Description = x.Summary,
             Category = x.Title,
             Content = JsonSerializer.Serialize(x, options),
             ContentType = ContentType.json,
-        }).ToList();
-        var newLocationsEntities = context.NewLocations!.Select(x => new LorebookEntry
+        }).ToList() ?? new List<LorebookEntry>();
+        var newLocationsEntities = context.NewLocations?.Select(x => new LorebookEntry
         {
             AdventureId = context.AdventureId,
             Description = x.NarrativeData.ShortDescription,
             Content = JsonSerializer.Serialize(x, options),
             Category = x.EntityData.Name,
             ContentType = ContentType.json
-        });
+        }).ToList() ?? new List<LorebookEntry>();
         newLoreEntities.AddRange(newLocationsEntities);
 
-        var newCharactersEntities = context.NewCharacters!.Select(x => new Character()
+        var newCharactersEntities = context.NewCharacters?.Select(x => new Character()
         {
             AdventureId = context.AdventureId,
             CharacterId = x.CharacterId,
@@ -48,9 +48,9 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             CharacterStats = x.CharacterState,
             Tracker = x.CharacterTracker!,
             SequenceNumber = 0,
-        }).ToList();
+        }).ToList() ?? new List<Character>();
 
-        var updatesToExistingCharacters = context.Characters.Select(x => new Character
+        var updatesToExistingCharacters = context.CharacterUpdates?.Select(x => new Character
         {
             AdventureId = context.AdventureId,
             CharacterId = x.CharacterId,
@@ -58,11 +58,11 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             CharacterStats = x.CharacterState,
             Tracker = x.CharacterTracker!,
             SequenceNumber = 0,
-        });
+        }) ?? new List<Character>();
         newCharactersEntities.AddRange(updatesToExistingCharacters);
         var newScene = new Scene
         {
-            SequenceNumber = context.SceneContext.Max(x => x.SequenceNumber) + 1,
+            SequenceNumber = context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SequenceNumber ?? 0 + 1,
             AdventureId = context.AdventureId,
             NarrativeText = context.NewScene!.Scene,
             Metadata = new Metadata
