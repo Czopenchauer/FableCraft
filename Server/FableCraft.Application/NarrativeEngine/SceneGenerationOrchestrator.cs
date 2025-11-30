@@ -3,6 +3,7 @@
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -29,52 +30,100 @@ public class SceneGenerationOutput
 
 internal sealed class SceneGenerationOrchestrator
 {
-    private readonly IKernelBuilder _kernelBuilder;
+    private class WorkflowBuilder(IEnumerable<IProcessor> processors)
+    {
+        private readonly List<IProcessor> _workflow = new();
+
+        public WorkflowBuilder AddProcessor<T>() where T : IProcessor
+        {
+            var processor = processors.OfType<T>().FirstOrDefault();
+            ArgumentNullException.ThrowIfNull(processor);
+            _workflow.Add(processor);
+            return this;
+        }
+
+        public List<IProcessor> Build() => _workflow;
+    }
+
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
-    private readonly IRagSearch _ragSearch;
-    private readonly WriterAgent _writerAgent;
-    private readonly TrackerAgent _trackerAgent;
-    private readonly LoreCrafter _loreCrafter;
-    private readonly CharacterCrafter _characterCrafter;
-    private readonly CharacterStateTracker _characterStateTracker;
-    private readonly LocationCrafter _locationCrafter;
-    private readonly ContextGatherer _contextGatherer;
-    private readonly NarrativeDirectorAgent _narrativeDirectorAgent;
+    private readonly IEnumerable<IProcessor> _processors;
     private readonly IMessageDispatcher _messageDispatcher;
     private const int NumberOfScenesToInclude = 20;
 
     public SceneGenerationOrchestrator(
-        IKernelBuilder kernelBuilder,
-        IRagSearch ragSearch,
         ILogger logger,
         ApplicationDbContext dbContext,
-        NarrativeDirectorAgent narrativeDirectorAgent,
-        WriterAgent writerAgent,
-        TrackerAgent trackerAgent,
-        CharacterCrafter characterCrafter,
-        LoreCrafter loreCrafter,
-        CharacterStateTracker characterStateTracker,
-        LocationCrafter locationCrafter,
-        ContextGatherer contextGatherer,
-        IMessageDispatcher messageDispatcher)
+        IMessageDispatcher messageDispatcher,
+        IEnumerable<IProcessor> processors)
     {
-        _kernelBuilder = kernelBuilder;
-        _ragSearch = ragSearch;
         _logger = logger;
         _dbContext = dbContext;
-        _narrativeDirectorAgent = narrativeDirectorAgent;
-        _writerAgent = writerAgent;
-        _trackerAgent = trackerAgent;
-        _characterCrafter = characterCrafter;
-        _loreCrafter = loreCrafter;
-        _characterStateTracker = characterStateTracker;
-        _locationCrafter = locationCrafter;
-        _contextGatherer = contextGatherer;
         _messageDispatcher = messageDispatcher;
+        _processors = processors;
     }
 
     public async Task<SceneGenerationOutput> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
+    {
+        var context = await GetGenerationContext(adventureId, playerAction, cancellationToken);
+
+        if (context.Context.GenerationProcessStep == GenerationProcessStep.Completed)
+        {
+            await _dbContext.GenerationProcesses
+                .Where(x => x.Id == context.ProcessId)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            return new SceneGenerationOutput
+            {
+                GeneratedScene = context.Context.NewScene!,
+                NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
+                Tracker = context.Context.NewTracker!
+            };
+        }
+
+        var workflow = new WorkflowBuilder(_processors)
+            .AddProcessor<ContextGatherer>()
+            .AddProcessor<NarrativeDirectorAgent>()
+            .AddProcessor<ContentGenerator>()
+            .AddProcessor<WriterAgent>()
+            .AddProcessor<TrackerProcessor>()
+            .AddProcessor<SaveGeneration>()
+            .Build();
+        foreach (IProcessor processor in workflow)
+        {
+            try
+            {
+                await processor.Invoke(context.Context, cancellationToken);
+                await _dbContext.GenerationProcesses
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
+                        cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _dbContext.GenerationProcesses
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context)),
+                        cancellationToken: cancellationToken);
+                _logger.Error(ex,
+                    "Error during scene generation for adventure {AdventureId} at step {GenerationProcessStep}",
+                    adventureId,
+                    context.Context.GenerationProcessStep);
+                throw;
+            }
+        }
+
+        await _dbContext.GenerationProcesses
+            .Where(x => x.Id == context.ProcessId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        return new SceneGenerationOutput
+        {
+            GeneratedScene = context.Context.NewScene!,
+            NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
+            Tracker = context.Context.NewTracker!
+        };
+    }
+
+    private async Task<(GenerationContext Context, Guid ProcessId)> GetGenerationContext(Guid adventureId, string playerAction, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext
             .Adventures
@@ -89,88 +138,70 @@ internal sealed class SceneGenerationOrchestrator
             .OrderByDescending(x => x.SequenceNumber)
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
+        var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
 
-        var summary = string.IsNullOrEmpty(scenes.LastOrDefault()?.AdventureSummary)
-            ? string.Empty
-            : $"""
-               <story_summary>
-               {scenes.LastOrDefault()?.AdventureSummary}
-               </story_summary>
-
-               """;
-        var options = new JsonSerializerOptions
+        var generationProcess = await _dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
+        GenerationContext context;
+        if (generationProcess != null)
         {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
-        string currentTracker = string.Empty;
-        if (scenes.LastOrDefault()?.Metadata?.Tracker != null)
+            context = JsonSerializer.Deserialize<GenerationContext>(generationProcess.Context)!;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (context == null || context.PlayerAction != playerAction)
+            {
+                (generationProcess, context) = await CreateNewProcess();
+            }
+            else
+            {
+                context.SceneContext = SceneContext();
+                context.Characters = adventureCharacters;
+                context.TrackerStructure = adventure.TrackerStructure;
+                context.MainCharacter = adventure.MainCharacter;
+                context.Summary = scenes.MaxBy(x => x.SequenceNumber)?.AdventureSummary;
+            }
+        }
+        else
         {
-            currentTracker = $"""
-                              <current_scene_tracker>
-                              {JsonSerializer.Serialize(scenes.LastOrDefault()?.Metadata?.Tracker, options)}
-                              </current_scene_tracker>
-                              """;
+            (generationProcess, context) = await CreateNewProcess();
         }
 
-        var commonContext = summary
-                            + $"""
-                               <current_scene_number>
-                               {scenes.LastOrDefault()?.SequenceNumber}
-                               </current_scene_number>
-
-                               {currentTracker}
-
-                               <main_character>
-                               {adventure.MainCharacter.Name}
-                               {adventure.MainCharacter.Description}
-                               </main_character>
-
-                               <last_scenes>
-                               {string.Join("\n", scenes.Select(x =>
-                                   $"""
-                                    SCENE NUMBER: {x.SequenceNumber}
-                                    {x.GetSceneWithSelectedAction()}
-                                    """))}
-                               </last_scenes>
-                               """;
-        var contextBases = await _contextGatherer.Invoke(adventureId, commonContext, cancellationToken);
-        commonContext += $"""
-                          <additional_context>
-                          {string.Join("\n\n", contextBases.Select(x => $"""
-                                                                         <{x.Query}>:
-                                                                         {x.Response}
-                                                                         </{x.Query}>
-                                                                         """))}
-                          </additional_context>
-                          """;
-
-        var charactersOnScene = await GetCharacters(scenes, cancellationToken);
-        if (charactersOnScene.Any())
+        if (context == null)
         {
-            commonContext += $"""
-                                 <characters_on_scene>
-                                 {string.Join("\n\n", charactersOnScene.Select(x => $"""
-                                                                                     <character>
-                                                                                     {x.Name}
-                                                                                     {x.Description}
-                                                                                     {x.CharacterTracker}
-                                                                                     </character>
-                                                                                     """))}
-                                 </characters_on_scene>
-                              """;
+            throw new InvalidOperationException("Failed to deserialize generation context from the database.");
         }
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.WithBase();
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, adventureId.ToString(), _logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        Kernel kernelWithKg = kernel.Build();
+        return (context, generationProcess.Id);
 
-        var narrativeContext = new NarrativeContext
+        async Task<(GenerationProcess process, GenerationContext context)> CreateNewProcess()
         {
-            AdventureId = adventureId,
-            SceneContext = scenes.Select(x => new SceneContext
+            var newContext = new GenerationContext
+            {
+                AdventureId = adventureId,
+                SceneContext = SceneContext(),
+                PlayerAction = playerAction,
+                GenerationProcessStep = GenerationProcessStep.NotStarted,
+                TrackerStructure = adventure.TrackerStructure,
+                MainCharacter = adventure.MainCharacter,
+                Characters = adventureCharacters,
+                Summary = scenes.MaxBy(x => x.SequenceNumber)?.AdventureSummary
+            };
+            var process = new GenerationProcess()
+            {
+                AdventureId = adventureId,
+                Context = JsonSerializer.Serialize(newContext),
+            };
+            await _dbContext.GenerationProcesses.AddAsync(new GenerationProcess
+                {
+                    AdventureId = adventureId,
+                    Context = JsonSerializer.Serialize(newContext),
+                },
+                cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return (process, newContext);
+        }
+
+        SceneContext[] SceneContext()
+        {
+            return scenes.Select(x => new SceneContext
                 {
                     SceneContent = x.NarrativeText,
                     PlayerChoice = x.CharacterActions.Single(y => y.Selected)
@@ -183,190 +214,37 @@ internal sealed class SceneGenerationOrchestrator
                         Description = y.Description,
                         Name = y.CharacterStats.CharacterIdentity.FullName!,
                         CharacterId = y.CharacterId
-                    })
+                    }),
+                    SequenceNumber = x.SequenceNumber
                 })
-                .ToArray(),
-            StorySummary = scenes.LastOrDefault()?.AdventureSummary,
-            PlayerAction = playerAction,
-            CommonContext = commonContext,
-            KernelKg = kernelWithKg,
-            Characters = charactersOnScene,
-            NewLocations = [],
-            NewLore = []
-        };
-
-        var narrativeDirectorOutput = await _narrativeDirectorAgent.Invoke(narrativeContext, cancellationToken);
-        var characterCreationTasks = narrativeDirectorOutput.CreationRequests.Characters.Select(x => _characterCrafter.Invoke(
-            kernelWithKg,
-            narrativeContext,
-            x,
-            cancellationToken)).ToList();
-        var characterCreations = await Task.WhenAll(characterCreationTasks);
-        var newLoreTask = narrativeDirectorOutput.CreationRequests.Lore
-            .Select(x => _loreCrafter.Invoke(kernelWithKg, x, narrativeContext, characterCreations, cancellationToken)).ToList();
-        var newLocationTask = narrativeDirectorOutput.CreationRequests.Locations
-            .Select(location => _locationCrafter.Invoke(kernelWithKg, location, narrativeContext, characterCreations, cancellationToken)).ToList();
-        var newLore = await Task.WhenAll(newLoreTask);
-        var newLocation = await Task.WhenAll(newLocationTask);
-        narrativeContext.NewLore = newLore;
-        narrativeContext.NewLocations = newLocation;
-        narrativeContext.Characters.AddRange(characterCreations);
-
-        var sceneContent = await _writerAgent.Invoke(narrativeContext, characterCreations, narrativeDirectorOutput, cancellationToken);
-        var trackerTask = _trackerAgent.Invoke(
-            narrativeContext,
-            sceneContent,
-            cancellationToken);
-        var characterUpdatesTask = charactersOnScene
-            .ExceptBy(characterCreations.Select(x => x.Name), x => x.Name)
-            .Select(x => _characterStateTracker.Invoke(adventureId, narrativeContext, x, sceneContent, cancellationToken))
-            .ToList();
-
-        var tracker = await trackerTask;
-        var characterUpdates = await Task.WhenAll(characterUpdatesTask);
-
-        var newScene = new Scene
-        {
-            AdventureId = adventureId,
-            NarrativeText = sceneContent.Scene,
-            CharacterActions = sceneContent.Choices.Select(x => new MainCharacterAction
-                {
-                    ActionDescription = x
-                })
-                .ToList(),
-            SequenceNumber = scenes.LastOrDefault()?.SequenceNumber ?? 0 + 1,
-            Metadata = new Metadata
-            {
-                NarrativeMetadata = narrativeDirectorOutput,
-                Tracker = tracker
-            },
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        var characters = await _dbContext.Characters
-            .Where(x => characterUpdates.Select(y => y.CharacterId).Contains(x.Id))
-            .Include(x => x.CharacterStates)
-            .ToListAsync(cancellationToken: cancellationToken);
-        foreach (var updatedCharacter in characterUpdates)
-        {
-            var characterEntity = characters.Single(x => x.Id == updatedCharacter.CharacterId);
-            characterEntity.CharacterStates.Add(new CharacterState
-            {
-                CharacterStats = updatedCharacter.CharacterState,
-                Tracker = updatedCharacter.CharacterTracker!,
-                SequenceNumber = characterEntity.CharacterStates.LastOrDefault()?
-                                     .SequenceNumber
-                                 ?? 0
-                                 + 1,
-                SceneId = newScene.Id,
-                Description = updatedCharacter.Description,
-            });
+                .ToArray();
         }
-
-        var newCharacters = characterCreations.Select(x => new Character
-        {
-            AdventureId = adventureId,
-            CharacterStates =
-            [
-                new CharacterState
-                {
-                    CharacterStats = x.CharacterState,
-                    Tracker = x.CharacterTracker!,
-                    SequenceNumber = 0,
-                    SceneId = newScene.Id,
-                    Description = x.Description
-                }
-            ]
-        }).ToList();
-
-        var newLoreEntities = newLore.Select(x => new LorebookEntry
-        {
-            AdventureId = adventureId,
-            Description = x.Summary,
-            Category = x.Title,
-            Content = JsonSerializer.Serialize(x, options),
-            ContentType = ContentType.json,
-            Scene = newScene
-        }).ToList();
-
-        var newLocationsEntities = newLocation.Select(x => new LorebookEntry
-        {
-            AdventureId = adventureId,
-            Description = x.NarrativeData.ShortDescription,
-            Content = JsonSerializer.Serialize(x, options),
-            Category = x.EntityData.Name,
-            ContentType = ContentType.json,
-            Scene = newScene
-        }).ToList();
-
-        IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
-        {
-            await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                var selectedAction = scenes
-                    .MaxBy(x => x.SequenceNumber)
-                    ?.CharacterActions
-                    .FirstOrDefault(x => x.ActionDescription == playerAction);
-                if (selectedAction != null)
-                {
-                    selectedAction.Selected = true;
-                }
-
-                await _dbContext.Scenes.AddAsync(newScene, cancellationToken);
-                _dbContext.Characters.AddRange(newCharacters);
-                _dbContext.LorebookEntries.AddRange(newLoreEntities);
-                _dbContext.LorebookEntries.AddRange(newLocationsEntities);
-                _dbContext.Characters.UpdateRange(characters);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-        });
-
-        await _messageDispatcher.PublishAsync(new SceneGeneratedEvent
-            {
-                AdventureId = adventureId,
-                SceneId = newScene.Id
-            },
-            cancellationToken);
-        return new SceneGenerationOutput
-        {
-            Tracker = tracker,
-            GeneratedScene = sceneContent,
-            NarrativeDirectorOutput = narrativeDirectorOutput
-        };
     }
 
-    private async Task<List<CharacterContext>> GetCharacters(List<Scene> scenes, CancellationToken cancellationToken)
+    /// <summary>
+    /// Gets the latest character contexts for all characters in the adventure.
+    /// </summary>
+    /// <param name="adventureId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    private async Task<List<CharacterContext>> GetCharacters(Guid adventureId, CancellationToken cancellationToken)
     {
-        if (scenes.Any())
-        {
-            // Shit query but not a problem for now
-            var existingCharacters = await _dbContext
-                .CharacterStates
-                .Where(x => x.SceneId == scenes.Last().Id)
-                .Include(x => x.Character)
-                .GroupBy(x => x.CharacterId)
-                .ToListAsync(cancellationToken);
-            return existingCharacters
-                .Select(g => g.OrderByDescending(x => x.SequenceNumber).First())
-                .Select(x => new CharacterContext
-                {
-                    Description = x.Description,
-                    Name = x.CharacterStats.CharacterIdentity.FullName!,
-                    CharacterState = x.CharacterStats,
-                    CharacterTracker = x.Tracker,
-                    CharacterId = x.CharacterId,
-                }).ToList();
-        }
-
-        return [];
+        var existingCharacters = await _dbContext
+            .Characters
+            .Where(x => x.AdventureId == adventureId)
+            .GroupBy(x => x.CharacterId)
+            .ToListAsync(cancellationToken);
+        return existingCharacters
+            .Select(g => g.OrderByDescending(x => x.SequenceNumber).First())
+            .Select(x => new CharacterContext
+            {
+                Description = x.Description,
+                Name = x.CharacterStats.CharacterIdentity.FullName!,
+                CharacterState = x.CharacterStats,
+                CharacterTracker = x.Tracker,
+                CharacterId = x.CharacterId,
+                SceneId = x.SceneId
+            }).ToList();
     }
 
     public async Task<SceneGenerationOutput> GenerateInitialSceneAsync(Guid adventureId, CancellationToken cancellationToken)

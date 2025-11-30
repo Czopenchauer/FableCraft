@@ -20,9 +20,9 @@ public interface IAgentKernel
     Task<T> SendRequestAsync<T>(
         ChatHistory chatHistory,
         Func<string, T> outputFunc,
+        PromptExecutionSettings? promptExecutionSettings,
         CancellationToken cancellationToken,
-        Kernel? kernel = null,
-        PromptExecutionSettings? promptExecutionSettings = null);
+        Kernel? kernel = null);
 }
 
 internal sealed class AgentKernel : IAgentKernel
@@ -60,12 +60,11 @@ internal sealed class AgentKernel : IAgentKernel
     public async Task<T> SendRequestAsync<T>(
         ChatHistory chatHistory,
         Func<string, T> outputFunc,
+        PromptExecutionSettings? promptExecutionSettings,
         CancellationToken cancellationToken,
-        Kernel? kernel = null,
-        PromptExecutionSettings? promptExecutionSettings = null)
+        Kernel? kernel = null)
     {
         Kernel agentKernel = kernel?.Clone() ?? _builder.WithBase().Build();
-        var settings = promptExecutionSettings ?? _builder.GetDefaultPromptExecutionSettings();
 
         var chatCompletionService = agentKernel.GetRequiredService<IChatCompletionService>();
         try
@@ -88,7 +87,7 @@ internal sealed class AgentKernel : IAgentKernel
             var result = await _pipeline.ExecuteAsync(async token =>
                          {
                              ChatMessageContent result =
-                                 await chatCompletionService.GetChatMessageContentAsync(chatHistory, settings, kernel, token);
+                                 await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
                              var replyInnerContent = result.InnerContent as ChatCompletion;
                              _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                                  replyInnerContent?.Usage.InputTokenCount,

@@ -15,9 +15,9 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Adventure> Adventures { get; set; }
 
-    public DbSet<Character> Characters { get; set; }
+    public DbSet<GenerationProcess> GenerationProcesses { get; set; }
 
-    public DbSet<CharacterState> CharacterStates { get; set; }
+    public DbSet<Character> Characters { get; set; }
 
     public DbSet<Scene> Scenes { get; set; }
 
@@ -60,7 +60,7 @@ public class ApplicationDbContext : DbContext
                 })
             .IsUnique();
 
-        modelBuilder.Entity<CharacterState>(p =>
+        modelBuilder.Entity<Character>(p =>
         {
             p.ComplexProperty(c => c.CharacterStats, d => d.ToJson());
             p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x)!);

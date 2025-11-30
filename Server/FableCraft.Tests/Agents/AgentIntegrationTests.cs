@@ -1,5 +1,6 @@
 ﻿using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 

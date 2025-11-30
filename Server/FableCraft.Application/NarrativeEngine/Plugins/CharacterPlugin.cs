@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 
 using Microsoft.SemanticKernel;
@@ -8,18 +10,22 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterPlugin(
     IAgentKernel agentKernel,
-    ILogger logger)
+    ILogger logger,
+    IKernelBuilder kernelBuilder,
+    IRagSearch ragSearch)
 {
     private Dictionary<string, ChatHistory> _chatHistory = new();
-    private NarrativeContext _narrativeContext = null!;
+    private GenerationContext _generationContext = null!;
 
-    public async Task Setup(NarrativeContext narrativeContext)
+    public async Task Setup(GenerationContext generationContext)
     {
-        _narrativeContext = narrativeContext;
+        _generationContext = generationContext;
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -27,7 +33,7 @@ internal sealed class CharacterPlugin(
             AllowTrailingCommas = true
         };
         var promptTemplate = await BuildInstruction();
-        _chatHistory = narrativeContext.Characters.ToDictionary(character => character.Name,
+        _chatHistory = generationContext.Characters.ToDictionary(character => character.Name,
             context =>
             {
                 var systemPrompt = promptTemplate.Replace("{CHARACTER_NAME}", context.Name);
@@ -63,12 +69,18 @@ internal sealed class CharacterPlugin(
         logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
         if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
         {
+            logger.Information("Character {CharacterName} not found in chat history. Current chatHistory: {history}", characterName, _chatHistory.Keys);
             return "Character not found.";
         }
 
+        var kernel = kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
+
         chatHistory.AddUserMessage(situation);
         var outputFunc = new Func<string, string>(response => response);
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, CancellationToken.None, kernel: _narrativeContext.KernelKg.Clone());
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), CancellationToken.None, kernelWithKg);
     }
 
     private async static Task<string> BuildInstruction()

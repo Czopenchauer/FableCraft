@@ -26,7 +26,7 @@ public class Adventure : IEntity
 
     public required MainCharacter MainCharacter { get; set; }
 
-    public Character[] Characters { get; init; } = [];
+    public List<Character> Characters { get; init; } = [];
 
     public required TrackerStructure TrackerStructure { get; init; }
 

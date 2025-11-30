@@ -1,0 +1,93 @@
+using System.Text.Json.Serialization;
+
+using FableCraft.Infrastructure.Persistence.Entities;
+
+namespace FableCraft.Application.NarrativeEngine.Models;
+
+internal enum GenerationProcessStep
+{
+    NotStarted,
+    ContextGatheringFinished,
+    NarrativeDirectionFinished,
+    CharacterCreationFinished,
+    LocationGenerationFinished,
+    LoreGenerationFinished,
+    SceneGenerationFinished,
+    TrackerUpdatingFinished,
+    CharacterStateTrackingFinished,
+    Completed
+}
+
+internal sealed class GenerationContext
+{
+    public required Guid AdventureId { get; set; }
+
+    public required string PlayerAction { get; set; }
+
+    [JsonIgnore]
+    public required string? Summary { get; set; }
+
+    /// <summary>
+    /// Has to be refetched from DB as there's no point to store it
+    /// </summary>
+    [JsonIgnore]
+    public required SceneContext[] SceneContext { get; set; }
+
+    /// <summary>
+    /// List of the all Characters. Has to be refetched from DB as there's no point to store it
+    /// </summary>
+    [JsonIgnore]
+    public required List<CharacterContext> Characters { get; set; } = new();
+
+    [JsonIgnore]
+    public required TrackerStructure TrackerStructure { get; set; }
+
+    [JsonIgnore]
+    public required MainCharacter MainCharacter { get; set; }
+
+    public CharacterContext[]? NewCharacters { get; set; }
+
+    public LocationGenerationResult[]? NewLocations { get; set; }
+
+    public GeneratedLore[]? NewLore { get; set; }
+
+    public NarrativeDirectorOutput? NewNarrativeDirection { get; set; }
+
+    public List<ContextBase>? ContextGathered { get; set; }
+
+    public GeneratedScene? NewScene { get; set; }
+
+    public Tracker? NewTracker { get; set; }
+
+    public CharacterContext[]? CharacterUpdates { get; set; }
+
+    public required GenerationProcessStep GenerationProcessStep { get; set; }
+}
+
+internal sealed class CharacterContext
+{
+    public required Guid CharacterId { get; set; }
+
+    public Guid SceneId { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public string Description { get; set; } = null!;
+
+    public CharacterStats CharacterState { get; set; } = null!;
+
+    public CharacterTracker? CharacterTracker { get; set; }
+}
+
+internal sealed class SceneContext
+{
+    public required int SequenceNumber { get; set; }
+    
+    public required string SceneContent { get; set; } = null!;
+
+    public required string PlayerChoice { get; set; } = null!;
+
+    public required IEnumerable<CharacterContext> Characters { get; set; } = [];
+
+    public required Metadata Metadata { get; set; } = null!;
+}

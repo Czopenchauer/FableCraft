@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure;
 
 using FluentValidation;
@@ -24,14 +25,17 @@ public static class StartupExtensions
         services.AddScoped<IGameService, GameService>();
         services
             .AddScoped<SceneGenerationOrchestrator>()
-            .AddScoped<WriterAgent>()
+            .AddScoped<IProcessor, WriterAgent>()
+            .AddScoped<IProcessor, ContentGenerator>()
+            .AddScoped<IProcessor, TrackerProcessor>()
+            .AddScoped<IProcessor, SaveGeneration>()
+            .AddScoped<IProcessor, ContextGatherer>()
+            .AddScoped<IProcessor, NarrativeDirectorAgent>()
             .AddScoped<TrackerAgent>()
             .AddScoped<CharacterCrafter>()
             .AddScoped<LoreCrafter>()
             .AddScoped<CharacterStateTracker>()
-            .AddScoped<ContextGatherer>()
-            .AddScoped<LocationCrafter>()
-            .AddScoped<NarrativeDirectorAgent>();
+            .AddScoped<LocationCrafter>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
 

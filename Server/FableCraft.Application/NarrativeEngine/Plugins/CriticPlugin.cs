@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 
 using Microsoft.SemanticKernel;
@@ -25,7 +26,7 @@ internal sealed class CriticPlugin
     private readonly ILogger _logger;
 
     public CriticPlugin(
-        NarrativeContext narrativeContext,
+        GenerationContext generationContext,
         Kernel kernel,
         ILogger logger)
     {

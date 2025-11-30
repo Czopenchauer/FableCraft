@@ -1,33 +1,26 @@
 ﻿using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 
-using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
-
-internal class ContextBase
-{
-    public required string Query { get; set; }
-
-    public required string Response { get; set; }
-}
 
 internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
-    IKernelBuilder kernelBuilder,
     IRagSearch ragSearch,
-    ILogger logger)
+    ILogger logger,
+    IKernelBuilder kernelBuilder) : IProcessor
 {
-    public async Task<List<ContextBase>> Invoke(
-        Guid adventureId,
-        string context,
+    private const int SceneContextCount = 5;
+
+    public async Task Invoke(
+        GenerationContext context,
         CancellationToken cancellationToken)
     {
         var chatHistory = new ChatHistory();
@@ -40,16 +33,38 @@ internal sealed class ContextGatherer(
             AllowTrailingCommas = true
         };
 
-        chatHistory.AddUserMessage(context);
+        var contextPrompt = $"""
+                             <story_summary>
+                             {context.Summary}
+                             </story_summary>
+
+                             <last_scenes>
+                             {string.Join("\n", context.SceneContext
+                                 .OrderByDescending(x => x.SequenceNumber)
+                                 .Take(SceneContextCount)
+                                 .Select(x =>
+                                     $"""
+                                      SCENE NUMBER: {x.SequenceNumber}
+                                      {x.SceneContent}
+                                      {x.PlayerChoice}
+                                      """))}
+                             </last_scenes>
+
+                             <main_character>
+                             {context.MainCharacter.Name}
+                             {context.MainCharacter.Description}
+                             </main_character>
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
-        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
-        promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        var queries = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
+        var queries = await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultPromptExecutionSettings(), cancellationToken);
+
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
         var tasks = queries
             .Select(async x =>
             {
-                var searchResults = await ragSearch.SearchAsync(adventureId.ToString(), x, cancellationToken: cancellationToken);
+                var searchResults = await ragSearch.SearchAsync(callerContext, x, cancellationToken: cancellationToken);
                 return new ContextBase
                 {
                     Query = x,
@@ -67,11 +82,13 @@ internal sealed class ContextGatherer(
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error gathering context for adventure {AdventureId}", adventureId);
+                logger.Error(ex, "Error gathering context for adventure {AdventureId}", context.AdventureId);
                 // Best effort - continue with other tasks. Other agents can query the RAG system again if needed.
             }
         }
-        return results;
+
+        context.ContextGathered = results;
+        context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
     }
 
     private async static Task<string> BuildInstruction()

@@ -1,28 +1,23 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class LoreCrafter
+internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kernelBuilder, IRagSearch ragSearch)
 {
-    private readonly IAgentKernel _agentKernel;
-
-    public LoreCrafter(IAgentKernel agentKernel)
-    {
-        _agentKernel = agentKernel;
-    }
-
-    public async Task<GeneratedLore> Invoke(Kernel kernel,
+    public async Task<GeneratedLore> Invoke(
+        GenerationContext context,
         LoreRequest request,
-        NarrativeContext narrativeContext,
-        CharacterContext[] characterCreation,
         CancellationToken cancellationToken)
     {
         var chatHistory = new ChatHistory();
@@ -35,9 +30,9 @@ internal sealed class LoreCrafter
             AllowTrailingCommas = true
         };
 
-        if (characterCreation.Length > 0)
+        if (context.NewCharacters!.Length > 0)
         {
-            var createdCharactersJson = JsonSerializer.Serialize(characterCreation, options);
+            var createdCharactersJson = JsonSerializer.Serialize(context.NewCharacters, options);
             chatHistory.AddUserMessage($"""
                                          <created_characters>
                                          {createdCharactersJson}
@@ -51,10 +46,14 @@ internal sealed class LoreCrafter
                              </lore_creation_context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
+        var kernel = kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
         var outputFunc = new Func<string, GeneratedLore>(response =>
             JsonSerializer.Deserialize<GeneratedLore>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
 
-        return await _agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), cancellationToken, kernel: kernelWithKg);
     }
 
     private async static Task<string> BuildInstruction()

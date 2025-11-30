@@ -4,24 +4,21 @@ using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
 
-using Serilog;
-
 namespace FableCraft.Application.NarrativeEngine.Plugins;
+
 
 /// <summary>
 ///     Plugin providing knowledge graph search capabilities to all agents
 /// </summary>
-public class KnowledgeGraphPlugin
+internal class KnowledgeGraphPlugin
 {
-    private readonly string _adventureId;
     private readonly IRagSearch _ragSearch;
-    private readonly ILogger _logger;
+    private readonly CallerContext _callerContext;
 
-    public KnowledgeGraphPlugin(IRagSearch ragSearch, string adventureId, ILogger logger)
+    public KnowledgeGraphPlugin(IRagSearch ragSearch, CallerContext callerContext)
     {
         _ragSearch = ragSearch;
-        _adventureId = adventureId;
-        _logger = logger;
+        _callerContext = callerContext;
     }
 
     [KernelFunction("search_knowledge_graph")]
@@ -33,8 +30,7 @@ public class KnowledgeGraphPlugin
         [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
         string levelOfDetails)
     {
-        _logger.Information("Performing knowledge graph search with query: {query}", query);
-        var results = await _ragSearch.SearchAsync(_adventureId, $"{query}, level of details: {levelOfDetails}");
+        var results = await _ragSearch.SearchAsync(_callerContext, $"{query}, level of details: {levelOfDetails}");
 
         if (results.Results.Count == 0)
         {

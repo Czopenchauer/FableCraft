@@ -2,7 +2,7 @@
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-internal sealed class GeneratedLore
+public sealed class GeneratedLore
 {
     [JsonPropertyName("title")]
     public string Title { get; init; } = null!;

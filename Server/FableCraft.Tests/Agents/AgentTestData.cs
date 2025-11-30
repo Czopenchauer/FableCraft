@@ -8,9 +8,9 @@ namespace FableCraft.Tests.Agents;
 
 internal static class AgentTestData
 {
-    internal static NarrativeContext CreateSampleNarrativeContext(Guid adventureId, Kernel kernel)
+    internal static GenerationContext CreateSampleNarrativeContext(Guid adventureId, Kernel kernel)
     {
-        return new NarrativeContext
+        return new GenerationContext
         {
             AdventureId = adventureId,
             KernelKg = kernel,

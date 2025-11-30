@@ -31,9 +31,9 @@ public class Scene : IEntity
 
     public required Metadata Metadata { get; init; }
 
-    public required DateTime CreatedAt { get; init; }
+    public required DateTimeOffset CreatedAt { get; init; }
 
-    public List<CharacterState> CharacterStates { get; set; } = [];
+    public List<Character> CharacterStates { get; set; } = [];
 
     public List<MainCharacterAction> CharacterActions { get; init; } = new();
 

@@ -14,6 +14,8 @@ public interface IKernelBuilder
     Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null);
 
     PromptExecutionSettings GetDefaultPromptExecutionSettings();
+
+    PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings();
 }
 
 internal class OpenAiKernelBuilder : IKernelBuilder
@@ -48,6 +50,15 @@ internal class OpenAiKernelBuilder : IKernelBuilder
     }
 
     public PromptExecutionSettings GetDefaultPromptExecutionSettings()
+    {
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 200_000,
+            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
+        };
+    }
+
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
     {
         return new OpenAIPromptExecutionSettings
         {

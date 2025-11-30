@@ -2,6 +2,8 @@
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -17,19 +19,18 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class CharacterStateTracker(
     IAgentKernel agentKernel,
     ApplicationDbContext dbContext,
-    IKernelBuilder kernelBuilder)
+    IKernelBuilder kernelBuilder,
+    IRagSearch ragSearch)
 {
     public async Task<CharacterContext> Invoke(
-        Guid adventureId,
-        NarrativeContext narrativeContext,
+        GenerationContext generationContext,
         CharacterContext context,
-        GeneratedScene scene,
         CancellationToken cancellationToken)
     {
         var trackerStructure = await dbContext
             .Adventures
             .Select(x => new { x.Id, x.TrackerStructure })
-            .SingleAsync(x => x.Id == adventureId, cancellationToken);
+            .SingleAsync(x => x.Id == generationContext.AdventureId, cancellationToken);
 
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
@@ -51,11 +52,19 @@ internal sealed class CharacterStateTracker(
                       </previous_statistics>
 
                       <recent_scenes>
-                      {string.Join("\n\n---\n\n", narrativeContext.SceneContext.TakeLast(3).Select(s => s.SceneContent))}
+                      {string.Join("\n\n---\n\n", generationContext.SceneContext
+                          .OrderByDescending(x => x.SequenceNumber)
+                          .TakeLast(3)
+                          .Select(s => $"""
+                                        Character on scene: {s.Metadata.Tracker.CharactersPresent}
+                                        SCENE NUMBER: {s.SequenceNumber}
+                                        {s.SceneContent}
+                                        {s.PlayerChoice}
+                                        """))}
                       </recent_scenes>
 
                       <current_scene>
-                      {scene.Scene}
+                      {generationContext.NewScene!.Scene}
                       </current_scene>
                       """;
         chatHistory.AddUserMessage(prompt);
@@ -90,9 +99,14 @@ internal sealed class CharacterStateTracker(
 
             return (tracker, state);
         });
-        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
+        
+        var kernel = kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, promptExecutionSettings: promptExecutionSettings);
+        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc,  promptExecutionSettings: promptExecutionSettings, cancellationToken, kernelWithKg);
         return new CharacterContext
         {
             CharacterId = context.CharacterId,
@@ -129,7 +143,7 @@ internal sealed class CharacterStateTracker(
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
     {
         var charDict = ConvertFieldsToDict(structure.Characters);
-        
+
         // Ensure Name field is always included since it's required by CharacterTracker
         if (!charDict.ContainsKey("Name"))
         {
@@ -159,12 +173,12 @@ internal sealed class CharacterStateTracker(
             object GetDefaultValue(FieldDefinition field)
             {
                 return field.Type switch
-                {
-                    FieldType.Array => new object[1],
-                    FieldType.Object => new { },
-                    FieldType.String => "",
-                    _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                };
+                       {
+                           FieldType.Array => new object[1],
+                           FieldType.Object => new { },
+                           FieldType.String => "",
+                           _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
+                       };
             }
         }
     }

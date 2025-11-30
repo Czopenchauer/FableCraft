@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -10,13 +12,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbContext dbContext)
+internal sealed class CharacterCrafter(
+    IAgentKernel agentKernel, 
+    ApplicationDbContext dbContext, 
+    IKernelBuilder kernelBuilder, 
+    IRagSearch ragSearch)
 {
     public async Task<CharacterContext> Invoke(
-        Kernel kernel,
-        NarrativeContext context,
+        GenerationContext context,
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
@@ -40,11 +47,17 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
                              {JsonSerializer.Serialize(request, options)}
                              </character_creation_context>
                              """;
+
+        var kernel = kernelBuilder.WithBase();
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
+
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>(response =>
         {
             var match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
-            CharacterStats? characterStats = null;
+            CharacterStats? characterStats;
             if (match.Success)
             {
                 characterStats = JsonSerializer.Deserialize<CharacterStats>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -76,16 +89,16 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
                     throw new InvalidCastException("Failed to parse character description from response due to empty description or it not being in correct tags.");
                 }
 
-                return (characterStats!, description, tracker);
+                return (characterStats, description, tracker);
             }
 
             throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
         });
 
-        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, cancellationToken, kernel: kernel);
+        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), cancellationToken, kernel: kernelWithKg);
         return new CharacterContext
         {
-            CharacterId = Guid.Empty,
+            CharacterId = Guid.NewGuid(),
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
@@ -141,12 +154,12 @@ internal sealed class CharacterCrafter(IAgentKernel agentKernel, ApplicationDbCo
             object GetDefaultValue(FieldDefinition field)
             {
                 return field.Type switch
-                {
-                    FieldType.Array => new object[1],
-                    FieldType.Object => new { },
-                    FieldType.String => "",
-                    _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                };
+                       {
+                           FieldType.Array => new object[1],
+                           FieldType.Object => new { },
+                           FieldType.String => "",
+                           _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
+                       };
             }
         }
     }

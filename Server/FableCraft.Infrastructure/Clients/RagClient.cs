@@ -24,7 +24,7 @@ public interface IRagBuilder
 
 public interface IRagSearch
 {
-    Task<SearchResponse> SearchAsync(string adventureId, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default);
+    Task<SearchResponse> SearchAsync(CallerContext context, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default);
 }
 
 internal class RagClient : IRagBuilder, IRagSearch
@@ -115,11 +115,11 @@ internal class RagClient : IRagBuilder, IRagSearch
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<SearchResponse> SearchAsync(string adventureId, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default)
+    public async Task<SearchResponse> SearchAsync(CallerContext context, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default)
     {
         var request = new SearchRequest
         {
-            AdventureId = adventureId,
+            AdventureId = context.AdventureId.ToString(),
             Query = query,
             SearchType = searchType
         };

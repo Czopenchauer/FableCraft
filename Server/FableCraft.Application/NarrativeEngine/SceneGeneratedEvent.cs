@@ -219,8 +219,8 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
     private FileToWrite Process(
         Guid adventureId,
         List<Chunk> existingChunks,
-        IGrouping<Guid, CharacterState> states,
-        Func<CharacterState, string> fieldSelector,
+        IGrouping<Guid, Character> states,
+        Func<Character, string> fieldSelector,
         ContentType contentType)
     {
         var hashes = states.Select(x =>
