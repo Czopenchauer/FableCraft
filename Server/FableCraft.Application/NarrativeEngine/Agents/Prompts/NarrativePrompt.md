@@ -19,41 +19,7 @@ You receive:
 ### PHASE 0: Knowledge Gathering
 
 !IMPORTANT Use Function Calling to query the Knowledge Graph!
-**Before making ANY narrative decisions, query the Knowledge Graph systematically using the Function Calling!:**
-
-0. **!IMPORTANT Review Last Directive** (from last_scene_narrative_direction)
-    * Note the `beat_type` used to avoid repetition
-    * Check `tension_level` for trajectory planning
-    * Identify `creation_requests` that should now exist in KG
-    * Review `objectives` for progress tracking
-    * Check `consequences_queue` for triggers
-
-1. **Location Context**
-    * Query current location details, history, and recent events
-    * Check for location-specific story threads or prophecies
-    * Identify NPCs typically present or connected to this place
-
-2. **Character Verification**
-    * Get full profiles for all NPCs in current scene
-    * Review relationship history with player
-    * Check for promises, debts, or unresolved interactions
-
-3. **Event History**
-    * Review recent events at current location
-    * Check for player actions with delayed consequences
-    * Scan for time-sensitive plot threads about to expire
-
-4. **Thread Verification**
-    * Identify active quests/promises involving current context
-    * Check for foreshadowed events ready to trigger
-    * Verify any lore or prophecies relevant to current situation
-
-5. **Consequence Scanning**
-    * Look for delayed consequences from previous scenes (3-10 scenes ago)
-    * Check if player's past choices should impact current scene
-    * Identify reputation changes that should manifest
-
-**Document findings in `extra_context_gathered` before proceeding.**
+Gather only what is relevant to the current scene and narrative.
 
 ### PHASE 1: Action Analysis
 

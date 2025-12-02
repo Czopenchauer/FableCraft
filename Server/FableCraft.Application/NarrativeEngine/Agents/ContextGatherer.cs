@@ -11,11 +11,13 @@ using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
+#pragma warning disable CS9113 // Parameter is unread.
 internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
     IRagSearch ragSearch,
     ILogger logger,
     IKernelBuilder kernelBuilder) : IProcessor
+#pragma warning restore CS9113 // Parameter is unread.
 {
     private const int SceneContextCount = 5;
 
@@ -58,41 +60,29 @@ internal sealed class ContextGatherer(
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
-        var queries = await agentKernel.SendRequestAsync(chatHistory,
-            outputFunc,
-            kernelBuilder.GetDefaultPromptExecutionSettings(),
-            nameof(ContextGatherer),
-            cancellationToken);
+        // var queries = await agentKernel.SendRequestAsync(chatHistory,
+        //     outputFunc,
+        //     kernelBuilder.GetDefaultPromptExecutionSettings(),
+        //     nameof(ContextGatherer),
+        //     cancellationToken);
 
         var callerContext = new CallerContext(GetType(), context.AdventureId);
-        var tasks = queries
-            .Select(async x =>
-            {
-                var searchResults = await ragSearch.SearchAsync(callerContext, x, cancellationToken: cancellationToken);
-                return new ContextBase
-                {
-                    Query = x,
-                    Response = string.Join("\n\n", searchResults.Results)
-                };
-            })
-            .ToList();
-
-        List<ContextBase> results = [];
-        foreach (var task in tasks)
+        try
         {
-            try
-            {
-                results.Add(await task);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error gathering context for adventure {AdventureId}", context.AdventureId);
-                // Best effort - continue with other tasks. Other agents can query the RAG system again if needed.
-            }
+            // var searchResults = await ragSearch.SearchAsync(callerContext, queries, cancellationToken: cancellationToken);
+            // context.ContextGathered = searchResults.Select(x => new ContextBase
+            // {
+            //     Query = x.Query,
+            //     Response = string.Join("\n\n", x.Response.Results)
+            // }).ToList();
+            context.ContextGathered = new List<ContextBase>();
+            context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
         }
-
-        context.ContextGathered = results;
-        context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Error filtering queries for adventure {AdventureId}", context.AdventureId);
+            // Best effort - proceed without filtered context
+        }
     }
 
     private async static Task<string> BuildInstruction()

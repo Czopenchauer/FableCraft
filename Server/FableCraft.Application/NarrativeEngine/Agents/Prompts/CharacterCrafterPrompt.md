@@ -1,7 +1,7 @@
 ﻿**Generate a richly detailed character based on narrative requirements and world context.**
 
 ## Knowledge Graph Integration
-
+Gather only what is relevant to the current scene and narrative.
 Before generating the character, you have access to a comprehensive knowledge graph containing:
 
 ### Available Knowledge Domains:

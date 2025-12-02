@@ -26,9 +26,11 @@ public interface IRagBuilder
     Task CleanAsync(CancellationToken cancellationToken = default);
 }
 
+public record SearchResult(string Query, SearchResponse Response);
+
 public interface IRagSearch
 {
-    Task<SearchResponse> SearchAsync(CallerContext context, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default);
+    Task<SearchResult[]> SearchAsync(CallerContext context, string[] query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default);
 }
 
 internal class RagClient : IRagBuilder, IRagSearch
@@ -121,34 +123,40 @@ internal class RagClient : IRagBuilder, IRagSearch
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<SearchResponse> SearchAsync(CallerContext context, string query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default)
+    public async Task<SearchResult[]> SearchAsync(CallerContext context, string[] queries, string searchType = "GRAPH_COMPLETION",
+        CancellationToken cancellationToken = default)
     {
-        var request = new SearchRequest
+        var request = queries.Select(async query =>
         {
-            AdventureId = context.AdventureId.ToString(),
-            Query = query,
-            SearchType = searchType
-        };
+            var response = await _httpClient.PostAsJsonAsync("/search",
+                new SearchRequest
+                {
+                    AdventureId = context.AdventureId.ToString(),
+                    Query = query,
+                    SearchType = searchType
+                },
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: cancellationToken);
+            return (query, result ?? new SearchResponse { Results = new List<string>() });
+        }).ToArray();
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: cancellationToken)
-               ?? new SearchResponse { Results = new List<string>() };
+        var results = await Task.WhenAll(request);
         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
-        {
-            AdventureId = context.AdventureId,
-            CallerName = $"{nameof(IRagSearch)}:{context.CallerType}",
-            RequestContent = JsonSerializer.Serialize(request),
-            ResponseContent = JsonSerializer.Serialize(result),
-            InputToken = null,
-            OutputToken = null,
-            TotalToken = null,
-            Duration = stopwatch.ElapsedMilliseconds
-        },
-        cancellationToken);
-        return result;
+            {
+                AdventureId = context.AdventureId,
+                CallerName = $"{nameof(IRagSearch)}:{context.CallerType.Name}",
+                RequestContent = JsonSerializer.Serialize(new { Queries = queries, SearchType = searchType }),
+                ResponseContent = JsonSerializer.Serialize(results.Select(x => new { Query = x.query, Response = x.Item2.Results })),
+                InputToken = null,
+                OutputToken = null,
+                TotalToken = null,
+                Duration = stopwatch.ElapsedMilliseconds
+            },
+            cancellationToken);
+        return results.Select(x => new SearchResult(x.query, x.Item2)).ToArray();
     }
 }
 
