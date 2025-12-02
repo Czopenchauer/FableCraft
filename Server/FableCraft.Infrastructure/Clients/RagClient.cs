@@ -1,5 +1,9 @@
 ﻿using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+
+using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Queue;
 
 namespace FableCraft.Infrastructure.Clients;
 
@@ -30,10 +34,12 @@ public interface IRagSearch
 internal class RagClient : IRagBuilder, IRagSearch
 {
     private readonly HttpClient _httpClient;
+    private readonly IMessageDispatcher _messageDispatcher;
 
-    public RagClient(HttpClient httpClient)
+    public RagClient(HttpClient httpClient, IMessageDispatcher messageDispatcher)
     {
         _httpClient = httpClient;
+        _messageDispatcher = messageDispatcher;
     }
 
     public async Task<Dictionary<string, string>> AddDataAsync(List<string> content, string adventureId, CancellationToken cancellationToken = default)
@@ -124,11 +130,25 @@ internal class RagClient : IRagBuilder, IRagSearch
             SearchType = searchType
         };
 
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: cancellationToken)
+        var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: cancellationToken)
                ?? new SearchResponse { Results = new List<string>() };
+        await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+        {
+            AdventureId = context.AdventureId,
+            CallerName = $"{nameof(IRagSearch)}:{context.CallerType}",
+            RequestContent = JsonSerializer.Serialize(request),
+            ResponseContent = JsonSerializer.Serialize(result),
+            InputToken = null,
+            OutputToken = null,
+            TotalToken = null,
+            Duration = stopwatch.ElapsedMilliseconds
+        },
+        cancellationToken);
+        return result;
     }
 }
 
