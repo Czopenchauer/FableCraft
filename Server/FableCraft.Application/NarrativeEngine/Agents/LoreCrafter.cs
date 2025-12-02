@@ -53,7 +53,12 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kerne
         var outputFunc = new Func<string, GeneratedLore>(response =>
             JsonSerializer.Deserialize<GeneratedLore>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
 
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), cancellationToken, kernel: kernelWithKg);
+        return await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            nameof(LoreCrafter),
+            cancellationToken,
+            kernel: kernelWithKg);
     }
 
     private async static Task<string> BuildInstruction()

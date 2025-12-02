@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FableCraft.Server.Controllers;
 
+public record PageRequest(int Take, int? Skip);
+
 [ApiController]
 [Route("api/[controller]")]
 public class PlayController : ControllerBase
@@ -16,16 +18,11 @@ public class PlayController : ControllerBase
         _gameService = gameService;
     }
 
-    [HttpGet("current-scene/{adventureId:guid}")]
+    [HttpGet("{adventureId:guid}")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
-    public async Task<ActionResult> GetCurrentScene(Guid adventureId, CancellationToken cancellationToken)
+    public async Task<ActionResult> GetCurrentScene(Guid adventureId, [FromQuery] PageRequest pageRequest, CancellationToken cancellationToken)
     {
-        GameScene? scene = await _gameService.GetCurrentSceneAsync(adventureId, cancellationToken);
-        if (scene == null)
-        {
-            return NotFound();
-        }
-
+        var scene = await _gameService.GetScenesAsync(adventureId, pageRequest.Take, pageRequest.Skip, cancellationToken);
         return Ok(scene);
     }
 
@@ -56,12 +53,14 @@ public class PlayController : ControllerBase
     /// <summary>
     ///     Delete the last scene
     /// </summary>
-    [HttpDelete("delete/{adventureId:guid}")]
-    public async Task<ActionResult> DeleteLastScene(Guid adventureId, CancellationToken cancellationToken)
+    [HttpDelete("delete/{adventureId:guid}/scene/{sceneId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteLastScene(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
         try
         {
-            await _gameService.DeleteLastSceneAsync(adventureId, cancellationToken);
+            await _gameService.DeleteSceneAsync(adventureId, sceneId, cancellationToken);
             return NoContent();
         }
         catch (AdventureNotFoundException)
@@ -73,13 +72,13 @@ public class PlayController : ControllerBase
     /// <summary>
     ///     Regenerate the last scene
     /// </summary>
-    [HttpPost("regenerate/{adventureId:guid}")]
+    [HttpPost("regenerate/{adventureId:guid}/scene/{sceneId:guid}")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
-    public async Task<ActionResult> Regenerate(Guid adventureId, CancellationToken cancellationToken)
+    public async Task<ActionResult> Regenerate(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
         try
         {
-            GameScene scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
+            GameScene scene = await _gameService.RegenerateAsync(adventureId, sceneId, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)

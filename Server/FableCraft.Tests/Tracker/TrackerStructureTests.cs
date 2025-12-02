@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Tests.Tracker;

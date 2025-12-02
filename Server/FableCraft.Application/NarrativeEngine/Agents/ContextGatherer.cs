@@ -58,7 +58,11 @@ internal sealed class ContextGatherer(
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
-        var queries = await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultPromptExecutionSettings(), cancellationToken);
+        var queries = await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            kernelBuilder.GetDefaultPromptExecutionSettings(),
+            nameof(ContextGatherer),
+            cancellationToken);
 
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         var tasks = queries

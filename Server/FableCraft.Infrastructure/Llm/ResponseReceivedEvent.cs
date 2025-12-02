@@ -33,7 +33,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
         var llmCallLog = new Persistence.Entities.LlmLog
         {
             AdventureId = message.AdventureId,
-            CallerName = Path.GetFileName(message.CallerName),
+            CallerName = message.CallerName,
             RequestContent = message.RequestContent,
             ResponseContent = message.ResponseContent,
             ReceivedAt = message.ReceivedAt,

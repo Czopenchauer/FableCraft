@@ -17,9 +17,9 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter(
-    IAgentKernel agentKernel, 
-    ApplicationDbContext dbContext, 
-    IKernelBuilder kernelBuilder, 
+    IAgentKernel agentKernel,
+    ApplicationDbContext dbContext,
+    IKernelBuilder kernelBuilder,
     IRagSearch ragSearch)
 {
     public async Task<CharacterContext> Invoke(
@@ -95,7 +95,12 @@ internal sealed class CharacterCrafter(
             throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
         });
 
-        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), cancellationToken, kernel: kernelWithKg);
+        var result = await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            nameof(CharacterCrafter),
+            cancellationToken,
+            kernel: kernelWithKg);
         return new CharacterContext
         {
             CharacterId = Guid.NewGuid(),

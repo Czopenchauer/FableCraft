@@ -109,7 +109,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
         });
         var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, cancellationToken);
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), cancellationToken);
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)

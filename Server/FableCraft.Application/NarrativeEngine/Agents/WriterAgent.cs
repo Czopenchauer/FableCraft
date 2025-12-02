@@ -125,6 +125,7 @@ internal sealed class WriterAgent(
             chatHistory,
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            nameof(WriterAgent),
             cancellationToken,
             kernelWithKg);
         context.NewScene = newScene;

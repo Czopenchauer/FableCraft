@@ -15,6 +15,8 @@ namespace FableCraft.Application.NarrativeEngine;
 
 public class SceneGenerationOutput
 {
+    public required Guid SceneId { get; set; }
+
     public required GeneratedScene GeneratedScene { get; init; }
 
     public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
@@ -35,16 +37,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         if (context.Context.GenerationProcessStep == GenerationProcessStep.Completed)
         {
-            await dbContext.GenerationProcesses
-                .Where(x => x.Id == context.ProcessId)
-                .ExecuteDeleteAsync(cancellationToken);
-
-            return new SceneGenerationOutput
-            {
-                GeneratedScene = context.Context.NewScene!,
-                NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
-                Tracker = context.Context.NewTracker!
-            };
+            return await GetGeneratedScene();
         }
 
         var options = new JsonSerializerOptions
@@ -81,16 +74,30 @@ internal sealed class SceneGenerationOrchestrator(
             }
         }
 
-        await dbContext.GenerationProcesses
-            .Where(x => x.Id == context.ProcessId)
-            .ExecuteDeleteAsync(cancellationToken);
+        return await GetGeneratedScene();
 
-        return new SceneGenerationOutput
+        async Task<SceneGenerationOutput> GetGeneratedScene()
         {
-            GeneratedScene = context.Context.NewScene!,
-            NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
-            Tracker = context.Context.NewTracker!
-        };
+            await dbContext.GenerationProcesses
+                .Where(x => x.Id == context.ProcessId)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            var newScene = await dbContext.Scenes
+                .Include(x => x.CharacterActions)
+                .Where(x => x.AdventureId == adventureId)
+                .OrderByDescending(x => x.SequenceNumber).SingleAsync(cancellationToken);
+            return new SceneGenerationOutput
+            {
+                SceneId = newScene.Id,
+                GeneratedScene = new GeneratedScene
+                {
+                    Scene = newScene.NarrativeText,
+                    Choices = newScene.CharacterActions.Select(x => x.ActionDescription).ToArray()
+                },
+                NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
+                Tracker = context.Context.NewTracker!
+            };
+        }
     }
 
     private async Task<(GenerationContext Context, Guid ProcessId)> GetGenerationContext(Guid adventureId, string playerAction, CancellationToken cancellationToken)

@@ -1,6 +1,5 @@
 ﻿using System.IO.Hashing;
 using System.Text;
-using System.Text.Json;
 using System.Threading.RateLimiting;
 
 using FableCraft.Infrastructure.Clients;
@@ -25,9 +24,6 @@ internal sealed class SceneGeneratedEvent : IMessage
     public required Guid AdventureId { get; set; }
 }
 
-/// <summary>
-/// Commit generated scenes and related data to RAG system. Works on the assumption that "stale" date in KG is fine.
-/// </summary>
 internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGeneratedEvent>
 {
     private readonly ApplicationDbContext _dbContext;
@@ -142,21 +138,22 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 fileToCommit.Add((chunk, sceneContent));
             }
 
-            var characterStatesOnScenes = scenesToCommit
-                .SelectMany(x => x.CharacterStates)
-                .GroupBy(x => x.CharacterId);
-            var existingCharacterChunks = await _dbContext.Chunks
-                .Where(x => characterStatesOnScenes.Select(y => y.Key).Contains(x.EntityId))
-                .ToListAsync(cancellationToken);
-            foreach (var states in characterStatesOnScenes)
-            {
-                var description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
-                fileToCommit.Add(description);
-                var charStats = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.CharacterStats), ContentType.json);
-                fileToCommit.Add(charStats);
-                var tracker = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.Tracker), ContentType.json);
-                fileToCommit.Add(tracker);
-            }
+            // TODO: FOR NOW ONLY "stale" data is commited. Consider committing character states as well
+            // var characterStatesOnScenes = scenesToCommit
+            //     .SelectMany(x => x.CharacterStates)
+            //     .GroupBy(x => x.CharacterId);
+            // var existingCharacterChunks = await _dbContext.Chunks
+            //     .Where(x => characterStatesOnScenes.Select(y => y.Key).Contains(x.EntityId))
+            //     .ToListAsync(cancellationToken);
+            // foreach (var states in characterStatesOnScenes)
+            // {
+            //     var description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
+            //     fileToCommit.Add(description);
+            //     var charStats = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.CharacterStats), ContentType.json);
+            //     fileToCommit.Add(charStats);
+            //     var tracker = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.Tracker), ContentType.json);
+            //     fileToCommit.Add(tracker);
+            // }
 
             var strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
@@ -177,15 +174,15 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 await Task.WhenAll(fileToCommit.Select(x => File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
-                foreach (var (chunk, _) in fileToCommit)
-                {
-                    if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
-                    {
-                        await _resiliencePipeline.ExecuteAsync(async ct =>
-                                await _ragBuilder.UpdateDataAsync(message.AdventureId.ToString(), chunk.KnowledgeGraphNodeId, chunk.Path, ct),
-                            cancellationToken);
-                    }
-                }
+                // foreach (var (chunk, _) in fileToCommit)
+                // {
+                //     if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
+                //     {
+                //         await _resiliencePipeline.ExecuteAsync(async ct =>
+                //                 await _ragBuilder.UpdateDataAsync(message.AdventureId.ToString(), chunk.KnowledgeGraphNodeId, chunk.Path, ct),
+                //             cancellationToken);
+                //     }
+                // }
 
                 await _resiliencePipeline.ExecuteAsync(async ct =>
                         await _ragBuilder.AddDataAsync(fileToCommit.Select(x => x.Chunk.Path).ToList(), message.AdventureId.ToString(), ct),

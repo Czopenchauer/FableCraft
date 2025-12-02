@@ -66,7 +66,12 @@ internal sealed class LocationCrafter(
             throw new InvalidCastException("Failed to parse LocationGenerationResult from response due to output not being in correct tags.");
         });
 
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, kernelBuilder.GetDefaultFunctionPromptExecutionSettings(), cancellationToken, kernel: kernelWithKg);
+        return await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            nameof(LocationCrafter),
+            cancellationToken,
+            kernel: kernelWithKg);
     }
 
     private async static Task<string> BuildInstruction()

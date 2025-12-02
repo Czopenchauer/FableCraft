@@ -32,7 +32,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
         };
 
         var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
-        
+
         var stringBuilder = new System.Text.StringBuilder();
         if (lastScene != null)
         {
@@ -51,6 +51,11 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
                                   {context.MainCharacter.Name}
                                   {context.MainCharacter.Description}
                                   </main_character>
+                                  """);
+        stringBuilder.AppendLine($"""
+                                  <extra_context>
+                                  {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                  </extra_context>
                                   """);
         if (context.SceneContext.Length > 0)
         {
@@ -84,12 +89,6 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
                                       """);
         }
 
-        stringBuilder.AppendLine($"""
-                                 <extra_context>
-                                 {JsonSerializer.Serialize(context.ContextGathered, options)}
-                                 </extra_context>
-                                 """);
-
         chatHistory.AddUserMessage(stringBuilder.ToString());
         chatHistory.AddUserMessage(context.PlayerAction);
 
@@ -111,6 +110,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
         var narrativeOutput = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             promptExecutionSettings: kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            nameof(NarrativeDirectorAgent),
             cancellationToken,
             kernelWithKg);
         context.NewNarrativeDirection = narrativeOutput;

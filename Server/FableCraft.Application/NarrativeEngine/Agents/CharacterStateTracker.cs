@@ -99,14 +99,19 @@ internal sealed class CharacterStateTracker(
 
             return (tracker, state);
         });
-        
+
         var kernel = kernelBuilder.WithBase();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        var result = await agentKernel.SendRequestAsync(chatHistory, outputFunc,  promptExecutionSettings: promptExecutionSettings, cancellationToken, kernelWithKg);
+        var result = await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            promptExecutionSettings: promptExecutionSettings,
+            nameof(CharacterStateTracker),
+            cancellationToken,
+            kernelWithKg);
         return new CharacterContext
         {
             CharacterId = context.CharacterId,
