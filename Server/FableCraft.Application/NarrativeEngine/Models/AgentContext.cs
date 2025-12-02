@@ -74,6 +74,8 @@ internal sealed class CharacterContext
 
     public string Description { get; set; } = null!;
 
+    public required int SequenceNumber { get; set; }
+
     public CharacterStats CharacterState { get; set; } = null!;
 
     public CharacterTracker? CharacterTracker { get; set; }

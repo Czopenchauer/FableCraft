@@ -1,5 +1,6 @@
 ﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Infrastructure;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,6 +38,7 @@ public class PlayController : ControllerBase
     {
         try
         {
+            ProcessExecutionContext.AdventureId.Value = request.AdventureId;
             GameScene scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
             return Ok(scene);
         }
@@ -60,6 +62,7 @@ public class PlayController : ControllerBase
     {
         try
         {
+            ProcessExecutionContext.AdventureId.Value = adventureId;
             await _gameService.DeleteSceneAsync(adventureId, sceneId, cancellationToken);
             return NoContent();
         }
@@ -78,6 +81,8 @@ public class PlayController : ControllerBase
     {
         try
         {
+            ProcessExecutionContext.AdventureId.Value = adventureId;
+            
             GameScene scene = await _gameService.RegenerateAsync(adventureId, sceneId, cancellationToken);
             return Ok(scene);
         }

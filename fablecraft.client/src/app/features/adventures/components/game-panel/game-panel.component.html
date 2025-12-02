@@ -90,57 +90,69 @@
         <p class="regenerating-text">Regenerating scene...</p>
       </div>
 
-      <!-- Scene Narrative -->
-      <div class="scene-container">
-        <div class="scene-narrative">
-          <p class="narrative-text">{{ currentScene.text }}</p>
+      <!-- Columns: left tracker, right main content -->
+      <div class="game-columns">
+        <!-- Tracker panel -->
+        <div class="tracker-panel">
+          <div class="tracker-header">Tracker</div>
+          <pre class="tracker-json">{{ currentScene.tracker | json }}</pre>
         </div>
-      </div>
 
-      <!-- Choices -->
-      <div class="choices-container">
-        <h2 class="choices-title">What do you do?</h2>
-        <div class="choices-card">
-          <!-- First 3 predefined choices -->
-          <div
-            (click)="!(isRegenerating || isLoading) && onChoiceSelected(choice)"
-            *ngFor="let choice of currentScene.choices?.slice(0, 3)"
-            [class.disabled]="isRegenerating || isLoading"
-            class="choice-item"
-          >
-            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
-              <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                    [attr.stroke-width]="2"></path>
-            </svg>
-            <div class="choice-text">{{ choice }}</div>
+        <!-- Main content -->
+        <div class="game-main">
+          <!-- Scene Narrative -->
+          <div class="scene-container">
+            <div class="scene-narrative">
+              <p class="narrative-text">{{ currentScene.text }}</p>
+            </div>
           </div>
 
-          <!-- Custom action input -->
-          <div [class.disabled]="isRegenerating || isLoading" class="choice-item choice-item-custom choice-item-last">
-            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
-              <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                    [attr.stroke-width]="2"></path>
-            </svg>
-            <input
-              (keypress)="onCustomActionKeyPress($event)"
-              [(ngModel)]="customAction"
-              [disabled]="isLoading || isRegenerating"
-              class="custom-action-input"
-              placeholder="Or type your own action..."
-              type="text"
-            />
-            <button
-              (click)="onCustomActionSubmit()"
-              *ngIf="customAction.trim()"
-              [disabled]="isLoading || isRegenerating"
-              class="custom-action-submit"
-              title="Submit custom action"
-            >
-              <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                <path [attr.d]="'M9 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                      [attr.stroke-width]="2"></path>
-              </svg>
-            </button>
+          <!-- Choices -->
+          <div class="choices-container">
+            <h2 class="choices-title">What do you do?</h2>
+            <div class="choices-card">
+              <!-- First 3 predefined choices -->
+              <div
+                (click)="!(isRegenerating || isLoading) && onChoiceSelected(choice)"
+                *ngFor="let choice of currentScene.choices?.slice(0, 3)"
+                [class.disabled]="isRegenerating || isLoading"
+                class="choice-item"
+              >
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
+                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                        [attr.stroke-width]="2"></path>
+                </svg>
+                <div class="choice-text">{{ choice }}</div>
+              </div>
+
+              <!-- Custom action input -->
+              <div [class.disabled]="isRegenerating || isLoading" class="choice-item choice-item-custom choice-item-last">
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
+                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                        [attr.stroke-width]="2"></path>
+                </svg>
+                <input
+                  (keypress)="onCustomActionKeyPress($event)"
+                  [(ngModel)]="customAction"
+                  [disabled]="isLoading || isRegenerating"
+                  class="custom-action-input"
+                  placeholder="Or type your own action..."
+                  type="text"
+                />
+                <button
+                  (click)="onCustomActionSubmit()"
+                  *ngIf="customAction.trim()"
+                  [disabled]="isLoading || isRegenerating"
+                  class="custom-action-submit"
+                  title="Submit custom action"
+                >
+                  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                    <path [attr.d]="'M9 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                          [attr.stroke-width]="2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

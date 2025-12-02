@@ -85,7 +85,7 @@ internal sealed class SceneGenerationOrchestrator(
             var newScene = await dbContext.Scenes
                 .Include(x => x.CharacterActions)
                 .Where(x => x.AdventureId == adventureId)
-                .OrderByDescending(x => x.SequenceNumber).SingleAsync(cancellationToken);
+                .OrderByDescending(x => x.SequenceNumber).FirstAsync(cancellationToken);
             return new SceneGenerationOutput
             {
                 SceneId = newScene.Id,
@@ -182,8 +182,8 @@ internal sealed class SceneGenerationOrchestrator(
             return scenes.Select(x => new SceneContext
                 {
                     SceneContent = x.NarrativeText,
-                    PlayerChoice = x.CharacterActions.Single(y => y.Selected)
-                        .ActionDescription,
+                    PlayerChoice = x.CharacterActions.FirstOrDefault(y => y.Selected)?
+                        .ActionDescription ?? playerAction,
                     Metadata = x.Metadata,
                     Characters = x.CharacterStates.Select(y => new CharacterContext
                     {
@@ -191,7 +191,8 @@ internal sealed class SceneGenerationOrchestrator(
                         CharacterTracker = y.Tracker,
                         Description = y.Description,
                         Name = y.CharacterStats.CharacterIdentity.FullName!,
-                        CharacterId = y.CharacterId
+                        CharacterId = y.CharacterId,
+                        SequenceNumber = x.SequenceNumber
                     }),
                     SequenceNumber = x.SequenceNumber
                 })
@@ -242,7 +243,8 @@ internal sealed class SceneGenerationOrchestrator(
                 CharacterState = x.CharacterStats,
                 CharacterTracker = x.Tracker,
                 CharacterId = x.CharacterId,
-                SceneId = x.SceneId
+                SceneId = x.SceneId,
+                SequenceNumber = x.SequenceNumber
             }).ToList();
     }
 

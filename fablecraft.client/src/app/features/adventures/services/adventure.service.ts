@@ -84,7 +84,11 @@ export class AdventureService {
    */
   generateFirstScene(adventureId: string): Observable<GameScene> {
     const url = `${environment.apiUrl}/api/Play/${adventureId}?Take=1`;
-    return this.http.get<GameScene>(url);
+    // API may return either a single GameScene or an array when Take=1.
+    // Normalize to a single GameScene for the UI to consume consistently.
+    return this.http.get<any>(url).pipe(
+      map((resp) => Array.isArray(resp) ? resp[0] as GameScene : resp as GameScene)
+    );
   }
 
   /**

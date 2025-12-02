@@ -118,7 +118,8 @@ internal sealed class CharacterStateTracker(
             CharacterTracker = result.tracker,
             CharacterState = result.state,
             Name = context.Name,
-            Description = context.Description
+            Description = context.Description,
+            SequenceNumber = context.SequenceNumber + 1
         };
     }
 

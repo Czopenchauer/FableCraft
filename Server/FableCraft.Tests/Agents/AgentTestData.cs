@@ -911,7 +911,8 @@ internal static class AgentTestData
                     }
                 }
             },
-            CharacterId = Guid.NewGuid()
+            CharacterId = Guid.NewGuid(),
+            SequenceNumber = 0
         };
     }
 }

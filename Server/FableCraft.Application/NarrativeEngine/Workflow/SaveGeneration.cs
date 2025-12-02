@@ -47,7 +47,7 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             Description = x.Description,
             CharacterStats = x.CharacterState,
             Tracker = x.CharacterTracker!,
-            SequenceNumber = 0,
+            SequenceNumber = x.SequenceNumber,
         }).ToList() ?? new List<Character>();
 
         var updatesToExistingCharacters = context.CharacterUpdates?.Select(x => new Character
@@ -57,12 +57,12 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             Description = x.Description,
             CharacterStats = x.CharacterState,
             Tracker = x.CharacterTracker!,
-            SequenceNumber = 0,
+            SequenceNumber = x.SequenceNumber,
         }) ?? new List<Character>();
         newCharactersEntities.AddRange(updatesToExistingCharacters);
         var newScene = new Scene
         {
-            SequenceNumber = context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SequenceNumber ?? 0 + 1,
+            SequenceNumber = (context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SequenceNumber ?? 0) + 1,
             AdventureId = context.AdventureId,
             NarrativeText = context.NewScene!.Scene,
             Metadata = new Metadata

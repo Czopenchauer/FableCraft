@@ -328,6 +328,65 @@
 
 /* ========== Scene Container ========== */
 
+/* ========== Game Columns (Tracker + Main) ========== */
+
+.game-columns {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .game-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tracker-panel {
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-card);
+}
+
+[data-theme="modern-dark"] .tracker-panel {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .tracker-panel {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.tracker-header {
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.tracker-json {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: var(--font-size-sm);
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.game-content.regenerating .tracker-panel {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .scene-container {
   padding: var(--spacing-3xl);
   border-radius: var(--radius-xl);

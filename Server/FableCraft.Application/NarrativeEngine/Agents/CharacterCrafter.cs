@@ -107,7 +107,8 @@ internal sealed class CharacterCrafter(
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
-            Name = result.characterStats.CharacterIdentity.FullName!
+            Name = result.characterStats.CharacterIdentity.FullName!,
+            SequenceNumber = 1
         };
     }
 
