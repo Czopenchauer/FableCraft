@@ -88,7 +88,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (scene) => {
-          this.currentScene = scene;
+          // API returns a single GameScene
+          this.currentScene = scene || null;
         },
         error: (err) => {
           console.error('Error loading first scene:', err);
@@ -155,7 +156,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.isRegenerating = true;
     this.error = null;
 
-    this.adventureService.regenerateScene(this.adventureId)
+    this.adventureService.regenerateScene(this.adventureId, this.currentScene.sceneId)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -191,7 +192,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.error = null;
 
-    this.adventureService.deleteLastScene(this.adventureId)
+    this.adventureService.deleteLastScene(this.adventureId, this.currentScene.sceneId)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.isLoading = false)

@@ -104,7 +104,7 @@
           <!-- First 3 predefined choices -->
           <div
             (click)="!(isRegenerating || isLoading) && onChoiceSelected(choice)"
-            *ngFor="let choice of currentScene.choices.slice(0, 3); let i = index"
+            *ngFor="let choice of currentScene.choices?.slice(0, 3)"
             [class.disabled]="isRegenerating || isLoading"
             class="choice-item"
           >

@@ -19,7 +19,7 @@ public class PlayController : ControllerBase
     }
 
     [HttpGet("{adventureId:guid}")]
-    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GameScene[]), StatusCodes.Status200OK)]
     public async Task<ActionResult> GetCurrentScene(Guid adventureId, [FromQuery] PageRequest pageRequest, CancellationToken cancellationToken)
     {
         var scene = await _gameService.GetScenesAsync(adventureId, pageRequest.Take, pageRequest.Skip, cancellationToken);

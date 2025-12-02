@@ -97,8 +97,7 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
 
     this.adventureService.retryCreateAdventure(this.adventureId)
       .subscribe({
-        next: (status) => {
-          this.status = status;
+        next: () => {
           this.isLoading = false;
 
           // Create a new destroy$ subject for the new polling session

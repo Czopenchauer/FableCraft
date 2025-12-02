@@ -18,20 +18,22 @@ export interface AdventureListItemDto {
 export interface CharacterDto {
   name: string;
   description: string;
-  background: string;
 }
 
 export interface LorebookEntryDto {
   description: string;
   content: string;
   category: string;
+  order: number;
+  contentType: ContentType;
 }
 
 export interface AdventureDto {
-  adventureId: string;
   name: string;
   firstSceneDescription: string;
   authorNotes: string;
+  referenceTime: string;
+  trackerStructure: string;
   character: CharacterDto;
   lorebook: LorebookEntryDto[];
 }
@@ -57,12 +59,27 @@ export enum AdventureStatus {
 export type ComponentStatus = 'Pending' | 'InProgress' | 'Completed' | 'Failed';
 
 export interface GenerateLorebookDto {
-  lorebooks: LorebookEntryDto[];
+  // For generation we only need a subset of fields from lorebook entries
+  lorebooks: LorebookDraft[];
   category: string;
   additionalInstruction?: string;
 }
 
 export interface GeneratedLorebookDto {
+  content: string;
+}
+
+// Matches server ContentType enum (System.Text.Json serializes enum names as strings)
+// Matches server ContentType enum (OpenAPI specifies integer enum [0,1])
+export enum ContentType {
+  json = 0,
+  txt = 1
+}
+
+// Lightweight draft used for lorebook content generation requests only
+export interface LorebookDraft {
+  category: string;
+  description: string;
   content: string;
 }
 
@@ -73,13 +90,12 @@ export interface LorebookGenerationState {
 }
 
 export interface GameScene {
+  sceneId: string;
   text: string;
-  choices: string[];
-}
-
-export interface GameState {
-  adventureId: string;
-  currentScene: GameScene | null;
-  isLoading: boolean;
-  error?: string;
+  choices: string[] | null;
+  // In the server DTO, this is nullable string; client uses null when no choice selected
+  selectedChoice: string | null;
+  canRegenerate: boolean;
+  tracker: any;
+  narrativeDirectorOutput: any;
 }

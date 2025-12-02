@@ -6,7 +6,8 @@ import {
   AdventureDto,
   AvailableLorebookDto,
   GenerateLorebookDto,
-  LorebookGenerationState
+  LorebookGenerationState,
+  ContentType
 } from '../../models/adventure.model';
 import {Subject, takeUntil} from 'rxjs';
 
@@ -137,13 +138,26 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     const formValue = this.adventureForm.value;
+    const { name, firstSceneDescription, authorNotes, character, lorebook } = formValue;
     const adventureDto: AdventureDto = {
-      adventureId: crypto.randomUUID(),
-      name: formValue.name,
-      firstSceneDescription: formValue.firstSceneDescription,
-      authorNotes: formValue.authorNotes,
-      character: formValue.character,
-      lorebook: formValue.lorebook.filter((entry: any) => entry.content.trim() !== ''),
+      name,
+      firstSceneDescription,
+      authorNotes,
+      referenceTime: new Date().toISOString(),
+      trackerStructure: '',
+      character: {
+        name: character.name,
+        description: character.description
+      },
+      lorebook: (lorebook || [])
+        .map((entry: any, index: number) => ({
+          description: entry.description ?? '',
+          content: (entry.content ?? '').trim(),
+          category: entry.category ?? '',
+          order: index, // maintain UI order as priority
+          contentType: ContentType.txt // default to text unless specified otherwise
+        }))
+        .filter((entry: any) => entry.content !== ''),
     };
 
     this.adventureService.createAdventure(adventureDto)
