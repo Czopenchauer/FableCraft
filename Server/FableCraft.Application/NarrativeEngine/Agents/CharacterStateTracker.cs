@@ -18,7 +18,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterStateTracker(
     IAgentKernel agentKernel,
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IKernelBuilder kernelBuilder,
     IRagSearch ragSearch)
 {
@@ -27,6 +27,8 @@ internal sealed class CharacterStateTracker(
         CharacterContext context,
         CancellationToken cancellationToken)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         var trackerStructure = await dbContext
             .Adventures
             .Select(x => new { x.Id, x.TrackerStructure })

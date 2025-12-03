@@ -7,6 +7,7 @@
     <PackageVersion Include="Aspire.AppHost.Sdk" Version="13.0.0" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.1" />
     <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.1" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.0.1" />
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.0.1" />
     <PackageVersion Include="Aspire.Hosting.Python" Version="13.0.1" />
@@ -36,9 +37,6 @@
     <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.67.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="System.IO.Hashing" Version="10.0.0" />
-    <PackageVersion Include="WolverineFx" Version="5.4.0" />
-    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.4.0" />
-    <PackageVersion Include="WolverineFx.Postgresql" Version="5.4.0" />
     <PackageVersion Include="TUnit" Version="0.6.123" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="Polly" Version="8.6.5" />

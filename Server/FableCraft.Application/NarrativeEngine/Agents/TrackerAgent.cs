@@ -14,10 +14,12 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContext dbContext, IKernelBuilder kernelBuilder)
+internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, IKernelBuilder kernelBuilder)
 {
     public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         var trackerStructure = await dbContext
             .Adventures
             .Select(x => new { x.Id, x.TrackerStructure })
@@ -40,10 +42,15 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                   </main_character>
                                   <characters>
                                   {string.Join("\n\n", context.Characters.Select(c => $"""
-                                                                                  {c.Name}
-                                                                                  {c.Description}
-                                                                                  """))}
+                                                                                       {c.Name}
+                                                                                       {c.Description}
+                                                                                       """))}
                                   </characters>
+                                  """);
+        stringBuilder.AppendLine($"""
+                                  <current_scene>
+                                  {context.NewScene!.Scene}
+                                  </current_scene>
                                   """);
         if (context.NewCharacters?.Length > 0)
         {
@@ -59,6 +66,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                       """);
         }
 
+        string instruction;
         if ((context.SceneContext?.Length ?? 0) == 0)
         {
             stringBuilder.AppendLine($"""
@@ -67,7 +75,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                          </scene_content>
                                       """);
             chatHistory.AddUserMessage(stringBuilder.ToString());
-            var instruction = "It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.";
+            instruction = "It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.";
             chatHistory.AddUserMessage(instruction);
         }
         else
@@ -91,11 +99,11 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, ApplicationDbContex
                                                """))}
                                       </last_scenes>
                                       """);
-            chatHistory.AddUserMessage(stringBuilder.ToString());
-            var instruction = "Update the tracker based on the new scene content and previous tracker state.";
-            chatHistory.AddUserMessage(instruction);
+            instruction = "Update the tracker based on the new scene content and previous tracker state.";
         }
 
+        chatHistory.AddUserMessage(stringBuilder.ToString());
+        chatHistory.AddUserMessage(instruction);
         var outputFunc = new Func<string, Tracker>(response =>
         {
             var match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);

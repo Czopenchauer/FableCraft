@@ -48,6 +48,10 @@ internal sealed class LocationCrafter(
                              <location_request>
                              {JsonSerializer.Serialize(request, options)}
                              </location_request>
+                             
+                             <context>
+                             {JsonSerializer.Serialize(context.ContextGathered, options)}
+                             </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
         var kernel = kernelBuilder.WithBase();

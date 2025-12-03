@@ -19,7 +19,9 @@ You receive:
 ### PHASE 0: Knowledge Gathering
 
 !IMPORTANT Use Function Calling to query the Knowledge Graph!
-Gather only what is relevant to the current scene and narrative.
+Gather only what is relevant to the current scene and narrative. Knowledge Graph does not contain recent player 
+actions or events. It holds established lore, world details, character histories, locations, magical systems, and 
+narrative events older than the last ten scenes.
 
 ### PHASE 1: Action Analysis
 

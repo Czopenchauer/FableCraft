@@ -9,12 +9,9 @@ internal enum GenerationProcessStep
     NotStarted,
     ContextGatheringFinished,
     NarrativeDirectionFinished,
-    CharacterCreationFinished,
-    LocationGenerationFinished,
-    LoreGenerationFinished,
+    ContentCreationFinished,
     SceneGenerationFinished,
-    TrackerUpdatingFinished,
-    CharacterStateTrackingFinished,
+    TrackerFinished,
     Completed
 }
 

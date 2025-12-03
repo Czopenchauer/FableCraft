@@ -1,12 +1,15 @@
 ﻿using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 internal class ContentGenerator(
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
-    CharacterCrafter characterCrafter
+    CharacterCrafter characterCrafter,
+    ILogger logger
 ) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -23,13 +26,14 @@ internal class ContentGenerator(
             .Select(location => locationCrafter.Invoke(context, location, cancellationToken))
             .ToList();
         var characterCreations = await Task.WhenAll(characterCreationTasks);
+        logger.Information("Created {Count} new characters", characterCreations.Length);
         context.NewCharacters = characterCreations;
-        context.GenerationProcessStep = GenerationProcessStep.CharacterCreationFinished;
         var newLore = await Task.WhenAll(newLoreTask);
+        logger.Information("Created {Count} new lore", newLore.Length);
         context.NewLore = newLore;
-        context.GenerationProcessStep = GenerationProcessStep.LoreGenerationFinished;
         var newLocation = await Task.WhenAll(newLocationTask);
+        logger.Information("Created {Count} new locations", newLocation.Length);
         context.NewLocations = newLocation;
-        context.GenerationProcessStep = GenerationProcessStep.LocationGenerationFinished;
+        context.GenerationProcessStep = GenerationProcessStep.ContentCreationFinished;
     }
 }

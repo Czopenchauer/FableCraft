@@ -44,6 +44,10 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kerne
                              <lore_creation_context>
                              {JsonSerializer.Serialize(request, options)}
                              </lore_creation_context>
+                             
+                             <context>
+                             {JsonSerializer.Serialize(context.ContextGathered, options)}
+                             </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
         var kernel = kernelBuilder.WithBase();

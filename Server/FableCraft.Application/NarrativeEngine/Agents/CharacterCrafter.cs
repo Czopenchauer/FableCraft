@@ -18,7 +18,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter(
     IAgentKernel agentKernel,
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IKernelBuilder kernelBuilder,
     IRagSearch ragSearch)
 {
@@ -27,6 +27,7 @@ internal sealed class CharacterCrafter(
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var chatHistory = new ChatHistory();
         var trackerStructure = await dbContext
             .Adventures
@@ -46,6 +47,10 @@ internal sealed class CharacterCrafter(
                              <character_creation_context>
                              {JsonSerializer.Serialize(request, options)}
                              </character_creation_context>
+                             
+                             <context>
+                             {JsonSerializer.Serialize(context.ContextGathered, options)}
+                             </context>
                              """;
 
         var kernel = kernelBuilder.WithBase();

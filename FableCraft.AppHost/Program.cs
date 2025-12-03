@@ -36,12 +36,22 @@ var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:Ma
 var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "36";
 var huggingFaceTokenizer = builder.Configuration["FableCraft:GraphRag:HuggingFaceTokenizer"] ?? "";
 
-#pragma warning disable ASPIREHOSTINGPYTHON001
+var cache = builder.AddAzureRedis("fablecraft-redis")
+    .RunAsContainer();
 var graphRagApi = builder
     .AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
     .WithHttpEndpoint(env: "PORT", port: 8111, name: "graphRagApi")
     .WithExternalHttpEndpoints()
     .WithOtlpExporter()
+    .WithReference(cache)
+    .WithEnvironment(async context =>
+    {
+        var redisEndpoint = cache.Resource.GetEndpoint("tcp");
+        context.EnvironmentVariables["CACHE_HOST"] = redisEndpoint.Property(EndpointProperty.Host);
+        context.EnvironmentVariables["CACHE_PORT"] = redisEndpoint.Property(EndpointProperty.Port);
+        context.EnvironmentVariables["CACHE_USERNAME"] = "";
+        context.EnvironmentVariables["CACHE_PASSWORD"] = (await cache.Resource.Password!.GetValueAsync(CancellationToken.None))!;
+    })
     .WithEnvironment("LLM_API_KEY", graphRagLlmApiKey)
     .WithEnvironment("LLM_MODEL", graphRagLlmModel)
     .WithEnvironment("LLM_PROVIDER", graphRagLlmProvider)
@@ -60,8 +70,8 @@ var graphRagApi = builder
     .WithEnvironment("EMBEDDING_BATCH_SIZE", embeddingBatchSize)
     .WithEnvironment("ENABLE_BACKEND_ACCESS_CONTROL", "true")
     .WithEnvironment("TELEMETRY_DISABLED", "true")
+    .WithEnvironment("CACHING", "true")
     .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer);
-#pragma warning restore ASPIREHOSTINGPYTHON001
 
 var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")

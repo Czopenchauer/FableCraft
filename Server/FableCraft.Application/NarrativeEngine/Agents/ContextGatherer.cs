@@ -19,7 +19,7 @@ internal sealed class ContextGatherer(
     IKernelBuilder kernelBuilder) : IProcessor
 #pragma warning restore CS9113 // Parameter is unread.
 {
-    private const int SceneContextCount = 5;
+    private const int SceneContextCount = 10;
 
     public async Task Invoke(
         GenerationContext context,
@@ -51,6 +51,15 @@ internal sealed class ContextGatherer(
                                       {x.PlayerChoice}
                                       """))}
                              </last_scenes>
+                             
+                             <last_narrative_directions>
+                                {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
+                                    .Take(1)
+                                    .Select(z =>
+                                        $"""
+                                         {JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, options)}
+                                         """))}
+                             </last_narrative_directions>
 
                              <main_character>
                              {context.MainCharacter.Name}
@@ -60,21 +69,21 @@ internal sealed class ContextGatherer(
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
-        // var queries = await agentKernel.SendRequestAsync(chatHistory,
-        //     outputFunc,
-        //     kernelBuilder.GetDefaultPromptExecutionSettings(),
-        //     nameof(ContextGatherer),
-        //     cancellationToken);
+        var queries = await agentKernel.SendRequestAsync(chatHistory,
+            outputFunc,
+            kernelBuilder.GetDefaultPromptExecutionSettings(),
+            nameof(ContextGatherer),
+            cancellationToken);
 
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         try
         {
-            // var searchResults = await ragSearch.SearchAsync(callerContext, queries, cancellationToken: cancellationToken);
-            // context.ContextGathered = searchResults.Select(x => new ContextBase
-            // {
-            //     Query = x.Query,
-            //     Response = string.Join("\n\n", x.Response.Results)
-            // }).ToList();
+            var searchResults = await ragSearch.SearchAsync(callerContext, queries, cancellationToken: cancellationToken);
+            context.ContextGathered = searchResults.Select(x => new ContextBase
+            {
+                Query = x.Query + ". Provide extremely detailed information answering the query.",
+                Response = string.Join("\n\n", x.Response.Results)
+            }).ToList();
             context.ContextGathered = new List<ContextBase>();
             context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
         }

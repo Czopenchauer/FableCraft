@@ -6,8 +6,10 @@ from uuid import UUID
 
 import cognee
 import uvicorn
+from cognee.context_global_variables import set_session_user_context_variable
 from cognee.exceptions import CogneeApiError
 from cognee.modules.search.types import SearchType
+from cognee.modules.users.methods import get_default_user
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -16,6 +18,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
 from starlette import status
+
 
 otlp_exporter = OTLPSpanExporter()
 processor = BatchSpanProcessor(otlp_exporter)
@@ -185,7 +188,9 @@ async def get_datasets(adventure_id: str):
 async def search(request: SearchRequest, response_model=SearchResponse):
 
     try:
-        search_results = await cognee.search(datasets=[request.adventure_id], query_type=request.search_type, query_text=request.query)
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+        search_results = await cognee.search(datasets=[request.adventure_id], query_type=request.search_type, query_text=request.query, session_id=request.adventure_id)
 
         results = [
             text

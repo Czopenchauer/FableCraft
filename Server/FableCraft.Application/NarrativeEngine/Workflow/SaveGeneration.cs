@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDispatcher messageDispatcher) : IProcessor
+internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbContextFactory, IMessageDispatcher messageDispatcher) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -81,6 +81,7 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -90,12 +91,6 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
                 await dbContext.Scenes.AddAsync(newScene, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
 
-                await messageDispatcher.PublishAsync(new SceneGeneratedEvent
-                    {
-                        AdventureId = context.AdventureId,
-                        SceneId = newScene.Id
-                    },
-                    cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
             catch
@@ -105,6 +100,12 @@ internal sealed class SaveGeneration(ApplicationDbContext dbContext, IMessageDis
             }
         });
 
+        await messageDispatcher.PublishAsync(new SceneGeneratedEvent
+            {
+                AdventureId = context.AdventureId,
+                SceneId = newScene.Id
+            },
+            cancellationToken);
         context.GenerationProcessStep = GenerationProcessStep.Completed;
     }
 }

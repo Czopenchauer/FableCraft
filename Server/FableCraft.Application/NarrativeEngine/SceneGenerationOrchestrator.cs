@@ -130,6 +130,9 @@ internal sealed class SceneGenerationOrchestrator(
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (context == null || context.PlayerAction != playerAction)
             {
+                await dbContext.GenerationProcesses
+                    .Where(x => x.AdventureId == adventureId)
+                    .ExecuteDeleteAsync(cancellationToken);
                 (generationProcess, context) = await CreateNewProcess();
             }
             else
@@ -207,12 +210,9 @@ internal sealed class SceneGenerationOrchestrator(
             (GenerationProcessStep.NotStarted, typeof(ContextGatherer)),
             (GenerationProcessStep.ContextGatheringFinished, typeof(NarrativeDirectorAgent)),
             (GenerationProcessStep.NarrativeDirectionFinished, typeof(ContentGenerator)),
-            (GenerationProcessStep.CharacterCreationFinished, typeof(ContentGenerator)),
-            (GenerationProcessStep.LoreGenerationFinished, typeof(ContentGenerator)),
-            (GenerationProcessStep.LocationGenerationFinished, typeof(WriterAgent)),
+            (GenerationProcessStep.ContentCreationFinished, typeof(WriterAgent)),
             (GenerationProcessStep.SceneGenerationFinished, typeof(TrackerProcessor)),
-            (GenerationProcessStep.TrackerUpdatingFinished, typeof(TrackerProcessor)),
-            (GenerationProcessStep.CharacterStateTrackingFinished, typeof(SaveGeneration))
+            (GenerationProcessStep.TrackerFinished, typeof(SaveGeneration))
         };
 
         return fullWorkflow

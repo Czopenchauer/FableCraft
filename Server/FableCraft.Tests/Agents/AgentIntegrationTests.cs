@@ -89,7 +89,7 @@ public class AgentIntegrationTests
             .Options;
 
         _dbContext = new ApplicationDbContext(dbOptions);
-        await _dbContext.Database.EnsureCreatedAsync();
+        await _dbContext.Database.MigrateAsync();
 
         // Seed test adventure with TrackerStructure
         _testAdventureId = Guid.NewGuid();
