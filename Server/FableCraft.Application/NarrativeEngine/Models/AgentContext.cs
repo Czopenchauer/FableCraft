@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
@@ -20,6 +21,18 @@ internal sealed class GenerationContext
     public required Guid AdventureId { get; set; }
 
     public required string PlayerAction { get; set; }
+
+    /// <summary>
+    /// The LLM preset to use for generation
+    /// </summary>
+    [JsonIgnore]
+    public LlmPreset LlmPreset { get; set; } = null!;
+
+    /// <summary>
+    /// The LLM preset to use for generation
+    /// </summary>
+    [JsonIgnore]
+    public LlmPreset ComplexPreset { get; set; } = null!;
 
     [JsonIgnore]
     public string? Summary { get; set; }

@@ -9,17 +9,16 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kernelBuilder, IRagSearch ragSearch)
+internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch)
 {
     public async Task<GeneratedLore> Invoke(
         GenerationContext context,
         LoreRequest request,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -50,7 +49,7 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kerne
                              </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -61,6 +60,7 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, IKernelBuilder kerne
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(LoreCrafter),
+            context.LlmPreset,
             cancellationToken,
             kernel: kernelWithKg);
     }

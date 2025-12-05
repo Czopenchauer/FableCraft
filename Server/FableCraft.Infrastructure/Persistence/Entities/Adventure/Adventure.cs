@@ -35,4 +35,20 @@ public class Adventure : IEntity
     public required List<LorebookEntry> Lorebook { get; init; }
 
     public List<Scene> Scenes { get; init; } = [];
+
+    public Guid? FastPresetId { get; set; }
+
+    public LlmPreset[]? FastPreset { get; set; }
+
+    public Guid? SmallPresetId { get; set; }
+
+    public LlmPreset? SmallPreset { get; set; }
+
+    public Guid? GraphRagSearchPresetId { get; set; }
+
+    public GraphRagSearchPreset? GraphRagSearchPreset { get; set; }
+
+    public Guid? GraphRagBuildPresetId { get; set; }
+
+    public GraphRagBuildPreset? GraphRagBuildPreset { get; set; }
 }

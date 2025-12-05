@@ -12,14 +12,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    IKernelBuilder kernelBuilder,
+    KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
     public async Task<CharacterContext> Invoke(
@@ -27,6 +25,7 @@ internal sealed class CharacterCrafter(
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var chatHistory = new ChatHistory();
         var trackerStructure = await dbContext
@@ -53,7 +52,7 @@ internal sealed class CharacterCrafter(
                              </context>
                              """;
 
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -104,6 +103,7 @@ internal sealed class CharacterCrafter(
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(CharacterCrafter),
+            context.LlmPreset,
             cancellationToken,
             kernel: kernelWithKg);
         return new CharacterContext

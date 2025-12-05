@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
@@ -16,7 +16,7 @@ internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
     IRagSearch ragSearch,
     ILogger logger,
-    IKernelBuilder kernelBuilder) : IProcessor
+    KernelBuilderFactory kernelBuilderFactory) : IProcessor
 #pragma warning restore CS9113 // Parameter is unread.
 {
     private const int SceneContextCount = 10;
@@ -25,6 +25,7 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -73,6 +74,7 @@ internal sealed class ContextGatherer(
             outputFunc,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
             nameof(ContextGatherer),
+            context.LlmPreset,
             cancellationToken);
 
         var callerContext = new CallerContext(GetType(), context.AdventureId);

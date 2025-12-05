@@ -23,7 +23,6 @@ public static class StartupExtensions
         IConfiguration configuration)
     {
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
-        services.Configure<LlmConfiguration>(configuration.GetSection("FableCraft:Server:LLM"));
 
         var channel = Channel.CreateBounded<IMessage>(new BoundedChannelOptions(10_000)
         {
@@ -89,7 +88,7 @@ public static class StartupExtensions
             .RemoveAllResilienceHandlers()
             .AddDefaultLlmResiliencePolicies();
 
-        services.AddTransient<IKernelBuilder, OpenAiKernelBuilder>();
+        services.AddSingleton<KernelBuilderFactory>();
         services.AddTransient<IAgentKernel, AgentKernel>();
         services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
 

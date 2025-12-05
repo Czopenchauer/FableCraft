@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -32,6 +32,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<LlmLog> LlmCallLogs { get; set; }
 
+    public DbSet<LlmPreset> LlmPresets { get; set; }
+
+    public DbSet<GraphRagSearchPreset> GraphRagSearchPresets { get; set; }
+
+    public DbSet<GraphRagBuildPreset> GraphRagBuildPresets { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -52,6 +58,41 @@ public class ApplicationDbContext : DbContext
             p.Property(c => c.RagProcessingStatus).HasConversion<string>();
             p.Property(c => c.SceneGenerationStatus).HasConversion<string>();
             p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
+            p.HasIndex(x => x.Name).IsUnique();
+
+            p.HasOne(x => x.FastPreset)
+                .WithMany()
+                .HasForeignKey(x => x.FastPresetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            p.HasOne(x => x.SmallPreset)
+                .WithMany()
+                .HasForeignKey(x => x.SmallPresetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            p.HasOne(x => x.GraphRagSearchPreset)
+                .WithMany()
+                .HasForeignKey(x => x.GraphRagSearchPresetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            p.HasOne(x => x.GraphRagBuildPreset)
+                .WithMany()
+                .HasForeignKey(x => x.GraphRagBuildPresetId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<LlmPreset>(p =>
+        {
+            p.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<GraphRagSearchPreset>(p =>
+        {
+            p.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<GraphRagBuildPreset>(p =>
+        {
             p.HasIndex(x => x.Name).IsUnique();
         });
 

@@ -11,16 +11,15 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBuilder kernelBuilder, IRagSearch ragSearch) : IProcessor
+internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch) : IProcessor
 {
     private const int SceneContextCount = 20;
 
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -92,7 +91,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
         chatHistory.AddUserMessage(stringBuilder.ToString());
         chatHistory.AddUserMessage(context.PlayerAction);
 
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -111,6 +110,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, IKernelBu
             outputFunc,
             promptExecutionSettings: kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(NarrativeDirectorAgent),
+            context.LlmPreset,
             cancellationToken,
             kernelWithKg);
         context.NewNarrativeDirection = narrativeOutput;

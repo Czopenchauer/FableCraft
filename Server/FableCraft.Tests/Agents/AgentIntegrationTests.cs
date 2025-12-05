@@ -1,18 +1,17 @@
-﻿using FableCraft.Application.NarrativeEngine.Agents;
+﻿﻿using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 using Serilog;
 using Serilog.Extensions.Logging;
 
 using Testcontainers.PostgreSql;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 using ILogger = Serilog.ILogger;
 
 namespace FableCraft.Tests.Agents;
@@ -24,9 +23,11 @@ public class AgentIntegrationTests
     private static ILogger _logger = null!;
 
     private IAgentKernel _agentKernel = null!;
-    private IKernelBuilder _kernelBuilder = null!;
+    private KernelBuilderFactory _kernelBuilderFactory = null!;
+    private LlmPreset _testPreset = null!;
     private IRagSearch _ragSearch = null!;
     private ApplicationDbContext _dbContext = null!;
+    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
     private Guid _testAdventureId;
 
     [Before(Class)]
@@ -71,23 +72,26 @@ public class AgentIntegrationTests
     {
         var loggerFactory = new SerilogLoggerFactory(_logger);
 
-        var llmConfig = new LlmConfiguration
+        _testPreset = new LlmPreset
         {
+            Id = Guid.NewGuid(),
+            Name = "Test Preset",
+            Provider = _configuration["FableCraft:Server:LLM:Provider"] ?? "openai",
             ApiKey = _configuration["FableCraft:Server:LLM:ApiKey"] ?? throw new InvalidOperationException("LLM ApiKey not configured"),
             BaseUrl = _configuration["FableCraft:Server:LLM:BaseUrl"] ?? throw new InvalidOperationException("LLM BaseUrl not configured"),
-            Model = _configuration["FableCraft:Server:LLM:Model"] ?? throw new InvalidOperationException("LLM Model not configured")
+            Model = _configuration["FableCraft:Server:LLM:Model"] ?? throw new InvalidOperationException("LLM Model not configured"),
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        var options = Options.Create(llmConfig);
-
-        _kernelBuilder = new OpenAiKernelBuilder(options, loggerFactory);
-        _agentKernel = new AgentKernel(_kernelBuilder, _logger, new MockMessageDispatcher());
+        _kernelBuilderFactory = new KernelBuilderFactory(loggerFactory);
+        _agentKernel = new AgentKernel(_kernelBuilderFactory, _logger, new MockMessageDispatcher());
         _ragSearch = new MockRagSearch();
 
         var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_postgresContainer.GetConnectionString())
             .Options;
 
+        _dbContextFactory = new MockDbContextFactory(dbOptions);
         _dbContext = new ApplicationDbContext(dbOptions);
         await _dbContext.Database.MigrateAsync();
 
@@ -110,8 +114,8 @@ public class AgentIntegrationTests
     public async Task NarrativeDirectorAgent_OutputMapsToNarrativeDirectorOutput()
     {
         // Arrange
-        var agent = new NarrativeDirectorAgent(_agentKernel, _kernelBuilder, _ragSearch);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new NarrativeDirectorAgent(_agentKernel, _kernelBuilderFactory, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
 
         // Act
         await agent.Invoke(context, CancellationToken.None);
@@ -140,8 +144,8 @@ public class AgentIntegrationTests
     public async Task WriterAgent_OutputMapsToGeneratedScene()
     {
         // Arrange
-        var agent = new WriterAgent(_agentKernel, _logger, _kernelBuilder, _ragSearch);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new WriterAgent(_agentKernel, _logger, _kernelBuilderFactory, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         context.NewNarrativeDirection = AgentTestData.CreateSampleNarrativeDirectorOutput();
 
         // Act
@@ -166,8 +170,8 @@ public class AgentIntegrationTests
     public async Task LoreCrafter_OutputMapsToGeneratedLore()
     {
         // Arrange
-        var agent = new LoreCrafter(_agentKernel, _kernelBuilder, _ragSearch);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new LoreCrafter(_agentKernel, _kernelBuilderFactory, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         var loreRequest = AgentTestData.CreateSampleLoreRequest();
 
         // Act
@@ -191,8 +195,8 @@ public class AgentIntegrationTests
     public async Task LocationCrafter_OutputMapsToLocationGenerationResult()
     {
         // Arrange
-        var agent = new LocationCrafter(_agentKernel, _kernelBuilder, _ragSearch);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new LocationCrafter(_agentKernel, _kernelBuilderFactory, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         var locationRequest = AgentTestData.CreateSampleLocationRequest();
 
         // Act
@@ -218,8 +222,8 @@ public class AgentIntegrationTests
     public async Task CharacterCrafter_OutputMapsToCharacterContext()
     {
         // Arrange
-        var agent = new CharacterCrafter(_agentKernel, _dbContext, _kernelBuilder, _ragSearch);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new CharacterCrafter(_agentKernel, _dbContextFactory, _kernelBuilderFactory, _ragSearch);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         var characterRequest = AgentTestData.CreateSampleCharacterRequest();
 
         // Act
@@ -244,8 +248,8 @@ public class AgentIntegrationTests
     public async Task CharacterStateTracker_OutputMapsToCharacterContext()
     {
         // Arrange
-        var agent = new CharacterStateTracker(_agentKernel, _dbContext, _kernelBuilder, _ragSearch);
-        var narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new CharacterStateTracker(_agentKernel, _dbContextFactory, _kernelBuilderFactory, _ragSearch);
+        var narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         var characterContext = AgentTestData.CreateSampleCharacterContext();
 
         // Act
@@ -269,8 +273,8 @@ public class AgentIntegrationTests
     public async Task TrackerAgent_OutputMapsToTracker()
     {
         // Arrange
-        var agent = new TrackerAgent(_agentKernel, _dbContext, _kernelBuilder);
-        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext);
+        var agent = new TrackerAgent(_agentKernel, _dbContextFactory, _kernelBuilderFactory);
+        var context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
 
         // Act
         var result = await agent.Invoke(context, CancellationToken.None);

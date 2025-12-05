@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -10,14 +10,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, IKernelBuilder kernelBuilder)
+internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
 {
     public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
@@ -117,7 +116,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         });
         var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), cancellationToken);
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), context.LlmPreset, cancellationToken);
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)

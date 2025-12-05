@@ -13,14 +13,12 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent(
     IAgentKernel agentKernel,
     ILogger logger,
-    IKernelBuilder kernelBuilder,
+    KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : IProcessor
 {
     private const int SceneContextCount = 15;
@@ -29,6 +27,7 @@ internal sealed class WriterAgent(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -102,10 +101,10 @@ internal sealed class WriterAgent(
 
         chatHistory.AddUserMessage(stringBuilder.ToString());
 
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilder, ragSearch);
+        var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilderFactory, ragSearch);
         await characterPlugin.Setup(context);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -126,6 +125,7 @@ internal sealed class WriterAgent(
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(WriterAgent),
+            context.LlmPreset,
             cancellationToken,
             kernelWithKg);
         context.NewScene = newScene;

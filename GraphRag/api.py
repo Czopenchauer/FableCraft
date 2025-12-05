@@ -8,6 +8,7 @@ import uvicorn
 from cognee.context_global_variables import set_session_user_context_variable
 from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
+from dotenv import load_dotenv, set_key
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -16,6 +17,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
 from starlette import status
+
+ENV_FILE_PATH = os.path.join(os.path.dirname(__file__), ".env")
 
 otlp_exporter = OTLPSpanExporter()
 processor = BatchSpanProcessor(otlp_exporter)
@@ -84,6 +87,34 @@ class UpdateDataRequest(BaseModel):
     content: str
 
 
+class LLMConfigRequest(BaseModel):
+    api_key: str
+    model: str
+    provider: str
+    endpoint: str
+    api_version: str
+    max_tokens: str
+    rate_limit_enabled: str
+    rate_limit_requests: str
+    rate_limit_interval: str
+
+
+class EmbeddingConfigRequest(BaseModel):
+    provider: str
+    model: str
+    endpoint: str
+    api_version: str
+    dimensions: str
+    max_tokens: str
+    batch_size: str
+    huggingface_tokenizer: str
+
+
+class ConfigureRequest(BaseModel):
+    llm: LLMConfigRequest
+    embedding: EmbeddingConfigRequest
+
+
 @app.post("/add", status_code=status.HTTP_200_OK)
 async def add_data(data: AddDataRequest):
     """Add data to a dataset without processing"""
@@ -91,7 +122,6 @@ async def add_data(data: AddDataRequest):
         logger.info("Adding data to dataset %s", data.adventure_id)
         result = await cognee.add(data.content, dataset_name=data.adventure_id)
         logger.info("Add completed %s", result)
-
         datasets = await cognee.datasets.list_datasets()
         dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
         logger.info("Datasets after processing %s: %s", data.adventure_id, dataset_summaries)
@@ -314,6 +344,68 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.post("/configure", status_code=status.HTTP_200_OK)
+async def configure(config: ConfigureRequest):
+    """Configure LLM and Embedding settings by writing to .env file"""
+    try:
+        set_key(ENV_FILE_PATH, "LLM_API_KEY", config.llm.api_key)
+        set_key(ENV_FILE_PATH, "LLM_MODEL", config.llm.model)
+        set_key(ENV_FILE_PATH, "LLM_PROVIDER", config.llm.provider)
+        set_key(ENV_FILE_PATH, "LLM_ENDPOINT", config.llm.endpoint)
+        set_key(ENV_FILE_PATH, "LLM_API_VERSION", config.llm.api_version)
+        set_key(ENV_FILE_PATH, "LLM_MAX_TOKENS", config.llm.max_tokens)
+        set_key(ENV_FILE_PATH, "LLM_RATE_LIMIT_ENABLED", config.llm.rate_limit_enabled)
+        set_key(ENV_FILE_PATH, "LLM_RATE_LIMIT_REQUESTS", config.llm.rate_limit_requests)
+        set_key(ENV_FILE_PATH, "LLM_RATE_LIMIT_INTERVAL", config.llm.rate_limit_interval)
+
+        set_key(ENV_FILE_PATH, "EMBEDDING_PROVIDER", config.embedding.provider)
+        set_key(ENV_FILE_PATH, "EMBEDDING_MODEL", config.embedding.model)
+        set_key(ENV_FILE_PATH, "EMBEDDING_ENDPOINT", config.embedding.endpoint)
+        set_key(ENV_FILE_PATH, "EMBEDDING_API_VERSION", config.embedding.api_version)
+        set_key(ENV_FILE_PATH, "EMBEDDING_DIMENSIONS", config.embedding.dimensions)
+        set_key(ENV_FILE_PATH, "EMBEDDING_MAX_TOKENS", config.embedding.max_tokens)
+        set_key(ENV_FILE_PATH, "EMBEDDING_BATCH_SIZE", config.embedding.batch_size)
+        set_key(ENV_FILE_PATH, "HUGGINGFACE_TOKENIZER", config.embedding.huggingface_tokenizer)
+
+        load_dotenv(ENV_FILE_PATH, override=True)
+
+        logger.info("Configuration updated successfully")
+
+        return {
+            "status": "success",
+            "message": "Configuration updated successfully",
+            "config": {
+                "llm": {
+                    "model": config.llm.model,
+                    "provider": config.llm.provider,
+                    "endpoint": config.llm.endpoint,
+                    "api_version": config.llm.api_version,
+                    "max_tokens": config.llm.max_tokens,
+                    "rate_limit_enabled": config.llm.rate_limit_enabled,
+                    "rate_limit_requests": config.llm.rate_limit_requests,
+                    "rate_limit_interval": config.llm.rate_limit_interval,
+                },
+                "embedding": {
+                    "provider": config.embedding.provider,
+                    "model": config.embedding.model,
+                    "endpoint": config.embedding.endpoint,
+                    "api_version": config.embedding.api_version,
+                    "dimensions": config.embedding.dimensions,
+                    "max_tokens": config.embedding.max_tokens,
+                    "batch_size": config.embedding.batch_size,
+                    "huggingface_tokenizer": config.embedding.huggingface_tokenizer,
+                }
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error updating configuration: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update configuration: {str(e)}"
+        )
+
+
 @app.get("/info")
 async def info():
     """Get information about the cognee configuration"""
@@ -326,7 +418,27 @@ async def info():
                 "graph": "Kuzu",
                 "metadata": "SQLite"
             },
-            "data_directory": os.environ.get('COGNEE_DATA_DIR', '.cognee_system')
+            "data_directory": os.environ.get('COGNEE_DATA_DIR', '.cognee_system'),
+            "llm": {
+                "model": os.environ.get('LLM_MODEL', ''),
+                "provider": os.environ.get('LLM_PROVIDER', ''),
+                "endpoint": os.environ.get('LLM_ENDPOINT', ''),
+                "api_version": os.environ.get('LLM_API_VERSION', ''),
+                "max_tokens": os.environ.get('LLM_MAX_TOKENS', ''),
+                "rate_limit_enabled": os.environ.get('LLM_RATE_LIMIT_ENABLED', ''),
+                "rate_limit_requests": os.environ.get('LLM_RATE_LIMIT_REQUESTS', ''),
+                "rate_limit_interval": os.environ.get('LLM_RATE_LIMIT_INTERVAL', ''),
+            },
+            "embedding": {
+                "provider": os.environ.get('EMBEDDING_PROVIDER', ''),
+                "model": os.environ.get('EMBEDDING_MODEL', ''),
+                "endpoint": os.environ.get('EMBEDDING_ENDPOINT', ''),
+                "api_version": os.environ.get('EMBEDDING_API_VERSION', ''),
+                "dimensions": os.environ.get('EMBEDDING_DIMENSIONS', ''),
+                "max_tokens": os.environ.get('EMBEDDING_MAX_TOKENS', ''),
+                "batch_size": os.environ.get('EMBEDDING_BATCH_SIZE', ''),
+                "huggingface_tokenizer": os.environ.get('HUGGINGFACE_TOKENIZER', ''),
+            }
         }
     except Exception as e:
         logger.error(f"Error getting info: {str(e)}")

@@ -10,13 +10,11 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class LocationCrafter(
     IAgentKernel agentKernel,
-    IKernelBuilder kernelBuilder,
+    KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
     public async Task<LocationGenerationResult> Invoke(
@@ -24,6 +22,7 @@ internal sealed class LocationCrafter(
         LocationRequest request,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -54,7 +53,7 @@ internal sealed class LocationCrafter(
                              </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -74,6 +73,7 @@ internal sealed class LocationCrafter(
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(LocationCrafter),
+            context.LlmPreset,
             cancellationToken,
             kernel: kernelWithKg);
     }

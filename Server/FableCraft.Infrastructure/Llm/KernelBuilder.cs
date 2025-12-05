@@ -1,38 +1,65 @@
-﻿using FableCraft.ServiceDefaults;
+﻿using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.ServiceDefaults;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.Google;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace FableCraft.Infrastructure.Llm;
 
 public interface IKernelBuilder
 {
-    Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null);
+    Microsoft.SemanticKernel.IKernelBuilder Create();
 
     PromptExecutionSettings GetDefaultPromptExecutionSettings();
 
     PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings();
 }
 
-internal class OpenAiKernelBuilder : IKernelBuilder
+internal static class LlmProviders
 {
-    private readonly IOptions<LlmConfiguration> _configuration;
+    public const string OpenAi = "openai";
+    public const string Gemini = "gemini";
+}
+
+public sealed class KernelBuilderFactory
+{
     private readonly ILoggerFactory _loggerFactory;
 
-    public OpenAiKernelBuilder(IOptions<LlmConfiguration> configuration, ILoggerFactory loggerFactory)
+    public KernelBuilderFactory(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory;
-        _configuration = configuration;
     }
 
-    public Microsoft.SemanticKernel.IKernelBuilder WithBase(string? model = null)
+    public IKernelBuilder Create(LlmPreset preset)
+    {
+        return preset.Provider.ToLowerInvariant() switch
+        {
+            LlmProviders.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
+            LlmProviders.OpenAi => new OpenAiKernelBuilder(preset, _loggerFactory),
+            _ => new OpenAiKernelBuilder(preset, _loggerFactory)
+        };
+    }
+}
+
+internal class OpenAiKernelBuilder : IKernelBuilder
+{
+    private readonly LlmPreset _preset;
+    private readonly ILoggerFactory _loggerFactory;
+
+    public OpenAiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
+    {
+        _loggerFactory = loggerFactory;
+        _preset = preset;
+    }
+
+    public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
         Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
             .CreateBuilder()
-            .AddOpenAIChatCompletion(model ?? _configuration.Value.Model, new Uri(_configuration.Value.BaseUrl), _configuration.Value.ApiKey);
+            .AddOpenAIChatCompletion(_preset.Model, new Uri(_preset.BaseUrl!), _preset.ApiKey);
 
         builder.Services.AddSingleton(_loggerFactory);
 
@@ -52,7 +79,11 @@ internal class OpenAiKernelBuilder : IKernelBuilder
     {
         return new OpenAIPromptExecutionSettings
         {
-            MaxTokens = 200_000,
+            MaxTokens = _preset.MaxTokens,
+            Temperature = _preset.Temperature,
+            TopP = _preset.TopP,
+            FrequencyPenalty = _preset.FrequencyPenalty,
+            PresencePenalty = _preset.PresencePenalty,
             FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
         };
     }
@@ -61,12 +92,90 @@ internal class OpenAiKernelBuilder : IKernelBuilder
     {
         return new OpenAIPromptExecutionSettings
         {
-            MaxTokens = 200_000,
+            MaxTokens = _preset.MaxTokens,
+            Temperature = _preset.Temperature,
+            TopP = _preset.TopP,
+            FrequencyPenalty = _preset.FrequencyPenalty,
+            PresencePenalty = _preset.PresencePenalty,
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
             {
                 AllowConcurrentInvocation = true,
                 AllowParallelCalls = true,
             })
+        };
+    }
+}
+
+internal class GeminiKernelBuilder : IKernelBuilder
+{
+    private readonly LlmPreset _preset;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly static GeminiSafetySetting[] DefaultSafetySettings =
+    [
+        new(GeminiSafetyCategory.Harassment, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.SexuallyExplicit, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.DangerousContent, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Dangerous, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Violence, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Sexual, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Toxicity, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Derogatory, GeminiSafetyThreshold.BlockNone),
+        new(GeminiSafetyCategory.Medical, GeminiSafetyThreshold.BlockNone)
+    ];
+
+    public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
+    {
+        _loggerFactory = loggerFactory;
+        _preset = preset;
+    }
+
+    public Microsoft.SemanticKernel.IKernelBuilder Create()
+    {
+        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
+            .CreateBuilder()
+            .AddGoogleAIGeminiChatCompletion(_preset.Model, _preset.ApiKey);
+
+        builder.Services.AddSingleton(_loggerFactory);
+
+        builder.Services.ConfigureHttpClientDefaults(hp =>
+        {
+            hp.ConfigureHttpClient((_, c) =>
+            {
+                c.Timeout = TimeSpan.FromMinutes(10);
+            });
+            hp.AddDefaultLlmResiliencePolicies();
+        });
+
+        return builder;
+    }
+
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
+    {
+        return new GeminiPromptExecutionSettings
+        {
+            MaxTokens = _preset.MaxTokens,
+            Temperature = _preset.Temperature,
+            TopP = _preset.TopP,
+            TopK = _preset.TopK,
+            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
+            SafetySettings = DefaultSafetySettings,
+        };
+    }
+
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
+    {
+        return new GeminiPromptExecutionSettings
+        {
+            MaxTokens = _preset.MaxTokens,
+            Temperature = _preset.Temperature,
+            TopP = _preset.TopP,
+            TopK = _preset.TopK,
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
+            {
+                AllowConcurrentInvocation = true,
+                AllowParallelCalls = true,
+            }),
+            SafetySettings = DefaultSafetySettings
         };
     }
 }

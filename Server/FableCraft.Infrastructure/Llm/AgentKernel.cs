@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
@@ -24,20 +25,18 @@ public interface IAgentKernel
         Func<string, T> outputFunc,
         PromptExecutionSettings promptExecutionSettings,
         string operationName,
-        CancellationToken cancellationToken,
-        Kernel? kernel = null);
+        Kernel kernel,
+        CancellationToken cancellationToken);
 }
 
 internal sealed class AgentKernel : IAgentKernel
 {
-    private readonly IKernelBuilder _builder;
     private readonly ILogger _logger;
     private readonly ResiliencePipeline _pipeline;
     private readonly IMessageDispatcher _messageDispatcher;
 
-    public AgentKernel(IKernelBuilder builder, ILogger logger, IMessageDispatcher messageDispatcher)
+    public AgentKernel(ILogger logger, IMessageDispatcher messageDispatcher)
     {
-        _builder = builder;
         _logger = logger;
         _messageDispatcher = messageDispatcher;
         _pipeline = new ResiliencePipelineBuilder()
@@ -67,11 +66,11 @@ internal sealed class AgentKernel : IAgentKernel
         Func<string, T> outputFunc,
         PromptExecutionSettings promptExecutionSettings,
         string operationName,
-        CancellationToken cancellationToken,
-        Kernel? kernel = null)
-    {
-        Kernel agentKernel = kernel?.Clone() ?? _builder.WithBase().Build();
-        var chatCompletionService = agentKernel.GetRequiredService<IChatCompletionService>();
+        Kernel kernel,
+        CancellationToken cancellationToken)
+    {        
+        var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
+                                    ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
         try
         {
             return await GetResponse();

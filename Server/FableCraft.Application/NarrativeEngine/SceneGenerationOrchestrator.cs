@@ -106,7 +106,7 @@ internal sealed class SceneGenerationOrchestrator(
         var adventure = await dbContext
             .Adventures
             .Where(x => x.Id == adventureId)
-            .Select(x => new { x.TrackerStructure, x.MainCharacter })
+            .Select(x => new { x.TrackerStructure, x.MainCharacter, x.FastPreset })
             .SingleAsync(cancellationToken: cancellationToken);
 
         var scenes = await dbContext
@@ -124,6 +124,10 @@ internal sealed class SceneGenerationOrchestrator(
             AllowTrailingCommas = true
         };
         var generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
+        var llmPreset = adventure.FastPreset?.FirstOrDefault() 
+                        ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
+        var complexPreset = adventure.FastPreset?.FirstOrDefault() 
+                            ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
         GenerationContext context;
         if (generationProcess != null)
         {
@@ -143,6 +147,8 @@ internal sealed class SceneGenerationOrchestrator(
                 context.TrackerStructure = adventure.TrackerStructure;
                 context.MainCharacter = adventure.MainCharacter;
                 context.Summary = scenes.Where(x => !string.IsNullOrEmpty(x.AdventureSummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.AdventureSummary;
+                context.LlmPreset = llmPreset;
+                context.ComplexPreset = complexPreset;
             }
         }
         else
@@ -168,7 +174,9 @@ internal sealed class SceneGenerationOrchestrator(
                 TrackerStructure = adventure.TrackerStructure,
                 MainCharacter = adventure.MainCharacter,
                 Characters = adventureCharacters,
-                Summary = scenes.Where(x => !string.IsNullOrEmpty(x.AdventureSummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.AdventureSummary
+                Summary = scenes.Where(x => !string.IsNullOrEmpty(x.AdventureSummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.AdventureSummary,
+                LlmPreset = llmPreset,
+                ComplexPreset = complexPreset
             };
             var process = new GenerationProcess
             {

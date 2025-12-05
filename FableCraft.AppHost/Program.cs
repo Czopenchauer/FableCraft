@@ -70,10 +70,10 @@ var graphRagApi = builder
     .WithEnvironment("EMBEDDING_DIMENSIONS", embeddingDimensions)
     .WithEnvironment("EMBEDDING_MAX_TOKENS", embeddingMaxTokens)
     .WithEnvironment("EMBEDDING_BATCH_SIZE", embeddingBatchSize)
+    .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer)
     .WithEnvironment("ENABLE_BACKEND_ACCESS_CONTROL", "true")
     .WithEnvironment("TELEMETRY_DISABLED", "true")
-    .WithEnvironment("CACHING", "true")
-    .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer);
+    .WithEnvironment("CACHING", "true");
 
 var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")

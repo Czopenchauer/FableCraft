@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -12,14 +12,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterStateTracker(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    IKernelBuilder kernelBuilder,
+    KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
     public async Task<CharacterContext> Invoke(
@@ -27,6 +25,7 @@ internal sealed class CharacterStateTracker(
         CharacterContext context,
         CancellationToken cancellationToken)
     {
+        var kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
@@ -102,7 +101,7 @@ internal sealed class CharacterStateTracker(
             return (tracker, state);
         });
 
-        var kernel = kernelBuilder.WithBase();
+        var kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -112,6 +111,7 @@ internal sealed class CharacterStateTracker(
             outputFunc,
             promptExecutionSettings: promptExecutionSettings,
             nameof(CharacterStateTracker),
+            generationContext.LlmPreset,
             cancellationToken,
             kernelWithKg);
         return new CharacterContext

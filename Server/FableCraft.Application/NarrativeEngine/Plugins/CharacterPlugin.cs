@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿﻿using System.ComponentModel;
 using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -17,15 +17,17 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 internal sealed class CharacterPlugin(
     IAgentKernel agentKernel,
     ILogger logger,
-    IKernelBuilder kernelBuilder,
+    KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
     private Dictionary<string, ChatHistory> _chatHistory = new();
     private GenerationContext _generationContext = null!;
+    private IKernelBuilder _kernelBuilder = null!;
 
     public async Task Setup(GenerationContext generationContext)
     {
         _generationContext = generationContext;
+        _kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -75,7 +77,7 @@ internal sealed class CharacterPlugin(
             return "Character not found.";
         }
 
-        var kernel = kernelBuilder.WithBase();
+        var kernel = _kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -84,8 +86,9 @@ internal sealed class CharacterPlugin(
         var outputFunc = new Func<string, string>(response => response);
         var response = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
-            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             $"{nameof(CharacterPlugin)}:{characterName}",
+            _generationContext.LlmPreset,
             CancellationToken.None,
             kernelWithKg);
         logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
