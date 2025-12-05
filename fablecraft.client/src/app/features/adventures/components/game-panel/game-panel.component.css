@@ -16,7 +16,7 @@
 }
 
 .game-panel-content {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -332,7 +332,7 @@
 
 .game-columns {
   display: grid;
-  grid-template-columns: 500px 1fr;
+  grid-template-columns: 380px 1fr;
   gap: var(--spacing-lg);
   align-items: start;
 }

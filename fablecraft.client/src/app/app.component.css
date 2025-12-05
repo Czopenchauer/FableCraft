@@ -12,18 +12,17 @@
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
+  justify-content: center;
+  padding: var(--spacing-md);
   border-radius: var(--radius-full);
   border: 2px solid var(--border-primary);
   background: var(--bg-card);
   color: var(--text-primary);
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-base);
   box-shadow: var(--shadow-lg);
+  width: 48px;
+  height: 48px;
 }
 
 .theme-switcher:hover {
@@ -33,8 +32,8 @@
 }
 
 .theme-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: var(--color-primary);
   transition: transform var(--transition-base);
 }
@@ -44,8 +43,7 @@
 }
 
 .theme-label {
-  font-size: var(--font-size-sm);
-  white-space: nowrap;
+  display: none;
 }
 
 /* Modern theme button styling */
@@ -66,16 +64,14 @@
   background: linear-gradient(135deg, rgba(62, 36, 21, 1) 0%, rgba(45, 24, 16, 1) 100%);
 }
 
-/* Responsive - make button smaller on mobile */
+/* Responsive - adjust button on mobile */
 @media (max-width: 767px) {
   .theme-switcher {
     bottom: var(--spacing-lg);
     right: var(--spacing-lg);
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .theme-label {
-    display: none;
+    width: 44px;
+    height: 44px;
+    padding: var(--spacing-sm);
   }
 
   .theme-icon {

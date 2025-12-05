@@ -80,9 +80,6 @@ var server = builder
     .WithOtlpExporter()
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
-    .WithEnvironment("FableCraft:Server:LLM:Model", serverLlmModel)
-    .WithEnvironment("FableCraft:Server:LLM:ApiKey", serverLlmApiKeySecret)
-    .WithEnvironment("FableCraft:Server:LLM:BaseUrl", serverLlmEndpoint)
     .WaitFor(graphRagApi)
     .WaitFor(serverDatabase);
 
