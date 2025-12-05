@@ -110,7 +110,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.FastPreset,
-                SmallPreset = x.ComplexPreset
+                Complex = x.ComplexPreset
             })
             .SingleAsync(cancellationToken);
 
@@ -129,9 +129,9 @@ internal sealed class SceneGenerationOrchestrator(
             AllowTrailingCommas = true
         };
         GenerationProcess? generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken);
-        LlmPreset llmPreset = adventure.FastPreset?.FirstOrDefault()
+        LlmPreset llmPreset = adventure.FastPreset
                               ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
-        LlmPreset complexPreset = adventure.FastPreset?.FirstOrDefault()
+        LlmPreset complexPreset = adventure.Complex
                                   ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
         GenerationContext context;
         if (generationProcess != null)

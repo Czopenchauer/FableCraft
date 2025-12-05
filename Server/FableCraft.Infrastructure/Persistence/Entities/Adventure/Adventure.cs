@@ -35,7 +35,7 @@ public class Adventure : IEntity
 
     public Guid? FastPresetId { get; set; }
 
-    public LlmPreset[]? FastPreset { get; set; }
+    public LlmPreset? FastPreset { get; set; }
 
     public Guid? ComplexPresetId { get; set; }
 
