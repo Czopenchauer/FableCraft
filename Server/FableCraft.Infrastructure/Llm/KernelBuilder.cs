@@ -38,6 +38,7 @@ public sealed class KernelBuilderFactory
         return preset.Provider.ToLowerInvariant() switch
                {
                    LlmProviders.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
+                   // ReSharper disable once RedundantSwitchExpressionArms
                    LlmProviders.OpenAi => new OpenAiKernelBuilder(preset, _loggerFactory),
                    _ => new OpenAiKernelBuilder(preset, _loggerFactory)
                };
@@ -110,15 +111,10 @@ internal class GeminiKernelBuilder : IKernelBuilder
 {
     private readonly static GeminiSafetySetting[] DefaultSafetySettings =
     [
-        new(GeminiSafetyCategory.Harassment, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.SexuallyExplicit, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.DangerousContent, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Dangerous, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Violence, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Sexual, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Toxicity, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Derogatory, GeminiSafetyThreshold.BlockNone),
-        new(GeminiSafetyCategory.Medical, GeminiSafetyThreshold.BlockNone)
+        new(GeminiSafetyCategory.Harassment, new GeminiSafetyThreshold("OFF")),
+        new(GeminiSafetyCategory.SexuallyExplicit, new GeminiSafetyThreshold("OFF")),
+        new(GeminiSafetyCategory.DangerousContent, new GeminiSafetyThreshold("OFF")),
+        new(new GeminiSafetyCategory("HARM_CATEGORY_CIVIC_INTEGRITY"), new GeminiSafetyThreshold("OFF"))
     ];
 
     private readonly ILoggerFactory _loggerFactory;

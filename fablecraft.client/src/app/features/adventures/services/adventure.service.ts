@@ -10,7 +10,8 @@ import {
   ComponentStatus,
   GameScene,
   GeneratedLorebookDto,
-  GenerateLorebookDto
+  GenerateLorebookDto,
+  SceneEnrichmentResult
 } from '../models/adventure.model';
 import {environment} from '../../../../environments/environment';
 
@@ -109,6 +110,13 @@ export class AdventureService {
    */
   regenerateScene(adventureId: string, sceneId: string): Observable<GameScene> {
     return this.http.post<GameScene>(`${environment.apiUrl}/api/Play/regenerate/${adventureId}/scene/${sceneId}`, {});
+  }
+
+  /**
+   * Enrich a scene with tracker, characters, locations, and lore
+   */
+  enrichScene(adventureId: string, sceneId: string): Observable<SceneEnrichmentResult> {
+    return this.http.post<SceneEnrichmentResult>(`${environment.apiUrl}/api/Play/${adventureId}/scenes/${sceneId}/enrich`, {});
   }
 
 

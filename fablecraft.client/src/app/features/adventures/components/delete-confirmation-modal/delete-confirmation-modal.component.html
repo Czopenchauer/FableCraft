@@ -1,0 +1,41 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <div class="warning-icon">⚠</div>
+        <h2>Delete Adventure</h2>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <p class="confirmation-text">
+          Are you sure you want to delete <strong>{{ adventureName || 'this adventure' }}</strong>?
+        </p>
+        <p class="warning-text">
+          This action cannot be undone. All progress and data will be permanently lost.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button
+          (click)="onCancel()"
+          [disabled]="isDeleting"
+          class="btn btn-secondary">
+          Cancel
+        </button>
+        <button
+          (click)="onConfirm()"
+          [disabled]="isDeleting"
+          class="btn btn-danger">
+          <span *ngIf="!isDeleting">Delete</span>
+          <span *ngIf="isDeleting" class="deleting-content">
+            <span class="spinner"></span>
+            <span>Deleting...</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

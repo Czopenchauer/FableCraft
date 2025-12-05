@@ -161,9 +161,8 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
 
-        var charDict = ConvertFieldsToDict(structure.Characters);
-
-        dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
+        // var charDict = ConvertFieldsToDict(structure.Characters);
+        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
 

@@ -90,29 +90,37 @@ internal sealed class AgentKernel : IAgentKernel
         {
             var result = await _pipeline.ExecuteAsync(async token =>
                              {
-                                 var stopwatch = Stopwatch.StartNew();
-                                 ChatMessageContent result =
-                                     await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                                 var replyInnerContent = result.InnerContent as ChatCompletion;
-                                 _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                     replyInnerContent?.Usage.InputTokenCount,
-                                     replyInnerContent?.Usage.OutputTokenCount,
-                                     replyInnerContent?.Usage.TotalTokenCount);
-                                 await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
-                                     {
-                                         AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
-                                         CallerName = operationName,
-                                         RequestContent = JsonSerializer.Serialize(chatHistory),
-                                         ResponseContent = JsonSerializer.Serialize(result),
-                                         InputToken = replyInnerContent?.Usage.InputTokenCount,
-                                         OutputToken = replyInnerContent?.Usage.OutputTokenCount,
-                                         TotalToken = replyInnerContent?.Usage.TotalTokenCount,
-                                         Duration = stopwatch.ElapsedMilliseconds
-                                     },
-                                     token);
+                                 try
+                                 {
+                                     var stopwatch = Stopwatch.StartNew();
+                                     ChatMessageContent result =
+                                         await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                                     _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                                     var replyInnerContent = result.InnerContent as ChatCompletion;
+                                     _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                                         replyInnerContent?.Usage.InputTokenCount,
+                                         replyInnerContent?.Usage.OutputTokenCount,
+                                         replyInnerContent?.Usage.TotalTokenCount);
+                                     await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+                                         {
+                                             AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
+                                             CallerName = operationName,
+                                             RequestContent = JsonSerializer.Serialize(chatHistory),
+                                             ResponseContent = JsonSerializer.Serialize(result),
+                                             InputToken = replyInnerContent?.Usage.InputTokenCount,
+                                             OutputToken = replyInnerContent?.Usage.OutputTokenCount,
+                                             TotalToken = replyInnerContent?.Usage.TotalTokenCount,
+                                             Duration = stopwatch.ElapsedMilliseconds
+                                         },
+                                         token);
 
-                                 _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                                 return result.Content;
+                                     return result.Content;
+                                 }
+                                 catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadGateway)
+                                 {
+                                     _logger.Error(ex, "Bad Gateway error occurred while calling LLM service. {message}", ex.ResponseContent);
+                                     throw;
+                                 }
                              },
                              cancellationToken)
                          ?? string.Empty;

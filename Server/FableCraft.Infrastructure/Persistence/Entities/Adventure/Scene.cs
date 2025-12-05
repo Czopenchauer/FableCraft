@@ -10,6 +10,14 @@ public enum CommitStatus
     Commited
 }
 
+public enum EnrichmentStatus
+{
+    NotEnriched,
+    Enriching,
+    Enriched,
+    EnrichmentFailed
+}
+
 public class Scene : IEntity
 {
     [Required]
@@ -26,6 +34,8 @@ public class Scene : IEntity
 
     public CommitStatus CommitStatus { get; set; }
 
+    public EnrichmentStatus EnrichmentStatus { get; set; } = EnrichmentStatus.NotEnriched;
+
     public required Metadata Metadata { get; init; }
 
     public required DateTimeOffset CreatedAt { get; init; }
@@ -34,7 +44,7 @@ public class Scene : IEntity
 
     public List<MainCharacterAction> CharacterActions { get; init; } = new();
 
-    public List<LorebookEntry> Lorebooks { get; init; } = new();
+    public List<LorebookEntry> Lorebooks { get; set; } = new();
 
     [Key]
     public Guid Id { get; set; }

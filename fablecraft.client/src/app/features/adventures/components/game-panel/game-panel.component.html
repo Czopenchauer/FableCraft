@@ -106,8 +106,47 @@
       <div class="game-columns">
         <!-- Tracker panel -->
         <div class="tracker-panel">
-          <div class="tracker-header">Tracker</div>
-          <pre class="tracker-json">{{ currentScene.tracker | json }}</pre>
+          <div class="tracker-header">
+            Tracker
+            <span *ngIf="isEnriching" class="enriching-badge">Loading...</span>
+          </div>
+          <div *ngIf="isEnriching" class="tracker-loading">
+            <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+              <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
+                      class="opacity-25"></circle>
+              <path
+                [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                [attr.fill]="'currentColor'"
+                class="opacity-75"></path>
+            </svg>
+            <p style="margin-top: 8px; font-size: 0.875rem; color: #6b7280;">Loading tracker data...</p>
+          </div>
+          <app-json-renderer
+            *ngIf="!isEnriching && currentScene.tracker"
+            [data]="currentScene.tracker"
+          ></app-json-renderer>
+
+          <!-- Display enrichment data if available -->
+          <div *ngIf="enrichmentData && !isEnriching" class="enrichment-info">
+            <div *ngIf="enrichmentData.newCharacters.length > 0" class="enrichment-section">
+              <h4>New Characters:</h4>
+              <div *ngFor="let char of enrichmentData.newCharacters" class="enrichment-item">
+                <strong>{{ char.name }}</strong>: {{ char.description }}
+              </div>
+            </div>
+            <div *ngIf="enrichmentData.newLocations.length > 0" class="enrichment-section">
+              <h4>New Locations:</h4>
+              <div *ngFor="let loc of enrichmentData.newLocations" class="enrichment-item">
+                <strong>{{ loc.name }}</strong>: {{ loc.description }}
+              </div>
+            </div>
+            <div *ngIf="enrichmentData.newLore.length > 0" class="enrichment-section">
+              <h4>New Lore:</h4>
+              <div *ngFor="let lore of enrichmentData.newLore" class="enrichment-item">
+                <strong>{{ lore.title }}</strong>: {{ lore.summary }}
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Main content -->

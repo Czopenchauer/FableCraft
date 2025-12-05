@@ -27,9 +27,6 @@ public class PlayController : ControllerBase
         return Ok(scene);
     }
 
-    /// <summary>
-    ///     Submit a player action
-    /// </summary>
     [HttpPost("submit")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -52,9 +49,34 @@ public class PlayController : ControllerBase
         }
     }
 
-    /// <summary>
-    ///     Delete the last scene
-    /// </summary>
+    [HttpPost("{adventureId:guid}/scenes/{sceneId:guid}/enrich")]
+    [ProducesResponseType(typeof(SceneEnrichmentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> EnrichScene(
+        Guid adventureId,
+        Guid sceneId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            ProcessExecutionContext.AdventureId.Value = adventureId;
+            SceneEnrichmentResult result = await _gameService.EnrichSceneAsync(
+                adventureId,
+                sceneId,
+                cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpDelete("delete/{adventureId:guid}/scene/{sceneId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

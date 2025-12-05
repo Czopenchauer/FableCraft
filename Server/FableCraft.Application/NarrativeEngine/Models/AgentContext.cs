@@ -13,7 +13,9 @@ internal enum GenerationProcessStep
     ContentCreationFinished,
     SceneGenerationFinished,
     TrackerFinished,
-    Completed
+    Completed,
+    SceneSavedAwaitingEnrichment,
+    EnrichmentStarted
 }
 
 internal sealed class GenerationContext
@@ -70,6 +72,8 @@ internal sealed class GenerationContext
     public Tracker? NewTracker { get; set; }
 
     public CharacterContext[]? CharacterUpdates { get; set; }
+
+    public Guid? NewSceneId { get; set; }
 
     public required GenerationProcessStep GenerationProcessStep { get; set; }
 }

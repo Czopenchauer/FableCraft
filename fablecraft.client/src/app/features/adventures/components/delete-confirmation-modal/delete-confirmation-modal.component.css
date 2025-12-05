@@ -1,0 +1,279 @@
+/* Delete Confirmation Modal - Theme-aware styling */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  animation: slideIn 0.3s ease-out;
+  max-width: 500px;
+  width: 90%;
+  margin: 0 var(--spacing-lg);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: var(--backdrop-blur);
+  overflow: hidden;
+}
+
+[data-theme="medieval-fantasy"] .modal-content {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  box-shadow: var(--shadow-lg),
+  inset 0 1px 0 rgba(184, 134, 11, 0.1);
+}
+
+/* Header */
+.modal-header {
+  padding: var(--spacing-xl);
+  border-bottom: 2px solid var(--border-secondary);
+  text-align: center;
+}
+
+.warning-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--status-error);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  margin: 0 auto var(--spacing-md);
+  box-shadow: var(--shadow-md);
+  animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+[data-theme="medieval-fantasy"] .warning-icon {
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.6);
+}
+
+.modal-header h2 {
+  font-size: var(--font-size-2xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+[data-theme="medieval-fantasy"] .modal-header h2 {
+  color: var(--color-primary);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Body */
+.modal-body {
+  padding: var(--spacing-xl);
+}
+
+.confirmation-text {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.confirmation-text strong {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.warning-text {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  padding: var(--spacing-md);
+  background: var(--status-error-bg);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-md);
+  line-height: 1.6;
+}
+
+[data-theme="medieval-fantasy"] .warning-text {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.15) 0%, rgba(139, 0, 0, 0.1) 100%);
+}
+
+/* Footer */
+.modal-footer {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-top: 2px solid var(--border-secondary);
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+}
+
+/* Button Styles */
+.btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-family-heading);
+  min-width: 120px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Secondary Button (Cancel) */
+[data-theme="modern-dark"] .btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="modern-dark"] .btn-secondary:hover:not(:disabled) {
+  border-color: var(--border-primary);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="medieval-fantasy"] .btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* Danger Button (Delete) */
+.btn-danger {
+  background: linear-gradient(135deg, var(--status-error) 0%, #b91c1c 100%);
+  color: var(--text-primary);
+  border: 1px solid var(--status-error);
+}
+
+[data-theme="modern-dark"] .btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="medieval-fantasy"] .btn-danger {
+  border: 2px solid #7f1d1d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+  inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+  0 4px 8px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+  inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+  0 6px 12px rgba(0, 0, 0, 0.5),
+  0 0 20px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Deleting State */
+.deleting-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-container {
+    max-width: 100%;
+    width: 95%;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .modal-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .confirmation-text {
+    font-size: var(--font-size-base);
+  }
+}

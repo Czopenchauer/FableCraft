@@ -99,3 +99,27 @@ export interface GameScene {
   tracker: any;
   narrativeDirectorOutput: any;
 }
+
+export interface SceneEnrichmentResult {
+  sceneId: string;
+  tracker: any;
+  newCharacters: CharacterInfo[];
+  newLocations: LocationInfo[];
+  newLore: LoreInfo[];
+}
+
+export interface CharacterInfo {
+  characterId: string;
+  name: string;
+  description: string;
+}
+
+export interface LocationInfo {
+  name: string;
+  description: string;
+}
+
+export interface LoreInfo {
+  title: string;
+  summary: string;
+}

@@ -33,6 +33,42 @@ public class SubmitActionRequest
     public string ActionText { get; init; } = null!;
 }
 
+public class SceneEnrichmentResult
+{
+    public required Guid SceneId { get; init; }
+
+    public required Tracker Tracker { get; init; }
+
+    public required List<CharacterInfo> NewCharacters { get; init; }
+
+    public required List<LocationInfo> NewLocations { get; init; }
+
+    public required List<LoreInfo> NewLore { get; init; }
+}
+
+public class CharacterInfo
+{
+    public Guid CharacterId { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public string Description { get; set; } = null!;
+}
+
+public class LocationInfo
+{
+    public string Name { get; set; } = null!;
+
+    public string Description { get; set; } = null!;
+}
+
+public class LoreInfo
+{
+    public string Title { get; set; } = null!;
+
+    public string Summary { get; set; } = null!;
+}
+
 public interface IGameService
 {
     Task<GameScene[]> GetScenesAsync(Guid adventureId, int take, int? skip, CancellationToken cancellationToken);
@@ -42,6 +78,8 @@ public interface IGameService
     Task DeleteSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
 
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
+
+    Task<SceneEnrichmentResult> EnrichSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -240,12 +278,21 @@ internal class GameService : IGameService
 
         try
         {
-            SceneGenerationOutput nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
+            SceneGenerationOutputWithoutEnrichment nextScene = await _sceneGenerationOrchestrator.GenerateSceneWithoutEnrichmentAsync(adventureId, actionText, cancellationToken);
             return new GameScene
             {
                 Text = nextScene.GeneratedScene.Scene,
                 Choices = nextScene.GeneratedScene.Choices.ToList(),
-                Tracker = nextScene.Tracker,
+                Tracker = new Tracker
+                {
+                    Story = new StoryTracker
+                    {
+                        Location = "",
+                        Weather = "",
+                        Time = DateTime.UtcNow
+                    },
+                    CharactersPresent = Array.Empty<string>()
+                },
                 NarrativeDirectorOutput = nextScene.NarrativeDirectorOutput,
                 CanRegenerate = true,
                 SceneId = nextScene.SceneId,
@@ -255,6 +302,72 @@ internal class GameService : IGameService
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to generate next scene for adventure {AdventureId}", adventureId);
+            throw;
+        }
+    }
+
+    public async Task<SceneEnrichmentResult> EnrichSceneAsync(
+        Guid adventureId,
+        Guid sceneId,
+        CancellationToken cancellationToken)
+    {
+        Scene? scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new InvalidOperationException($"Scene {sceneId} not found for adventure {adventureId}");
+        }
+
+        if (scene.EnrichmentStatus == EnrichmentStatus.Enriched)
+        {
+            _logger.Warning("Scene {SceneId} is already enriched", sceneId);
+            return new SceneEnrichmentResult
+            {
+                SceneId = sceneId,
+                Tracker = scene.Metadata.Tracker,
+                NewCharacters = scene.CharacterStates.Select(c => new CharacterInfo
+                {
+                    CharacterId = c.CharacterId,
+                    Name = c.CharacterStats.CharacterIdentity.FullName ?? "",
+                    Description = c.Description
+                }).ToList(),
+                NewLocations = new List<LocationInfo>(),
+                NewLore = new List<LoreInfo>()
+            };
+        }
+
+        try
+        {
+            SceneEnrichmentOutput output = await _sceneGenerationOrchestrator
+                .EnrichSceneAsync(adventureId, sceneId, cancellationToken);
+
+            return new SceneEnrichmentResult
+            {
+                SceneId = output.SceneId,
+                Tracker = output.Tracker,
+                NewCharacters = output.NewCharacters.Select(c => new CharacterInfo
+                {
+                    CharacterId = c.CharacterId,
+                    Name = c.Name,
+                    Description = c.Description
+                }).ToList(),
+                NewLocations = output.NewLocations.Select(l => new LocationInfo
+                {
+                    Name = l.Name,
+                    Description = l.Description
+                }).ToList(),
+                NewLore = output.NewLore.Select(l => new LoreInfo
+                {
+                    Title = l.Title,
+                    Summary = l.Summary
+                }).ToList()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to enrich scene {SceneId} for adventure {AdventureId}", sceneId, adventureId);
             throw;
         }
     }

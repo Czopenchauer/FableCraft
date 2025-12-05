@@ -332,7 +332,7 @@
 
 .game-columns {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 500px 1fr;
   gap: var(--spacing-lg);
   align-items: start;
 }
@@ -719,4 +719,97 @@
   .choices-container {
     padding: 0;
   }
+}
+
+/* ========== Enrichment Styles ========== */
+
+.enriching-badge {
+  display: inline-block;
+  margin-left: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--bg-accent);
+  color: var(--text-inverse);
+}
+
+[data-theme="modern-dark"] .enriching-badge {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+}
+
+[data-theme="medieval-fantasy"] .enriching-badge {
+  background: var(--color-primary);
+}
+
+.tracker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.enrichment-info {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-secondary);
+}
+
+.enrichment-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.enrichment-section:last-child {
+  margin-bottom: 0;
+}
+
+.enrichment-section h4 {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[data-theme="modern-dark"] .enrichment-section h4 {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="medieval-fantasy"] .enrichment-section h4 {
+  color: var(--color-primary);
+}
+
+.enrichment-item {
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.enrichment-item:last-child {
+  margin-bottom: 0;
+}
+
+.enrichment-item strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+[data-theme="modern-dark"] .enrichment-item {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+[data-theme="medieval-fantasy"] .enrichment-item {
+  background: rgba(184, 134, 11, 0.05);
+  border: 1px solid var(--border-secondary);
 }

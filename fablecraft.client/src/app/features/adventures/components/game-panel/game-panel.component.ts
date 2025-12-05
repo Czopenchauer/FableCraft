@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
-import {GameScene} from '../../models/adventure.model';
+import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
 
 @Component({
   selector: 'app-game-panel',
@@ -18,6 +18,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   isLoading = false;
   isInitialLoad = true;
   isRegenerating = false;
+  isEnriching = false;
+  enrichmentData: SceneEnrichmentResult | null = null;
   error: string | null = null;
   customAction = '';
   private destroy$ = new Subject<void>();
@@ -90,6 +92,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         next: (scene) => {
           // API returns a single GameScene
           this.currentScene = scene || null;
+
+          // Note: First scene is generated with full workflow (including enrichment)
+          // so no need to call enrichSceneData here
+          // The tracker should already be populated
         },
         error: (err) => {
           console.error('Error loading first scene:', err);
@@ -106,6 +112,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
     this.error = null;
+    this.enrichmentData = null; // Reset enrichment data
 
     this.adventureService.submitAction(this.adventureId, choice)
       .pipe(
@@ -121,11 +128,50 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           this.currentScene = scene;
           this.customAction = ''; // Reset custom action
           this.cdr.detectChanges();
+
+          // Immediately start enriching the scene
+          this.enrichSceneData(scene.sceneId);
         },
         error: (err) => {
           console.error('Error submitting action:', err);
           this.error = 'Failed to submit your choice. Please try again.';
           this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Enrich the scene with tracker and additional content
+   */
+  private enrichSceneData(sceneId: string): void {
+    if (!this.adventureId) return;
+
+    this.isEnriching = true;
+
+    this.adventureService.enrichScene(this.adventureId, sceneId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isEnriching = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (enrichment) => {
+          console.log('Scene enrichment received:', enrichment);
+          this.enrichmentData = enrichment;
+
+          // Update the current scene's tracker with enriched data
+          if (this.currentScene) {
+            this.currentScene.tracker = enrichment.tracker;
+          }
+
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error enriching scene:', err);
+          // Don't show error to user for enrichment failure - scene is still playable
+          // Just log it for debugging
         }
       });
   }

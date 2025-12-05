@@ -29,7 +29,7 @@ internal sealed class WriterAgent(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -45,16 +45,16 @@ internal sealed class WriterAgent(
                                                </scene_direction>
 
                                                <new_lore>
-                                               {JsonSerializer.Serialize(context.NewLore, options)}
+                                               {JsonSerializer.Serialize(context.NewLore ?? Array.Empty<GeneratedLore>(), options)}
                                                </new_lore>
 
                                                <new_locations>
-                                               {JsonSerializer.Serialize(context.NewLocations, options)}
+                                               {JsonSerializer.Serialize(context.NewLocations ?? Array.Empty<LocationGenerationResult>(), options)}
                                                </new_locations>
 
                                                Newly created characters. Should be emulated as well as existing ones:
                                                <new_characters>
-                                               {JsonSerializer.Serialize(context.NewCharacters, options)}
+                                               {JsonSerializer.Serialize(context.NewCharacters ?? Array.Empty<CharacterContext>(), options)}
                                                </new_characters>
                                                """);
         stringBuilder.AppendLine($"""

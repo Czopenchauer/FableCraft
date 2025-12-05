@@ -13,6 +13,7 @@ import {GamePanelComponent} from './features/adventures/components/game-panel/ga
 import {
   DeleteConfirmationModalComponent
 } from './features/adventures/components/delete-confirmation-modal/delete-confirmation-modal.component';
+import {JsonRendererComponent} from './features/adventures/components/json-renderer/json-renderer.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import {
     AdventureCreateComponent,
     AdventureStatusComponent,
     GamePanelComponent,
-    DeleteConfirmationModalComponent
+    DeleteConfirmationModalComponent,
+    JsonRendererComponent
   ],
   imports: [
     BrowserModule,
