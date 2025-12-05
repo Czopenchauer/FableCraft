@@ -116,7 +116,7 @@ internal class GameService : IGameService
         if (scenes.Count == 1)
         {
             _logger.Information("Regenerating first scene for adventure {AdventureId}", adventureId);
-            var adventure = await _dbContext.Adventures
+            Adventure adventure = await _dbContext.Adventures
                 .Include(a => a.Scenes)
                 .SingleAsync(a => a.Id == adventureId, cancellationToken);
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
@@ -138,7 +138,7 @@ internal class GameService : IGameService
                 }
             });
 
-            var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
+            SceneGenerationOutput scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
             return new GameScene
             {
                 Text = scene.GeneratedScene.Scene,
@@ -151,7 +151,7 @@ internal class GameService : IGameService
             };
         }
 
-        var lastScene = scenes[0];
+        Scene lastScene = scenes[0];
         if (lastScene.CommitStatus != CommitStatus.Uncommited)
         {
             throw new InvalidOperationException("Can only regenerate the last uncommitted scene");
@@ -164,7 +164,7 @@ internal class GameService : IGameService
             _dbContext.Scenes.Remove(lastScene);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
+            SceneGenerationOutput nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
                 lastScene.CharacterActions.First(x => x.Selected).ActionDescription,
                 cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -240,7 +240,7 @@ internal class GameService : IGameService
 
         try
         {
-            var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
+            SceneGenerationOutput nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
             return new GameScene
             {
                 Text = nextScene.GeneratedScene.Scene,

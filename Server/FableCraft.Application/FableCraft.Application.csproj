@@ -6,15 +6,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentValidation" />
-        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-        <PackageReference Include="System.IO.Hashing" />
+        <PackageReference Include="FluentValidation"/>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
+        <PackageReference Include="System.IO.Hashing"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FableCraft.Infrastructure\FableCraft.Infrastructure.csproj" />
+        <ProjectReference Include="..\FableCraft.Infrastructure\FableCraft.Infrastructure.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

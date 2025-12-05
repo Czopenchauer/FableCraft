@@ -86,7 +86,7 @@ internal class AdventureCreationService : IAdventureCreationService
             MainCharacter = new MainCharacter
             {
                 Name = adventureDto.Character.Name,
-                Description = adventureDto.Character.Description,
+                Description = adventureDto.Character.Description
             },
             Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
                 {
@@ -120,7 +120,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
-        var adventure = await _dbContext.Adventures
+        Adventure? adventure = await _dbContext.Adventures
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
         if (adventure == null)

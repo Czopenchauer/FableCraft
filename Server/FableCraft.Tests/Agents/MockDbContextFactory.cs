@@ -18,4 +18,3 @@ internal class MockDbContextFactory : IDbContextFactory<ApplicationDbContext>
         return new ApplicationDbContext(_options);
     }
 }
-

@@ -12,9 +12,6 @@ public enum CommitStatus
 
 public class Scene : IEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     public Guid AdventureId { get; init; }
 
@@ -39,9 +36,12 @@ public class Scene : IEntity
 
     public List<LorebookEntry> Lorebooks { get; init; } = new();
 
+    [Key]
+    public Guid Id { get; set; }
+
     public string GetSceneWithSelectedAction()
     {
-        var selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
+        MainCharacterAction? selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
         return selectedAction != null
             ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
             : NarrativeText;

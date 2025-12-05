@@ -7,12 +7,12 @@
         <UserSecretsId>dbda9c59-328c-47fd-8a43-23f80699ad32</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" />
-        <PackageReference Include="Aspire.Hosting.Azure.CosmosDB" />
-        <PackageReference Include="Aspire.Hosting.Azure.Redis" />
-        <PackageReference Include="Aspire.Hosting.NodeJs" />
-        <PackageReference Include="Aspire.Hosting.PostgreSQL" />
-        <PackageReference Include="Aspire.Hosting.Python" />
+        <PackageReference Include="Aspire.Hosting.AppHost"/>
+        <PackageReference Include="Aspire.Hosting.Azure.CosmosDB"/>
+        <PackageReference Include="Aspire.Hosting.Azure.Redis"/>
+        <PackageReference Include="Aspire.Hosting.NodeJs"/>
+        <PackageReference Include="Aspire.Hosting.PostgreSQL"/>
+        <PackageReference Include="Aspire.Hosting.Python"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Server\FableCraft.Server\FableCraft.Server.csproj"/>

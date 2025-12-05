@@ -30,7 +30,7 @@ public class TrackerStructureTests
             await Assert.That(actualFieldNames).Contains(expectedField);
         }
 
-        foreach (var field in structure.Story)
+        foreach (FieldDefinition field in structure.Story)
         {
             await Assert.That(field.IsValid()).IsTrue().Because("Field should be valid");
             await Assert.That(field.Type).IsEqualTo(FieldType.String);
@@ -42,11 +42,11 @@ public class TrackerStructureTests
             await Assert.That(field.HasNestedFields).IsFalse().Because("Field should not have nested fields");
         }
 
-        var timeField = structure.Story.First(f => f.Name == "Time");
+        FieldDefinition timeField = structure.Story.First(f => f.Name == "Time");
         await Assert.That(timeField.DefaultValue?.ToString()).IsEqualTo("2024-10-16T09:15:30");
         await Assert.That(timeField.Prompt ?? string.Empty).Contains("Adjust time in small increments");
 
-        var locationField = structure.Story.First(f => f.Name == "Location");
+        FieldDefinition locationField = structure.Story.First(f => f.Name == "Location");
         await Assert.That(locationField.DefaultValue?.ToString() ?? string.Empty).Contains("Conference Room B");
         await Assert.That(locationField.Prompt).StartsWith("Provide a detailed and specific location");
     }
@@ -85,14 +85,14 @@ public class TrackerStructureTests
             await Assert.That(actualFieldNames).Contains(expectedField);
         }
 
-        foreach (var field in structure.MainCharacter)
+        foreach (FieldDefinition field in structure.MainCharacter)
         {
             await Assert.That(field.IsValid()).IsTrue().Because("Field should be valid");
         }
 
         var stringFields = structure.MainCharacter.Where(f => f.Name != "Inventory").ToArray();
         await Assert.That(stringFields.Length).IsEqualTo(10);
-        foreach (var field in stringFields)
+        foreach (FieldDefinition field in stringFields)
         {
             await Assert.That(field.Type).IsEqualTo(FieldType.String);
             await Assert.That(field.DefaultValue).IsNotNull();
@@ -100,7 +100,7 @@ public class TrackerStructureTests
             await Assert.That(field.HasNestedFields).IsFalse().Because("Field should not have nested fields");
         }
 
-        var inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
         await Assert.That(inventoryField.Type).IsEqualTo(FieldType.ForEachObject);
         await Assert.That(inventoryField.DefaultValue).IsNull();
         await Assert.That(inventoryField.ExampleValues).IsNull();
@@ -114,7 +114,7 @@ public class TrackerStructureTests
         await Assert.That(nestedFieldNames).Contains("Quantity");
         await Assert.That(nestedFieldNames).Contains("Location");
 
-        foreach (var field in inventoryField.NestedFields)
+        foreach (FieldDefinition field in inventoryField.NestedFields)
         {
             await Assert.That(field.IsValid()).IsTrue().Because("Nested field should be valid");
             await Assert.That(field.Type).IsEqualTo(FieldType.String);
@@ -122,18 +122,18 @@ public class TrackerStructureTests
             await Assert.That(field.ExampleValues).IsNotNull();
         }
 
-        var itemNameField = inventoryField.NestedFields.First(f => f.Name == "ItemName");
+        FieldDefinition itemNameField = inventoryField.NestedFields.First(f => f.Name == "ItemName");
         await Assert.That(itemNameField.DefaultValue?.ToString()).IsEqualTo("Smartphone");
         await Assert.That(itemNameField.ExampleValues?.Count).IsEqualTo(4);
 
-        var locationNestedField = inventoryField.NestedFields.First(f => f.Name == "Location");
+        FieldDefinition locationNestedField = inventoryField.NestedFields.First(f => f.Name == "Location");
         await Assert.That(locationNestedField.DefaultValue?.ToString()).IsEqualTo("Right pocket");
 
-        var genderField = structure.MainCharacter.First(f => f.Name == "Gender");
+        FieldDefinition genderField = structure.MainCharacter.First(f => f.Name == "Gender");
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Female");
         await Assert.That(genderField.ExampleValues?.Count).IsEqualTo(2);
 
-        var outfitField = structure.MainCharacter.First(f => f.Name == "Outfit");
+        FieldDefinition outfitField = structure.MainCharacter.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Navy blue blazer");
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black leather pumps");
@@ -164,7 +164,7 @@ public class TrackerStructureTests
 
         await Assert.That(actualFieldNames).DoesNotContain("Inventory");
 
-        foreach (var field in structure.Characters)
+        foreach (FieldDefinition field in structure.Characters)
         {
             await Assert.That(field.IsValid()).IsTrue();
             await Assert.That(field.Type).IsEqualTo(FieldType.String);
@@ -175,21 +175,21 @@ public class TrackerStructureTests
             await Assert.That(field.HasNestedFields).IsFalse();
         }
 
-        var genderField = structure.Characters.First(f => f.Name == "Gender");
+        FieldDefinition genderField = structure.Characters.First(f => f.Name == "Gender");
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Male");
         await Assert.That(genderField.ExampleValues).IsNotNull();
         await Assert.That(genderField.ExampleValues!.Count).IsEqualTo(2);
 
-        var ageField = structure.Characters.First(f => f.Name == "Age");
+        FieldDefinition ageField = structure.Characters.First(f => f.Name == "Age");
         await Assert.That(ageField.DefaultValue?.ToString()).IsEqualTo("28");
 
-        var hairField = structure.Characters.First(f => f.Name == "Hair");
+        FieldDefinition hairField = structure.Characters.First(f => f.Name == "Hair");
         await Assert.That(hairField.DefaultValue?.ToString()).IsEqualTo("Short black hair, neatly combed");
 
-        var makeupField = structure.Characters.First(f => f.Name == "Makeup");
+        FieldDefinition makeupField = structure.Characters.First(f => f.Name == "Makeup");
         await Assert.That(makeupField.DefaultValue?.ToString()).IsEqualTo("None");
 
-        var outfitField = structure.Characters.First(f => f.Name == "Outfit");
+        FieldDefinition outfitField = structure.Characters.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Dark gray suit");
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black dress shoes");

@@ -11,8 +11,8 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 /// </summary>
 internal class KnowledgeGraphPlugin
 {
-    private readonly IRagSearch _ragSearch;
     private readonly CallerContext _callerContext;
+    private readonly IRagSearch _ragSearch;
 
     public KnowledgeGraphPlugin(IRagSearch ragSearch, CallerContext callerContext)
     {

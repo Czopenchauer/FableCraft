@@ -2,8 +2,6 @@
 
 public sealed class LlmLog : IEntity
 {
-    public Guid Id { get; set; }
-
     public Guid? AdventureId { get; set; }
 
     public string? CallerName { get; set; }
@@ -21,4 +19,6 @@ public sealed class LlmLog : IEntity
     public required int? TotalToken { get; set; }
 
     public required long Duration { get; set; }
+
+    public Guid Id { get; set; }
 }

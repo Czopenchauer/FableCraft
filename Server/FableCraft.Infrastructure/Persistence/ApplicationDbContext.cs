@@ -1,4 +1,4 @@
-﻿﻿using System.Text.Json;
+﻿using System.Text.Json;
 
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -34,10 +34,6 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<LlmPreset> LlmPresets { get; set; }
 
-    public DbSet<GraphRagSearchPreset> GraphRagSearchPresets { get; set; }
-
-    public DbSet<GraphRagBuildPreset> GraphRagBuildPresets { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -65,33 +61,13 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(x => x.FastPresetId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            p.HasOne(x => x.SmallPreset)
+            p.HasOne(x => x.ComplexPreset)
                 .WithMany()
-                .HasForeignKey(x => x.SmallPresetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            p.HasOne(x => x.GraphRagSearchPreset)
-                .WithMany()
-                .HasForeignKey(x => x.GraphRagSearchPresetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            p.HasOne(x => x.GraphRagBuildPreset)
-                .WithMany()
-                .HasForeignKey(x => x.GraphRagBuildPresetId)
+                .HasForeignKey(x => x.ComplexPresetId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<LlmPreset>(p =>
-        {
-            p.HasIndex(x => x.Name).IsUnique();
-        });
-
-        modelBuilder.Entity<GraphRagSearchPreset>(p =>
-        {
-            p.HasIndex(x => x.Name).IsUnique();
-        });
-
-        modelBuilder.Entity<GraphRagBuildPreset>(p =>
         {
             p.HasIndex(x => x.Name).IsUnique();
         });

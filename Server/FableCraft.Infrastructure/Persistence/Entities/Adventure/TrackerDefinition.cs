@@ -6,13 +6,13 @@ namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public class TrackerDefinition : IEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     public required string Name { get; set; }
 
     public required TrackerStructure Structure { get; set; }
+
+    [Key]
+    public Guid Id { get; set; }
 }
 
 public enum FieldType
@@ -49,11 +49,11 @@ public sealed class FieldDefinition
 
     public FieldDefinition[]? NestedFields { get; set; }
 
+    [MemberNotNullWhen(true, nameof(NestedFields))]
+    public bool HasNestedFields => NestedFields is { Length: > 0 };
+
     public bool IsValid()
     {
         return !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Prompt);
     }
-
-    [MemberNotNullWhen(true, nameof(NestedFields))]
-    public bool HasNestedFields => NestedFields is { Length: > 0 };
 }

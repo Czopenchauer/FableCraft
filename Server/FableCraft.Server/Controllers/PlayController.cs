@@ -82,7 +82,7 @@ public class PlayController : ControllerBase
         try
         {
             ProcessExecutionContext.AdventureId.Value = adventureId;
-            
+
             GameScene scene = await _gameService.RegenerateAsync(adventureId, sceneId, cancellationToken);
             return Ok(scene);
         }

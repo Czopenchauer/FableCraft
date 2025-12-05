@@ -4,9 +4,6 @@ namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public class LorebookEntry : IEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     public Guid AdventureId { get; init; }
 
@@ -28,4 +25,7 @@ public class LorebookEntry : IEntity
     public string Category { get; init; } = null!;
 
     public ContentType ContentType { get; init; }
+
+    [Key]
+    public Guid Id { get; set; }
 }

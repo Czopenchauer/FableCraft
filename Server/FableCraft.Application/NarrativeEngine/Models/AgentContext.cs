@@ -23,13 +23,13 @@ internal sealed class GenerationContext
     public required string PlayerAction { get; set; }
 
     /// <summary>
-    /// The LLM preset to use for generation
+    ///     The LLM preset to use for generation
     /// </summary>
     [JsonIgnore]
     public LlmPreset LlmPreset { get; set; } = null!;
 
     /// <summary>
-    /// The LLM preset to use for generation
+    ///     The LLM preset to use for generation
     /// </summary>
     [JsonIgnore]
     public LlmPreset ComplexPreset { get; set; } = null!;
@@ -38,13 +38,13 @@ internal sealed class GenerationContext
     public string? Summary { get; set; }
 
     /// <summary>
-    /// Has to be refetched from DB as there's no point to store it
+    ///     Has to be refetched from DB as there's no point to store it
     /// </summary>
     [JsonIgnore]
     public SceneContext[] SceneContext { get; set; } = null!;
 
     /// <summary>
-    /// List of the all Characters. Has to be refetched from DB as there's no point to store it
+    ///     List of the all Characters. Has to be refetched from DB as there's no point to store it
     /// </summary>
     [JsonIgnore]
     public List<CharacterContext> Characters { get; set; } = new();
@@ -94,7 +94,7 @@ internal sealed class CharacterContext
 internal sealed class SceneContext
 {
     public required int SequenceNumber { get; set; }
-    
+
     public required string SceneContent { get; set; } = null!;
 
     public required string PlayerChoice { get; set; } = null!;

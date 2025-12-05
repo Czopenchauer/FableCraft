@@ -1,7 +1,7 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
@@ -32,8 +32,8 @@ public interface IAgentKernel
 internal sealed class AgentKernel : IAgentKernel
 {
     private readonly ILogger _logger;
-    private readonly ResiliencePipeline _pipeline;
     private readonly IMessageDispatcher _messageDispatcher;
+    private readonly ResiliencePipeline _pipeline;
 
     public AgentKernel(ILogger logger, IMessageDispatcher messageDispatcher)
     {
@@ -68,9 +68,9 @@ internal sealed class AgentKernel : IAgentKernel
         string operationName,
         Kernel kernel,
         CancellationToken cancellationToken)
-    {        
-        var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
-                                    ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
+    {
+        IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
+                                                       ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
         try
         {
             return await GetResponse();
@@ -90,7 +90,7 @@ internal sealed class AgentKernel : IAgentKernel
         {
             var result = await _pipeline.ExecuteAsync(async token =>
                              {
-                                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                                 var stopwatch = Stopwatch.StartNew();
                                  ChatMessageContent result =
                                      await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
                                  var replyInnerContent = result.InnerContent as ChatCompletion;
@@ -107,7 +107,7 @@ internal sealed class AgentKernel : IAgentKernel
                                          InputToken = replyInnerContent?.Usage.InputTokenCount,
                                          OutputToken = replyInnerContent?.Usage.OutputTokenCount,
                                          TotalToken = replyInnerContent?.Usage.TotalTokenCount,
-                                         Duration = stopwatch.ElapsedMilliseconds,
+                                         Duration = stopwatch.ElapsedMilliseconds
                                      },
                                      token);
 

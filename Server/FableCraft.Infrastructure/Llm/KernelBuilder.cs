@@ -36,18 +36,18 @@ public sealed class KernelBuilderFactory
     public IKernelBuilder Create(LlmPreset preset)
     {
         return preset.Provider.ToLowerInvariant() switch
-        {
-            LlmProviders.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
-            LlmProviders.OpenAi => new OpenAiKernelBuilder(preset, _loggerFactory),
-            _ => new OpenAiKernelBuilder(preset, _loggerFactory)
-        };
+               {
+                   LlmProviders.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
+                   LlmProviders.OpenAi => new OpenAiKernelBuilder(preset, _loggerFactory),
+                   _ => new OpenAiKernelBuilder(preset, _loggerFactory)
+               };
     }
 }
 
 internal class OpenAiKernelBuilder : IKernelBuilder
 {
-    private readonly LlmPreset _preset;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly LlmPreset _preset;
 
     public OpenAiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
     {
@@ -84,7 +84,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             FrequencyPenalty = _preset.FrequencyPenalty,
             PresencePenalty = _preset.PresencePenalty,
-            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
+            FunctionChoiceBehavior = FunctionChoiceBehavior.None()
         };
     }
 
@@ -100,7 +100,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
             {
                 AllowConcurrentInvocation = true,
-                AllowParallelCalls = true,
+                AllowParallelCalls = true
             })
         };
     }
@@ -108,8 +108,6 @@ internal class OpenAiKernelBuilder : IKernelBuilder
 
 internal class GeminiKernelBuilder : IKernelBuilder
 {
-    private readonly LlmPreset _preset;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly static GeminiSafetySetting[] DefaultSafetySettings =
     [
         new(GeminiSafetyCategory.Harassment, GeminiSafetyThreshold.BlockNone),
@@ -122,6 +120,9 @@ internal class GeminiKernelBuilder : IKernelBuilder
         new(GeminiSafetyCategory.Derogatory, GeminiSafetyThreshold.BlockNone),
         new(GeminiSafetyCategory.Medical, GeminiSafetyThreshold.BlockNone)
     ];
+
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly LlmPreset _preset;
 
     public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
     {
@@ -158,7 +159,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             TopK = _preset.TopK,
             FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
-            SafetySettings = DefaultSafetySettings,
+            SafetySettings = DefaultSafetySettings
         };
     }
 
@@ -173,7 +174,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
             {
                 AllowConcurrentInvocation = true,
-                AllowParallelCalls = true,
+                AllowParallelCalls = true
             }),
             SafetySettings = DefaultSafetySettings
         };

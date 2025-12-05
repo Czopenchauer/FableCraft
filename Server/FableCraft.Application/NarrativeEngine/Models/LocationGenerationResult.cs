@@ -88,4 +88,3 @@ internal class GeneratedContents
     [JsonPropertyName("loot_potential")]
     public string LootPotential { get; init; } = string.Empty;
 }
-

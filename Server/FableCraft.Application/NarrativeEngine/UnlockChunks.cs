@@ -11,7 +11,7 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await dbContext.Scenes
             .Where(x => x.CommitStatus == CommitStatus.Lock)

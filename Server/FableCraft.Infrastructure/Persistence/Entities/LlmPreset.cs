@@ -4,9 +4,6 @@ namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class LlmPreset : IEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     [MaxLength(100)]
     public required string Name { get; set; } = null!;
@@ -40,5 +37,7 @@ public class LlmPreset : IEntity
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? UpdatedAt { get; set; }
-}
 
+    [Key]
+    public Guid Id { get; set; }
+}

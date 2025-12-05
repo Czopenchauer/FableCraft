@@ -2,8 +2,6 @@
 
 public class Chunk : IEntity
 {
-    public Guid Id { get; set; }
-
     public required Guid EntityId { get; init; }
 
     public required string Name { get; set; }
@@ -15,4 +13,6 @@ public class Chunk : IEntity
     public required string ContentType { get; set; }
 
     public required string? KnowledgeGraphNodeId { get; set; }
+
+    public Guid Id { get; set; }
 }

@@ -1,4 +1,5 @@
 ﻿using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +8,6 @@ namespace FableCraft.Infrastructure.Llm;
 
 public sealed class ResponseReceivedEvent : IMessage
 {
-    public Guid AdventureId { get; set; }
-
     public required string CallerName { get; init; }
 
     public required string RequestContent { get; init; }
@@ -24,13 +23,15 @@ public sealed class ResponseReceivedEvent : IMessage
     public required int? TotalToken { get; init; }
 
     public required long Duration { get; init; }
+
+    public Guid AdventureId { get; set; }
 }
 
 internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IMessageHandler<ResponseReceivedEvent>
 {
     public async Task HandleAsync(ResponseReceivedEvent message, CancellationToken cancellationToken)
     {
-        var llmCallLog = new Persistence.Entities.LlmLog
+        var llmCallLog = new LlmLog
         {
             AdventureId = message.AdventureId,
             CallerName = message.CallerName,
@@ -42,7 +43,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
             TotalToken = message.TotalToken,
             Duration = message.Duration
         };
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         dbContext.LlmCallLogs.Add(llmCallLog);
         await dbContext.SaveChangesAsync(cancellationToken);
     }

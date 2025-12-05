@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -33,7 +34,7 @@ internal sealed class SceneGenerationOrchestrator(
 
     public async Task<SceneGenerationOutput> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
     {
-        var context = await GetGenerationContext(adventureId, playerAction, cancellationToken);
+        (GenerationContext Context, Guid ProcessId) context = await GetGenerationContext(adventureId, playerAction, cancellationToken);
 
         if (context.Context.GenerationProcessStep == GenerationProcessStep.Completed)
         {
@@ -47,7 +48,7 @@ internal sealed class SceneGenerationOrchestrator(
             AllowTrailingCommas = true
         };
         var workflow = BuildWorkflow(processors, context.Context.GenerationProcessStep);
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         foreach (IProcessor processor in workflow)
         {
             try
@@ -56,7 +57,7 @@ internal sealed class SceneGenerationOrchestrator(
                 await dbContext.GenerationProcesses
                     .Where(x => x.Id == context.ProcessId)
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
                 logger.Information("[Generation] Step {GenerationProcessStep} took {ElapsedMilliseconds} ms",
                     context.Context.GenerationProcessStep,
                     stopwatch.ElapsedMilliseconds);
@@ -66,7 +67,7 @@ internal sealed class SceneGenerationOrchestrator(
                 await dbContext.GenerationProcesses
                     .Where(x => x.Id == context.ProcessId)
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
                 logger.Error(ex,
                     "Error during scene generation for adventure {AdventureId} at step {GenerationProcessStep}",
                     adventureId,
@@ -83,7 +84,7 @@ internal sealed class SceneGenerationOrchestrator(
                 .Where(x => x.Id == context.ProcessId)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            var newScene = await dbContext.Scenes
+            Scene newScene = await dbContext.Scenes
                 .Include(x => x.CharacterActions)
                 .Where(x => x.AdventureId == adventureId)
                 .OrderByDescending(x => x.SequenceNumber).FirstAsync(cancellationToken);
@@ -106,8 +107,12 @@ internal sealed class SceneGenerationOrchestrator(
         var adventure = await dbContext
             .Adventures
             .Where(x => x.Id == adventureId)
-            .Select(x => new { x.TrackerStructure, x.MainCharacter, x.FastPreset })
-            .SingleAsync(cancellationToken: cancellationToken);
+            .Select(x => new
+            {
+                x.TrackerStructure, x.MainCharacter, x.FastPreset,
+                SmallPreset = x.ComplexPreset
+            })
+            .SingleAsync(cancellationToken);
 
         var scenes = await dbContext
             .Scenes
@@ -123,11 +128,11 @@ internal sealed class SceneGenerationOrchestrator(
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true
         };
-        var generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
-        var llmPreset = adventure.FastPreset?.FirstOrDefault() 
-                        ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
-        var complexPreset = adventure.FastPreset?.FirstOrDefault() 
-                            ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
+        GenerationProcess? generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken);
+        LlmPreset llmPreset = adventure.FastPreset?.FirstOrDefault()
+                              ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
+        LlmPreset complexPreset = adventure.FastPreset?.FirstOrDefault()
+                                  ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
         GenerationContext context;
         if (generationProcess != null)
         {
@@ -181,7 +186,7 @@ internal sealed class SceneGenerationOrchestrator(
             var process = new GenerationProcess
             {
                 AdventureId = adventureId,
-                Context = JsonSerializer.Serialize(newContext, options),
+                Context = JsonSerializer.Serialize(newContext, options)
             };
             await dbContext.GenerationProcesses.AddAsync(process,
                 cancellationToken);
@@ -195,7 +200,8 @@ internal sealed class SceneGenerationOrchestrator(
                 {
                     SceneContent = x.NarrativeText,
                     PlayerChoice = x.CharacterActions.FirstOrDefault(y => y.Selected)?
-                        .ActionDescription ?? playerAction,
+                                       .ActionDescription
+                                   ?? playerAction,
                     Metadata = x.Metadata,
                     Characters = x.CharacterStates.Select(y => new CharacterContext
                     {
@@ -231,7 +237,7 @@ internal sealed class SceneGenerationOrchestrator(
     }
 
     /// <summary>
-    /// Gets the latest character contexts for all characters in the adventure.
+    ///     Gets the latest character contexts for all characters in the adventure.
     /// </summary>
     /// <param name="adventureId"></param>
     /// <param name="cancellationToken"></param>
@@ -262,7 +268,7 @@ internal sealed class SceneGenerationOrchestrator(
         var adventure = await dbContext
             .Adventures
             .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance, x.AdventureStartTime })
-            .SingleAsync(x => x.Id == adventureId, cancellationToken: cancellationToken);
+            .SingleAsync(x => x.Id == adventureId, cancellationToken);
         var prompt = $"""
                       Generate adventure's opening scene based on the following context.
                       Guide about story style and tone:

@@ -6,7 +6,7 @@ internal class MockRagSearch : IRagSearch
 {
     public Task<SearchResult[]> SearchAsync(CallerContext context, string[] query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(new SearchResult[]
+        return Task.FromResult(new[]
         {
             new SearchResult("Mock",
                 new SearchResponse

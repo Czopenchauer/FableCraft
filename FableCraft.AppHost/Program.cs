@@ -46,7 +46,7 @@ var graphRagApi = builder
     .WithReference(cache)
     .WithEnvironment(async context =>
     {
-        var redisEndpoint = cache.Resource.GetEndpoint("tcp");
+        EndpointReference redisEndpoint = cache.Resource.GetEndpoint("tcp");
         context.EnvironmentVariables["CACHE_HOST"] = redisEndpoint.Property(EndpointProperty.Host);
         context.EnvironmentVariables["CACHE_PORT"] = redisEndpoint.Property(EndpointProperty.Port);
         context.EnvironmentVariables["CACHE_USERNAME"] = "";

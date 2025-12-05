@@ -10,15 +10,15 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Swashbuckle.AspNetCore" />
+        <PackageReference Include="Swashbuckle.AspNetCore"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\fablecraft.client\fablecraft.client.esproj">
             <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
-        <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj" />
-        <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj"/>
+        <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

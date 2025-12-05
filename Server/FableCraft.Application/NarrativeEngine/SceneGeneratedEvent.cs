@@ -1,4 +1,5 @@
 ﻿using System.IO.Hashing;
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -9,6 +10,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Polly;
 using Polly.Retry;
@@ -26,8 +28,8 @@ internal sealed class SceneGeneratedEvent : IMessage
 
 internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGeneratedEvent>
 {
-    private readonly ApplicationDbContext _dbContext;
     private const int MinScenesToCommit = 2;
+    private readonly ApplicationDbContext _dbContext;
     private readonly IRagBuilder _ragBuilder;
     private readonly ResiliencePipeline _resiliencePipeline;
 
@@ -49,7 +51,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 Delay = TimeSpan.FromSeconds(2),
                 BackoffType = DelayBackoffType.Exponential,
                 ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
-                    ex.StatusCode is System.Net.HttpStatusCode.InternalServerError or System.Net.HttpStatusCode.TooManyRequests)
+                    ex.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.TooManyRequests)
             })
             .Build();
     }
@@ -63,7 +65,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     x.Id,
                     x.SequenceNumber
                 })
-            .SingleAsync(x => x.Id == message.SceneId, cancellationToken: cancellationToken);
+            .SingleAsync(x => x.Id == message.SceneId, cancellationToken);
 
         // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
         var scenesToCommit = await _dbContext.Scenes
@@ -71,7 +73,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             .Include(x => x.Lorebooks)
             .Include(x => x.CharacterActions)
             .Where(x => x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
-            .ToListAsync(cancellationToken: cancellationToken);
+            .ToListAsync(cancellationToken);
 
         if (scenesToCommit.Count <= MinScenesToCommit)
         {
@@ -84,16 +86,16 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             await _dbContext.Scenes
                 .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.Id))
                 .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Lock), cancellationToken);
-            foreach (var scene in scenesToCommit)
+            foreach (Scene scene in scenesToCommit)
             {
                 var existingLorebookChunks = await _dbContext.Chunks
                     .AsNoTracking()
                     .Where(x => scene.Lorebooks.Select(y => y.Id).Contains(x.EntityId))
-                    .ToListAsync(cancellationToken: cancellationToken);
+                    .ToListAsync(cancellationToken);
 
                 foreach (LorebookEntry sceneLorebook in scene.Lorebooks)
                 {
-                    var lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.Id == sceneLorebook.Id);
+                    Chunk? lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.Id == sceneLorebook.Id);
                     if (lorebookChunk is null)
                     {
                         var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content + message.AdventureId);
@@ -154,11 +156,11 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             //     fileToCommit.Add(tracker);
             // }
 
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                foreach (var (chunk, _) in fileToCommit)
+                await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                foreach ((Chunk chunk, var _) in fileToCommit)
                 {
                     if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
                     {
@@ -227,12 +229,12 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             return hash;
         });
 
-        var latestState = states.MaxBy(x => x.SequenceNumber)!;
+        Character latestState = states.MaxBy(x => x.SequenceNumber)!;
         var bytes = Encoding.UTF8.GetBytes(fieldSelector(latestState) + adventureId);
         var hash = XxHash64.HashToUInt64(bytes);
         var name = $"{hash:x16}";
         var path = @$"{StartupExtensions.DataDirectory}\{adventureId}\{name}.{contentType.ToString()}";
-        var existingChunk = existingChunks.FirstOrDefault(x => hashes.Contains(x.ContentHash));
+        Chunk? existingChunk = existingChunks.FirstOrDefault(x => hashes.Contains(x.ContentHash));
         var chunk = new Chunk
         {
             EntityId = latestState.CharacterId,

@@ -1,6 +1,7 @@
 ﻿**Generate a richly detailed character based on narrative requirements and world context.**
 
 ## Knowledge Graph Integration
+
 Gather only what is relevant to the current scene and narrative.
 Before generating the character, you have access to a comprehensive knowledge graph containing:
 
@@ -137,8 +138,9 @@ Before creating the character, query relevant information:
 - **Cannot Be**: Strictly avoid these traits, roles, or characteristics
 
 ### 4. Initial Character Statistics
+
 - Generate initial character statistics for Character Tracker:
-{{character_tracker_format}}
+  {{character_tracker_format}}
 
 ### 5. Output Format
 
@@ -168,205 +170,205 @@ Include as relevant to importance level:
 
 #### JSON Character Data
 
-Generate a complete character profile using this schema, with complexity scaled to importance. Also create initial 
+Generate a complete character profile using this schema, with complexity scaled to importance. Also create initial
 character_statistics according to the Character Tracker format. Place JSON in correct TAGS.
 TAGS:
 <character>
 {
-  "character_identity": {
-    "full_name": "[STRING: First and last name, culturally appropriate from KG lore]",
-    "aliases": ["[STRING: Nickname]", "[STRING: Title]", "[STRING: How others refer to them]"],
-    "archetype": "[STRING: Character archetype as specified]"
-  },
-  "personality": {
-    "five_factor_model": {
-      "openness": 0.0,  // FLOAT 0.0-1.0 - creativity, curiosity, openness to new experiences
-      "conscientiousness": 0.0,  // FLOAT 0.0-1.0 - organization, dependability, self-discipline
-      "extraversion": 0.0,  // FLOAT 0.0-1.0 - sociability, assertiveness, emotional expression
-      "agreeableness": 0.0,  // FLOAT 0.0-1.0 - cooperation, trust, empathy
-      "neuroticism": 0.0  // FLOAT 0.0-1.0 - emotional instability, anxiety, moodiness
-    },
-    "core_traits": ["[STRING: trait1]", "[STRING: trait2]", "[STRING: trait3]", "[STRING: trait4 if arc_important]"],
-    "speech_patterns": {
-      "formality_level": "[STRING: Description of how formal/informal their speech is]",
-      "accent_or_dialect": "[STRING: from KG regional information]"
-    },
-    "moral_alignment": {
-      "lawful_chaotic_axis": 0.5,  // FLOAT 0.0-1.0 where 0=chaotic, 0.5=neutral, 1.0=lawful
-      "good_evil_axis": 0.5  // FLOAT 0.0-1.0 where 0=evil, 0.5=neutral, 1.0=good
-    }
-  },
-  "goals_and_motivations": {
-    "primary_goal": {
-      "description": "[STRING: What they're currently trying to achieve]",
-      "goal_type": "[STRING: protective|acquisitive|destructive|creative|social|knowledge|survival]",
-      "priority": 5,  // INTEGER 1-10 where 10 is highest
-      "time_sensitivity": "[STRING: immediate|urgent|moderate|eventual]",
-      "progress_percentage": 0,  // INTEGER 0-100
-      "success_conditions": ["[STRING: condition1]", "[STRING: condition2]"],
-      "failure_conditions": ["[STRING: failure1]", "[STRING: failure2]"]
-    },
-    "secondary_goals": [
-      {
-        "description": "[STRING: Secondary objective]",
-        "goal_type": "[STRING: type]",
-        "priority": 5,  // INTEGER 1-10
-        "prerequisites": ["[STRING: what must happen first]"]
-      }
-    ],
-    "motivations": {
-      "intrinsic": ["[STRING: internal drive 1]", "[STRING: internal drive 2]"],
-      "extrinsic": ["[STRING: external pressure 1 from KG context]", "[STRING: external pressure 2]"]
-    }
-  },
-  "knowledge_and_beliefs": {
-    "world_knowledge": [
-      {
-        "fact": "[STRING: Something from KG they know about the world/situation]",
-        "confidence_level": 0.8,  // FLOAT 0.0-1.0
-        "source": "[STRING: how they learned this - KG source]",
-        "learned_at_scene": "[STRING: when/where they learned it]",
-        "kg_reference": "[STRING: link to KG entry if applicable]"
-      }
-    ],
-    "beliefs_about_protagonist": [
-      {
-        "belief": "[STRING: Based on KG player history/reputation]",
-        "confidence_level": 0.5,  // FLOAT 0.0-1.0
-        "evidence": ["[STRING: observation1]", "[STRING: KG reputation data]"],
-        "formed_at_scene": "[STRING: when this belief formed]"
-      }
-    ],
-    "secrets_held": [
-      {
-        "secret_content": "[STRING: Information they haven't shared, possibly from KG]",
-        "willingness_to_share": 0.0,  // FLOAT 0.0-1.0
-        "reveal_conditions": ["[STRING: condition1]", "[STRING: condition2]"]
-      }
-    ]
-  },
-  "relationships": {
-    "with_protagonist": {
-      "relationship_type": "[STRING: stranger|acquaintance|colleague|friend|rival|enemy|mentor|student]",
-      "trust_level": 50,  // INTEGER 0-100, influenced by KG reputation data
-      "affection_level": 50,  // INTEGER 0-100
-      "respect_level": 50,  // INTEGER 0-100
-      "relationship_tags": ["[STRING: descriptor1]", "[STRING: descriptor2]", "[STRING: descriptor3]"],
-      "first_met_scene": "[STRING: scene reference or 'not_yet_met']",
-      "reputation_influence": "[STRING: how KG player reputation affects this]",
-      "shared_experiences": [
-        {
-          "scene_reference": "[STRING: when this happened]",
-          "experience_type": "[STRING: cooperation|conflict|observation|conversation]",
-          "description": "[STRING: brief overview of relationship]",
-          "emotional_impact": "[STRING: positive|negative|neutral|mixed]",
-          "trust_change": 0  // INTEGER -100 to +100
-        }
-      ],
-      "promises_made": [
-        {
-          "promise": "[STRING: what was promised]",
-          "scene_made": "[STRING: when promised]",
-          "is_fulfilled": false  // BOOLEAN true|false
-        }
-      ],
-      "debts_and_obligations": [
-        {
-          "description": "[STRING: Narrative summary of the debt]",
-          "type": "[STRING: monetary|favor|life_debt|information|service|contractual|moral]",
-          "direction": "[STRING: owed_to|owed_by]",
-          "magnitude": "[STRING: trivial|minor|moderate|significant|life_altering]",
-          "origin_event": "[STRING: Scene reference or KG event where debt occurred]",
-          "status": "[STRING: active|called_in|partially_paid|fulfilled|forgiven|defaulted]",
-          "terms_of_repayment": "[STRING: Specific conditions required to clear the debt]",
-          "urgency": "[STRING: none|low|high|immediate]"
-        }
-      ]
-    },
-    "with_other_characters": [
-      {
-        "character_reference": "[STRING: NPC name]",
-        "relationship_type": "[STRING: nature of relationship]",
-        "description": "[STRING: brief overview of relationship]",
-        "trust_level": 50,  // INTEGER 0-100
-        "current_status": "[STRING: active|strained|broken|evolving]",
-        "conflict_reason": "[STRING: if applicable]"
-      }
-    ],
-    "faction_affiliations": [
-      {
-        "faction_name": "[STRING: from KG factions]",
-        "standing": 0,  // INTEGER -100 to 100
-        "rank_or_role": "[STRING: position within faction]"
-      }
-    ]
-  },
-  "memory_stream": [
-    {
-      "scene_reference": "[STRING: scene identifier]",
-      "memory_type": "[STRING: interaction|observation|revelation|decision|loss|victory]",
-      "description": "[STRING: what happened, can reference events]",
-      "emotional_valence": "[STRING: emotional response]",
-      "participants": ["[STRING: who was involved]"],
-      "outcomes": ["[STRING: what resulted from this]"],
-      "event_reference": "[STRING: if memory relates to event]"
-    }
-  ],
-  "emotional_state": {
-    "current_emotions": {
-      "primary_emotion": "[STRING: dominant emotion]",
-      "secondary_emotions": ["[STRING: emotion1]", "[STRING: emotion2]"],
-      "intensity": 0.5  // FLOAT 0.0-1.0
-    },
-    "emotional_triggers": {
-      "positive": ["[STRING: what makes them feel positive]", "[STRING: another trigger]"],
-      "negative": ["[STRING: what makes them feel negative]", "[STRING: another trigger]"]
-    }
-  },
-  "character_arc": {
-    "arc_type": "[STRING: redemption|corruption|coming_of_age|fall_from_grace|etc.]",
-    "description": "[STRING: overview of their character arc]",
-    "current_stage": "[STRING: stage name]",
-    "arc_stages": [
-      {
-        "stage_name": "[STRING: stage identifier]",
-        "description": "[STRING: what happens in this stage]",
-        "key_events": ["[STRING: event1]", "[STRING: event2], ..."],
-        "completed": false,  // BOOLEAN true|false
-        "progress_percentage": 0  // INTEGER 0-100 if in progress
-      }
-    ],
-    "key_decisions_pending": [
-      "[STRING: decision they need to make]",
-      "[STRING: another pending choice]"
-    ]
-  },
-  "behavioral_state": {
-    "current_plan": {
-      "intention": "[STRING: what they're trying to do right now]",
-      "steps": [
-        "[STRING: step1]",
-        "[STRING: step2]",
-        "[STRING: step3]"
-      ],
-      "expected_duration_scenes": "[STRING: number]",
-      "contingency_plans": {
-        "[if_condition]": "[STRING: what they'll do]",
-        "[if_other_condition]": "[STRING: alternative action]"
-      }
-    },
-    "action_tendencies": {
-      "default_response_to_aggression": "[STRING: how they typically respond to threats]",
-      "response_to_deception": "[STRING: how they handle being lied to]",
-      "response_to_kindness": "[STRING: how they react to genuine kindness]"
-    }
-  },
-  "integration": {
-    "relevant_lore": ["[STRING: lore entry that affects character]"],
-    "recent_events_aware_of": ["[STRING: events they would know about]"],
-    "location_knowledge": ["[STRING: locations they're familiar with]"],
-    "cultural_background": "[STRING: cultural context]"
-  }
+"character_identity": {
+"full_name": "[STRING: First and last name, culturally appropriate from KG lore]",
+"aliases": ["[STRING: Nickname]", "[STRING: Title]", "[STRING: How others refer to them]"],
+"archetype": "[STRING: Character archetype as specified]"
+},
+"personality": {
+"five_factor_model": {
+"openness": 0.0, // FLOAT 0.0-1.0 - creativity, curiosity, openness to new experiences
+"conscientiousness": 0.0, // FLOAT 0.0-1.0 - organization, dependability, self-discipline
+"extraversion": 0.0, // FLOAT 0.0-1.0 - sociability, assertiveness, emotional expression
+"agreeableness": 0.0, // FLOAT 0.0-1.0 - cooperation, trust, empathy
+"neuroticism": 0.0 // FLOAT 0.0-1.0 - emotional instability, anxiety, moodiness
+},
+"core_traits": ["[STRING: trait1]", "[STRING: trait2]", "[STRING: trait3]", "[STRING: trait4 if arc_important]"],
+"speech_patterns": {
+"formality_level": "[STRING: Description of how formal/informal their speech is]",
+"accent_or_dialect": "[STRING: from KG regional information]"
+},
+"moral_alignment": {
+"lawful_chaotic_axis": 0.5, // FLOAT 0.0-1.0 where 0=chaotic, 0.5=neutral, 1.0=lawful
+"good_evil_axis": 0.5 // FLOAT 0.0-1.0 where 0=evil, 0.5=neutral, 1.0=good
+}
+},
+"goals_and_motivations": {
+"primary_goal": {
+"description": "[STRING: What they're currently trying to achieve]",
+"goal_type": "[STRING: protective|acquisitive|destructive|creative|social|knowledge|survival]",
+"priority": 5, // INTEGER 1-10 where 10 is highest
+"time_sensitivity": "[STRING: immediate|urgent|moderate|eventual]",
+"progress_percentage": 0, // INTEGER 0-100
+"success_conditions": ["[STRING: condition1]", "[STRING: condition2]"],
+"failure_conditions": ["[STRING: failure1]", "[STRING: failure2]"]
+},
+"secondary_goals": [
+{
+"description": "[STRING: Secondary objective]",
+"goal_type": "[STRING: type]",
+"priority": 5, // INTEGER 1-10
+"prerequisites": ["[STRING: what must happen first]"]
+}
+],
+"motivations": {
+"intrinsic": ["[STRING: internal drive 1]", "[STRING: internal drive 2]"],
+"extrinsic": ["[STRING: external pressure 1 from KG context]", "[STRING: external pressure 2]"]
+}
+},
+"knowledge_and_beliefs": {
+"world_knowledge": [
+{
+"fact": "[STRING: Something from KG they know about the world/situation]",
+"confidence_level": 0.8, // FLOAT 0.0-1.0
+"source": "[STRING: how they learned this - KG source]",
+"learned_at_scene": "[STRING: when/where they learned it]",
+"kg_reference": "[STRING: link to KG entry if applicable]"
+}
+],
+"beliefs_about_protagonist": [
+{
+"belief": "[STRING: Based on KG player history/reputation]",
+"confidence_level": 0.5, // FLOAT 0.0-1.0
+"evidence": ["[STRING: observation1]", "[STRING: KG reputation data]"],
+"formed_at_scene": "[STRING: when this belief formed]"
+}
+],
+"secrets_held": [
+{
+"secret_content": "[STRING: Information they haven't shared, possibly from KG]",
+"willingness_to_share": 0.0, // FLOAT 0.0-1.0
+"reveal_conditions": ["[STRING: condition1]", "[STRING: condition2]"]
+}
+]
+},
+"relationships": {
+"with_protagonist": {
+"relationship_type": "[STRING: stranger|acquaintance|colleague|friend|rival|enemy|mentor|student]",
+"trust_level": 50, // INTEGER 0-100, influenced by KG reputation data
+"affection_level": 50, // INTEGER 0-100
+"respect_level": 50, // INTEGER 0-100
+"relationship_tags": ["[STRING: descriptor1]", "[STRING: descriptor2]", "[STRING: descriptor3]"],
+"first_met_scene": "[STRING: scene reference or 'not_yet_met']",
+"reputation_influence": "[STRING: how KG player reputation affects this]",
+"shared_experiences": [
+{
+"scene_reference": "[STRING: when this happened]",
+"experience_type": "[STRING: cooperation|conflict|observation|conversation]",
+"description": "[STRING: brief overview of relationship]",
+"emotional_impact": "[STRING: positive|negative|neutral|mixed]",
+"trust_change": 0 // INTEGER -100 to +100
+}
+],
+"promises_made": [
+{
+"promise": "[STRING: what was promised]",
+"scene_made": "[STRING: when promised]",
+"is_fulfilled": false // BOOLEAN true|false
+}
+],
+"debts_and_obligations": [
+{
+"description": "[STRING: Narrative summary of the debt]",
+"type": "[STRING: monetary|favor|life_debt|information|service|contractual|moral]",
+"direction": "[STRING: owed_to|owed_by]",
+"magnitude": "[STRING: trivial|minor|moderate|significant|life_altering]",
+"origin_event": "[STRING: Scene reference or KG event where debt occurred]",
+"status": "[STRING: active|called_in|partially_paid|fulfilled|forgiven|defaulted]",
+"terms_of_repayment": "[STRING: Specific conditions required to clear the debt]",
+"urgency": "[STRING: none|low|high|immediate]"
+}
+]
+},
+"with_other_characters": [
+{
+"character_reference": "[STRING: NPC name]",
+"relationship_type": "[STRING: nature of relationship]",
+"description": "[STRING: brief overview of relationship]",
+"trust_level": 50, // INTEGER 0-100
+"current_status": "[STRING: active|strained|broken|evolving]",
+"conflict_reason": "[STRING: if applicable]"
+}
+],
+"faction_affiliations": [
+{
+"faction_name": "[STRING: from KG factions]",
+"standing": 0, // INTEGER -100 to 100
+"rank_or_role": "[STRING: position within faction]"
+}
+]
+},
+"memory_stream": [
+{
+"scene_reference": "[STRING: scene identifier]",
+"memory_type": "[STRING: interaction|observation|revelation|decision|loss|victory]",
+"description": "[STRING: what happened, can reference events]",
+"emotional_valence": "[STRING: emotional response]",
+"participants": ["[STRING: who was involved]"],
+"outcomes": ["[STRING: what resulted from this]"],
+"event_reference": "[STRING: if memory relates to event]"
+}
+],
+"emotional_state": {
+"current_emotions": {
+"primary_emotion": "[STRING: dominant emotion]",
+"secondary_emotions": ["[STRING: emotion1]", "[STRING: emotion2]"],
+"intensity": 0.5 // FLOAT 0.0-1.0
+},
+"emotional_triggers": {
+"positive": ["[STRING: what makes them feel positive]", "[STRING: another trigger]"],
+"negative": ["[STRING: what makes them feel negative]", "[STRING: another trigger]"]
+}
+},
+"character_arc": {
+"arc_type": "[STRING: redemption|corruption|coming_of_age|fall_from_grace|etc.]",
+"description": "[STRING: overview of their character arc]",
+"current_stage": "[STRING: stage name]",
+"arc_stages": [
+{
+"stage_name": "[STRING: stage identifier]",
+"description": "[STRING: what happens in this stage]",
+"key_events": ["[STRING: event1]", "[STRING: event2], ..."],
+"completed": false, // BOOLEAN true|false
+"progress_percentage": 0 // INTEGER 0-100 if in progress
+}
+],
+"key_decisions_pending": [
+"[STRING: decision they need to make]",
+"[STRING: another pending choice]"
+]
+},
+"behavioral_state": {
+"current_plan": {
+"intention": "[STRING: what they're trying to do right now]",
+"steps": [
+"[STRING: step1]",
+"[STRING: step2]",
+"[STRING: step3]"
+],
+"expected_duration_scenes": "[STRING: number]",
+"contingency_plans": {
+"[if_condition]": "[STRING: what they'll do]",
+"[if_other_condition]": "[STRING: alternative action]"
+}
+},
+"action_tendencies": {
+"default_response_to_aggression": "[STRING: how they typically respond to threats]",
+"response_to_deception": "[STRING: how they handle being lied to]",
+"response_to_kindness": "[STRING: how they react to genuine kindness]"
+}
+},
+"integration": {
+"relevant_lore": ["[STRING: lore entry that affects character]"],
+"recent_events_aware_of": ["[STRING: events they would know about]"],
+"location_knowledge": ["[STRING: locations they're familiar with]"],
+"cultural_background": "[STRING: cultural context]"
+}
 }
 </character>
 

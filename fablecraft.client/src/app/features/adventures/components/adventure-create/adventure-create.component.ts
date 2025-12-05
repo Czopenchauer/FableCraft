@@ -5,9 +5,9 @@ import {AdventureService} from '../../services/adventure.service';
 import {
   AdventureDto,
   AvailableLorebookDto,
+  ContentType,
   GenerateLorebookDto,
-  LorebookGenerationState,
-  ContentType
+  LorebookGenerationState
 } from '../../models/adventure.model';
 import {Subject, takeUntil} from 'rxjs';
 
@@ -138,7 +138,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     const formValue = this.adventureForm.value;
-    const { name, firstSceneDescription, authorNotes, character, lorebook } = formValue;
+    const {name, firstSceneDescription, authorNotes, character, lorebook} = formValue;
     const adventureDto: AdventureDto = {
       name,
       firstSceneDescription,

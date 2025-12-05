@@ -18,12 +18,12 @@ public class CharacterController : ControllerBase
     }
 
     /// <summary>
-    /// Get all characters grouped by CharacterId for a specific adventure
+    ///     Get all characters grouped by CharacterId for a specific adventure
     /// </summary>
     [HttpGet("adventure/{adventureId:guid}")]
     [ProducesResponseType(typeof(IEnumerable<CharacterGroupDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CharacterGroupDto>>> GetCharactersByAdventure(
-        Guid adventureId, 
+        Guid adventureId,
         CancellationToken cancellationToken)
     {
         var characterGroups = await _dbContext
@@ -49,4 +49,3 @@ public class CharacterController : ControllerBase
         return Ok(result);
     }
 }
-

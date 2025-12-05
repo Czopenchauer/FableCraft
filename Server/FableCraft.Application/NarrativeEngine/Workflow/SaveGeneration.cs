@@ -23,42 +23,46 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
         };
 
         var newLoreEntities = context.NewLore?.Select(x => new LorebookEntry
-        {
-            AdventureId = context.AdventureId,
-            Description = x.Summary,
-            Category = x.Title,
-            Content = JsonSerializer.Serialize(x, options),
-            ContentType = ContentType.json,
-        }).ToList() ?? new List<LorebookEntry>();
+                              {
+                                  AdventureId = context.AdventureId,
+                                  Description = x.Summary,
+                                  Category = x.Title,
+                                  Content = JsonSerializer.Serialize(x, options),
+                                  ContentType = ContentType.json
+                              }).ToList()
+                              ?? new List<LorebookEntry>();
         var newLocationsEntities = context.NewLocations?.Select(x => new LorebookEntry
-        {
-            AdventureId = context.AdventureId,
-            Description = x.NarrativeData.ShortDescription,
-            Content = JsonSerializer.Serialize(x, options),
-            Category = x.EntityData.Name,
-            ContentType = ContentType.json
-        }).ToList() ?? new List<LorebookEntry>();
+                                   {
+                                       AdventureId = context.AdventureId,
+                                       Description = x.NarrativeData.ShortDescription,
+                                       Content = JsonSerializer.Serialize(x, options),
+                                       Category = x.EntityData.Name,
+                                       ContentType = ContentType.json
+                                   }).ToList()
+                                   ?? new List<LorebookEntry>();
         newLoreEntities.AddRange(newLocationsEntities);
 
-        var newCharactersEntities = context.NewCharacters?.Select(x => new Character()
-        {
-            AdventureId = context.AdventureId,
-            CharacterId = x.CharacterId,
-            Description = x.Description,
-            CharacterStats = x.CharacterState,
-            Tracker = x.CharacterTracker!,
-            SequenceNumber = x.SequenceNumber,
-        }).ToList() ?? new List<Character>();
+        var newCharactersEntities = context.NewCharacters?.Select(x => new Character
+                                    {
+                                        AdventureId = context.AdventureId,
+                                        CharacterId = x.CharacterId,
+                                        Description = x.Description,
+                                        CharacterStats = x.CharacterState,
+                                        Tracker = x.CharacterTracker!,
+                                        SequenceNumber = x.SequenceNumber
+                                    }).ToList()
+                                    ?? new List<Character>();
 
         var updatesToExistingCharacters = context.CharacterUpdates?.Select(x => new Character
-        {
-            AdventureId = context.AdventureId,
-            CharacterId = x.CharacterId,
-            Description = x.Description,
-            CharacterStats = x.CharacterState,
-            Tracker = x.CharacterTracker!,
-            SequenceNumber = x.SequenceNumber,
-        }) ?? new List<Character>();
+                                          {
+                                              AdventureId = context.AdventureId,
+                                              CharacterId = x.CharacterId,
+                                              Description = x.Description,
+                                              CharacterStats = x.CharacterState,
+                                              Tracker = x.CharacterTracker!,
+                                              SequenceNumber = x.SequenceNumber
+                                          })
+                                          ?? new List<Character>();
         newCharactersEntities.AddRange(updatesToExistingCharacters);
         var newScene = new Scene
         {
@@ -71,17 +75,17 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
                 NarrativeMetadata = context.NewNarrativeDirection!
             },
             AdventureSummary = null,
-            CharacterActions = context.NewScene.Choices.Select(x => new MainCharacterAction()
+            CharacterActions = context.NewScene.Choices.Select(x => new MainCharacterAction
             {
                 ActionDescription = x,
                 Selected = false
             }).ToList(),
             CharacterStates = newCharactersEntities.ToList(),
             Lorebooks = newLoreEntities,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {

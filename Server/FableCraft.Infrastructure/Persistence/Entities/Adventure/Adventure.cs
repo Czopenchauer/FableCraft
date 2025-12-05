@@ -4,9 +4,6 @@ namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 public class Adventure : IEntity
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     [MaxLength(200)]
     public string Name { get; init; } = null!;
@@ -40,15 +37,10 @@ public class Adventure : IEntity
 
     public LlmPreset[]? FastPreset { get; set; }
 
-    public Guid? SmallPresetId { get; set; }
+    public Guid? ComplexPresetId { get; set; }
 
-    public LlmPreset? SmallPreset { get; set; }
+    public LlmPreset? ComplexPreset { get; set; }
 
-    public Guid? GraphRagSearchPresetId { get; set; }
-
-    public GraphRagSearchPreset? GraphRagSearchPreset { get; set; }
-
-    public Guid? GraphRagBuildPresetId { get; set; }
-
-    public GraphRagBuildPreset? GraphRagBuildPreset { get; set; }
+    [Key]
+    public Guid Id { get; set; }
 }

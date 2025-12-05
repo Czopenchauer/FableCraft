@@ -1,4 +1,6 @@
-﻿using FableCraft.Application.NarrativeEngine.Models;
+﻿using System.Text.Json;
+
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -7,119 +9,6 @@ namespace FableCraft.Tests.Agents;
 
 internal static class AgentTestData
 {
-    internal static GenerationContext CreateSampleNarrativeContext(Guid adventureId, ApplicationDbContext dbContext, LlmPreset llmPreset)
-    {
-        var adventure = dbContext.Adventures.Single(a => a.Id == adventureId);
-
-        return new GenerationContext
-        {
-            AdventureId = adventureId,
-            PlayerAction = "I enter the tavern and look around for anyone who might have information.",
-            Summary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
-            SceneContext = Array.Empty<SceneContext>(),
-            Characters = new List<CharacterContext>(),
-            TrackerStructure = adventure.TrackerStructure,
-            MainCharacter = adventure.MainCharacter,
-            NewLocations = Array.Empty<LocationGenerationResult>(),
-            NewLore = Array.Empty<GeneratedLore>(),
-            GenerationProcessStep = GenerationProcessStep.NotStarted,
-            LlmPreset = llmPreset
-        };
-    }
-
-    internal static NarrativeDirectorOutput CreateSampleNarrativeDirectorOutput()
-    {
-        return new NarrativeDirectorOutput
-        {
-            SceneMetadata = new SceneMetadata
-            {
-                SceneNumber = 1,
-                NarrativeAct = "setup",
-                BeatType = "discovery",
-                TensionLevel = 3,
-                Pacing = "building",
-                EmotionalTarget = "curiosity"
-            },
-            SceneDirection = new SceneDirection
-            {
-                OpeningFocus = "The heavy oak door swings open, revealing a dimly lit tavern filled with suspicious glances.",
-                RequiredElements = new List<string> { "smoky atmosphere", "nervous innkeeper", "hushed conversations" },
-                PlotPointsToHit = new List<string> { "introduce the mystery", "hint at danger", "present an opportunity for information" },
-                ToneGuidance = "mysterious and slightly threatening",
-                PacingNotes = "slow build of tension",
-                WorldbuildingOpportunity = "describe local customs",
-                Foreshadowing = new List<string> { "hint at coming danger" }
-            },
-            Objectives = new Objectives(),
-            Conflicts = new Conflicts()
-        };
-    }
-
-    internal static LoreRequest CreateSampleLoreRequest()
-    {
-        return new LoreRequest
-        {
-            Category = "location_history",
-            Subject = "The Whispering Woods",
-            Depth = "moderate",
-            Tone = "mysterious and ominous",
-            NarrativePurpose = "Explain why locals fear the forest and hint at supernatural phenomena",
-            ConnectionPoints = new List<string> { "Thornhaven village", "disappearing villagers" },
-            ConsistencyRequirements = new List<string> { "Must align with medieval fantasy setting" }
-        };
-    }
-
-    internal static LocationRequest CreateSampleLocationRequest()
-    {
-        return new LocationRequest
-        {
-            Type = "settlement",
-            Scale = "building",
-            Atmosphere = "rustic and mysterious",
-            StrategicImportance = "Social hub for information gathering",
-            Features = new List<string> { "common room", "private booths", "kitchen", "rooms for rent" },
-            InhabitantTypes = new List<string> { "innkeeper", "travelers", "locals" },
-            DangerLevel = 1,
-            Accessibility = "open"
-        };
-    }
-
-    internal static Adventure CreateTestAdventure(Guid adventureId)
-    {
-        return new Adventure
-        {
-            Id = adventureId,
-            Name = $"Test Adventure {adventureId}",
-            FirstSceneGuidance = "The adventure begins in a mysterious tavern.",
-            AdventureStartTime = "Evening, late autumn",
-            RagProcessingStatus = ProcessingStatus.Pending,
-            SceneGenerationStatus = ProcessingStatus.Pending,
-            CreatedAt = DateTimeOffset.UtcNow,
-            AuthorNotes = "Test adventure for integration tests",
-            MainCharacter = new MainCharacter
-            {
-                Id = Guid.NewGuid(),
-                AdventureId = adventureId,
-                Name = "Aldric the Brave",
-                Description = "A young adventurer with a mysterious past, seeking to prove themselves."
-            },
-            TrackerStructure = CreateTestTrackerStructure(),
-            Lorebook = new List<LorebookEntry>()
-        };
-    }
-
-    internal static TrackerStructure CreateTestTrackerStructure()
-    {
-        var options = new System.Text.Json.JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
-        var trackerStructure = System.Text.Json.JsonSerializer.Deserialize<TrackerStructure>(TrackerStructureJson, options);
-        return trackerStructure ?? throw new InvalidOperationException("Failed to deserialize tracker structure.");
-    }
-
     private const string TrackerStructureJson = """
                                                 {
                                                 "story": [
@@ -431,6 +320,119 @@ internal static class AgentTestData
                                                   ]
                                                 }
                                                 """;
+
+    internal static GenerationContext CreateSampleNarrativeContext(Guid adventureId, ApplicationDbContext dbContext, LlmPreset llmPreset)
+    {
+        Adventure adventure = dbContext.Adventures.Single(a => a.Id == adventureId);
+
+        return new GenerationContext
+        {
+            AdventureId = adventureId,
+            PlayerAction = "I enter the tavern and look around for anyone who might have information.",
+            Summary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
+            SceneContext = Array.Empty<SceneContext>(),
+            Characters = new List<CharacterContext>(),
+            TrackerStructure = adventure.TrackerStructure,
+            MainCharacter = adventure.MainCharacter,
+            NewLocations = Array.Empty<LocationGenerationResult>(),
+            NewLore = Array.Empty<GeneratedLore>(),
+            GenerationProcessStep = GenerationProcessStep.NotStarted,
+            LlmPreset = llmPreset
+        };
+    }
+
+    internal static NarrativeDirectorOutput CreateSampleNarrativeDirectorOutput()
+    {
+        return new NarrativeDirectorOutput
+        {
+            SceneMetadata = new SceneMetadata
+            {
+                SceneNumber = 1,
+                NarrativeAct = "setup",
+                BeatType = "discovery",
+                TensionLevel = 3,
+                Pacing = "building",
+                EmotionalTarget = "curiosity"
+            },
+            SceneDirection = new SceneDirection
+            {
+                OpeningFocus = "The heavy oak door swings open, revealing a dimly lit tavern filled with suspicious glances.",
+                RequiredElements = new List<string> { "smoky atmosphere", "nervous innkeeper", "hushed conversations" },
+                PlotPointsToHit = new List<string> { "introduce the mystery", "hint at danger", "present an opportunity for information" },
+                ToneGuidance = "mysterious and slightly threatening",
+                PacingNotes = "slow build of tension",
+                WorldbuildingOpportunity = "describe local customs",
+                Foreshadowing = new List<string> { "hint at coming danger" }
+            },
+            Objectives = new Objectives(),
+            Conflicts = new Conflicts()
+        };
+    }
+
+    internal static LoreRequest CreateSampleLoreRequest()
+    {
+        return new LoreRequest
+        {
+            Category = "location_history",
+            Subject = "The Whispering Woods",
+            Depth = "moderate",
+            Tone = "mysterious and ominous",
+            NarrativePurpose = "Explain why locals fear the forest and hint at supernatural phenomena",
+            ConnectionPoints = new List<string> { "Thornhaven village", "disappearing villagers" },
+            ConsistencyRequirements = new List<string> { "Must align with medieval fantasy setting" }
+        };
+    }
+
+    internal static LocationRequest CreateSampleLocationRequest()
+    {
+        return new LocationRequest
+        {
+            Type = "settlement",
+            Scale = "building",
+            Atmosphere = "rustic and mysterious",
+            StrategicImportance = "Social hub for information gathering",
+            Features = new List<string> { "common room", "private booths", "kitchen", "rooms for rent" },
+            InhabitantTypes = new List<string> { "innkeeper", "travelers", "locals" },
+            DangerLevel = 1,
+            Accessibility = "open"
+        };
+    }
+
+    internal static Adventure CreateTestAdventure(Guid adventureId)
+    {
+        return new Adventure
+        {
+            Id = adventureId,
+            Name = $"Test Adventure {adventureId}",
+            FirstSceneGuidance = "The adventure begins in a mysterious tavern.",
+            AdventureStartTime = "Evening, late autumn",
+            RagProcessingStatus = ProcessingStatus.Pending,
+            SceneGenerationStatus = ProcessingStatus.Pending,
+            CreatedAt = DateTimeOffset.UtcNow,
+            AuthorNotes = "Test adventure for integration tests",
+            MainCharacter = new MainCharacter
+            {
+                Id = Guid.NewGuid(),
+                AdventureId = adventureId,
+                Name = "Aldric the Brave",
+                Description = "A young adventurer with a mysterious past, seeking to prove themselves."
+            },
+            TrackerStructure = CreateTestTrackerStructure(),
+            Lorebook = new List<LorebookEntry>()
+        };
+    }
+
+    internal static TrackerStructure CreateTestTrackerStructure()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
+        var trackerStructure = JsonSerializer.Deserialize<TrackerStructure>(TrackerStructureJson, options);
+        return trackerStructure ?? throw new InvalidOperationException("Failed to deserialize tracker structure.");
+    }
 
     internal static CharacterRequest CreateSampleCharacterRequest()
     {

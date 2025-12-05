@@ -8,7 +8,8 @@
         title="Back to adventures"
       >
         <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-          <path [attr.d]="'M10 19l-7-7m0 0l7-7m-7 7h18'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+          <path [attr.d]="'M10 19l-7-7m0 0l7-7m-7 7h18'" [attr.stroke-linecap]="'round'"
+                [attr.stroke-linejoin]="'round'"
                 [attr.stroke-width]="2"></path>
         </svg>
       </button>
@@ -20,8 +21,10 @@
           title="Regenerate this scene"
         >
           <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-            <path [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                  [attr.stroke-width]="2"></path>
+            <path
+              [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'"
+              [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+              [attr.stroke-width]="2"></path>
           </svg>
           <span>Regenerate</span>
         </button>
@@ -31,8 +34,10 @@
           title="Delete this scene"
         >
           <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-            <path [attr.d]="'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                  [attr.stroke-width]="2"></path>
+            <path
+              [attr.d]="'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'"
+              [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+              [attr.stroke-width]="2"></path>
           </svg>
           <span>Delete</span>
         </button>
@@ -45,8 +50,10 @@
         <svg [attr.fill]="'none'" class="spinner" viewBox="0 0 24 24">
           <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
                   class="opacity-25"></circle>
-          <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'"
-                class="opacity-75"></path>
+          <path
+            [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+            [attr.fill]="'currentColor'"
+            class="opacity-75"></path>
         </svg>
         <p class="loading-text">Generating your first scene...</p>
       </div>
@@ -56,7 +63,8 @@
     <div *ngIf="error && !isLoading" class="error-state">
       <div class="error-content">
         <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="error-icon" viewBox="0 0 24 24">
-          <path [attr.d]="'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+          <path [attr.d]="'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'" [attr.stroke-linecap]="'round'"
+                [attr.stroke-linejoin]="'round'"
                 [attr.stroke-width]="2"></path>
         </svg>
         <div class="error-text">
@@ -68,8 +76,10 @@
             class="btn-retry"
           >
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-              <path [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                    [attr.stroke-width]="2"></path>
+              <path
+                [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'"
+                [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                [attr.stroke-width]="2"></path>
             </svg>
             <span>Try Again</span>
           </button>
@@ -84,8 +94,10 @@
         <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
           <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
                   class="opacity-25"></circle>
-          <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'"
-                class="opacity-75"></path>
+          <path
+            [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+            [attr.fill]="'currentColor'"
+            class="opacity-75"></path>
         </svg>
         <p class="regenerating-text">Regenerating scene...</p>
       </div>
@@ -119,16 +131,19 @@
                 class="choice-item"
               >
                 <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
-                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'"
                         [attr.stroke-width]="2"></path>
                 </svg>
                 <div class="choice-text">{{ choice }}</div>
               </div>
 
               <!-- Custom action input -->
-              <div [class.disabled]="isRegenerating || isLoading" class="choice-item choice-item-custom choice-item-last">
+              <div [class.disabled]="isRegenerating || isLoading"
+                   class="choice-item choice-item-custom choice-item-last">
                 <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
-                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'"
                         [attr.stroke-width]="2"></path>
                 </svg>
                 <input

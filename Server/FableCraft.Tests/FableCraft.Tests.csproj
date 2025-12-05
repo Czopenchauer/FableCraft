@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Testing" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Testcontainers.PostgreSql" />
-    <PackageReference Include="TUnit" />
-  </ItemGroup>
-  <PropertyGroup>
-    <UserSecretsId>dbda9c59-328c-47fd-8a43-23f80699ad32</UserSecretsId>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <GenerateProgramFile>false</GenerateProgramFile>
-  </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Aspire.Hosting.Testing"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Testcontainers.PostgreSql"/>
+        <PackageReference Include="TUnit"/>
+    </ItemGroup>
+    <PropertyGroup>
+        <UserSecretsId>dbda9c59-328c-47fd-8a43-23f80699ad32</UserSecretsId>
+        <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+        <GenerateProgramFile>false</GenerateProgramFile>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\FableCraft.AppHost\FableCraft.AppHost.csproj" />
-    <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj" />
-    <ProjectReference Include="..\FableCraft.Infrastructure\FableCraft.Infrastructure.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\FableCraft.AppHost\FableCraft.AppHost.csproj"/>
+        <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj"/>
+        <ProjectReference Include="..\FableCraft.Infrastructure\FableCraft.Infrastructure.csproj"/>
+    </ItemGroup>
 
 </Project>

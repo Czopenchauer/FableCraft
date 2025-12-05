@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Json;
+﻿using System.Diagnostics;
+using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -55,7 +57,7 @@ internal class RagClient : IRagBuilder, IRagSearch
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<Dictionary<string, string>>(cancellationToken: cancellationToken)
+        return await response.Content.ReadFromJsonAsync<Dictionary<string, string>>(cancellationToken)
                ?? throw new InvalidOperationException("Failed to deserialize response");
     }
 
@@ -76,7 +78,7 @@ internal class RagClient : IRagBuilder, IRagSearch
         HttpResponseMessage response = await _httpClient.GetAsync($"/datasets/{Uri.EscapeDataString(adventureId)}", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<List<DatasetData>>(cancellationToken: cancellationToken)
+        return await response.Content.ReadFromJsonAsync<List<DatasetData>>(cancellationToken)
                ?? new List<DatasetData>();
     }
 
@@ -100,7 +102,7 @@ internal class RagClient : IRagBuilder, IRagSearch
             HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetName)}/{dataId}", cancellationToken);
             response.EnsureSuccessStatusCode();
         }
-        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
         }
     }
@@ -112,7 +114,7 @@ internal class RagClient : IRagBuilder, IRagSearch
             HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(adventureId)}", cancellationToken);
             response.EnsureSuccessStatusCode();
         }
-        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
         }
     }
@@ -128,7 +130,7 @@ internal class RagClient : IRagBuilder, IRagSearch
     {
         var request = queries.Select(async query =>
         {
-            var response = await _httpClient.PostAsJsonAsync("/search",
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search",
                 new SearchRequest
                 {
                     AdventureId = context.AdventureId.ToString(),
@@ -138,11 +140,11 @@ internal class RagClient : IRagBuilder, IRagSearch
                 cancellationToken);
 
             response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken: cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken);
             return (query, result ?? new SearchResponse { Results = new List<string>() });
         }).ToArray();
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         var results = await Task.WhenAll(request);
         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
             {
