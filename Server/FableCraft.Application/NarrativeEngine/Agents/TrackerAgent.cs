@@ -1,4 +1,5 @@
-﻿﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -10,14 +11,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
 {
     public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
             .Adventures
@@ -33,7 +36,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true
         };
-        var stringBuilder = new System.Text.StringBuilder();
+        var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine($"""
                                   <main_character>
                                   {context.MainCharacter.Name}
@@ -105,7 +108,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         chatHistory.AddUserMessage(instruction);
         var outputFunc = new Func<string, Tracker>(response =>
         {
-            var match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);
             if (match.Success)
             {
                 return JsonSerializer.Deserialize<Tracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -114,9 +117,10 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
 
             throw new InvalidCastException("Failed to parse Tracker from response due to output not being in correct tags.");
         });
-        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
+        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), context.LlmPreset, cancellationToken);
+        Kernel kernel = kernelBuilder.Create().Build();
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), kernel, cancellationToken);
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
@@ -167,7 +171,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {
@@ -220,7 +224,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {

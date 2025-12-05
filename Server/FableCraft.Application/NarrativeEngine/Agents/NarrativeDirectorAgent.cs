@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -11,6 +12,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch) : IProcessor
@@ -19,7 +22,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
 
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -30,9 +33,9 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
             AllowTrailingCommas = true
         };
 
-        var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
+        SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
 
-        var stringBuilder = new System.Text.StringBuilder();
+        var stringBuilder = new StringBuilder();
         if (lastScene != null)
         {
             var narrativeDirection = JsonSerializer.Serialize(lastScene.Metadata.NarrativeMetadata, options);
@@ -91,13 +94,13 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
         chatHistory.AddUserMessage(stringBuilder.ToString());
         chatHistory.AddUserMessage(context.PlayerAction);
 
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
         var outputFunc = new Func<string, NarrativeDirectorOutput>(response =>
         {
-            var match = Regex.Match(response, "<narrative_scene_directive>(.*?)</narrative_scene_directive>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<narrative_scene_directive>(.*?)</narrative_scene_directive>", RegexOptions.Singleline);
             if (match.Success)
             {
                 return JsonSerializer.Deserialize<NarrativeDirectorOutput>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -106,13 +109,12 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
 
             throw new InvalidCastException("Failed to parse NarrativeDirectorOutput from response due to output not being in correct tags.");
         });
-        var narrativeOutput = await agentKernel.SendRequestAsync(chatHistory,
+        NarrativeDirectorOutput narrativeOutput = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
-            promptExecutionSettings: kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(NarrativeDirectorAgent),
-            context.LlmPreset,
-            cancellationToken,
-            kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
         context.NewNarrativeDirection = narrativeOutput;
         context.GenerationProcessStep = GenerationProcessStep.NarrativeDirectionFinished;
     }

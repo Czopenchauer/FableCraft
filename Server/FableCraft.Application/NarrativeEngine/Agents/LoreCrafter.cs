@@ -9,6 +9,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch)
@@ -18,7 +20,7 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
         LoreRequest request,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -43,13 +45,13 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
                              <lore_creation_context>
                              {JsonSerializer.Serialize(request, options)}
                              </lore_creation_context>
-                             
+
                              <context>
                              {JsonSerializer.Serialize(context.ContextGathered, options)}
                              </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -60,9 +62,8 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(LoreCrafter),
-            context.LlmPreset,
-            cancellationToken,
-            kernel: kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
     }
 
     private async static Task<string> BuildInstruction()

@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter(
@@ -25,8 +27,8 @@ internal sealed class CharacterCrafter(
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var chatHistory = new ChatHistory();
         var trackerStructure = await dbContext
             .Adventures
@@ -46,13 +48,13 @@ internal sealed class CharacterCrafter(
                              <character_creation_context>
                              {JsonSerializer.Serialize(request, options)}
                              </character_creation_context>
-                             
+
                              <context>
                              {JsonSerializer.Serialize(context.ContextGathered, options)}
                              </context>
                              """;
 
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -60,7 +62,7 @@ internal sealed class CharacterCrafter(
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>(response =>
         {
-            var match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
             CharacterStats? characterStats;
             if (match.Success)
             {
@@ -84,7 +86,7 @@ internal sealed class CharacterCrafter(
                 throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
             }
 
-            var descriptionMatch = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
+            Match descriptionMatch = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
             if (descriptionMatch.Success)
             {
                 var description = descriptionMatch.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown();
@@ -99,13 +101,12 @@ internal sealed class CharacterCrafter(
             throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
         });
 
-        var result = await agentKernel.SendRequestAsync(chatHistory,
+        (CharacterStats characterStats, string description, CharacterTracker tracker) result = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(CharacterCrafter),
-            context.LlmPreset,
-            cancellationToken,
-            kernel: kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
         return new CharacterContext
         {
             CharacterId = Guid.NewGuid(),
@@ -148,7 +149,7 @@ internal sealed class CharacterCrafter(
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {
@@ -184,7 +185,7 @@ internal sealed class CharacterCrafter(
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {

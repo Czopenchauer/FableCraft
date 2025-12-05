@@ -1,4 +1,4 @@
-﻿﻿using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -77,7 +77,7 @@ internal sealed class CharacterPlugin(
             return "Character not found.";
         }
 
-        var kernel = _kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
@@ -88,9 +88,8 @@ internal sealed class CharacterPlugin(
             outputFunc,
             _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             $"{nameof(CharacterPlugin)}:{characterName}",
-            _generationContext.LlmPreset,
-            CancellationToken.None,
-            kernelWithKg);
+            kernelWithKg,
+            CancellationToken.None);
         logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
         return response;
     }

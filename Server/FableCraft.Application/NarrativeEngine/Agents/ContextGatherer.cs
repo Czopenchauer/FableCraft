@@ -1,23 +1,24 @@
-﻿﻿using System.Text.Json;
+﻿using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-#pragma warning disable CS9113 // Parameter is unread.
 internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
     IRagSearch ragSearch,
     ILogger logger,
     KernelBuilderFactory kernelBuilderFactory) : IProcessor
-#pragma warning restore CS9113 // Parameter is unread.
 {
     private const int SceneContextCount = 10;
 
@@ -25,7 +26,7 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -52,7 +53,7 @@ internal sealed class ContextGatherer(
                                       {x.PlayerChoice}
                                       """))}
                              </last_scenes>
-                             
+
                              <last_narrative_directions>
                                 {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
                                     .Take(1)
@@ -70,11 +71,12 @@ internal sealed class ContextGatherer(
         chatHistory.AddUserMessage(contextPrompt);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
+        Kernel kernel = kernelBuilder.Create().Build();
         var queries = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
             nameof(ContextGatherer),
-            context.LlmPreset,
+            kernel,
             cancellationToken);
 
         var callerContext = new CallerContext(GetType(), context.AdventureId);

@@ -1,4 +1,4 @@
-﻿﻿using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -11,6 +11,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
@@ -25,8 +27,8 @@ internal sealed class CharacterStateTracker(
         CharacterContext context,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
             .Adventures
@@ -74,7 +76,7 @@ internal sealed class CharacterStateTracker(
 
         var outputFunc = new Func<string, (CharacterTracker tracker, CharacterStats state)>(response =>
         {
-            var match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
             CharacterStats state;
             if (match.Success)
             {
@@ -101,19 +103,18 @@ internal sealed class CharacterStateTracker(
             return (tracker, state);
         });
 
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        var result = await agentKernel.SendRequestAsync(chatHistory,
+        (CharacterTracker tracker, CharacterStats state) result = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
-            promptExecutionSettings: promptExecutionSettings,
+            promptExecutionSettings,
             nameof(CharacterStateTracker),
-            generationContext.LlmPreset,
-            cancellationToken,
-            kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
         return new CharacterContext
         {
             CharacterId = context.CharacterId,
@@ -164,7 +165,7 @@ internal sealed class CharacterStateTracker(
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {
@@ -200,7 +201,7 @@ internal sealed class CharacterStateTracker(
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (var field in fields)
+            foreach (FieldDefinition field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {

@@ -13,6 +13,8 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent(
@@ -27,7 +29,7 @@ internal sealed class WriterAgent(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -74,7 +76,7 @@ internal sealed class WriterAgent(
                                       </story_summary>
                                       """);
 
-            var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
+            SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
             if (lastScene != null)
             {
                 stringBuilder.AppendLine($"""
@@ -101,7 +103,7 @@ internal sealed class WriterAgent(
 
         chatHistory.AddUserMessage(stringBuilder.ToString());
 
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilderFactory, ragSearch);
@@ -111,7 +113,7 @@ internal sealed class WriterAgent(
 
         var outputFunc = new Func<string, GeneratedScene>(response =>
         {
-            var match = Regex.Match(response, "<new_scene>(.*?)</new_scene>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<new_scene>(.*?)</new_scene>", RegexOptions.Singleline);
             if (match.Success)
             {
                 return JsonSerializer.Deserialize<GeneratedScene>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -120,14 +122,13 @@ internal sealed class WriterAgent(
 
             throw new InvalidCastException("Failed to parse New Scene from response due to scene not being in correct tags.");
         });
-        var newScene = await agentKernel.SendRequestAsync(
+        GeneratedScene newScene = await agentKernel.SendRequestAsync(
             chatHistory,
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(WriterAgent),
-            context.LlmPreset,
-            cancellationToken,
-            kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
         context.NewScene = newScene;
         context.GenerationProcessStep = GenerationProcessStep.SceneGenerationFinished;
     }

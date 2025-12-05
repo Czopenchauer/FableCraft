@@ -10,6 +10,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class LocationCrafter(
@@ -22,7 +24,7 @@ internal sealed class LocationCrafter(
         LocationRequest request,
         CancellationToken cancellationToken)
     {
-        var kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -47,19 +49,19 @@ internal sealed class LocationCrafter(
                              <location_request>
                              {JsonSerializer.Serialize(request, options)}
                              </location_request>
-                             
+
                              <context>
                              {JsonSerializer.Serialize(context.ContextGathered, options)}
                              </context>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-        var kernel = kernelBuilder.Create();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
         var outputFunc = new Func<string, LocationGenerationResult>(response =>
         {
-            var match = Regex.Match(response, "<location>(.*?)</location>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<location>(.*?)</location>", RegexOptions.Singleline);
             if (match.Success)
             {
                 return JsonSerializer.Deserialize<LocationGenerationResult>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -73,9 +75,8 @@ internal sealed class LocationCrafter(
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(LocationCrafter),
-            context.LlmPreset,
-            cancellationToken,
-            kernel: kernelWithKg);
+            kernelWithKg,
+            cancellationToken);
     }
 
     private async static Task<string> BuildInstruction()
