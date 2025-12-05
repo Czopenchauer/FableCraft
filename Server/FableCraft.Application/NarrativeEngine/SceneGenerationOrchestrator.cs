@@ -47,18 +47,19 @@ internal sealed class SceneGenerationOrchestrator(
             AllowTrailingCommas = true
         };
         var workflow = BuildWorkflow(processors, context.Context.GenerationProcessStep);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         foreach (IProcessor processor in workflow)
         {
             try
             {
                 await processor.Invoke(context.Context, cancellationToken);
-                logger.Information("Completed step {GenerationProcessStep} for adventure {AdventureId}",
-                    context.Context.GenerationProcessStep,
-                    adventureId);
                 await dbContext.GenerationProcesses
                     .Where(x => x.Id == context.ProcessId)
                     .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, JsonSerializer.Serialize(context.Context, options)),
                         cancellationToken: cancellationToken);
+                logger.Information("[Generation] Step {GenerationProcessStep} took {ElapsedMilliseconds} ms",
+                    context.Context.GenerationProcessStep,
+                    stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

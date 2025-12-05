@@ -52,6 +52,8 @@ var graphRagApi = builder
         context.EnvironmentVariables["CACHE_USERNAME"] = "";
         context.EnvironmentVariables["CACHE_PASSWORD"] = (await cache.Resource.Password!.GetValueAsync(CancellationToken.None))!;
     })
+    .WithEnvironment("LITELLM_LOG", "INFO")
+    .WithEnvironment("TOKENIZERS_PARALLELISM", "true")
     .WithEnvironment("LLM_API_KEY", graphRagLlmApiKey)
     .WithEnvironment("LLM_MODEL", graphRagLlmModel)
     .WithEnvironment("LLM_PROVIDER", graphRagLlmProvider)

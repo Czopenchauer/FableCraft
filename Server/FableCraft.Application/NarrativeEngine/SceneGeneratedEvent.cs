@@ -70,7 +70,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             .AsNoTracking()
             .Include(x => x.Lorebooks)
             .Include(x => x.CharacterActions)
-            .Where(x => x.Id == message.SceneId && x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
+            .Where(x => x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
             .ToListAsync(cancellationToken: cancellationToken);
 
         if (scenesToCommit.Count <= MinScenesToCommit)
@@ -91,7 +91,6 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     .Where(x => scene.Lorebooks.Select(y => y.Id).Contains(x.EntityId))
                     .ToListAsync(cancellationToken: cancellationToken);
 
-                // Only add new lorebooks
                 foreach (LorebookEntry sceneLorebook in scene.Lorebooks)
                 {
                     var lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.Id == sceneLorebook.Id);
