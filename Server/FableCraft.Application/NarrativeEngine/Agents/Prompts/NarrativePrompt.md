@@ -202,7 +202,7 @@ Specify NEW entities needed, following strict verification:
     - "Similar location [name] exists but serves different purpose"
 
 2. **Character Requests**
-
+Characters refer to sentient beings, monsters and animals should be requested via lore unless they have significant narrative roles. Request format:
 {
 "kg_verification": "Searched KG for 'tavern keeper in Millhaven', no existing NPC found",
 "role": "quest_giver",
