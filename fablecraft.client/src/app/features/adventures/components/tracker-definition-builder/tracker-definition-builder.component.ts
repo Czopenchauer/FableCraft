@@ -287,14 +287,17 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
         const content = e.target?.result as string;
         const jsonData = JSON.parse(content);
 
+        // Normalize the JSON structure (convert PascalCase to camelCase if needed)
+        const normalizedData = this.normalizeTrackerStructure(jsonData);
+
         // Validate that the JSON has the expected structure
-        if (!this.isValidTrackerStructure(jsonData)) {
+        if (!this.isValidTrackerStructure(normalizedData)) {
           alert('Invalid tracker structure. Please ensure the JSON file contains a valid tracker definition.');
           return;
         }
 
         // Update the structure with imported data
-        this.structure = jsonData;
+        this.structure = normalizedData;
         this.error = null;
 
         // Clear the file input so the same file can be selected again
@@ -310,6 +313,80 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     };
 
     reader.readAsText(file);
+  }
+
+  private normalizeTrackerStructure(data: any): TrackerStructure {
+    // Helper function to convert PascalCase to camelCase
+    const toCamelCase = (str: string): string => {
+      return str.charAt(0).toLowerCase() + str.slice(1);
+    };
+
+    // Helper function to normalize a field definition
+    const normalizeField = (field: any): FieldDefinition => {
+      const normalized: any = {};
+
+      // Map common property names (both PascalCase and camelCase)
+      normalized.name = field.Name || field.name || '';
+      normalized.type = field.Type || field.type || FieldType.String;
+      normalized.prompt = field.Prompt || field.prompt || '';
+
+      if (field.DefaultValue !== undefined || field.defaultValue !== undefined) {
+        normalized.defaultValue = field.DefaultValue ?? field.defaultValue;
+      }
+
+      if (field.ExampleValues || field.exampleValues) {
+        normalized.exampleValues = field.ExampleValues || field.exampleValues;
+      }
+
+      if (field.NestedFields || field.nestedFields) {
+        const nested = field.NestedFields || field.nestedFields;
+        normalized.nestedFields = Array.isArray(nested)
+          ? nested.map((n: any) => normalizeField(n))
+          : [];
+      }
+
+      return normalized as FieldDefinition;
+    };
+
+    // Normalize the structure
+    const normalized: any = {};
+
+    // Story section
+    const storyData = data.Story || data.story;
+    normalized.story = Array.isArray(storyData)
+      ? storyData.map((f: any) => normalizeField(f))
+      : [];
+
+    // CharactersPresent section (single field, not array)
+    const charsPresentData = data.CharactersPresent || data.charactersPresent;
+    normalized.charactersPresent = charsPresentData
+      ? normalizeField(charsPresentData)
+      : { name: 'CharactersPresent', type: FieldType.Array, prompt: '' };
+
+    // MainCharacter section
+    const mainCharData = data.MainCharacter || data.mainCharacter;
+    normalized.mainCharacter = Array.isArray(mainCharData)
+      ? mainCharData.map((f: any) => normalizeField(f))
+      : [];
+
+    // Characters section
+    const charsData = data.Characters || data.characters;
+    normalized.characters = Array.isArray(charsData)
+      ? charsData.map((f: any) => normalizeField(f))
+      : [];
+
+    // Optional sections
+    const charDevData = data.CharacterDevelopment || data.characterDevelopment;
+    if (charDevData && Array.isArray(charDevData)) {
+      normalized.characterDevelopment = charDevData.map((f: any) => normalizeField(f));
+    }
+
+    const mainCharDevData = data.MainCharacterDevelopment || data.mainCharacterDevelopment;
+    if (mainCharDevData && Array.isArray(mainCharDevData)) {
+      normalized.mainCharacterDevelopment = mainCharDevData.map((f: any) => normalizeField(f));
+    }
+
+    return normalized as TrackerStructure;
   }
 
   private isValidTrackerStructure(data: any): boolean {
