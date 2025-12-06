@@ -68,11 +68,41 @@
         <div class="lorebooks-section">
           <div class="section-header">
             <h3 class="section-title">Lorebooks</h3>
-            <button type="button" class="btn-add-lorebook" (click)="addLorebook()" [disabled]="saving">
+            <div class="section-actions">
+              <button type="button" class="btn-import-json" (click)="triggerFileInput()" [disabled]="saving" title="Import lorebooks from JSON">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                Import JSON
+              </button>
+              <button type="button" class="btn-add-lorebook" (click)="addLorebook()" [disabled]="saving">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                Add Lorebook
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden file input for JSON import -->
+          <input
+            type="file"
+            id="json-file-input"
+            accept=".json"
+            (change)="onFileSelected($event)"
+            style="display: none;"
+          />
+
+          <!-- Import Error Message -->
+          <div *ngIf="importError" class="import-error">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span>{{ importError }}</span>
+            <button type="button" (click)="importError = null" class="btn-close-error">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
               </svg>
-              Add Lorebook
             </button>
           </div>
 

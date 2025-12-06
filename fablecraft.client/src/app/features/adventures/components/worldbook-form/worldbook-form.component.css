@@ -321,6 +321,90 @@
   margin: 0;
 }
 
+.section-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+/* ===== Import JSON Button ===== */
+
+.btn-import-json {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: transparent;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-import-json svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-import-json:hover:not(:disabled) {
+  background: rgba(147, 51, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-import-json:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Import Error Message ===== */
+
+.import-error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--status-error-bg);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-lg);
+  color: var(--status-error);
+  margin-bottom: var(--spacing-lg);
+}
+
+.import-error svg:first-child {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.import-error span {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.btn-close-error {
+  padding: var(--spacing-xs);
+  background: transparent;
+  border: none;
+  color: var(--status-error);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.btn-close-error:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-close-error svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ===== Add Lorebook Button ===== */
 
 .btn-add-lorebook {
@@ -603,6 +687,12 @@
     align-items: flex-start;
   }
 
+  .section-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn-import-json,
   .btn-add-lorebook {
     width: 100%;
     justify-content: center;

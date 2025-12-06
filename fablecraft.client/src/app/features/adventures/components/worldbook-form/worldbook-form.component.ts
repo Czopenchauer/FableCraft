@@ -21,6 +21,9 @@ export class WorldbookFormComponent implements OnInit {
   // Lorebook panel management
   expandedPanels: Set<number> = new Set<number>();
 
+  // JSON import
+  importError: string | null = null;
+
   constructor(
     private fb: FormBuilder,
     private worldbookService: WorldbookService,
@@ -158,6 +161,104 @@ export class WorldbookFormComponent implements OnInit {
    */
   trackByIndex(index: number): number {
     return index;
+  }
+
+  /**
+   * Handle JSON file import
+   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+    if (!file.name.endsWith('.json')) {
+      this.importError = 'Please select a JSON file';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        this.importLorebooks(data);
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+        this.importError = 'Invalid JSON file. Please check the file format.';
+      }
+    };
+
+    reader.onerror = () => {
+      this.importError = 'Failed to read file';
+    };
+
+    reader.readAsText(file);
+
+    // Reset the input so the same file can be selected again
+    input.value = '';
+  }
+
+  /**
+   * Import lorebooks from parsed JSON
+   */
+  importLorebooks(data: any): void {
+    this.importError = null;
+
+    // Validate that data is an array
+    if (!Array.isArray(data)) {
+      this.importError = 'JSON must be an array of lorebook objects';
+      return;
+    }
+
+    // Validate each item has required fields
+    const invalidItems: number[] = [];
+    data.forEach((item, index) => {
+      if (!item.title || !item.content || !item.category) {
+        invalidItems.push(index + 1);
+      }
+    });
+
+    if (invalidItems.length > 0) {
+      this.importError = `Invalid lorebook data at positions: ${invalidItems.join(', ')}. Each item must have title, content, and category.`;
+      return;
+    }
+
+    // Clear existing lorebooks if any
+    if (this.lorebooks.length > 0) {
+      const confirmClear = confirm('This will replace existing lorebooks. Continue?');
+      if (!confirmClear) {
+        return;
+      }
+      this.lorebooks.clear();
+      this.expandedPanels.clear();
+    }
+
+    // Import lorebooks
+    data.forEach((item: any, index: number) => {
+      const lorebookGroup = this.createLorebookGroup({
+        title: item.title,
+        content: item.content,
+        category: item.category
+      });
+      this.lorebooks.push(lorebookGroup);
+
+      // Expand the first few panels so users can review
+      if (index < 3) {
+        this.expandedPanels.add(index);
+      }
+    });
+
+    console.log(`Imported ${data.length} lorebooks from JSON`);
+  }
+
+  /**
+   * Trigger file input click
+   */
+  triggerFileInput(): void {
+    const fileInput = document.getElementById('json-file-input') as HTMLInputElement;
+    fileInput?.click();
   }
 
   /**
