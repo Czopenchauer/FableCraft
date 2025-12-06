@@ -61,7 +61,7 @@ internal sealed class CharacterPlugin(
                      </context>
 
                      CRITICAL! These scenes are written in the perspective of story protagonist - {generationContext.MainCharacter.Name}!
-                     <previous_scenes>
+                     <previous_scenes_with_character>
                      {string.Join("\n\n---\n\n", _generationContext
                          .SceneContext
                          .Where(x => x.Metadata.Tracker?.Characters?.Select(y => y.Name).Contains(context.Name) == true)
@@ -69,10 +69,18 @@ internal sealed class CharacterPlugin(
                          .TakeLast(5)
                          .Select(s => $"""
                                        SCENE NUMBER: {s.SequenceNumber}
+                                       TIME: {s.Metadata.Tracker?.Story.Time} - LOCATION: {s.Metadata.Tracker?.Story.Location}
                                        {s.SceneContent}
                                        {s.PlayerChoice}
                                        """))}
-                     </previous_scenes>
+                     </previous_scenes_with_character>
+
+                     <current_time>
+                     {_generationContext.SceneContext.MaxBy(x => x.SequenceNumber)?.Metadata.Tracker?.Story.Time}
+                     </current_time>
+                     <current_location>
+                     {_generationContext.SceneContext.MaxBy(x => x.SequenceNumber)?.Metadata.Tracker?.Story.Location}
+                     </current_location>
                      """);
 
                 return chatHistory;

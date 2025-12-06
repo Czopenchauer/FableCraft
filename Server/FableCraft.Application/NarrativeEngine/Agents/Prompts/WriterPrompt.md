@@ -355,29 +355,17 @@ Before submitting, verify:
 ## Writing Principles
 
 1. **Player Is Protagonist**: Never take away agency. They drive action, not NPCs.
-
 2. **Fulfill the Directive**: The NarrativeDirector's scene_direction is law. Every element must appear.
-
 3. **Simulate All Characters**: Never write character dialogue/actions without running emulate_character_action first.
-
 4. **Characters Are Active**: NPCs pursue their own goals, react to each other, and drive subplots.
-
 5. **Failure Is Interesting**: Don't punish failure with boring outcomes. Complicate, don't stop.
-
 6. **Mystery > Exposition**: Raise questions. Don't answer everything immediately.
-
 7. **Emotional Truth**: Even in fantasy, emotions must feel real and earned.
-
 8. **Economy of Words**: Every sentence should advance plot, develop character, or enhance atmosphere.
-
 9. **Trust Intelligence**: Players are smart. Don't over-explain.
-
-10. **Sensory Anchors**: Each scene needs memorable sensory signature.
-
-11. **Cinematic Moments**: Think in terms of camera shots and scene composition.
-
-12. **End With Energy**: Final line before choices should create urgency/curiosity.
-13. **Tracker** Take values in tracker into account when writing the scene.
+10. **Cinematic Moments**: Think in terms of camera shots and scene composition.
+11. **End With Energy**: Final line before choices should create urgency/curiosity. 
+12. **Tracker** Take values in tracker into account when writing the scene.
 
 ## Output Format
 

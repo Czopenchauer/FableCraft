@@ -27,7 +27,7 @@ internal sealed class CharacterStateAgent(
         CharacterContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.ComplexPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var chatHistory = new ChatHistory();
