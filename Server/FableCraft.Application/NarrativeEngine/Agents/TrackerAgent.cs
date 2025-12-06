@@ -152,55 +152,25 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
     {
         var dictionary = new Dictionary<string, object>();
-        var story = ConvertFieldsToDict(structure.Story);
+        var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
 
         // CharactersPresent is a single FieldDefinition of type Array, so output as array
         dictionary.Add(nameof(Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
 
-        var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
+        var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
 
         // var charDict = ConvertFieldsToDict(structure.Characters);
         // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = GetDefaultValue(field);
-                }
-            }
-
-            return dict;
-
-            object GetDefaultValue(FieldDefinition field)
-            {
-                return field.Type switch
-                       {
-                           FieldType.Array => new object[1],
-                           FieldType.Object => new { },
-                           FieldType.String => "",
-                           _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                       };
-            }
-        }
     }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
     {
         var dictionary = new Dictionary<string, object>();
-        var story = ConvertFieldsToDict(structure.Story);
+        var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
 
         dictionary.Add(nameof(Tracker.CharactersPresent),
@@ -211,36 +181,12 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
                 structure.CharactersPresent.ExampleValues
             });
 
-        var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
+        var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
 
-        var charDict = ConvertFieldsToDict(structure.Characters);
+        var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
         dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = new
-                    {
-                        field.Prompt,
-                        field.DefaultValue,
-                        field.ExampleValues
-                    };
-                }
-            }
-
-            return dict;
-        }
     }
 }

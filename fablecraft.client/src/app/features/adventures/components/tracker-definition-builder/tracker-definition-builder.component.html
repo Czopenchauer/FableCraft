@@ -1,6 +1,20 @@
 <div class="tracker-definition-builder">
   <div class="header">
-    <h2>{{ isEditMode ? 'Edit Tracker Definition' : 'Create Tracker Definition' }}</h2>
+    <div class="header-content">
+      <h2>{{ isEditMode ? 'Edit Tracker Definition' : 'Create Tracker Definition' }}</h2>
+      <div class="header-actions">
+        <input
+          type="file"
+          accept=".json"
+          (change)="onImportFromJson($event)"
+          #fileInput
+          style="display: none;"
+        />
+        <button class="btn-import" (click)="fileInput.click()">
+          Import from JSON
+        </button>
+      </div>
+    </div>
   </div>
 
   <div *ngIf="isLoading" class="loading">Loading...</div>
@@ -250,7 +264,7 @@
           [disabled]="isLoadingVisualization"
           title="Refresh preview"
         >
-          <span *ngIf="!isLoadingVisualization">🔄 Refresh</span>
+          <span *ngIf="!isLoadingVisualization">Refresh</span>
           <span *ngIf="isLoadingVisualization">Updating...</span>
         </button>
       </div>

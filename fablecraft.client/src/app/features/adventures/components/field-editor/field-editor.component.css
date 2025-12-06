@@ -20,15 +20,24 @@
 }
 
 .field-input,
-.field-select,
-.field-textarea {
+.field-select {
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--bg-primary);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: var(--font-size-xs);
   font-family: inherit;
+  transition: all var(--transition-base);
+}
+
+.field-textarea {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
   transition: all var(--transition-base);
 }
 
@@ -50,7 +59,20 @@
 .field-textarea {
   resize: vertical;
   min-height: 40px;
-  font-family: inherit;
+  font-family: 'Courier New', Consolas, monospace;
+  line-height: 1.4;
+}
+
+/* Specific styling for prompt and default fields */
+.field-row:has(label:first-child:is([for], :not([for])):contains('Default')) input,
+.field-row input[type="text"]:not(.example-value-row input) {
+  font-family: 'Courier New', Consolas, monospace;
+}
+
+/* Example value inputs */
+.example-value-row input {
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: var(--font-size-xs);
 }
 
 /* Example Values */
@@ -67,42 +89,76 @@
 }
 
 .btn-remove-small {
-  background: var(--status-error);
-  color: white;
+  background: linear-gradient(135deg, var(--status-error) 0%, #b91c1c 100%);
+  color: var(--text-primary);
   padding: 0;
-  border: none;
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: var(--font-size-sm);
   line-height: 1;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-base);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
-.btn-remove-small:hover {
-  background: #b91c1c;
+[data-theme="modern-dark"] .btn-remove-small:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .btn-remove-small {
+  border: 1px solid #7f1d1d;
+}
+
+[data-theme="medieval-fantasy"] .btn-remove-small:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(139, 0, 0, 0.4);
 }
 
 .btn-add-small {
-  background: var(--status-info);
-  color: white;
-  padding: 4px var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.65rem;
+  font-family: var(--font-family-heading);
   font-weight: 600;
   align-self: flex-start;
   transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
-.btn-add-small:hover {
-  background: #1976D2;
+[data-theme="modern-dark"] .btn-add-small {
+  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  color: var(--text-primary);
+}
+
+[data-theme="modern-dark"] .btn-add-small:hover {
+  background: linear-gradient(135deg, #7e22ce 0%, #db2777 100%);
+  transform: translateY(-1px);
+}
+
+[data-theme="medieval-fantasy"] .btn-add-small {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--text-primary);
+  border: 1px solid var(--color-accent);
+}
+
+[data-theme="medieval-fantasy"] .btn-add-small:hover {
+  background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  transform: translateY(-1px);
 }
 
 /* Nested Fields */

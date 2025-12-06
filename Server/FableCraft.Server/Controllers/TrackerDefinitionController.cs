@@ -83,7 +83,7 @@ public class TrackerDefinitionController : ControllerBase
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
+                    dict[field.Name] = new object[] { ConvertFieldsToDict(field.NestedFields) };
                 }
                 else if (field.DefaultValue != null)
                 {

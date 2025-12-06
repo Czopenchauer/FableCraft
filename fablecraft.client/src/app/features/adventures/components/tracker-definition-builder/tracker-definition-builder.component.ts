@@ -273,6 +273,78 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     this.router.navigate(['/adventures/tracker-definitions']);
   }
 
+  onImportFromJson(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      try {
+        const content = e.target?.result as string;
+        const jsonData = JSON.parse(content);
+
+        // Validate that the JSON has the expected structure
+        if (!this.isValidTrackerStructure(jsonData)) {
+          alert('Invalid tracker structure. Please ensure the JSON file contains a valid tracker definition.');
+          return;
+        }
+
+        // Update the structure with imported data
+        this.structure = jsonData;
+        this.error = null;
+
+        // Clear the file input so the same file can be selected again
+        input.value = '';
+      } catch (err) {
+        console.error('Error parsing JSON file:', err);
+        alert('Failed to parse JSON file. Please ensure it contains valid JSON.');
+      }
+    };
+
+    reader.onerror = () => {
+      alert('Failed to read file.');
+    };
+
+    reader.readAsText(file);
+  }
+
+  private isValidTrackerStructure(data: any): boolean {
+    // Basic validation to ensure required framework fields exist
+    if (!data || typeof data !== 'object') {
+      return false;
+    }
+
+    // Check for required sections
+    if (!Array.isArray(data.story) || !Array.isArray(data.mainCharacter) ||
+        !Array.isArray(data.characters) || !data.charactersPresent) {
+      return false;
+    }
+
+    // Check that framework fields exist in each section
+    const storyFieldNames = data.story.map((f: any) => f.name);
+    const hasStoryFramework = this.frameworkFields.story.every(name =>
+      storyFieldNames.includes(name)
+    );
+
+    const mainCharFieldNames = data.mainCharacter.map((f: any) => f.name);
+    const hasMainCharFramework = this.frameworkFields.mainCharacter.every(name =>
+      mainCharFieldNames.includes(name)
+    );
+
+    const charFieldNames = data.characters.map((f: any) => f.name);
+    const hasCharFramework = this.frameworkFields.characters.every(name =>
+      charFieldNames.includes(name)
+    );
+
+    const hasCharactersPresent = data.charactersPresent.name === this.frameworkFields.charactersPresent;
+
+    return hasStoryFramework && hasMainCharFramework && hasCharFramework && hasCharactersPresent;
+  }
+
   onDelete(): void {
     if (!this.definitionId) return;
 
