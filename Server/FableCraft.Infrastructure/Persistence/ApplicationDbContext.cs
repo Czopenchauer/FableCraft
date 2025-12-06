@@ -34,6 +34,10 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<LlmPreset> LlmPresets { get; set; }
 
+    public DbSet<Worldbook> Worldbooks { get; set; }
+
+    public DbSet<Lorebook> Lorebooks { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -47,6 +51,26 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Chunk>(p =>
         {
             p.HasIndex(x => x.EntityId);
+            p.HasIndex(x =>
+                new
+                {
+                    x.EntityId,
+                    x.ContentHash
+                }).IsUnique();
+        });
+        
+        modelBuilder.Entity<Worldbook>(p =>
+        {
+            p.HasIndex(x => x.Name).IsUnique();
+            p.HasMany(x => x.Lorebooks)
+                .WithOne(x => x.Worldbook)
+                .HasForeignKey(x => x.WorldbookId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Lorebook>(p =>
+        {
+            p.HasIndex(x => new { x.WorldbookId, x.Title }).IsUnique();
         });
 
         modelBuilder.Entity<Adventure>(p =>
@@ -77,15 +101,6 @@ public class ApplicationDbContext : DbContext
             p.Property(x => x.Structure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
             p.HasIndex(x => x.Name).IsUnique();
         });
-
-        modelBuilder.Entity<Chunk>()
-            .HasIndex(x =>
-                new
-                {
-                    x.EntityId,
-                    x.ContentHash
-                })
-            .IsUnique();
 
         modelBuilder.Entity<Character>(p =>
         {

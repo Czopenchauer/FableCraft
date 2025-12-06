@@ -1,6 +1,8 @@
-﻿using FluentValidation;
+﻿using FableCraft.Application.Model.Worldbook;
 
-namespace FableCraft.Application.Model;
+using FluentValidation;
+
+namespace FableCraft.Application.Model.Adventure;
 
 public class AdventureDto
 {

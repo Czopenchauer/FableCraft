@@ -1,0 +1,280 @@
+/* Menubar Component - Theme-aware styling */
+
+.menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .menubar {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="medieval-fantasy"] .menubar {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  border-bottom-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.menubar-container {
+  max-width: 1536px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Brand / Logo */
+.menubar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  transition: all var(--transition-base);
+}
+
+.menubar-brand:hover {
+  opacity: 0.8;
+}
+
+.brand-icon {
+  width: 28px;
+  height: 28px;
+}
+
+[data-theme="modern-dark"] .brand-icon {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .brand-icon {
+  color: var(--color-primary);
+}
+
+.brand-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .brand-text {
+    display: inline;
+  }
+}
+
+[data-theme="modern-dark"] .brand-text {
+  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="medieval-fantasy"] .brand-text {
+  color: var(--color-primary);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Menu Items Container */
+.menu-items {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+/* Individual Menu Item */
+.menu-item {
+  position: relative;
+}
+
+/* Menu Button */
+.menu-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.menu-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.dropdown-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transition-base);
+}
+
+.dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.menu-button:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .menu-button:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .menu-button:hover {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+}
+
+.menu-button.active {
+  color: var(--text-primary);
+}
+
+[data-theme="modern-dark"] .menu-button.active {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .menu-button.active {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--spacing-xs);
+  min-width: 200px;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xl);
+  animation: dropdownSlide 0.2s ease-out;
+  z-index: 1001;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-theme="modern-dark"] .dropdown-menu {
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(16px);
+}
+
+[data-theme="medieval-fantasy"] .dropdown-menu {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  border-color: var(--color-primary);
+}
+
+/* Dropdown Item */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: all var(--transition-base);
+  border: 1px solid transparent;
+}
+
+.item-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.dropdown-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .dropdown-item:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .dropdown-item:hover {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-primary);
+}
+
+.dropdown-item.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+[data-theme="modern-dark"] .dropdown-item.active {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .dropdown-item.active {
+  background: rgba(184, 134, 11, 0.2);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .menubar-container {
+    padding: 0 var(--spacing-md);
+  }
+
+  .menu-button span {
+    display: none;
+  }
+
+  .menu-button {
+    padding: var(--spacing-sm);
+  }
+
+  .dropdown-menu {
+    left: auto;
+    right: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-button span {
+    display: inline;
+  }
+}

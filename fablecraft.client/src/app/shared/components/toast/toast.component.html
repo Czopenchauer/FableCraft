@@ -1,0 +1,40 @@
+<div class="toast-container">
+  <div
+    *ngFor="let toast of toasts"
+    class="toast toast-{{ toast.type }}"
+    [attr.role]="'alert'"
+    [attr.aria-live]="toast.type === 'error' ? 'assertive' : 'polite'"
+  >
+    <div class="toast-content">
+      <svg
+        class="toast-icon"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          [attr.d]="getIconPath(toast.type)"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+        />
+      </svg>
+      <span class="toast-message">{{ toast.message }}</span>
+    </div>
+    <button
+      (click)="removeToast(toast.id)"
+      class="toast-close"
+      type="button"
+      aria-label="Close notification"
+    >
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M6 18L18 6M6 6l12 12"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+        />
+      </svg>
+    </button>
+  </div>
+</div>

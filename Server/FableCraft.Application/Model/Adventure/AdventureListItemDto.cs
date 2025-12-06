@@ -1,4 +1,4 @@
-﻿namespace FableCraft.Application.Model;
+﻿namespace FableCraft.Application.Model.Adventure;
 
 public class AdventureListItemDto
 {

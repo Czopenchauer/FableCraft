@@ -1,0 +1,73 @@
+<div class="menubar">
+  <div class="menubar-container">
+    <!-- Brand / Logo -->
+    <a routerLink="/" class="menubar-brand" (click)="closeMenus()">
+      <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="brand-icon" viewBox="0 0 24 24">
+        <path
+          [attr.d]="'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'"
+          [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+      </svg>
+      <span class="brand-text">FableCraft</span>
+    </a>
+
+    <!-- Menu Items -->
+    <div class="menu-items">
+      <div *ngFor="let menu of menuItems" class="menu-item">
+        <button
+          class="menu-button"
+          [class.active]="activeMenu === menu.label"
+          (click)="toggleMenu(menu.label)"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="menu-icon" viewBox="0 0 24 24">
+            <path
+              [attr.d]="menu.icon"
+              [attr.stroke-linecap]="'round'"
+              [attr.stroke-linejoin]="'round'"
+              [attr.stroke-width]="2"
+            ></path>
+          </svg>
+          <span>{{ menu.label }}</span>
+          <svg
+            *ngIf="menu.items && menu.items.length > 0"
+            [attr.fill]="'none'"
+            [attr.stroke]="'currentColor'"
+            class="dropdown-icon"
+            [class.open]="activeMenu === menu.label"
+            viewBox="0 0 24 24"
+          >
+            <path
+              [attr.d]="'M19 9l-7 7-7-7'"
+              [attr.stroke-linecap]="'round'"
+              [attr.stroke-linejoin]="'round'"
+              [attr.stroke-width]="2"
+            ></path>
+          </svg>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div
+          *ngIf="menu.items && menu.items.length > 0 && activeMenu === menu.label"
+          class="dropdown-menu"
+        >
+          <a
+            *ngFor="let item of menu.items"
+            [routerLink]="item.route"
+            class="dropdown-item"
+            [class.active]="isActive(item.route)"
+            (click)="closeMenus()"
+          >
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="item-icon" viewBox="0 0 24 24">
+              <path
+                [attr.d]="item.icon"
+                [attr.stroke-linecap]="'round'"
+                [attr.stroke-linejoin]="'round'"
+                [attr.stroke-width]="2"
+              ></path>
+            </svg>
+            <span>{{ item.label }}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

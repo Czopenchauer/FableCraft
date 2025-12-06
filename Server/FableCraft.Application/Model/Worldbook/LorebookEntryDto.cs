@@ -4,7 +4,7 @@ using FableCraft.Infrastructure.Persistence.Entities;
 
 using FluentValidation;
 
-namespace FableCraft.Application.Model;
+namespace FableCraft.Application.Model.Worldbook;
 
 public class LorebookEntryDto
 {

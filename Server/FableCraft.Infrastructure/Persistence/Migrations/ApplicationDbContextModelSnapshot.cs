@@ -431,6 +431,53 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.ToTable("LlmPresets");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Lorebook", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorldbookId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorldbookId", "Title")
+                        .IsUnique();
+
+                    b.ToTable("Lorebooks");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Worldbook", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Worldbooks");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.Adventure", b =>
                 {
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.LlmPreset", "ComplexPreset")
@@ -511,6 +558,17 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Navigation("Adventure");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Lorebook", b =>
+                {
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Worldbook", "Worldbook")
+                        .WithMany("Lorebooks")
+                        .HasForeignKey("WorldbookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Worldbook");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.Adventure", b =>
                 {
                     b.Navigation("Characters");
@@ -529,6 +587,11 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Navigation("CharacterStates");
 
+                    b.Navigation("Lorebooks");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Worldbook", b =>
+                {
                     b.Navigation("Lorebooks");
                 });
 #pragma warning restore 612, 618

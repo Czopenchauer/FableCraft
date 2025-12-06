@@ -1,6 +1,6 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
-using FableCraft.Application.Model;
+using FableCraft.Application.Model.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
