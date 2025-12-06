@@ -85,7 +85,7 @@ internal sealed class ContextGatherer(
             var searchResults = await ragSearch.SearchAsync(callerContext, queries, cancellationToken: cancellationToken);
             context.ContextGathered = searchResults.Select(x => new ContextBase
             {
-                Query = x.Query + ". Provide extremely detailed information answering the query.",
+                Query = x.Query,
                 Response = string.Join("\n\n", x.Response.Results)
             }).ToList();
             context.ContextGathered = new List<ContextBase>();

@@ -27,7 +27,7 @@ internal sealed class CharacterCrafter(
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var chatHistory = new ChatHistory();
         var trackerStructure = await dbContext
@@ -52,7 +52,7 @@ internal sealed class CharacterCrafter(
                              <context>
                              {JsonSerializer.Serialize(context.ContextGathered, options)}
                              </context>
-                             
+
                              <previous_scene>
                              {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
                              <previous_scene>
