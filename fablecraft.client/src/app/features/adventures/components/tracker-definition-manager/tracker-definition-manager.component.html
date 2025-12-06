@@ -1,0 +1,78 @@
+<div class="tracker-definition-manager">
+  <div class="header">
+    <h2>Tracker Definitions</h2>
+    <button class="btn-create" routerLink="/adventures/tracker-definitions/create">
+      Create New Tracker Definition
+    </button>
+  </div>
+
+  <div class="search-filter">
+    <input
+      type="text"
+      placeholder="Search by name..."
+      (input)="onSearch($event)"
+      class="search-input"
+    />
+    <div class="sort-buttons">
+      <button (click)="sortByName()" class="btn-sort">Sort by Name</button>
+      <button (click)="sortById()" class="btn-sort">Sort by ID</button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading tracker definitions...</div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="!isLoading && !error && filteredDefinitions.length === 0" class="no-results">
+    <p *ngIf="searchTerm">No tracker definitions found matching "{{ searchTerm }}"</p>
+    <p *ngIf="!searchTerm">No tracker definitions yet. Create one to get started!</p>
+  </div>
+
+  <div *ngIf="!isLoading && !error && filteredDefinitions.length > 0" class="definitions-list">
+    <table class="definitions-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let definition of filteredDefinitions">
+          <td class="definition-name">{{ definition.name }}</td>
+          <td class="definition-id">{{ definition.id }}</td>
+          <td class="actions">
+            <button
+              class="btn-action btn-view"
+              [routerLink]="['/adventures/tracker-definitions', definition.id]"
+              title="View"
+            >
+              View
+            </button>
+            <button
+              class="btn-action btn-edit"
+              [routerLink]="['/adventures/tracker-definitions', definition.id, 'edit']"
+              title="Edit"
+            >
+              Edit
+            </button>
+            <button
+              class="btn-action btn-duplicate"
+              (click)="onDuplicate(definition)"
+              title="Duplicate"
+            >
+              Duplicate
+            </button>
+            <button
+              class="btn-action btn-delete"
+              (click)="onDelete(definition)"
+              title="Delete"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
