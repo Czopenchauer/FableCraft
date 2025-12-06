@@ -90,6 +90,8 @@ export interface LorebookGenerationState {
 }
 
 export interface GameScene {
+  previousScene: string | null;
+  nextScene: string | null;
   sceneId: string;
   text: string;
   choices: string[] | null;
@@ -98,6 +100,14 @@ export interface GameScene {
   canRegenerate: boolean;
   tracker: any;
   narrativeDirectorOutput: any;
+  enrichmentStatus: EnrichmentStatus;
+}
+
+export enum EnrichmentStatus {
+  Pending = 'Pending',
+  InProgress = 'InProgress',
+  Completed = 'Completed',
+  Failed = 'Failed'
 }
 
 export interface SceneEnrichmentResult {

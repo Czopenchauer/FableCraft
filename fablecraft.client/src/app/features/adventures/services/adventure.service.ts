@@ -80,15 +80,17 @@ export class AdventureService {
   // ============== Game Play API Methods ==============
 
   /**
-   * Get latest scene for an adventure
+   * Get current scene for an adventure
    */
-  generateFirstScene(adventureId: string): Observable<GameScene> {
-    const url = `${environment.apiUrl}/api/Play/${adventureId}?Take=1`;
-    // API may return either a single GameScene or an array when Take=1.
-    // Normalize to a single GameScene for the UI to consume consistently.
-    return this.http.get<any>(url).pipe(
-      map((resp) => Array.isArray(resp) ? resp[0] as GameScene : resp as GameScene)
-    );
+  getCurrentScene(adventureId: string): Observable<GameScene> {
+    return this.http.get<GameScene>(`${environment.apiUrl}/api/Play/${adventureId}/current-scene`);
+  }
+
+  /**
+   * Get a specific scene by ID
+   */
+  getScene(adventureId: string, sceneId: string): Observable<GameScene> {
+    return this.http.get<GameScene>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}`);
   }
 
   /**

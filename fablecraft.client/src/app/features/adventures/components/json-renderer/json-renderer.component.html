@@ -10,7 +10,7 @@
         [class.constant-field]="node.isConstant"
         role="button"
         [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + formatLabel(node.key) + ' panel'"
+        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
         tabindex="0"
         (click)="toggleExpanded(node.key)"
         (keydown)="onKeyDown($event, node.key)"
@@ -29,7 +29,7 @@
             d="M9 5l7 7-7 7"
           />
         </svg>
-        <span class="json-key">{{ formatLabel(node.key) }}</span>
+        <span class="json-key">{{ node.label }}</span>
       </div>
 
       <div class="json-panel-content" *ngIf="isExpanded(node.key)">
@@ -49,7 +49,7 @@
         [class.constant-field]="node.isConstant"
         role="button"
         [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + formatLabel(node.key) + ' panel'"
+        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
         tabindex="0"
         (click)="toggleExpanded(node.key)"
         (keydown)="onKeyDown($event, node.key)"
@@ -68,7 +68,7 @@
             d="M9 5l7 7-7 7"
           />
         </svg>
-        <span class="json-key">{{ formatLabel(node.key) }}</span>
+        <span class="json-key">{{ node.label }}</span>
       </div>
 
       <div class="json-panel-content" *ngIf="isExpanded(node.key)">
@@ -88,7 +88,7 @@
         [class.constant-field]="node.isConstant"
         role="button"
         [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + formatLabel(node.key) + ' panel'"
+        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
         tabindex="0"
         (click)="toggleExpanded(node.key)"
         (keydown)="onKeyDown($event, node.key)"
@@ -107,7 +107,7 @@
             d="M9 5l7 7-7 7"
           />
         </svg>
-        <span class="json-key">{{ formatLabel(node.key) }}</span>
+        <span class="json-key">{{ node.label }}</span>
       </div>
 
       <div class="json-panel-content" *ngIf="isExpanded(node.key)">
@@ -120,7 +120,7 @@
     <!-- EMPTY ARRAY -->
     <div *ngIf="node.type === ValueType.ARRAY && $any(node.value).length === 0" class="json-field">
       <span class="json-key" [class.constant-field]="node.isConstant">
-        {{ formatLabel(node.key) }}:
+        {{ node.label }}:
       </span>
       <span class="json-value json-empty">[]</span>
     </div>
@@ -128,7 +128,7 @@
     <!-- STRING -->
     <div *ngIf="node.type === ValueType.STRING" class="json-field">
       <span class="json-key" [class.constant-field]="node.isConstant">
-        {{ formatLabel(node.key) }}:
+        {{ node.label }}:
       </span>
       <span class="json-value json-string">"{{ node.value }}"</span>
     </div>
@@ -136,7 +136,7 @@
     <!-- NUMBER -->
     <div *ngIf="node.type === ValueType.NUMBER" class="json-field">
       <span class="json-key" [class.constant-field]="node.isConstant">
-        {{ formatLabel(node.key) }}:
+        {{ node.label }}:
       </span>
       <span class="json-value json-number">{{ node.value }}</span>
     </div>
@@ -144,7 +144,7 @@
     <!-- BOOLEAN -->
     <div *ngIf="node.type === ValueType.BOOLEAN" class="json-field">
       <span class="json-key" [class.constant-field]="node.isConstant">
-        {{ formatLabel(node.key) }}:
+        {{ node.label }}:
       </span>
       <span class="json-value json-boolean">{{ node.value }}</span>
     </div>

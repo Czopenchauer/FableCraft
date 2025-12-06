@@ -35,6 +35,7 @@ export interface RenderNode {
   type: ValueType;
   isConstant: boolean;
   level: number;
+  label: string; // Display label (may differ from key for arrays with names)
 }
 
 // Configuration for constant field detection

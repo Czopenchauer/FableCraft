@@ -35,10 +35,33 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             EnrichmentStatus = EnrichmentStatus.NotEnriched,
             CommitStatus = CommitStatus.Uncommited
         };
-
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
+        var lastScene = await dbContext.Scenes
+            .Where(x => x.AdventureId == context.AdventureId)
+            .Include(x => x.CharacterActions)
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+        var selectedAction = lastScene?.CharacterActions.FirstOrDefault(x => x.Selected);
+        if (lastScene != null)
+        {
+            if (selectedAction != null)
+            {
+                selectedAction.Selected = true;
+            }
+            else
+            {
+                selectedAction = new MainCharacterAction
+                {
+                    ActionDescription = context.PlayerAction,
+                    Selected = true
+                };
+                lastScene.CharacterActions.Add(selectedAction);
+            }
 
+            dbContext.Scenes.Update(lastScene);
+        }
+
+        IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
             await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);

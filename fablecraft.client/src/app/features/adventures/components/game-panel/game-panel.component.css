@@ -153,6 +153,136 @@
   transform: translateY(-2px);
 }
 
+/* ========== Scene Navigation ========== */
+
+.scene-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-xl);
+}
+
+[data-theme="modern-dark"] .scene-navigation {
+  backdrop-filter: var(--backdrop-blur);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .scene-navigation {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-primary);
+}
+
+.nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid var(--border-primary);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.nav-button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.nav-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nav-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Previous Button */
+[data-theme="modern-dark"] .nav-previous:not(:disabled) {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+[data-theme="modern-dark"] .nav-previous:not(:disabled):hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .nav-previous:not(:disabled) {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .nav-previous:not(:disabled):hover {
+  background: rgba(184, 134, 11, 0.2);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Next Button */
+[data-theme="modern-dark"] .nav-next:not(:disabled) {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+[data-theme="modern-dark"] .nav-next:not(:disabled):hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .nav-next:not(:disabled) {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .nav-next:not(:disabled):hover {
+  background: rgba(184, 134, 11, 0.2);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Current Scene Button */
+[data-theme="modern-dark"] .nav-current:not(:disabled) {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+[data-theme="modern-dark"] .nav-current:not(:disabled):hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme="medieval-fantasy"] .nav-current:not(:disabled) {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .nav-current:not(:disabled):hover {
+  background: rgba(184, 134, 11, 0.25);
+  box-shadow: var(--shadow-glow);
+}
+
 /* ========== Loading State ========== */
 
 .loading-state {
@@ -448,6 +578,59 @@
   color: var(--text-primary);
 }
 
+.choices-info-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  text-align: center;
+}
+
+[data-theme="modern-dark"] .choices-info-message {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .choices-info-message {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+}
+
+.info-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--status-warning);
+  flex-shrink: 0;
+}
+
+[data-theme="modern-dark"] .info-icon {
+  color: #f59e0b;
+}
+
+[data-theme="medieval-fantasy"] .info-icon {
+  color: var(--color-primary);
+}
+
+.info-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+[data-theme="modern-dark"] .info-text {
+  color: #fbbf24;
+}
+
+[data-theme="medieval-fantasy"] .info-text {
+  color: var(--text-primary);
+}
+
 .choices-card {
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-secondary);
@@ -472,7 +655,6 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
-  cursor: pointer;
   transition: all var(--transition-base);
   text-align: left;
   position: relative;
@@ -483,12 +665,50 @@
   border-bottom: none;
 }
 
-[data-theme="modern-dark"] .choice-item:hover {
+/* Interactive choices (current scene) */
+.choice-item.interactive {
+  cursor: pointer;
+}
+
+.choice-item.interactive:hover {
   background: rgba(147, 51, 234, 0.15);
 }
 
-[data-theme="medieval-fantasy"] .choice-item:hover {
+[data-theme="medieval-fantasy"] .choice-item.interactive:hover {
   background: rgba(184, 134, 11, 0.15);
+}
+
+/* Selected choice styling */
+.choice-item.selected {
+  background: var(--bg-accent);
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .choice-item.selected {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .choice-item.selected {
+  background: rgba(184, 134, 11, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 10px rgba(184, 134, 11, 0.3);
+}
+
+.selected-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+[data-theme="modern-dark"] .selected-icon {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .selected-icon {
+  color: var(--color-primary);
 }
 
 .choice-arrow {
@@ -505,7 +725,8 @@
 
 .choice-item.disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .choice-item.disabled:hover {
@@ -514,6 +735,10 @@
 
 .choice-item.disabled .choice-arrow {
   transform: none;
+}
+
+.choice-item.disabled .choice-text {
+  color: var(--text-muted);
 }
 
 .choice-text {
@@ -633,6 +858,25 @@
 
   .btn-action span {
     display: none;
+  }
+
+  .scene-navigation {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .nav-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+  }
+
+  .nav-button span {
+    display: none;
+  }
+
+  .nav-button svg {
+    width: 20px;
+    height: 20px;
   }
 
   .scene-container {

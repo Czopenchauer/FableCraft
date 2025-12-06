@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { ValueType, RenderNode, ConstantFieldConfig, JsonValue } from './json-renderer.types';
 
 @Component({
@@ -7,7 +7,7 @@ import { ValueType, RenderNode, ConstantFieldConfig, JsonValue } from './json-re
   templateUrl: './json-renderer.component.html',
   styleUrl: './json-renderer.component.css'
 })
-export class JsonRendererComponent implements OnInit {
+export class JsonRendererComponent implements OnInit, OnChanges {
   @Input() data: any;
   @Input() level: number = 0;
   @Input() parentKey: string = '';
@@ -38,6 +38,15 @@ export class JsonRendererComponent implements OnInit {
     this.autoExpandConstantFields();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    // Re-process data when the data input changes (e.g., when navigating between scenes)
+    if (changes['data'] && !changes['data'].firstChange) {
+      this.expandedKeys.clear(); // Reset expanded state
+      this.processData();
+      this.autoExpandConstantFields();
+    }
+  }
+
   /**
    * Process input data into renderable nodes
    */
@@ -58,13 +67,32 @@ export class JsonRendererComponent implements OnInit {
    */
   createRenderNode(key: string, value: any): RenderNode {
     const fullPath = this.buildPath(key);
+    const label = this.generateLabel(key, value);
     return {
       key,
       value,
       type: this.detectValueType(value),
       isConstant: this.isConstantField(fullPath),
-      level: this.level
+      level: this.level,
+      label
     };
+  }
+
+  /**
+   * Generate display label for a node
+   * For array items with a "name" property, use the name instead of index
+   */
+  generateLabel(key: string, value: any): string {
+    // Check if this is an array index key like "[0]", "[1]", etc.
+    const arrayIndexMatch = key.match(/^\[(\d+)\]$/);
+
+    if (arrayIndexMatch && typeof value === 'object' && value !== null && 'name' in value) {
+      // Use the name property if available
+      return value.name;
+    }
+
+    // Otherwise use the formatted key
+    return this.formatLabel(key);
   }
 
   /**

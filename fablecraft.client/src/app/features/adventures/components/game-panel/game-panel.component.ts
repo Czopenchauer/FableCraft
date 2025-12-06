@@ -43,7 +43,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     }
 
     this.loadAdventureName();
-    this.loadFirstScene();
+    this.loadCurrentScene();
   }
 
   /**
@@ -74,14 +74,14 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load the first scene of the adventure
+   * Load the current scene of the adventure
    */
-  loadFirstScene(): void {
+  loadCurrentScene(): void {
     if (!this.adventureId) return;
 
     this.isLoading = true;
 
-    this.adventureService.generateFirstScene(this.adventureId)
+    this.adventureService.getCurrentScene(this.adventureId)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -91,15 +91,16 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (scene) => {
-          // API returns a single GameScene
+          // API returns the current GameScene
           this.currentScene = scene || null;
 
-          // Note: First scene is generated with full workflow (including enrichment)
-          // so no need to call enrichSceneData here
-          // The tracker should already be populated
+          // Check if tracker is missing and trigger enrichment if needed
+          if (this.currentScene && !this.currentScene.tracker) {
+            this.enrichSceneData(this.currentScene.sceneId);
+          }
         },
         error: (err) => {
-          console.error('Error loading first scene:', err);
+          console.error('Error loading current scene:', err);
           this.toastService.error('Failed to load the scene. Please try again.');
         }
       });
@@ -190,8 +191,25 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    * Check if actions should be blocked
    */
   isActionBlocked(): boolean {
-    // Block if enrichment is ongoing or tracker is null
-    return this.isEnriching || !this.currentScene?.tracker;
+    // Block if enrichment is ongoing, tracker is null, or viewing a historical scene
+    return this.isEnriching || !this.currentScene?.tracker || !this.isCurrentScene();
+  }
+
+  /**
+   * Check if a choice was the one selected
+   */
+  isSelectedChoice(choice: string): boolean {
+    return this.currentScene?.selectedChoice === choice;
+  }
+
+  /**
+   * Check if the selected choice was a custom action (not in predefined choices)
+   */
+  isCustomActionSelected(): boolean {
+    if (!this.currentScene?.selectedChoice) return false;
+
+    const predefinedChoices = this.currentScene.choices || [];
+    return !predefinedChoices.includes(this.currentScene.selectedChoice);
   }
 
   /**
@@ -277,5 +295,75 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   goToAdventureList(): void {
     this.router.navigate(['/adventures']);
+  }
+
+  /**
+   * Navigate to the previous scene
+   */
+  goToPreviousScene(): void {
+    if (!this.adventureId || !this.currentScene?.previousScene || this.isLoading) return;
+
+    this.loadScene(this.currentScene.previousScene);
+  }
+
+  /**
+   * Navigate to the next scene
+   */
+  goToNextScene(): void {
+    if (!this.adventureId || !this.currentScene?.nextScene || this.isLoading) return;
+
+    this.loadScene(this.currentScene.nextScene);
+  }
+
+  /**
+   * Navigate to the current (latest) scene
+   */
+  goToCurrentScene(): void {
+    if (!this.adventureId || this.isLoading) return;
+
+    this.loadCurrentScene();
+  }
+
+  /**
+   * Load a specific scene by ID
+   */
+  private loadScene(sceneId: string): void {
+    if (!this.adventureId) return;
+
+    this.isLoading = true;
+    this.enrichmentData = null;
+    this.enrichmentFailed = false;
+
+    this.adventureService.getScene(this.adventureId, sceneId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (scene) => {
+          this.currentScene = scene || null;
+
+          // Check if tracker is missing and trigger enrichment if needed
+          if (this.currentScene && !this.currentScene.tracker) {
+            this.enrichSceneData(this.currentScene.sceneId);
+          }
+
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error loading scene:', err);
+          this.toastService.error('Failed to load the scene. Please try again.');
+        }
+      });
+  }
+
+  /**
+   * Check if currently viewing the latest scene
+   */
+  isCurrentScene(): boolean {
+    return !this.currentScene?.nextScene;
   }
 }
