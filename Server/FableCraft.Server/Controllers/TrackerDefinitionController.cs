@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.Model;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -42,6 +44,55 @@ public class TrackerDefinitionController : ControllerBase
             .ToListAsync(cancellationToken);
 
         return Ok(definitions);
+    }
+
+    [HttpPost("visualize")]
+    [ProducesResponseType(typeof(IEnumerable<TrackerDefinitionResponseDto>), StatusCodes.Status200OK)]
+    public ActionResult<IEnumerable<TrackerDefinitionResponseDto>> VisualizeTracker(TrackerStructure structure, CancellationToken cancellationToken)
+    {
+        var dictionary = new Dictionary<string, object>();
+        var story = ConvertFieldsToDict(structure.Story);
+        dictionary.Add(nameof(Tracker.Story), story);
+
+        dictionary.Add(nameof(Tracker.CharactersPresent),
+            structure.CharactersPresent.ExampleValues?.FirstOrDefault() ?? structure.CharactersPresent.DefaultValue ?? new object[] { });
+
+        var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
+        dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
+
+        var charDict = ConvertFieldsToDict(structure.Characters);
+        dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true
+        };
+
+        var json = JsonSerializer.Serialize(dictionary, options);
+        var tracker = JsonSerializer.Deserialize<Tracker>(json, options);
+
+        return Ok(tracker);
+
+        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
+        {
+            var dict = new Dictionary<string, object>();
+
+            foreach (FieldDefinition field in fields)
+            {
+                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
+                {
+                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
+                }
+                else if (field.DefaultValue != null)
+                {
+                    dict[field.Name] = field.ExampleValues?.FirstOrDefault() ?? field.DefaultValue;
+                }
+            }
+
+            return dict;
+        }
     }
 
     /// <summary>
@@ -101,6 +152,7 @@ public class TrackerDefinitionController : ControllerBase
             {
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             }
+
             return ValidationProblem(ModelState);
         }
 
@@ -163,6 +215,7 @@ public class TrackerDefinitionController : ControllerBase
             {
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             }
+
             return ValidationProblem(ModelState);
         }
 
