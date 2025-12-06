@@ -39,4 +39,8 @@ export class TrackerDefinitionService {
   getDefaultStructure(): Observable<TrackerStructure> {
     return this.http.get<TrackerStructure>(`${this.apiUrl}/default-structure`);
   }
+
+  visualizeTracker(structure: TrackerStructure): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/visualize`, structure);
+  }
 }

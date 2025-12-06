@@ -1,9 +1,11 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ValueType, RenderNode, ConstantFieldConfig, JsonValue } from './json-renderer.types';
 
 @Component({
   selector: 'app-json-renderer',
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './json-renderer.component.html',
   styleUrl: './json-renderer.component.css'
 })

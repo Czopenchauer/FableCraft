@@ -29,7 +29,6 @@ import { LlmPresetManagerComponent } from './features/adventures/components/llm-
     AdventureStatusComponent,
     GamePanelComponent,
     DeleteConfirmationModalComponent,
-    JsonRendererComponent,
     ToastComponent,
     WorldbookListComponent,
     WorldbookFormComponent,
@@ -40,7 +39,8 @@ import { LlmPresetManagerComponent } from './features/adventures/components/llm-
     BrowserModule,
     AppRoutingModule,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    JsonRendererComponent
   ],
   providers: [provideHttpClient()],
   bootstrap: [AppComponent]

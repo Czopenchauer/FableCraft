@@ -7,461 +7,673 @@
 
   <div *ngIf="error" class="error-message">{{ error }}</div>
 
-  <div *ngIf="!isLoading && structure" class="builder-form">
-    <!-- Name Section -->
+  <div *ngIf="!isLoading && structure" class="builder-container">
+    <!-- LEFT: Form Section -->
     <div class="form-section">
-      <label class="form-label">Definition Name *</label>
-      <input
-        type="text"
-        [(ngModel)]="definitionName"
-        class="form-input"
-        placeholder="Enter tracker definition name"
-      />
-    </div>
+      <div class="form-content">
+        <!-- Name Section -->
+        <div class="form-group">
+          <label class="form-label">Definition Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="definitionName"
+            
+            class="form-input"
+            placeholder="Enter tracker definition name"
+          />
+        </div>
 
-    <!-- Story Section -->
-    <div class="structure-section">
-      <h3 class="section-title">Story Fields</h3>
-      <div class="fields-container">
-        <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex" class="field-card"
-             [class.framework-field]="isFrameworkField('story', field.name)">
-          <div class="field-header">
-            <span class="field-name">
-              <span *ngIf="isFrameworkField('story', field.name)" class="lock-icon" title="Framework field - Name and Type locked">🔒</span>
-              {{ field.name }}
-            </span>
-            <button
-              *ngIf="!isFrameworkField('story', field.name)"
-              class="btn-remove"
-              (click)="removeField('story', i)"
-              title="Remove field"
-            >
-              Remove
-            </button>
-          </div>
+        <!-- Story Section -->
+        <div class="structure-section">
+          <h3 class="section-title">Story Fields</h3>
+          <div class="fields-container">
+            <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex" class="field-card"
+                 [class.framework-field]="isFrameworkField('story', field.name)">
+              <div class="field-header">
+                <span class="field-name">
+                  <span *ngIf="isFrameworkField('story', field.name)" class="lock-icon">🔒</span>
+                  {{ field.name }}
+                </span>
+                <button
+                  *ngIf="!isFrameworkField('story', field.name)"
+                  class="btn-remove"
+                  (click)="removeField('story', i)"
+                >
+                  Remove
+                </button>
+              </div>
 
-          <div class="field-body">
-            <div class="field-row">
-              <label>Field Name</label>
-              <input
-                type="text"
-                [(ngModel)]="field.name"
-                [disabled]="isFrameworkField('story', field.name)"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Type</label>
-              <select
-                [(ngModel)]="field.type"
-                [disabled]="isFrameworkField('story', field.name)"
-                class="field-select"
-              >
-                <option [value]="FieldType.String">String</option>
-                <option [value]="FieldType.Array">Array</option>
-                <option [value]="FieldType.Object">Object</option>
-                <option [value]="FieldType.ForEachObject">ForEachObject</option>
-              </select>
-            </div>
-
-            <div class="field-row">
-              <label>Prompt</label>
-              <textarea
-                [(ngModel)]="field.prompt"
-                class="field-textarea"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <div class="field-row">
-              <label>Default Value</label>
-              <input
-                type="text"
-                [(ngModel)]="field.defaultValue"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Example Values</label>
-              <div class="example-values">
-                <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
+              <div class="field-body">
+                <div class="field-row">
+                  <label>Name</label>
                   <input
                     type="text"
-                    [(ngModel)]="field.exampleValues![j]"
+                    [(ngModel)]="field.name"
+                    
+                    [disabled]="isFrameworkField('story', field.name)"
                     class="field-input"
                   />
-                  <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
                 </div>
-                <button class="btn-add-small" (click)="addExampleValue(field)">+ Add Example</button>
-              </div>
-            </div>
 
-            <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
-              <label>Nested Fields</label>
-              <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-item">
-                <span>{{ nested.name }} ({{ nested.type }})</span>
-                <button class="btn-remove-small" (click)="removeNestedField(field, k)">Remove</button>
-              </div>
-              <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
-            </div>
-          </div>
-        </div>
+                <div class="field-row">
+                  <label>Type</label>
+                  <select
+                    [(ngModel)]="field.type"
+                    
+                    [disabled]="isFrameworkField('story', field.name)"
+                    class="field-select"
+                  >
+                    <option [value]="FieldType.String">String</option>
+                    <option [value]="FieldType.Array">Array</option>
+                    <option [value]="FieldType.Object">Object</option>
+                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
+                  </select>
+                </div>
 
-        <button class="btn-add-field" (click)="addCustomField('story')">+ Add Custom Field to Story</button>
-      </div>
-    </div>
+                <div class="field-row">
+                  <label>Prompt</label>
+                  <textarea
+                    [(ngModel)]="field.prompt"
+                    
+                    class="field-textarea"
+                    rows="2"
+                  ></textarea>
+                </div>
 
-    <!-- CharactersPresent Section -->
-    <div class="structure-section">
-      <h3 class="section-title">Characters Present Field</h3>
-      <div class="field-card framework-field">
-        <div class="field-header">
-          <span class="field-name">
-            <span class="lock-icon" title="Framework field - Name and Type locked">🔒</span>
-            {{ structure.charactersPresent.name }}
-          </span>
-        </div>
-
-        <div class="field-body">
-          <div class="field-row">
-            <label>Field Name</label>
-            <input
-              type="text"
-              [(ngModel)]="structure.charactersPresent.name"
-              disabled
-              class="field-input"
-            />
-          </div>
-
-          <div class="field-row">
-            <label>Type</label>
-            <select
-              [(ngModel)]="structure.charactersPresent.type"
-              disabled
-              class="field-select"
-            >
-              <option [value]="FieldType.Array">Array</option>
-            </select>
-          </div>
-
-          <div class="field-row">
-            <label>Prompt</label>
-            <textarea
-              [(ngModel)]="structure.charactersPresent.prompt"
-              class="field-textarea"
-              rows="3"
-            ></textarea>
-          </div>
-
-          <div class="field-row">
-            <label>Default Value</label>
-            <input
-              type="text"
-              [(ngModel)]="structure.charactersPresent.defaultValue"
-              class="field-input"
-            />
-          </div>
-
-          <div class="field-row">
-            <label>Example Values</label>
-            <div class="example-values">
-              <div *ngFor="let example of structure.charactersPresent.exampleValues; let j = index" class="example-value-row">
-                <input
-                  type="text"
-                  [(ngModel)]="structure.charactersPresent.exampleValues![j]"
-                  class="field-input"
-                />
-                <button class="btn-remove-small" (click)="removeExampleValue(structure.charactersPresent, j)">×</button>
-              </div>
-              <button class="btn-add-small" (click)="addExampleValue(structure.charactersPresent)">+ Add Example</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MainCharacter Section -->
-    <div class="structure-section">
-      <h3 class="section-title">Main Character Fields</h3>
-      <div class="fields-container">
-        <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex" class="field-card"
-             [class.framework-field]="isFrameworkField('mainCharacter', field.name)">
-          <div class="field-header">
-            <span class="field-name">
-              <span *ngIf="isFrameworkField('mainCharacter', field.name)" class="lock-icon" title="Framework field - Name and Type locked">🔒</span>
-              {{ field.name }}
-            </span>
-            <button
-              *ngIf="!isFrameworkField('mainCharacter', field.name)"
-              class="btn-remove"
-              (click)="removeField('mainCharacter', i)"
-              title="Remove field"
-            >
-              Remove
-            </button>
-          </div>
-
-          <div class="field-body">
-            <div class="field-row">
-              <label>Field Name</label>
-              <input
-                type="text"
-                [(ngModel)]="field.name"
-                [disabled]="isFrameworkField('mainCharacter', field.name)"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Type</label>
-              <select
-                [(ngModel)]="field.type"
-                [disabled]="isFrameworkField('mainCharacter', field.name)"
-                class="field-select"
-              >
-                <option [value]="FieldType.String">String</option>
-                <option [value]="FieldType.Array">Array</option>
-                <option [value]="FieldType.Object">Object</option>
-                <option [value]="FieldType.ForEachObject">ForEachObject</option>
-              </select>
-            </div>
-
-            <div class="field-row">
-              <label>Prompt</label>
-              <textarea
-                [(ngModel)]="field.prompt"
-                class="field-textarea"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <div class="field-row">
-              <label>Default Value</label>
-              <input
-                type="text"
-                [(ngModel)]="field.defaultValue"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Example Values</label>
-              <div class="example-values">
-                <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
+                <div class="field-row">
+                  <label>Default</label>
                   <input
                     type="text"
-                    [(ngModel)]="field.exampleValues![j]"
+                    [(ngModel)]="field.defaultValue"
+                    
                     class="field-input"
                   />
-                  <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
                 </div>
-                <button class="btn-add-small" (click)="addExampleValue(field)">+ Add Example</button>
+
+                <div class="field-row">
+                  <label>Examples</label>
+                  <div class="example-values">
+                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
+                      <input
+                        type="text"
+                        [(ngModel)]="field.exampleValues![j]"
+                        
+                        class="field-input"
+                      />
+                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
+                    </div>
+                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
+                  </div>
+                </div>
+
+                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
+                  <div class="nested-header">
+                    <label>Nested Fields</label>
+                  </div>
+                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
+                    <div class="nested-field-header">
+                      <span class="nested-field-name">{{ nested.name }}</span>
+                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
+                    </div>
+                    <div class="nested-field-body">
+                      <div class="field-row">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.name"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Type</label>
+                        <select
+                          [(ngModel)]="nested.type"
+                          
+                          class="field-select"
+                        >
+                          <option [value]="FieldType.String">String</option>
+                          <option [value]="FieldType.Array">Array</option>
+                          <option [value]="FieldType.Object">Object</option>
+                        </select>
+                      </div>
+                      <div class="field-row">
+                        <label>Prompt</label>
+                        <textarea
+                          [(ngModel)]="nested.prompt"
+                          
+                          class="field-textarea"
+                          rows="2"
+                        ></textarea>
+                      </div>
+                      <div class="field-row">
+                        <label>Default</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.defaultValue"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Examples</label>
+                        <div class="example-values">
+                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
+                            <input
+                              type="text"
+                              [(ngModel)]="nested.exampleValues![m]"
+                              
+                              class="field-input"
+                            />
+                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
+                          </div>
+                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
+                </div>
               </div>
             </div>
+
+            <button class="btn-add-field" (click)="addCustomField('story')">+ Add Field</button>
           </div>
         </div>
 
-        <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Custom Field to Main Character</button>
-      </div>
-    </div>
-
-    <!-- Characters Section -->
-    <div class="structure-section">
-      <h3 class="section-title">Character Fields</h3>
-      <div class="fields-container">
-        <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex" class="field-card"
-             [class.framework-field]="isFrameworkField('characters', field.name)">
-          <div class="field-header">
-            <span class="field-name">
-              <span *ngIf="isFrameworkField('characters', field.name)" class="lock-icon" title="Framework field - Name and Type locked">🔒</span>
-              {{ field.name }}
-            </span>
-            <button
-              *ngIf="!isFrameworkField('characters', field.name)"
-              class="btn-remove"
-              (click)="removeField('characters', i)"
-              title="Remove field"
-            >
-              Remove
-            </button>
-          </div>
-
-          <div class="field-body">
-            <div class="field-row">
-              <label>Field Name</label>
-              <input
-                type="text"
-                [(ngModel)]="field.name"
-                [disabled]="isFrameworkField('characters', field.name)"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Type</label>
-              <select
-                [(ngModel)]="field.type"
-                [disabled]="isFrameworkField('characters', field.name)"
-                class="field-select"
-              >
-                <option [value]="FieldType.String">String</option>
-                <option [value]="FieldType.Array">Array</option>
-                <option [value]="FieldType.Object">Object</option>
-                <option [value]="FieldType.ForEachObject">ForEachObject</option>
-              </select>
-            </div>
-
-            <div class="field-row">
-              <label>Prompt</label>
-              <textarea
-                [(ngModel)]="field.prompt"
-                class="field-textarea"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <div class="field-row">
-              <label>Default Value</label>
-              <input
-                type="text"
-                [(ngModel)]="field.defaultValue"
-                class="field-input"
-              />
-            </div>
-
-            <div class="field-row">
-              <label>Example Values</label>
-              <div class="example-values">
-                <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
-                  <input
-                    type="text"
-                    [(ngModel)]="field.exampleValues![j]"
-                    class="field-input"
-                  />
-                  <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
-                </div>
-                <button class="btn-add-small" (click)="addExampleValue(field)">+ Add Example</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Custom Field to Characters</button>
-      </div>
-    </div>
-
-    <!-- Optional Sections -->
-    <div class="structure-section">
-      <h3 class="section-title">Optional Sections</h3>
-
-      <div class="optional-section">
-        <div class="optional-header">
-          <span>Character Development</span>
-          <button
-            *ngIf="!structure.characterDevelopment"
-            class="btn-enable"
-            (click)="enableCharacterDevelopment()"
-          >
-            Enable
-          </button>
-          <button
-            *ngIf="structure.characterDevelopment"
-            class="btn-disable"
-            (click)="disableCharacterDevelopment()"
-          >
-            Disable
-          </button>
-        </div>
-
-        <div *ngIf="structure.characterDevelopment" class="fields-container">
-          <div *ngFor="let field of structure.characterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
+        <!-- CharactersPresent Section -->
+        <div class="structure-section">
+          <h3 class="section-title">Characters Present</h3>
+          <div class="field-card framework-field">
             <div class="field-header">
-              <span class="field-name">{{ field.name }}</span>
-              <button class="btn-remove" (click)="removeField('characterDevelopment', i)">Remove</button>
+              <span class="field-name">
+                <span class="lock-icon">🔒</span>
+                {{ structure.charactersPresent.name }}
+              </span>
             </div>
+
             <div class="field-body">
               <div class="field-row">
-                <label>Field Name</label>
-                <input type="text" [(ngModel)]="field.name" class="field-input" />
-              </div>
-              <div class="field-row">
-                <label>Type</label>
-                <select [(ngModel)]="field.type" class="field-select">
-                  <option [value]="FieldType.String">String</option>
-                  <option [value]="FieldType.Array">Array</option>
-                  <option [value]="FieldType.Object">Object</option>
-                  <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                </select>
-              </div>
-              <div class="field-row">
                 <label>Prompt</label>
-                <textarea [(ngModel)]="field.prompt" class="field-textarea" rows="3"></textarea>
+                <textarea
+                  [(ngModel)]="structure.charactersPresent.prompt"
+                  
+                  class="field-textarea"
+                  rows="2"
+                ></textarea>
+              </div>
+
+              <div class="field-row">
+                <label>Examples</label>
+                <div class="example-values">
+                  <div *ngFor="let example of structure.charactersPresent.exampleValues; let j = index" class="example-value-row">
+                    <input
+                      type="text"
+                      [(ngModel)]="structure.charactersPresent.exampleValues![j]"
+                      
+                      class="field-input"
+                    />
+                    <button class="btn-remove-small" (click)="removeExampleValue(structure.charactersPresent, j)">×</button>
+                  </div>
+                  <button class="btn-add-small" (click)="addExampleValue(structure.charactersPresent)">+ Example</button>
+                </div>
               </div>
             </div>
           </div>
-          <button class="btn-add-field" (click)="addCustomField('characterDevelopment')">+ Add Field</button>
-        </div>
-      </div>
-
-      <div class="optional-section">
-        <div class="optional-header">
-          <span>Main Character Development</span>
-          <button
-            *ngIf="!structure.mainCharacterDevelopment"
-            class="btn-enable"
-            (click)="enableMainCharacterDevelopment()"
-          >
-            Enable
-          </button>
-          <button
-            *ngIf="structure.mainCharacterDevelopment"
-            class="btn-disable"
-            (click)="disableMainCharacterDevelopment()"
-          >
-            Disable
-          </button>
         </div>
 
-        <div *ngIf="structure.mainCharacterDevelopment" class="fields-container">
-          <div *ngFor="let field of structure.mainCharacterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
-            <div class="field-header">
-              <span class="field-name">{{ field.name }}</span>
-              <button class="btn-remove" (click)="removeField('mainCharacterDevelopment', i)">Remove</button>
+        <!-- MainCharacter Section -->
+        <div class="structure-section">
+          <h3 class="section-title">Main Character</h3>
+          <div class="fields-container">
+            <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex" class="field-card"
+                 [class.framework-field]="isFrameworkField('mainCharacter', field.name)">
+              <div class="field-header">
+                <span class="field-name">
+                  <span *ngIf="isFrameworkField('mainCharacter', field.name)" class="lock-icon">🔒</span>
+                  {{ field.name }}
+                </span>
+                <button
+                  *ngIf="!isFrameworkField('mainCharacter', field.name)"
+                  class="btn-remove"
+                  (click)="removeField('mainCharacter', i)"
+                >
+                  Remove
+                </button>
+              </div>
+
+              <div class="field-body">
+                <div class="field-row">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="field.name"
+                    
+                    [disabled]="isFrameworkField('mainCharacter', field.name)"
+                    class="field-input"
+                  />
+                </div>
+
+                <div class="field-row">
+                  <label>Type</label>
+                  <select
+                    [(ngModel)]="field.type"
+                    
+                    [disabled]="isFrameworkField('mainCharacter', field.name)"
+                    class="field-select"
+                  >
+                    <option [value]="FieldType.String">String</option>
+                    <option [value]="FieldType.Array">Array</option>
+                    <option [value]="FieldType.Object">Object</option>
+                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
+                  </select>
+                </div>
+
+                <div class="field-row">
+                  <label>Prompt</label>
+                  <textarea
+                    [(ngModel)]="field.prompt"
+                    
+                    class="field-textarea"
+                    rows="2"
+                  ></textarea>
+                </div>
+
+                <div class="field-row">
+                  <label>Default</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="field.defaultValue"
+                    
+                    class="field-input"
+                  />
+                </div>
+
+                <div class="field-row">
+                  <label>Examples</label>
+                  <div class="example-values">
+                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
+                      <input
+                        type="text"
+                        [(ngModel)]="field.exampleValues![j]"
+                        
+                        class="field-input"
+                      />
+                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
+                    </div>
+                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
+                  </div>
+                </div>
+
+                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
+                  <div class="nested-header">
+                    <label>Nested Fields</label>
+                  </div>
+                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
+                    <div class="nested-field-header">
+                      <span class="nested-field-name">{{ nested.name }}</span>
+                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
+                    </div>
+                    <div class="nested-field-body">
+                      <div class="field-row">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.name"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Type</label>
+                        <select
+                          [(ngModel)]="nested.type"
+                          
+                          class="field-select"
+                        >
+                          <option [value]="FieldType.String">String</option>
+                          <option [value]="FieldType.Array">Array</option>
+                          <option [value]="FieldType.Object">Object</option>
+                        </select>
+                      </div>
+                      <div class="field-row">
+                        <label>Prompt</label>
+                        <textarea
+                          [(ngModel)]="nested.prompt"
+                          
+                          class="field-textarea"
+                          rows="2"
+                        ></textarea>
+                      </div>
+                      <div class="field-row">
+                        <label>Default</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.defaultValue"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Examples</label>
+                        <div class="example-values">
+                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
+                            <input
+                              type="text"
+                              [(ngModel)]="nested.exampleValues![m]"
+                              
+                              class="field-input"
+                            />
+                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
+                          </div>
+                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
+                </div>
+              </div>
             </div>
-            <div class="field-body">
-              <div class="field-row">
-                <label>Field Name</label>
-                <input type="text" [(ngModel)]="field.name" class="field-input" />
+
+            <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Field</button>
+          </div>
+        </div>
+
+        <!-- Characters Section -->
+        <div class="structure-section">
+          <h3 class="section-title">Characters</h3>
+          <div class="fields-container">
+            <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex" class="field-card"
+                 [class.framework-field]="isFrameworkField('characters', field.name)">
+              <div class="field-header">
+                <span class="field-name">
+                  <span *ngIf="isFrameworkField('characters', field.name)" class="lock-icon">🔒</span>
+                  {{ field.name }}
+                </span>
+                <button
+                  *ngIf="!isFrameworkField('characters', field.name)"
+                  class="btn-remove"
+                  (click)="removeField('characters', i)"
+                >
+                  Remove
+                </button>
               </div>
-              <div class="field-row">
-                <label>Type</label>
-                <select [(ngModel)]="field.type" class="field-select">
-                  <option [value]="FieldType.String">String</option>
-                  <option [value]="FieldType.Array">Array</option>
-                  <option [value]="FieldType.Object">Object</option>
-                  <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                </select>
+
+              <div class="field-body">
+                <div class="field-row">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="field.name"
+                    
+                    [disabled]="isFrameworkField('characters', field.name)"
+                    class="field-input"
+                  />
+                </div>
+
+                <div class="field-row">
+                  <label>Type</label>
+                  <select
+                    [(ngModel)]="field.type"
+                    
+                    [disabled]="isFrameworkField('characters', field.name)"
+                    class="field-select"
+                  >
+                    <option [value]="FieldType.String">String</option>
+                    <option [value]="FieldType.Array">Array</option>
+                    <option [value]="FieldType.Object">Object</option>
+                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
+                  </select>
+                </div>
+
+                <div class="field-row">
+                  <label>Prompt</label>
+                  <textarea
+                    [(ngModel)]="field.prompt"
+                    
+                    class="field-textarea"
+                    rows="2"
+                  ></textarea>
+                </div>
+
+                <div class="field-row">
+                  <label>Default</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="field.defaultValue"
+                    
+                    class="field-input"
+                  />
+                </div>
+
+                <div class="field-row">
+                  <label>Examples</label>
+                  <div class="example-values">
+                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
+                      <input
+                        type="text"
+                        [(ngModel)]="field.exampleValues![j]"
+                        
+                        class="field-input"
+                      />
+                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
+                    </div>
+                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
+                  </div>
+                </div>
+
+                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
+                  <div class="nested-header">
+                    <label>Nested Fields</label>
+                  </div>
+                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
+                    <div class="nested-field-header">
+                      <span class="nested-field-name">{{ nested.name }}</span>
+                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
+                    </div>
+                    <div class="nested-field-body">
+                      <div class="field-row">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.name"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Type</label>
+                        <select
+                          [(ngModel)]="nested.type"
+                          
+                          class="field-select"
+                        >
+                          <option [value]="FieldType.String">String</option>
+                          <option [value]="FieldType.Array">Array</option>
+                          <option [value]="FieldType.Object">Object</option>
+                        </select>
+                      </div>
+                      <div class="field-row">
+                        <label>Prompt</label>
+                        <textarea
+                          [(ngModel)]="nested.prompt"
+                          
+                          class="field-textarea"
+                          rows="2"
+                        ></textarea>
+                      </div>
+                      <div class="field-row">
+                        <label>Default</label>
+                        <input
+                          type="text"
+                          [(ngModel)]="nested.defaultValue"
+                          
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="field-row">
+                        <label>Examples</label>
+                        <div class="example-values">
+                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
+                            <input
+                              type="text"
+                              [(ngModel)]="nested.exampleValues![m]"
+                              
+                              class="field-input"
+                            />
+                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
+                          </div>
+                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
+                </div>
               </div>
-              <div class="field-row">
-                <label>Prompt</label>
-                <textarea [(ngModel)]="field.prompt" class="field-textarea" rows="3"></textarea>
+            </div>
+
+            <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Field</button>
+          </div>
+        </div>
+
+        <!-- Optional Sections -->
+        <div class="structure-section">
+          <h3 class="section-title">Optional</h3>
+
+          <div class="optional-section">
+            <div class="optional-header">
+              <span>Character Development</span>
+              <button
+                *ngIf="!structure.characterDevelopment"
+                class="btn-enable"
+                (click)="enableCharacterDevelopment()"
+              >
+                Enable
+              </button>
+              <button
+                *ngIf="structure.characterDevelopment"
+                class="btn-disable"
+                (click)="disableCharacterDevelopment()"
+              >
+                Disable
+              </button>
+            </div>
+
+            <div *ngIf="structure.characterDevelopment" class="fields-container">
+              <div *ngFor="let field of structure.characterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
+                <div class="field-header">
+                  <span class="field-name">{{ field.name }}</span>
+                  <button class="btn-remove" (click)="removeField('characterDevelopment', i)">×</button>
+                </div>
+                <div class="field-body">
+                  <div class="field-row">
+                    <label>Name</label>
+                    <input type="text" [(ngModel)]="field.name"  class="field-input" />
+                  </div>
+                  <div class="field-row">
+                    <label>Type</label>
+                    <select [(ngModel)]="field.type"  class="field-select">
+                      <option [value]="FieldType.String">String</option>
+                      <option [value]="FieldType.Array">Array</option>
+                      <option [value]="FieldType.Object">Object</option>
+                      <option [value]="FieldType.ForEachObject">ForEachObject</option>
+                    </select>
+                  </div>
+                  <div class="field-row">
+                    <label>Prompt</label>
+                    <textarea [(ngModel)]="field.prompt"  class="field-textarea" rows="2"></textarea>
+                  </div>
+                </div>
               </div>
+              <button class="btn-add-field" (click)="addCustomField('characterDevelopment')">+ Add Field</button>
             </div>
           </div>
-          <button class="btn-add-field" (click)="addCustomField('mainCharacterDevelopment')">+ Add Field</button>
+
+          <div class="optional-section">
+            <div class="optional-header">
+              <span>Main Char Development</span>
+              <button
+                *ngIf="!structure.mainCharacterDevelopment"
+                class="btn-enable"
+                (click)="enableMainCharacterDevelopment()"
+              >
+                Enable
+              </button>
+              <button
+                *ngIf="structure.mainCharacterDevelopment"
+                class="btn-disable"
+                (click)="disableMainCharacterDevelopment()"
+              >
+                Disable
+              </button>
+            </div>
+
+            <div *ngIf="structure.mainCharacterDevelopment" class="fields-container">
+              <div *ngFor="let field of structure.mainCharacterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
+                <div class="field-header">
+                  <span class="field-name">{{ field.name }}</span>
+                  <button class="btn-remove" (click)="removeField('mainCharacterDevelopment', i)">×</button>
+                </div>
+                <div class="field-body">
+                  <div class="field-row">
+                    <label>Name</label>
+                    <input type="text" [(ngModel)]="field.name"  class="field-input" />
+                  </div>
+                  <div class="field-row">
+                    <label>Type</label>
+                    <select [(ngModel)]="field.type"  class="field-select">
+                      <option [value]="FieldType.String">String</option>
+                      <option [value]="FieldType.Array">Array</option>
+                      <option [value]="FieldType.Object">Object</option>
+                      <option [value]="FieldType.ForEachObject">ForEachObject</option>
+                    </select>
+                  </div>
+                  <div class="field-row">
+                    <label>Prompt</label>
+                    <textarea [(ngModel)]="field.prompt"  class="field-textarea" rows="2"></textarea>
+                  </div>
+                </div>
+              </div>
+              <button class="btn-add-field" (click)="addCustomField('mainCharacterDevelopment')">+ Add Field</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="btn-save" (click)="onSave()" [disabled]="isSaving">
+            {{ isSaving ? 'Saving...' : 'Save' }}
+          </button>
+          <button class="btn-cancel" (click)="onCancel()">Cancel</button>
+          <button *ngIf="isEditMode" class="btn-delete" (click)="onDelete()">Delete</button>
         </div>
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <button class="btn-save" (click)="onSave()" [disabled]="isSaving">
-        {{ isSaving ? 'Saving...' : 'Save' }}
-      </button>
-      <button class="btn-cancel" (click)="onCancel()">Cancel</button>
-      <button *ngIf="isEditMode" class="btn-delete" (click)="onDelete()">Delete</button>
+    <!-- RIGHT: Live Preview Section -->
+    <div class="preview-section">
+      <div class="preview-header">
+        <h3>Preview</h3>
+        <button
+          class="btn-refresh-preview"
+          (click)="onRefreshPreview()"
+          [disabled]="isLoadingVisualization"
+          title="Refresh preview"
+        >
+          <span *ngIf="!isLoadingVisualization">🔄 Refresh</span>
+          <span *ngIf="isLoadingVisualization">Updating...</span>
+        </button>
+      </div>
+      <div class="preview-content">
+        <div *ngIf="visualizationData" class="preview-renderer">
+          <app-json-renderer [data]="visualizationData"></app-json-renderer>
+        </div>
+        <div *ngIf="!visualizationData && !isLoadingVisualization" class="preview-empty">
+          Click "Refresh" to preview how your tracker will look in the game
+        </div>
+      </div>
     </div>
   </div>
 </div>

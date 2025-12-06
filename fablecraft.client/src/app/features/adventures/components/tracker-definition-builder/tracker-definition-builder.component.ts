@@ -10,11 +10,12 @@ import {
   FieldDefinition,
   FieldType
 } from '../../models/tracker-definition.model';
+import { JsonRendererComponent } from '../json-renderer/json-renderer.component';
 
 @Component({
   selector: 'app-tracker-definition-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, JsonRendererComponent],
   templateUrl: './tracker-definition-builder.component.html',
   styleUrls: ['./tracker-definition-builder.component.css']
 })
@@ -26,6 +27,10 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   error: string | null = null;
+
+  // Live preview
+  visualizationData: any = null;
+  isLoadingVisualization = false;
 
   // Framework field names that are locked
   private readonly frameworkFields = {
@@ -83,6 +88,22 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
         this.error = 'Failed to load tracker definition';
         console.error('Error loading tracker definition:', err);
         this.isLoading = false;
+      }
+    });
+  }
+
+  onRefreshPreview(): void {
+    if (!this.structure) return;
+
+    this.isLoadingVisualization = true;
+    this.trackerDefinitionService.visualizeTracker(this.structure).subscribe({
+      next: (data) => {
+        this.visualizationData = data;
+        this.isLoadingVisualization = false;
+      },
+      error: (err) => {
+        console.error('Error visualizing tracker:', err);
+        this.isLoadingVisualization = false;
       }
     });
   }
