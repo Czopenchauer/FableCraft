@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -16,13 +16,13 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterStateTracker(
+internal sealed class CharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
-    public async Task<CharacterContext> Invoke(
+    public async Task<CharacterTracker> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
         CancellationToken cancellationToken)
@@ -46,10 +46,6 @@ internal sealed class CharacterStateTracker(
         };
 
         var prompt = $"""
-                      <previous_character_state>
-                      {JsonSerializer.Serialize(context.CharacterState, options)}
-                      </previous_character_state>
-
                       <previous_statistics>
                       {JsonSerializer.Serialize(context.CharacterTracker, options)}
                       </previous_statistics>
@@ -70,24 +66,12 @@ internal sealed class CharacterStateTracker(
                       </current_scene>
                       """;
         chatHistory.AddUserMessage(prompt);
-        var instruction = "Update the tracker based on the new scene content and previous tracker state.";
+        var instruction = "Update the tracker statistics based on the new scene content and previous tracker state.";
         chatHistory.AddUserMessage(instruction);
 
-        var outputFunc = new Func<string, (CharacterTracker tracker, CharacterStats state)>(response =>
+        var outputFunc = new Func<string, CharacterTracker>(response =>
         {
-            Match match = Regex.Match(response, "<character_state>(.*?)</character_state>", RegexOptions.Singleline);
-            CharacterStats state;
-            if (match.Success)
-            {
-                state = JsonSerializer.Deserialize<CharacterStats>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                        ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse CharacterState from response due to output not being in correct tags.");
-            }
-
-            match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
             CharacterTracker tracker;
             if (match.Success)
             {
@@ -99,7 +83,7 @@ internal sealed class CharacterStateTracker(
                 throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
             }
 
-            return (tracker, state);
+            return tracker;
         });
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -108,21 +92,13 @@ internal sealed class CharacterStateTracker(
         Kernel kernelWithKg = kernel.Build();
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        (CharacterTracker tracker, CharacterStats state) result = await agentKernel.SendRequestAsync(chatHistory,
+        CharacterTracker result = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             promptExecutionSettings,
-            nameof(CharacterStateTracker),
+            nameof(CharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
-        return new CharacterContext
-        {
-            CharacterId = context.CharacterId,
-            CharacterTracker = result.tracker,
-            CharacterState = result.state,
-            Name = context.Name,
-            Description = context.Description,
-            SequenceNumber = context.SequenceNumber + 1
-        };
+        return result;
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
@@ -132,7 +108,7 @@ internal sealed class CharacterStateTracker(
             "NarrativeEngine",
             "Agents",
             "Prompts",
-            "CharacterTrackerPrompt.md"
+            "CharacterTrackerAgentPrompt.md"
         );
 
         var options = new JsonSerializerOptions

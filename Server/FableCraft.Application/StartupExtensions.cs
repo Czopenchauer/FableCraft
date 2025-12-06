@@ -35,7 +35,8 @@ public static class StartupExtensions
             .AddScoped<TrackerAgent>()
             .AddScoped<CharacterCrafter>()
             .AddScoped<LoreCrafter>()
-            .AddScoped<CharacterStateTracker>()
+            .AddScoped<CharacterStateAgent>()
+            .AddScoped<CharacterTrackerAgent>()
             .AddScoped<LocationCrafter>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();

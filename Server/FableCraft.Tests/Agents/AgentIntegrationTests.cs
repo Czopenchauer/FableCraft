@@ -248,27 +248,49 @@ public class AgentIntegrationTests
 
     #endregion
 
-    #region CharacterStateTracker Tests
+    #region CharacterStateAgent Tests
 
     [Test]
-    public async Task CharacterStateTracker_OutputMapsToCharacterContext()
+    public async Task CharacterStateAgent_OutputMapsToCharacterStats()
     {
         // Arrange
-        var agent = new CharacterStateTracker(_agentKernel, _dbContextFactory, _kernelBuilderFactory, _ragSearch);
+        var agent = new CharacterStateAgent(_agentKernel, _dbContextFactory, _kernelBuilderFactory, _ragSearch);
         GenerationContext narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
         CharacterContext characterContext = AgentTestData.CreateSampleCharacterContext();
 
         // Act
-        CharacterContext result = await agent.Invoke(narrativeContext, characterContext, CancellationToken.None);
+        CharacterStats result = await agent.Invoke(narrativeContext, characterContext, CancellationToken.None);
+
+        // Assert
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.CharacterIdentity).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(result.CharacterIdentity.FullName)).IsFalse();
+
+        _logger.Information("CharacterStateAgent output successfully mapped to CharacterStats");
+        _logger.Information("Updated Character State: {Name}", result.CharacterIdentity.FullName);
+    }
+
+    #endregion
+
+    #region CharacterTrackerAgent Tests
+
+    [Test]
+    public async Task CharacterTrackerAgent_OutputMapsToCharacterTracker()
+    {
+        // Arrange
+        var agent = new CharacterTrackerAgent(_agentKernel, _dbContextFactory, _kernelBuilderFactory, _ragSearch);
+        GenerationContext narrativeContext = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
+        CharacterContext characterContext = AgentTestData.CreateSampleCharacterContext();
+
+        // Act
+        CharacterTracker result = await agent.Invoke(narrativeContext, characterContext, CancellationToken.None);
 
         // Assert
         await Assert.That(result).IsNotNull();
         await Assert.That(string.IsNullOrEmpty(result.Name)).IsFalse();
-        await Assert.That(result.CharacterState).IsNotNull();
-        await Assert.That(result.CharacterTracker).IsNotNull();
 
-        _logger.Information("CharacterStateTracker output successfully mapped to CharacterContext");
-        _logger.Information("Updated Character: {Name}", result.Name);
+        _logger.Information("CharacterTrackerAgent output successfully mapped to CharacterTracker");
+        _logger.Information("Updated Character Tracker: {Name}", result.Name);
     }
 
     #endregion

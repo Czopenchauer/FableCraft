@@ -3,7 +3,10 @@ using FableCraft.Application.NarrativeEngine.Models;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class TrackerProcessor(TrackerAgent trackerAgent, CharacterStateTracker characterStateTracker) : IProcessor
+internal sealed class TrackerProcessor(
+    TrackerAgent trackerAgent,
+    CharacterStateAgent characterStateAgent,
+    CharacterTrackerAgent characterTrackerAgent) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -17,7 +20,23 @@ internal sealed class TrackerProcessor(TrackerAgent trackerAgent, CharacterState
         {
             characterUpdateTask = context.Characters
                 .Where(x => lastSceneCharacters.Contains(x.Name))
-                .Select(character => characterStateTracker.Invoke(context, character, cancellationToken))
+                .Select(async character =>
+                {
+                    var stateTask = characterStateAgent.Invoke(context, character, cancellationToken);
+                    var trackerTask = characterTrackerAgent.Invoke(context, character, cancellationToken);
+
+                    await Task.WhenAll(stateTask, trackerTask);
+
+                    return new CharacterContext
+                    {
+                        CharacterId = character.CharacterId,
+                        CharacterState = await stateTask,
+                        CharacterTracker = await trackerTask,
+                        Name = character.Name,
+                        Description = character.Description,
+                        SequenceNumber = character.SequenceNumber + 1
+                    };
+                })
                 .ToArray();
         }
 
