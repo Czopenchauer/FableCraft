@@ -55,6 +55,24 @@ internal sealed class CharacterPlugin(
                      <character_tracker>
                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
                      </character_tracker>
+
+                     <context>
+                     {JsonSerializer.Serialize(_generationContext.ContextGathered, options)}
+                     </context>
+
+                     CRITICAL! These scenes are written in the perspective of story protagonist - {generationContext.MainCharacter.Name}!
+                     <previous_scenes>
+                     {string.Join("\n\n---\n\n", _generationContext
+                         .SceneContext
+                         .Where(x => x.Metadata.Tracker?.Characters?.Select(y => y.Name).Contains(context.Name) == true)
+                         .OrderByDescending(x => x.SequenceNumber)
+                         .TakeLast(5)
+                         .Select(s => $"""
+                                       SCENE NUMBER: {s.SequenceNumber}
+                                       {s.SceneContent}
+                                       {s.PlayerChoice}
+                                       """))}
+                     </previous_scenes>
                      """);
 
                 return chatHistory;

@@ -89,6 +89,23 @@
   flex-wrap: wrap;
 }
 
+/* Block layout for text fields */
+.json-field-block {
+  display: block;
+  padding: var(--spacing-sm);
+}
+
+.json-field-block .json-key {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.json-field-block .json-value {
+  display: block;
+  padding-left: var(--spacing-md);
+  line-height: 1.6;
+}
+
 /* Key Styling */
 .json-key {
   color: var(--text-primary);
@@ -218,6 +235,14 @@
 
   .json-field {
     padding: 2px var(--spacing-xs);
+  }
+
+  .json-field-block {
+    padding: var(--spacing-xs);
+  }
+
+  .json-field-block .json-value {
+    padding-left: var(--spacing-sm);
   }
 }
 

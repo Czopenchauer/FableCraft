@@ -86,6 +86,11 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             await _dbContext.Scenes
                 .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.Id))
                 .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Lock), cancellationToken);
+
+            var existingSceneChunks = await _dbContext.Chunks
+                .AsNoTracking()
+                .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.EntityId))
+                .ToListAsync(cancellationToken);
             foreach (Scene scene in scenesToCommit)
             {
                 var existingLorebookChunks = await _dbContext.Chunks
@@ -98,7 +103,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     Chunk? lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.Id == sceneLorebook.Id);
                     if (lorebookChunk is null)
                     {
-                        var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content + message.AdventureId);
+                        var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content);
                         var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
                         var lorebookName = $"{lorebookHash:x16}";
                         var lorebookPath = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{lorebookName}.{sceneLorebook.ContentType.ToString()}";
@@ -123,20 +128,28 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
-                var bytes = Encoding.UTF8.GetBytes(sceneContent + message.AdventureId);
+                var bytes = Encoding.UTF8.GetBytes(sceneContent);
                 var hash = XxHash64.HashToUInt64(bytes);
-                var name = $"{hash:x16}";
-                var path = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
-                var chunk = new Chunk
+                var existingChunk = existingSceneChunks.FirstOrDefault(x => x.EntityId == scene.Id && x.ContentHash == hash);
+                if (existingChunk == null)
                 {
-                    EntityId = scene.Id,
-                    Name = name,
-                    Path = path,
-                    ContentType = sceneContent,
-                    KnowledgeGraphNodeId = null,
-                    ContentHash = hash
-                };
-                fileToCommit.Add((chunk, sceneContent));
+                    var name = $"{hash:x16}";
+                    var path = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
+                    var chunk = new Chunk
+                    {
+                        EntityId = scene.Id,
+                        Name = name,
+                        Path = path,
+                        ContentType = nameof(ContentType.txt),
+                        KnowledgeGraphNodeId = null,
+                        ContentHash = hash
+                    };
+                    fileToCommit.Add((chunk, sceneContent));
+                }
+                else
+                {
+                    fileToCommit.Add((existingChunk, sceneContent));
+                }
             }
 
             // TODO: FOR NOW ONLY "stale" data is commited. Consider committing character states as well

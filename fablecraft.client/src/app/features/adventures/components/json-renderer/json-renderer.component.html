@@ -126,11 +126,11 @@
     </div>
 
     <!-- STRING -->
-    <div *ngIf="node.type === ValueType.STRING" class="json-field">
-      <span class="json-key" [class.constant-field]="node.isConstant">
+    <div *ngIf="node.type === ValueType.STRING" class="json-field json-field-block">
+      <div class="json-key" [class.constant-field]="node.isConstant">
         {{ node.label }}:
-      </span>
-      <span class="json-value json-string">"{{ node.value }}"</span>
+      </div>
+      <div class="json-value json-string">{{ node.value }}</div>
     </div>
 
     <!-- NUMBER -->

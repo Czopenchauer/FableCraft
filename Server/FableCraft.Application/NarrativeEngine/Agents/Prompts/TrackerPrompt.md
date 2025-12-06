@@ -30,7 +30,8 @@ absolute consistency in a story by analyzing text and updating a JSON database.
   Value pairs for the current state.
 
 **Response Format:**
-Return the full, updated JSON structure in <tracker> tags, ensuring it is valid JSON without any additional text.
+Return the full, updated JSON structure in <tracker> tags, ensuring it is valid JSON without any additional text. 
+Ensure that character present are referred by their exact name.
 \
 <tracker>
 {{json_output_format}}

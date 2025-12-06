@@ -49,6 +49,10 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
                              <context>
                              {JsonSerializer.Serialize(context.ContextGathered, options)}
                              </context>
+
+                             <previous_scene>
+                             {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
+                             <previous_scene>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
