@@ -18,6 +18,7 @@ import {ToastComponent} from './shared/components/toast/toast.component';
 import { WorldbookListComponent } from './features/adventures/components/worldbook-list/worldbook-list.component';
 import { WorldbookFormComponent } from './features/adventures/components/worldbook-form/worldbook-form.component';
 import { MenubarComponent } from './shared/components/menubar/menubar.component';
+import { LlmPresetManagerComponent } from './features/adventures/components/llm-preset-manager/llm-preset-manager.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { MenubarComponent } from './shared/components/menubar/menubar.component'
     ToastComponent,
     WorldbookListComponent,
     WorldbookFormComponent,
-    MenubarComponent
+    MenubarComponent,
+    LlmPresetManagerComponent
   ],
   imports: [
     BrowserModule,

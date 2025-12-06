@@ -51,10 +51,11 @@
         >
           <a
             *ngFor="let item of menu.items"
-            [routerLink]="item.route"
+            [routerLink]="item.route || null"
             class="dropdown-item"
-            [class.active]="isActive(item.route)"
-            (click)="closeMenus()"
+            [class.active]="item.route && isActive(item.route)"
+            (click)="item.action ? item.action() : (item.route ? navigateAndClose(item.route) : null)"
+            [style.cursor]="item.action || item.route ? 'pointer' : 'default'"
           >
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="item-icon" viewBox="0 0 24 24">
               <path
@@ -71,3 +72,7 @@
     </div>
   </div>
 </div>
+
+<!-- LLM Preset Manager Modal -->
+<app-llm-preset-manager [isOpen]="showLlmPresetModal" (close)="closeLlmPresetModal()"></app-llm-preset-manager>
+

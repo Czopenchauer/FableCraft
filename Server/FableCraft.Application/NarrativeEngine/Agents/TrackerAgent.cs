@@ -84,7 +84,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         {
             stringBuilder.AppendLine($"""
                                       <previous_trackers>
-                                      {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Take(1)
+                                      {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Where(x => x.Metadata.Tracker != null).Take(1)
                                           .Select(s => $"""
                                                         {JsonSerializer.Serialize(s.Metadata.Tracker, options)}
                                                         """))}
