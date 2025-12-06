@@ -154,7 +154,6 @@ internal class GeminiKernelBuilder : IKernelBuilder
             Temperature = _preset.Temperature,
             TopP = _preset.TopP,
             TopK = _preset.TopK,
-            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
             SafetySettings = DefaultSafetySettings
         };
     }
@@ -167,11 +166,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             Temperature = _preset.Temperature,
             TopP = _preset.TopP,
             TopK = _preset.TopK,
-            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
-            {
-                AllowConcurrentInvocation = true,
-                AllowParallelCalls = true
-            }),
+            ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
             SafetySettings = DefaultSafetySettings
         };
     }
