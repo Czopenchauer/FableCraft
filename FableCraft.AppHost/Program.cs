@@ -10,13 +10,7 @@ var serverDatabase = builder
     .WithDataVolumeForV18()
     .AddDatabase("fablecraftdb", "fablecraftdb");
 
-// Server LLM Configuration
-var serverLlmApiKeySecret = builder.Configuration["FableCraft:Server:LLM:ApiKey"]!;
-var serverLlmModel = builder.Configuration["FableCraft:Server:LLM:Model"]!;
-var serverLlmEndpoint = builder.Configuration["FableCraft:Server:LLM:BaseUrl"] ?? "";
-var serverLlmMaxTokens = builder.Configuration["FableCraft:Server:LLM:MaxTokens"] ?? "16384";
-
-// GraphRag LLM Configuration
+var graphRagLlmMaxTokens = builder.Configuration["FableCraft:Server:GraphRag:MaxTokens"] ?? "16384";
 var graphRagLlmApiKey = builder.Configuration["FableCraft:GraphRag:LLM:ApiKey"]!;
 var graphRagLlmModel = builder.Configuration["FableCraft:GraphRag:LLM:Model"]!;
 var graphRagLlmProvider = builder.Configuration["FableCraft:GraphRag:LLM:Provider"]!;
@@ -59,7 +53,7 @@ var graphRagApi = builder
     .WithEnvironment("LLM_PROVIDER", graphRagLlmProvider)
     .WithEnvironment("LLM_ENDPOINT", graphRagLlmEndpoint)
     .WithEnvironment("LLM_API_VERSION", graphRagLlmApiVersion)
-    .WithEnvironment("LLM_MAX_TOKENS", serverLlmMaxTokens)
+    .WithEnvironment("LLM_MAX_TOKENS", graphRagLlmMaxTokens)
     .WithEnvironment("LLM_RATE_LIMIT_ENABLED", llmRateLimitEnabled)
     .WithEnvironment("LLM_RATE_LIMIT_REQUESTS", llmRateLimitRequests)
     .WithEnvironment("LLM_RATE_LIMIT_INTERVAL", llmRateLimitInterval)

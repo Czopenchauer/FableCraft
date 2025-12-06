@@ -1,6 +1,7 @@
 using FableCraft.Application;
 using FableCraft.Infrastructure;
 using FableCraft.Server;
+using FableCraft.Server.Middleware;
 using FableCraft.ServiceDefaults;
 
 using Serilog;
@@ -41,6 +42,8 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
     };
 });
+
+app.UseGlobalExceptionHandling();
 
 app.MapDefaultEndpoints();
 

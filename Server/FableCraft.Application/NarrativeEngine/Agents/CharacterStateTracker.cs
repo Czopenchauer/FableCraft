@@ -59,7 +59,6 @@ internal sealed class CharacterStateTracker(
                           .OrderByDescending(x => x.SequenceNumber)
                           .TakeLast(3)
                           .Select(s => $"""
-                                        Character on scene: {s.Metadata.Tracker.CharactersPresent}
                                         SCENE NUMBER: {s.SequenceNumber}
                                         {s.SceneContent}
                                         {s.PlayerChoice}

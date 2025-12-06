@@ -14,6 +14,7 @@ import {
   DeleteConfirmationModalComponent
 } from './features/adventures/components/delete-confirmation-modal/delete-confirmation-modal.component';
 import {JsonRendererComponent} from './features/adventures/components/json-renderer/json-renderer.component';
+import {ToastComponent} from './shared/components/toast/toast.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import {JsonRendererComponent} from './features/adventures/components/json-rende
     AdventureStatusComponent,
     GamePanelComponent,
     DeleteConfirmationModalComponent,
-    JsonRendererComponent
+    JsonRendererComponent,
+    ToastComponent
   ],
   imports: [
     BrowserModule,

@@ -4,6 +4,7 @@ import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
+import {ToastService} from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-game-panel',
@@ -19,8 +20,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   isInitialLoad = true;
   isRegenerating = false;
   isEnriching = false;
+  enrichmentFailed = false;
   enrichmentData: SceneEnrichmentResult | null = null;
-  error: string | null = null;
   customAction = '';
   private destroy$ = new Subject<void>();
 
@@ -28,7 +29,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private adventureService: AdventureService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastService: ToastService
   ) {
   }
 
@@ -78,7 +80,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     if (!this.adventureId) return;
 
     this.isLoading = true;
-    this.error = null;
 
     this.adventureService.generateFirstScene(this.adventureId)
       .pipe(
@@ -99,7 +100,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading first scene:', err);
-          this.error = 'Failed to load the scene. Please try again.';
+          this.toastService.error('Failed to load the scene. Please try again.');
         }
       });
   }
@@ -108,11 +109,11 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    * Handle player choice selection
    */
   onChoiceSelected(choice: string): void {
-    if (!this.adventureId || this.isLoading) return;
+    if (!this.adventureId || this.isLoading || this.isEnriching || this.isActionBlocked()) return;
 
     this.isLoading = true;
-    this.error = null;
     this.enrichmentData = null; // Reset enrichment data
+    this.enrichmentFailed = false; // Reset enrichment failure state
 
     this.adventureService.submitAction(this.adventureId, choice)
       .pipe(
@@ -134,7 +135,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error submitting action:', err);
-          this.error = 'Failed to submit your choice. Please try again.';
+          this.toastService.error('Failed to submit your choice. Please try again.');
           this.cdr.detectChanges();
         }
       });
@@ -147,6 +148,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     if (!this.adventureId) return;
 
     this.isEnriching = true;
+    this.enrichmentFailed = false;
 
     this.adventureService.enrichScene(this.adventureId, sceneId)
       .pipe(
@@ -170,17 +172,33 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error enriching scene:', err);
-          // Don't show error to user for enrichment failure - scene is still playable
-          // Just log it for debugging
+          this.enrichmentFailed = true;
+          this.toastService.warning('Scene enrichment failed. The scene is still playable.');
         }
       });
+  }
+
+  /**
+   * Retry enrichment after failure
+   */
+  retryEnrichment(): void {
+    if (!this.currentScene || this.isEnriching) return;
+    this.enrichSceneData(this.currentScene.sceneId);
+  }
+
+  /**
+   * Check if actions should be blocked
+   */
+  isActionBlocked(): boolean {
+    // Block if enrichment is ongoing or tracker is null
+    return this.isEnriching || !this.currentScene?.tracker;
   }
 
   /**
    * Handle custom action submission
    */
   onCustomActionSubmit(): void {
-    if (!this.customAction.trim()) return;
+    if (!this.customAction.trim() || this.isActionBlocked()) return;
     this.onChoiceSelected(this.customAction);
   }
 
@@ -200,7 +218,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     if (!this.adventureId || this.isLoading || this.isRegenerating || !this.currentScene) return;
 
     this.isRegenerating = true;
-    this.error = null;
 
     this.adventureService.regenerateScene(this.adventureId, this.currentScene.sceneId)
       .pipe(
@@ -219,7 +236,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error regenerating scene:', err);
-          this.error = 'Failed to regenerate the scene. Please try again.';
+          this.toastService.error('Failed to regenerate the scene. Please try again.');
           this.cdr.detectChanges();
         }
       });
@@ -236,7 +253,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     }
 
     this.isLoading = true;
-    this.error = null;
 
     this.adventureService.deleteLastScene(this.adventureId, this.currentScene.sceneId)
       .pipe(
@@ -251,7 +267,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error deleting scene:', err);
-          this.error = 'Failed to delete the scene. Please try again.';
+          this.toastService.error('Failed to delete the scene. Please try again.');
         }
       });
   }
@@ -261,14 +277,5 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   goToAdventureList(): void {
     this.router.navigate(['/adventures']);
-  }
-
-  /**
-   * Retry loading the scene after an error
-   */
-  retryLoad(): void {
-    if (this.isInitialLoad) {
-      this.loadFirstScene();
-    }
   }
 }

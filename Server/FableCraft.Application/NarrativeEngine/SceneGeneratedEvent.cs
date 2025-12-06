@@ -116,7 +116,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 }
 
                 var sceneContent = $"""
-                                    Time: {scene.Metadata.Tracker.Story.Time}
+                                    Time: {scene.Metadata.Tracker!.Story.Time}
                                     Location: {scene.Metadata.Tracker.Story.Location}
                                     Weather: {scene.Metadata.Tracker.Story.Weather}
                                     Characters Present: {string.Join(", ", scene.Metadata.Tracker.CharactersPresent)}

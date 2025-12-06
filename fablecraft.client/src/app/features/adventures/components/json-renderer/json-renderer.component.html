@@ -81,14 +81,40 @@
       </div>
     </div>
 
-    <!-- ARRAY OF PRIMITIVES: List Display -->
-    <div *ngIf="node.type === ValueType.ARRAY_OF_PRIMITIVES" class="json-array-list">
-      <div class="json-key" [class.constant-field]="node.isConstant">
-        {{ formatLabel(node.key) }}:
+    <!-- ARRAY OF PRIMITIVES: Collapsible List Display -->
+    <div *ngIf="node.type === ValueType.ARRAY_OF_PRIMITIVES" class="json-panel">
+      <div
+        class="json-panel-header"
+        [class.constant-field]="node.isConstant"
+        role="button"
+        [attr.aria-expanded]="isExpanded(node.key)"
+        [attr.aria-label]="'Toggle ' + formatLabel(node.key) + ' panel'"
+        tabindex="0"
+        (click)="toggleExpanded(node.key)"
+        (keydown)="onKeyDown($event, node.key)"
+      >
+        <svg
+          class="chevron-icon"
+          [class.expanded]="isExpanded(node.key)"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+        <span class="json-key">{{ formatLabel(node.key) }}</span>
       </div>
-      <ul class="json-list">
-        <li *ngFor="let item of $any(node.value)" class="json-list-item">{{ item }}</li>
-      </ul>
+
+      <div class="json-panel-content" *ngIf="isExpanded(node.key)">
+        <ul class="json-list">
+          <li *ngFor="let item of $any(node.value)" class="json-list-item">{{ item }}</li>
+        </ul>
+      </div>
     </div>
 
     <!-- EMPTY ARRAY -->

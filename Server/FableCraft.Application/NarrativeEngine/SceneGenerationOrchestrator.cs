@@ -79,7 +79,7 @@ internal sealed class SceneGenerationOrchestrator(
 {
     private const int NumberOfScenesToInclude = 20;
 
-    public async Task<SceneGenerationOutput> GenerateSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
+    public async Task<SceneGenerationOutput> GenerateFullSceneAsync(Guid adventureId, string playerAction, CancellationToken cancellationToken)
     {
         (GenerationContext Context, Guid ProcessId) context = await GetGenerationContext(adventureId, playerAction, cancellationToken);
 
@@ -149,7 +149,7 @@ internal sealed class SceneGenerationOrchestrator(
         }
     }
 
-    public async Task<SceneGenerationOutputWithoutEnrichment> GenerateSceneWithoutEnrichmentAsync(
+    public async Task<SceneGenerationOutputWithoutEnrichment> GenerateSceneAsync(
         Guid adventureId,
         string playerAction,
         CancellationToken cancellationToken)
@@ -287,7 +287,6 @@ internal sealed class SceneGenerationOrchestrator(
         }
         catch (Exception ex)
         {
-            // Mark enrichment as failed
             await dbContext.Scenes
                 .Where(s => s.Id == sceneId)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.EnrichmentFailed),
@@ -644,6 +643,6 @@ internal sealed class SceneGenerationOrchestrator(
                       {adventure.AdventureStartTime}
                       </adventure_start_time>
                       """;
-        return await GenerateSceneAsync(adventureId, prompt, cancellationToken);
+        return await GenerateFullSceneAsync(adventureId, prompt, cancellationToken);
     }
 }

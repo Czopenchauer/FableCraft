@@ -9,7 +9,7 @@ internal sealed class TrackerProcessor(TrackerAgent trackerAgent, CharacterState
     {
         var tracker = trackerAgent.Invoke(context, cancellationToken);
 
-        var lastSceneCharacters = context.SceneContext.LastOrDefault()?.Metadata.Tracker.CharactersPresent ?? [];
+        var lastSceneCharacters = context.SceneContext.LastOrDefault()?.Metadata.Tracker?.CharactersPresent ?? [];
         IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
         if (context.Characters.Count != 0)
         {

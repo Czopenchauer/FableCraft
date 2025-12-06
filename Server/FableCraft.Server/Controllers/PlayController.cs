@@ -19,11 +19,19 @@ public class PlayController : ControllerBase
         _gameService = gameService;
     }
 
-    [HttpGet("{adventureId:guid}")]
-    [ProducesResponseType(typeof(GameScene[]), StatusCodes.Status200OK)]
-    public async Task<ActionResult> GetCurrentScene(Guid adventureId, [FromQuery] PageRequest pageRequest, CancellationToken cancellationToken)
+    [HttpGet("{adventureId:guid}/current-scene")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetCurrentScene(Guid adventureId, CancellationToken cancellationToken)
     {
-        var scene = await _gameService.GetScenesAsync(adventureId, pageRequest.Take, pageRequest.Skip, cancellationToken);
+        var scene = await _gameService.GetCurrentSceneAsync(adventureId, cancellationToken);
+        return Ok(scene);
+    }
+
+    [HttpGet("{adventureId:guid}/scene/{sceneId:guid}")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetScene(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
+    {
+        var scene = await _gameService.GetSceneAsync(adventureId, sceneId, cancellationToken);
         return Ok(scene);
     }
 

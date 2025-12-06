@@ -19,7 +19,8 @@ namespace FableCraft.Infrastructure;
 public static class StartupExtensions
 {
     [Experimental("EXTEXP0001")]
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
+    public static IServiceCollection AddInfrastructureServices(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
@@ -82,7 +83,6 @@ public static class StartupExtensions
             {
                 client.BaseAddress = new Uri(graphApiBaseUrl);
 
-                // LLM calls can take a while
                 client.Timeout = TimeSpan.FromMinutes(10);
             })
             .RemoveAllResilienceHandlers()

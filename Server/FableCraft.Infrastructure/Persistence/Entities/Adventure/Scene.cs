@@ -62,7 +62,7 @@ public sealed class Metadata
 {
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
-    public required Tracker Tracker { get; set; }
+    public Tracker? Tracker { get; set; }
 }
 
 public sealed class Tracker
@@ -73,7 +73,7 @@ public sealed class Tracker
 
     public CharacterTracker? MainCharacter { get; init; }
 
-    public CharacterTracker[]? Characters { get; init; }
+    public CharacterTracker[]? Characters { get; set; }
 }
 
 public sealed class StoryTracker
