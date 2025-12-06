@@ -32,6 +32,10 @@ public sealed class TrackerStructure
     public required FieldDefinition[] MainCharacter { get; set; }
 
     public required FieldDefinition[] Characters { get; set; }
+
+    public FieldDefinition[]? CharacterDevelopment { get; set; }
+
+    public FieldDefinition[]? MainCharacterDevelopment { get; set; }
 }
 
 public sealed class FieldDefinition

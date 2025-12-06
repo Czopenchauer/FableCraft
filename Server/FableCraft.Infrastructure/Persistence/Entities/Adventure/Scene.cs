@@ -74,6 +74,8 @@ public sealed class Tracker
     public CharacterTracker? MainCharacter { get; init; }
 
     public CharacterTracker[]? Characters { get; set; }
+
+    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; init; }
 }
 
 public sealed class StoryTracker

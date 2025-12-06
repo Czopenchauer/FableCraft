@@ -1,16 +1,20 @@
 ﻿using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 internal sealed class TrackerProcessor(
     TrackerAgent trackerAgent,
     CharacterStateAgent characterStateAgent,
-    CharacterTrackerAgent characterTrackerAgent) : IProcessor
+    CharacterTrackerAgent characterTrackerAgent,
+    CharacterDevelopmentAgent characterDevelopmentAgent,
+    MainCharacterDevelopmentAgent mainCharacterDevelopmentAgent) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var tracker = trackerAgent.Invoke(context, cancellationToken);
+        var trackerTask = trackerAgent.Invoke(context, cancellationToken);
+        var mainCharDevTask = mainCharacterDevelopmentAgent.Invoke(context, cancellationToken);
 
         var lastSceneCharacters = context.SceneContext
             .OrderByDescending(x => x.SequenceNumber)
@@ -24,14 +28,16 @@ internal sealed class TrackerProcessor(
                 {
                     var stateTask = characterStateAgent.Invoke(context, character, cancellationToken);
                     var trackerTask = characterTrackerAgent.Invoke(context, character, cancellationToken);
+                    var developmentTask = characterDevelopmentAgent.Invoke(context, character, cancellationToken);
 
-                    await Task.WhenAll(stateTask, trackerTask);
+                    await Task.WhenAll(stateTask, trackerTask, developmentTask);
 
                     return new CharacterContext
                     {
                         CharacterId = character.CharacterId,
                         CharacterState = await stateTask,
                         CharacterTracker = await trackerTask,
+                        DevelopmentTracker = await developmentTask,
                         Name = character.Name,
                         Description = character.Description,
                         SequenceNumber = character.SequenceNumber + 1
@@ -40,7 +46,20 @@ internal sealed class TrackerProcessor(
                 .ToArray();
         }
 
-        context.NewTracker = await tracker;
+        await Task.WhenAll(trackerTask, mainCharDevTask);
+
+        var tracker = await trackerTask;
+        var mainCharDev = await mainCharDevTask;
+
+        // Create new tracker with MainCharacterDevelopment
+        context.NewTracker = new Tracker
+        {
+            Story = tracker.Story,
+            CharactersPresent = tracker.CharactersPresent,
+            MainCharacter = tracker.MainCharacter,
+            Characters = tracker.Characters,
+            MainCharacterDevelopment = mainCharDev
+        };
         var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
         context.CharacterUpdates = characterUpdates;
         context.GenerationProcessStep = GenerationProcessStep.TrackerFinished;

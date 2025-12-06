@@ -93,6 +93,8 @@ internal sealed class CharacterContext
     public CharacterStats CharacterState { get; set; } = null!;
 
     public CharacterTracker? CharacterTracker { get; set; }
+
+    public CharacterDevelopmentTracker? DevelopmentTracker { get; set; }
 }
 
 internal sealed class SceneContext

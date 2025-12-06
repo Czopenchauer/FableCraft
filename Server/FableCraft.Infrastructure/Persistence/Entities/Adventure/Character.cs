@@ -19,6 +19,8 @@ public sealed class Character
     public CharacterStats CharacterStats { get; init; } = null!;
 
     public CharacterTracker Tracker { get; init; } = null!;
+
+    public CharacterDevelopmentTracker? DevelopmentTracker { get; init; }
 }
 
 public class CharacterStats
@@ -509,4 +511,10 @@ public class Integration
 
     [JsonPropertyName("cultural_background")]
     public string? CulturalBackground { get; set; }
+}
+
+public sealed class CharacterDevelopmentTracker
+{
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }

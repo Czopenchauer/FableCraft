@@ -332,6 +332,7 @@ internal sealed class SceneGenerationOrchestrator(
                 {
                     CharacterState = y.CharacterStats,
                     CharacterTracker = y.Tracker,
+                    DevelopmentTracker = y.DevelopmentTracker,
                     Description = y.Description,
                     Name = y.CharacterStats.CharacterIdentity.FullName!,
                     CharacterId = y.CharacterId,
@@ -386,6 +387,7 @@ internal sealed class SceneGenerationOrchestrator(
                                        Description = x.Description,
                                        CharacterStats = x.CharacterState,
                                        Tracker = x.CharacterTracker!,
+                                       DevelopmentTracker = x.DevelopmentTracker,
                                        SequenceNumber = scene.SequenceNumber,
                                        SceneId = scene.Id
                                    }).ToList()
@@ -398,6 +400,7 @@ internal sealed class SceneGenerationOrchestrator(
                                            Description = x.Description,
                                            CharacterStats = x.CharacterState,
                                            Tracker = x.CharacterTracker!,
+                                           DevelopmentTracker = x.DevelopmentTracker,
                                            SequenceNumber = scene.SequenceNumber,
                                            SceneId = scene.Id
                                        }).ToList()
@@ -548,6 +551,7 @@ internal sealed class SceneGenerationOrchestrator(
                     {
                         CharacterState = y.CharacterStats,
                         CharacterTracker = y.Tracker,
+                        DevelopmentTracker = y.DevelopmentTracker,
                         Description = y.Description,
                         Name = y.CharacterStats.CharacterIdentity.FullName!,
                         CharacterId = y.CharacterId,
@@ -614,6 +618,7 @@ internal sealed class SceneGenerationOrchestrator(
                 Name = x.CharacterStats.CharacterIdentity.FullName!,
                 CharacterState = x.CharacterStats,
                 CharacterTracker = x.Tracker,
+                DevelopmentTracker = x.DevelopmentTracker,
                 CharacterId = x.CharacterId,
                 SceneId = x.SceneId,
                 SequenceNumber = x.SequenceNumber
