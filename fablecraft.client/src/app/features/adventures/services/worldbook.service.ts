@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { WorldbookDto, WorldbookResponseDto } from '../models/worldbook.model';
+import { WorldbookDto, WorldbookUpdateDto, WorldbookResponseDto } from '../models/worldbook.model';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -36,7 +36,7 @@ export class WorldbookService {
   /**
    * Update an existing worldbook
    */
-  updateWorldbook(id: string, worldbook: WorldbookDto): Observable<WorldbookResponseDto> {
+  updateWorldbook(id: string, worldbook: WorldbookUpdateDto): Observable<WorldbookResponseDto> {
     return this.http.put<WorldbookResponseDto>(`${this.apiUrl}/${id}`, worldbook);
   }
 

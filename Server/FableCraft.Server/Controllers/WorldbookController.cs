@@ -1,5 +1,4 @@
-﻿using FableCraft.Application.Model.Adventure;
-using FableCraft.Application.Model.Worldbook;
+﻿using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
@@ -104,7 +103,6 @@ public class WorldbookController : ControllerBase
             return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
         }
 
-        // Check for duplicate name
         bool nameExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Name == dto.Name, cancellationToken);
 
@@ -117,10 +115,32 @@ public class WorldbookController : ControllerBase
             });
         }
 
+        var duplicateTitles = dto.Lorebooks
+            .GroupBy(l => l.Title)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicateTitles.Any())
+        {
+            return BadRequest(new
+            {
+                error = "Duplicate lorebook titles",
+                message = $"Lorebook titles must be unique within a worldbook. Duplicates: {string.Join(", ", duplicateTitles)}"
+            });
+        }
+
         var worldbook = new Worldbook
         {
             Id = Guid.NewGuid(),
-            Name = dto.Name
+            Name = dto.Name,
+            Lorebooks = dto.Lorebooks.Select(l => new Lorebook
+            {
+                Id = Guid.NewGuid(),
+                Title = l.Title,
+                Content = l.Content,
+                Category = l.Category
+            }).ToList()
         };
 
         _dbContext.Worldbooks.Add(worldbook);
@@ -130,7 +150,14 @@ public class WorldbookController : ControllerBase
         {
             Id = worldbook.Id,
             Name = worldbook.Name,
-            Lorebooks = new List<LorebookResponseDto>()
+            Lorebooks = worldbook.Lorebooks.Select(l => new LorebookResponseDto
+            {
+                Id = l.Id,
+                WorldbookId = l.WorldbookId,
+                Title = l.Title,
+                Content = l.Content,
+                Category = l.Category
+            }).ToList()
         };
 
         return CreatedAtAction(nameof(GetById), new { id = worldbook.Id }, response);
@@ -146,8 +173,8 @@ public class WorldbookController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<WorldbookResponseDto>> Update(
         Guid id,
-        [FromBody] WorldbookDto dto,
-        [FromServices] IValidator<WorldbookDto> validator,
+        [FromBody] WorldbookUpdateDto dto,
+        [FromServices] IValidator<WorldbookUpdateDto> validator,
         CancellationToken cancellationToken)
     {
         ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
@@ -166,7 +193,6 @@ public class WorldbookController : ControllerBase
             return NotFound();
         }
 
-        // Check for duplicate name (excluding current worldbook)
         bool nameExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Name == dto.Name && w.Id != id, cancellationToken);
 
@@ -179,9 +205,67 @@ public class WorldbookController : ControllerBase
             });
         }
 
+        var duplicateTitles = dto.Lorebooks
+            .GroupBy(l => l.Title)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicateTitles.Any())
+        {
+            return BadRequest(new
+            {
+                error = "Duplicate lorebook titles",
+                message = $"Lorebook titles must be unique within a worldbook. Duplicates: {string.Join(", ", duplicateTitles)}"
+            });
+        }
+
         worldbook.Name = dto.Name;
 
+        var updatedLorebookIds = dto.Lorebooks
+            .Where(l => l.Id.HasValue)
+            .Select(l => l.Id!.Value)
+            .ToHashSet();
+
+        var lorebooksToRemove = worldbook.Lorebooks
+            .Where(l => !updatedLorebookIds.Contains(l.Id))
+            .ToList();
+
+        foreach (var lorebook in lorebooksToRemove)
+        {
+            _dbContext.Lorebooks.Remove(lorebook);
+        }
+
+        foreach (var lorebookDto in dto.Lorebooks)
+        {
+            if (lorebookDto.Id.HasValue)
+            {
+                var existingLorebook = worldbook.Lorebooks.FirstOrDefault(l => l.Id == lorebookDto.Id.Value);
+                if (existingLorebook != null)
+                {
+                    existingLorebook.Title = lorebookDto.Title;
+                    existingLorebook.Content = lorebookDto.Content;
+                    existingLorebook.Category = lorebookDto.Category;
+                    _dbContext.Lorebooks.Update(existingLorebook);
+                }
+            }
+            else
+            {
+                var newLorebook = new Lorebook
+                {
+                    WorldbookId = worldbook.Id,
+                    Title = lorebookDto.Title,
+                    Content = lorebookDto.Content,
+                    Category = lorebookDto.Category
+                };
+                worldbook.Lorebooks.Add(newLorebook);
+                _dbContext.Worldbooks.Update(worldbook);
+            }
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _dbContext.Entry(worldbook).Collection(w => w.Lorebooks).LoadAsync(cancellationToken);
 
         var response = new WorldbookResponseDto
         {

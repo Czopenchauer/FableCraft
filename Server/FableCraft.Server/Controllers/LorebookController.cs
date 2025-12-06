@@ -1,5 +1,4 @@
-﻿using FableCraft.Application.Model.Adventure;
-using FableCraft.Application.Model.Worldbook;
+﻿using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 

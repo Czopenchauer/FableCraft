@@ -1,5 +1,11 @@
 export interface WorldbookDto {
   name: string;
+  lorebooks?: CreateLorebookDto[];
+}
+
+export interface WorldbookUpdateDto {
+  name: string;
+  lorebooks?: UpdateLorebookDto[];
 }
 
 export interface WorldbookResponseDto {
@@ -10,6 +16,19 @@ export interface WorldbookResponseDto {
 
 export interface LorebookDto {
   worldbookId: string;
+  title: string;
+  content: string;
+  category: string;
+}
+
+export interface CreateLorebookDto {
+  title: string;
+  content: string;
+  category: string;
+}
+
+export interface UpdateLorebookDto {
+  id?: string;  // null/undefined = new, string = update existing
   title: string;
   content: string;
   category: string;

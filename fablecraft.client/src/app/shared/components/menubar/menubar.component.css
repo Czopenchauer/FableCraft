@@ -8,13 +8,12 @@
 }
 
 [data-theme="modern-dark"] .menubar {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
+  background: rgb(15, 23, 42);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme="medieval-fantasy"] .menubar {
-  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  background: linear-gradient(135deg, rgb(62, 36, 21) 0%, rgb(45, 24, 16) 100%);
   border-bottom-color: var(--color-primary);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
@@ -170,28 +169,15 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-secondary);
   box-shadow: var(--shadow-xl);
-  animation: dropdownSlide 0.2s ease-out;
   z-index: 1001;
 }
 
-@keyframes dropdownSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 [data-theme="modern-dark"] .dropdown-menu {
-  background: rgba(15, 23, 42, 0.98);
-  backdrop-filter: blur(16px);
+  background: rgb(15, 23, 42);
 }
 
 [data-theme="medieval-fantasy"] .dropdown-menu {
-  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  background: linear-gradient(135deg, rgb(62, 36, 21) 0%, rgb(45, 24, 16) 100%);
   border-color: var(--color-primary);
 }
 

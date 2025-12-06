@@ -64,6 +64,140 @@
           </div>
         </div>
 
+        <!-- Lorebooks Section -->
+        <div class="lorebooks-section">
+          <div class="section-header">
+            <h3 class="section-title">Lorebooks</h3>
+            <button type="button" class="btn-add-lorebook" (click)="addLorebook()" [disabled]="saving">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              </svg>
+              Add Lorebook
+            </button>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="lorebooks.length === 0" class="lorebooks-empty">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <p>No lorebooks yet. Click "Add Lorebook" to get started.</p>
+          </div>
+
+          <!-- Lorebook Panels -->
+          <div formArrayName="lorebooks">
+            <div *ngFor="let lorebookCtrl of lorebooks.controls; let i = index; trackBy: trackByIndex"
+                 [formGroupName]="i"
+                 class="lorebook-panel">
+
+              <!-- Panel Header (clickable) -->
+              <div class="lorebook-panel-header"
+                   [class.expanded]="isPanelExpanded(i)"
+                   [class.has-errors]="hasLorebookErrors(i)"
+                   role="button"
+                   [attr.aria-expanded]="isPanelExpanded(i)"
+                   [attr.aria-label]="'Toggle ' + getLorebookTitle(i) + ' panel'"
+                   tabindex="0"
+                   (click)="togglePanel(i)"
+                   (keydown)="onKeyDown($event, i)">
+
+                <!-- Chevron icon (rotates when expanded) -->
+                <svg class="chevron-icon" [class.expanded]="isPanelExpanded(i)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+
+                <!-- Title -->
+                <span class="panel-title" [class.placeholder]="!lorebookCtrl.get('title')?.value || lorebookCtrl.get('title')?.value === '' || getLorebookTitle(i) === 'New Lorebook'">
+                  {{ getLorebookTitle(i) }}
+                </span>
+
+                <!-- Category badge (if category exists) -->
+                <span *ngIf="getLorebookCategory(i)" class="category-badge">
+                  {{ getLorebookCategory(i) }}
+                </span>
+
+                <!-- Delete button -->
+                <button type="button"
+                        class="btn-delete-lorebook"
+                        (click)="deleteLorebook(i); $event.stopPropagation()"
+                        [attr.aria-label]="'Delete ' + getLorebookTitle(i)"
+                        title="Delete lorebook">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Panel Content (shown when expanded) -->
+              <div *ngIf="isPanelExpanded(i)" class="lorebook-panel-content">
+                <div class="lorebook-form-grid">
+
+                  <!-- Title Field -->
+                  <div class="form-group">
+                    <label [for]="'lorebook-' + i + '-title'" class="form-label">
+                      Title
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      [id]="'lorebook-' + i + '-title'"
+                      type="text"
+                      formControlName="title"
+                      class="form-input"
+                      placeholder="Enter lorebook title"
+                      [class.error]="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched"
+                    />
+                    <div *ngIf="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched" class="field-error">
+                      <span *ngIf="lorebookCtrl.get('title')?.errors?.['required']">Title is required</span>
+                      <span *ngIf="lorebookCtrl.get('title')?.errors?.['maxlength']">Title must not exceed 200 characters</span>
+                    </div>
+                  </div>
+
+                  <!-- Category Field -->
+                  <div class="form-group">
+                    <label [for]="'lorebook-' + i + '-category'" class="form-label">
+                      Category
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      [id]="'lorebook-' + i + '-category'"
+                      type="text"
+                      formControlName="category"
+                      class="form-input"
+                      placeholder="e.g., Characters, Locations, History"
+                      [class.error]="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched"
+                    />
+                    <div *ngIf="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched" class="field-error">
+                      <span *ngIf="lorebookCtrl.get('category')?.errors?.['required']">Category is required</span>
+                      <span *ngIf="lorebookCtrl.get('category')?.errors?.['maxlength']">Category must not exceed 100 characters</span>
+                    </div>
+                  </div>
+
+                  <!-- Content Field -->
+                  <div class="form-group">
+                    <label [for]="'lorebook-' + i + '-content'" class="form-label">
+                      Content
+                      <span class="required">*</span>
+                    </label>
+                    <textarea
+                      [id]="'lorebook-' + i + '-content'"
+                      formControlName="content"
+                      class="form-textarea"
+                      rows="6"
+                      placeholder="Enter lorebook content..."
+                      [class.error]="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched"
+                    ></textarea>
+                    <div *ngIf="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched" class="field-error">
+                      <span *ngIf="lorebookCtrl.get('content')?.errors?.['required']">Content is required</span>
+                      <span *ngIf="lorebookCtrl.get('content')?.errors?.['minlength']">Content must be at least 10 characters</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="form-actions">
           <button type="button" (click)="cancel()" class="btn-cancel" [disabled]="saving">

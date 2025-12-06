@@ -4,7 +4,7 @@ public class Lorebook : IEntity
 {
     public Guid Id { get; set; }
 
-    public required Guid WorldbookId { get; set; }
+    public Guid WorldbookId { get; set; }
 
     public Worldbook Worldbook { get; set; } = null!;
 

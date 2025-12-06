@@ -299,6 +299,282 @@
   animation: spin 1s linear infinite;
 }
 
+/* ===== Lorebooks Section ===== */
+
+.lorebooks-section {
+  margin-top: var(--spacing-2xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ===== Add Lorebook Button ===== */
+
+.btn-add-lorebook {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: transparent;
+  border: 2px dashed var(--border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-add-lorebook svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-add-lorebook:hover:not(:disabled) {
+  background: rgba(147, 51, 234, 0.1);
+  border-style: solid;
+}
+
+.btn-add-lorebook:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Empty State ===== */
+
+.lorebooks-empty {
+  text-align: center;
+  padding: var(--spacing-3xl) var(--spacing-xl);
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.lorebooks-empty svg {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--spacing-md);
+  color: var(--text-muted);
+}
+
+.lorebooks-empty p {
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+/* ===== Lorebook Panel ===== */
+
+.lorebook-panel {
+  margin-bottom: var(--spacing-lg);
+}
+
+.lorebook-panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  user-select: none;
+}
+
+.lorebook-panel-header:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+}
+
+.lorebook-panel-header:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.lorebook-panel-header.expanded {
+  border-color: var(--color-primary);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.lorebook-panel-header.has-errors {
+  border-color: var(--status-error);
+}
+
+/* Chevron Icon */
+.chevron-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+/* Header Content */
+.panel-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.panel-title.placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.category-badge {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.btn-delete-lorebook {
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+}
+
+.btn-delete-lorebook:hover {
+  background: var(--status-error-bg);
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+
+.btn-delete-lorebook svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Panel Content */
+.lorebook-panel-content {
+  padding: var(--spacing-lg);
+  border: 2px solid var(--color-primary);
+  border-top: none;
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  background: var(--bg-card);
+  animation: slideDown var(--transition-base);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding: 0 var(--spacing-lg);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    padding: var(--spacing-lg);
+  }
+}
+
+.lorebook-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-card);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-primary);
+  transition: all var(--transition-base);
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .form-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="medieval-fantasy"] .form-textarea:focus {
+  box-shadow: var(--shadow-glow);
+}
+
+.form-textarea.error {
+  border-color: var(--status-error);
+}
+
+/* ===== Theme-Specific Styling ===== */
+
+/* Modern Dark Theme */
+[data-theme="modern-dark"] .lorebook-panel-header {
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="modern-dark"] .lorebook-panel-header.expanded {
+  box-shadow: 0 0 12px rgba(147, 51, 234, 0.2);
+}
+
+[data-theme="modern-dark"] .category-badge {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+}
+
+[data-theme="modern-dark"] .btn-add-lorebook:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+}
+
+/* Medieval Fantasy Theme */
+[data-theme="medieval-fantasy"] .lorebook-panel-header {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.8) 0%, rgba(45, 24, 16, 0.8) 100%);
+}
+
+[data-theme="medieval-fantasy"] .lorebook-panel-header.expanded {
+  box-shadow: var(--shadow-glow);
+}
+
+[data-theme="medieval-fantasy"] .category-badge {
+  text-shadow: 0 0 8px rgba(184, 134, 11, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.2) 0%, rgba(139, 117, 67, 0.2) 100%);
+}
+
+[data-theme="medieval-fantasy"] .btn-add-lorebook {
+  text-shadow: 0 0 8px rgba(184, 134, 11, 0.5);
+}
+
+/* ===== Responsive Design ===== */
+
 @media (max-width: 767px) {
   .form-container {
     padding: var(--spacing-lg);
@@ -320,5 +596,44 @@
   .btn-submit {
     width: 100%;
     justify-content: center;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-add-lorebook {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lorebook-panel-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .panel-title {
+    font-size: var(--font-size-sm);
+  }
+
+  .category-badge {
+    display: none;
+  }
+
+  .lorebook-panel-content {
+    padding: var(--spacing-md);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+      padding: 0 var(--spacing-md);
+    }
+    to {
+      opacity: 1;
+      max-height: 2000px;
+      padding: var(--spacing-md);
+    }
   }
 }
