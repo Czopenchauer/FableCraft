@@ -54,11 +54,23 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
                                   {context.MainCharacter.Description}
                                   </main_character>
                                   """);
+
         stringBuilder.AppendLine($"""
                                   <extra_context>
                                   {JsonSerializer.Serialize(context.ContextGathered, options)}
                                   </extra_context>
                                   """);
+
+        var lastTracker = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
+        if (lastTracker != null)
+        {
+            stringBuilder.AppendLine($"""
+                                      <current_scene_tracker>
+                                      {JsonSerializer.Serialize(lastTracker, options)}
+                                      </current_scene_tracker>
+                                      """);
+        }
+
         if (context.SceneContext.Length > 0)
         {
             stringBuilder.AppendLine($"""

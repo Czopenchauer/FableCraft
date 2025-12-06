@@ -377,6 +377,7 @@ Before submitting, verify:
 11. **Cinematic Moments**: Think in terms of camera shots and scene composition.
 
 12. **End With Energy**: Final line before choices should create urgency/curiosity.
+13. **Tracker** Take values in tracker into account when writing the scene.
 
 ## Output Format
 

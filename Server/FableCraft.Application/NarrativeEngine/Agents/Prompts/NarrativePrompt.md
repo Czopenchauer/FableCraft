@@ -593,6 +593,7 @@ Use double quotes for all JSON keys and string values. You must output valid JSO
 9. **Guide the Artist**: Your job is to provide both **strategic** and **artistic** direction. Be specific about the
    what, when, and why, and be evocative about the *how* and the *feel* to inspire the SceneGenerator.
 10. **Think Three Scenes Ahead**: Every directive should plant seeds for future development.
+11. **Tracker** Take values in tracker into account when writing the scene!
 
 ---
 

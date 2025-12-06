@@ -76,7 +76,7 @@ internal sealed class WriterAgent(
                                       </story_summary>
                                       """);
 
-            SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
+            SceneContext? lastScene = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
             if (lastScene != null)
             {
                 stringBuilder.AppendLine($"""
