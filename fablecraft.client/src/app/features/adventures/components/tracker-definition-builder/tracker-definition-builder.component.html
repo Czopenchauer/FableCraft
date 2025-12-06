@@ -17,7 +17,6 @@
           <input
             type="text"
             [(ngModel)]="definitionName"
-            
             class="form-input"
             placeholder="Enter tracker definition name"
           />
@@ -43,138 +42,11 @@
                 </button>
               </div>
 
-              <div class="field-body">
-                <div class="field-row">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.name"
-                    
-                    [disabled]="isFrameworkField('story', field.name)"
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Type</label>
-                  <select
-                    [(ngModel)]="field.type"
-                    
-                    [disabled]="isFrameworkField('story', field.name)"
-                    class="field-select"
-                  >
-                    <option [value]="FieldType.String">String</option>
-                    <option [value]="FieldType.Array">Array</option>
-                    <option [value]="FieldType.Object">Object</option>
-                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                  </select>
-                </div>
-
-                <div class="field-row">
-                  <label>Prompt</label>
-                  <textarea
-                    [(ngModel)]="field.prompt"
-                    
-                    class="field-textarea"
-                    rows="2"
-                  ></textarea>
-                </div>
-
-                <div class="field-row">
-                  <label>Default</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.defaultValue"
-                    
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Examples</label>
-                  <div class="example-values">
-                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
-                      <input
-                        type="text"
-                        [(ngModel)]="field.exampleValues![j]"
-                        
-                        class="field-input"
-                      />
-                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
-                    </div>
-                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
-                  </div>
-                </div>
-
-                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
-                  <div class="nested-header">
-                    <label>Nested Fields</label>
-                  </div>
-                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
-                    <div class="nested-field-header">
-                      <span class="nested-field-name">{{ nested.name }}</span>
-                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
-                    </div>
-                    <div class="nested-field-body">
-                      <div class="field-row">
-                        <label>Name</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.name"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Type</label>
-                        <select
-                          [(ngModel)]="nested.type"
-                          
-                          class="field-select"
-                        >
-                          <option [value]="FieldType.String">String</option>
-                          <option [value]="FieldType.Array">Array</option>
-                          <option [value]="FieldType.Object">Object</option>
-                        </select>
-                      </div>
-                      <div class="field-row">
-                        <label>Prompt</label>
-                        <textarea
-                          [(ngModel)]="nested.prompt"
-                          
-                          class="field-textarea"
-                          rows="2"
-                        ></textarea>
-                      </div>
-                      <div class="field-row">
-                        <label>Default</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.defaultValue"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Examples</label>
-                        <div class="example-values">
-                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
-                            <input
-                              type="text"
-                              [(ngModel)]="nested.exampleValues![m]"
-                              
-                              class="field-input"
-                            />
-                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
-                          </div>
-                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
-                </div>
-              </div>
+              <app-field-editor
+                [field]="field"
+                [isFrameworkField]="isFrameworkField('story', field.name)"
+                [nestingLevel]="0">
+              </app-field-editor>
             </div>
 
             <button class="btn-add-field" (click)="addCustomField('story')">+ Add Field</button>
@@ -197,7 +69,6 @@
                 <label>Prompt</label>
                 <textarea
                   [(ngModel)]="structure.charactersPresent.prompt"
-                  
                   class="field-textarea"
                   rows="2"
                 ></textarea>
@@ -206,11 +77,10 @@
               <div class="field-row">
                 <label>Examples</label>
                 <div class="example-values">
-                  <div *ngFor="let example of structure.charactersPresent.exampleValues; let j = index" class="example-value-row">
+                  <div *ngFor="let example of structure.charactersPresent.exampleValues; let j = index; trackBy: trackByIndex" class="example-value-row">
                     <input
                       type="text"
                       [(ngModel)]="structure.charactersPresent.exampleValues![j]"
-                      
                       class="field-input"
                     />
                     <button class="btn-remove-small" (click)="removeExampleValue(structure.charactersPresent, j)">×</button>
@@ -242,138 +112,11 @@
                 </button>
               </div>
 
-              <div class="field-body">
-                <div class="field-row">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.name"
-                    
-                    [disabled]="isFrameworkField('mainCharacter', field.name)"
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Type</label>
-                  <select
-                    [(ngModel)]="field.type"
-                    
-                    [disabled]="isFrameworkField('mainCharacter', field.name)"
-                    class="field-select"
-                  >
-                    <option [value]="FieldType.String">String</option>
-                    <option [value]="FieldType.Array">Array</option>
-                    <option [value]="FieldType.Object">Object</option>
-                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                  </select>
-                </div>
-
-                <div class="field-row">
-                  <label>Prompt</label>
-                  <textarea
-                    [(ngModel)]="field.prompt"
-                    
-                    class="field-textarea"
-                    rows="2"
-                  ></textarea>
-                </div>
-
-                <div class="field-row">
-                  <label>Default</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.defaultValue"
-                    
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Examples</label>
-                  <div class="example-values">
-                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
-                      <input
-                        type="text"
-                        [(ngModel)]="field.exampleValues![j]"
-                        
-                        class="field-input"
-                      />
-                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
-                    </div>
-                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
-                  </div>
-                </div>
-
-                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
-                  <div class="nested-header">
-                    <label>Nested Fields</label>
-                  </div>
-                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
-                    <div class="nested-field-header">
-                      <span class="nested-field-name">{{ nested.name }}</span>
-                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
-                    </div>
-                    <div class="nested-field-body">
-                      <div class="field-row">
-                        <label>Name</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.name"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Type</label>
-                        <select
-                          [(ngModel)]="nested.type"
-                          
-                          class="field-select"
-                        >
-                          <option [value]="FieldType.String">String</option>
-                          <option [value]="FieldType.Array">Array</option>
-                          <option [value]="FieldType.Object">Object</option>
-                        </select>
-                      </div>
-                      <div class="field-row">
-                        <label>Prompt</label>
-                        <textarea
-                          [(ngModel)]="nested.prompt"
-                          
-                          class="field-textarea"
-                          rows="2"
-                        ></textarea>
-                      </div>
-                      <div class="field-row">
-                        <label>Default</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.defaultValue"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Examples</label>
-                        <div class="example-values">
-                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
-                            <input
-                              type="text"
-                              [(ngModel)]="nested.exampleValues![m]"
-                              
-                              class="field-input"
-                            />
-                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
-                          </div>
-                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
-                </div>
-              </div>
+              <app-field-editor
+                [field]="field"
+                [isFrameworkField]="isFrameworkField('mainCharacter', field.name)"
+                [nestingLevel]="0">
+              </app-field-editor>
             </div>
 
             <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Field</button>
@@ -400,138 +143,11 @@
                 </button>
               </div>
 
-              <div class="field-body">
-                <div class="field-row">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.name"
-                    
-                    [disabled]="isFrameworkField('characters', field.name)"
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Type</label>
-                  <select
-                    [(ngModel)]="field.type"
-                    
-                    [disabled]="isFrameworkField('characters', field.name)"
-                    class="field-select"
-                  >
-                    <option [value]="FieldType.String">String</option>
-                    <option [value]="FieldType.Array">Array</option>
-                    <option [value]="FieldType.Object">Object</option>
-                    <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                  </select>
-                </div>
-
-                <div class="field-row">
-                  <label>Prompt</label>
-                  <textarea
-                    [(ngModel)]="field.prompt"
-                    
-                    class="field-textarea"
-                    rows="2"
-                  ></textarea>
-                </div>
-
-                <div class="field-row">
-                  <label>Default</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="field.defaultValue"
-                    
-                    class="field-input"
-                  />
-                </div>
-
-                <div class="field-row">
-                  <label>Examples</label>
-                  <div class="example-values">
-                    <div *ngFor="let example of field.exampleValues; let j = index" class="example-value-row">
-                      <input
-                        type="text"
-                        [(ngModel)]="field.exampleValues![j]"
-                        
-                        class="field-input"
-                      />
-                      <button class="btn-remove-small" (click)="removeExampleValue(field, j)">×</button>
-                    </div>
-                    <button class="btn-add-small" (click)="addExampleValue(field)">+ Example</button>
-                  </div>
-                </div>
-
-                <div *ngIf="field.type === FieldType.Object || field.type === FieldType.ForEachObject" class="nested-fields">
-                  <div class="nested-header">
-                    <label>Nested Fields</label>
-                  </div>
-                  <div *ngFor="let nested of field.nestedFields; let k = index" class="nested-field-card">
-                    <div class="nested-field-header">
-                      <span class="nested-field-name">{{ nested.name }}</span>
-                      <button class="btn-remove-small" (click)="removeNestedField(field, k)">×</button>
-                    </div>
-                    <div class="nested-field-body">
-                      <div class="field-row">
-                        <label>Name</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.name"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Type</label>
-                        <select
-                          [(ngModel)]="nested.type"
-                          
-                          class="field-select"
-                        >
-                          <option [value]="FieldType.String">String</option>
-                          <option [value]="FieldType.Array">Array</option>
-                          <option [value]="FieldType.Object">Object</option>
-                        </select>
-                      </div>
-                      <div class="field-row">
-                        <label>Prompt</label>
-                        <textarea
-                          [(ngModel)]="nested.prompt"
-                          
-                          class="field-textarea"
-                          rows="2"
-                        ></textarea>
-                      </div>
-                      <div class="field-row">
-                        <label>Default</label>
-                        <input
-                          type="text"
-                          [(ngModel)]="nested.defaultValue"
-                          
-                          class="field-input"
-                        />
-                      </div>
-                      <div class="field-row">
-                        <label>Examples</label>
-                        <div class="example-values">
-                          <div *ngFor="let example of nested.exampleValues; let m = index" class="example-value-row">
-                            <input
-                              type="text"
-                              [(ngModel)]="nested.exampleValues![m]"
-                              
-                              class="field-input"
-                            />
-                            <button class="btn-remove-small" (click)="removeExampleValue(nested, m)">×</button>
-                          </div>
-                          <button class="btn-add-small" (click)="addExampleValue(nested)">+ Example</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <button class="btn-add-small" (click)="addNestedField(field)">+ Add Nested Field</button>
-                </div>
-              </div>
+              <app-field-editor
+                [field]="field"
+                [isFrameworkField]="isFrameworkField('characters', field.name)"
+                [nestingLevel]="0">
+              </app-field-editor>
             </div>
 
             <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Field</button>
@@ -567,25 +183,11 @@
                   <span class="field-name">{{ field.name }}</span>
                   <button class="btn-remove" (click)="removeField('characterDevelopment', i)">×</button>
                 </div>
-                <div class="field-body">
-                  <div class="field-row">
-                    <label>Name</label>
-                    <input type="text" [(ngModel)]="field.name"  class="field-input" />
-                  </div>
-                  <div class="field-row">
-                    <label>Type</label>
-                    <select [(ngModel)]="field.type"  class="field-select">
-                      <option [value]="FieldType.String">String</option>
-                      <option [value]="FieldType.Array">Array</option>
-                      <option [value]="FieldType.Object">Object</option>
-                      <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                    </select>
-                  </div>
-                  <div class="field-row">
-                    <label>Prompt</label>
-                    <textarea [(ngModel)]="field.prompt"  class="field-textarea" rows="2"></textarea>
-                  </div>
-                </div>
+                <app-field-editor
+                  [field]="field"
+                  [isFrameworkField]="false"
+                  [nestingLevel]="0">
+                </app-field-editor>
               </div>
               <button class="btn-add-field" (click)="addCustomField('characterDevelopment')">+ Add Field</button>
             </div>
@@ -616,25 +218,11 @@
                   <span class="field-name">{{ field.name }}</span>
                   <button class="btn-remove" (click)="removeField('mainCharacterDevelopment', i)">×</button>
                 </div>
-                <div class="field-body">
-                  <div class="field-row">
-                    <label>Name</label>
-                    <input type="text" [(ngModel)]="field.name"  class="field-input" />
-                  </div>
-                  <div class="field-row">
-                    <label>Type</label>
-                    <select [(ngModel)]="field.type"  class="field-select">
-                      <option [value]="FieldType.String">String</option>
-                      <option [value]="FieldType.Array">Array</option>
-                      <option [value]="FieldType.Object">Object</option>
-                      <option [value]="FieldType.ForEachObject">ForEachObject</option>
-                    </select>
-                  </div>
-                  <div class="field-row">
-                    <label>Prompt</label>
-                    <textarea [(ngModel)]="field.prompt"  class="field-textarea" rows="2"></textarea>
-                  </div>
-                </div>
+                <app-field-editor
+                  [field]="field"
+                  [isFrameworkField]="false"
+                  [nestingLevel]="0">
+                </app-field-editor>
               </div>
               <button class="btn-add-field" (click)="addCustomField('mainCharacterDevelopment')">+ Add Field</button>
             </div>

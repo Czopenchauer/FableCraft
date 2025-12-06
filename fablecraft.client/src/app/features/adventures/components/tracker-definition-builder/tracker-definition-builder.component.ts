@@ -11,11 +11,12 @@ import {
   FieldType
 } from '../../models/tracker-definition.model';
 import { JsonRendererComponent } from '../json-renderer/json-renderer.component';
+import { FieldEditorComponent } from '../field-editor/field-editor.component';
 
 @Component({
   selector: 'app-tracker-definition-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, JsonRendererComponent],
+  imports: [CommonModule, FormsModule, JsonRendererComponent, FieldEditorComponent],
   templateUrl: './tracker-definition-builder.component.html',
   styleUrls: ['./tracker-definition-builder.component.css']
 })
