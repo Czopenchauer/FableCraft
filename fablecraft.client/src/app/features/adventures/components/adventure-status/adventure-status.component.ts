@@ -18,8 +18,8 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
   errorMessage = '';
   private destroy$ = new Subject<void>();
   private adventureId: string | null = null;
-  // Poll every 2 seconds
-  private readonly POLL_INTERVAL = 2000;
+  // Poll every 5 seconds
+  private readonly POLL_INTERVAL = 5000;
 
   constructor(
     private route: ActivatedRoute,

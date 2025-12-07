@@ -101,6 +101,11 @@ internal sealed class WriterAgent(
                                       """);
         }
 
+        stringBuilder.AppendLine($"""
+                                  <player_action>
+                                  {context.PlayerAction}
+                                  </player_action>
+                                  """);
         chatHistory.AddUserMessage(stringBuilder.ToString());
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();

@@ -37,6 +37,12 @@ internal sealed class ContextGatherer(
             AllowTrailingCommas = true
         };
 
+        if (context.SceneContext.Length == 0)
+        {
+            context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
+            return;
+        }
+
         var contextPrompt = $"""
                              <story_summary>
                              {context.Summary}

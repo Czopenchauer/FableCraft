@@ -25,7 +25,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
-        chatHistory.AddSystemMessage(systemPrompt);
+        // chatHistory.AddSystemMessage(systemPrompt);
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -35,7 +35,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
 
         SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
 
-        var stringBuilder = new StringBuilder();
+        var stringBuilder = new StringBuilder(systemPrompt);
         if (lastScene != null)
         {
             var narrativeDirection = JsonSerializer.Serialize(lastScene.Metadata.NarrativeMetadata, options);
@@ -103,8 +103,12 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
                                       """);
         }
 
+        stringBuilder.AppendLine($"""
+                                 <player_action>
+                                 {context.PlayerAction}
+                                 </player_action>
+                                 """);
         chatHistory.AddUserMessage(stringBuilder.ToString());
-        chatHistory.AddUserMessage(context.PlayerAction);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

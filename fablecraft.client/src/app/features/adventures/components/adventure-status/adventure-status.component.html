@@ -5,6 +5,9 @@
       <p *ngIf="!hasAnyFailedStatus() && !hasError" class="header-subtitle">
         Please wait while we prepare your adventure...
       </p>
+      <p *ngIf="!hasAnyFailedStatus() && !hasError" class="header-info">
+        Creation time depends on the worldbook size and LLM speed. For larger worldbooks, this can take over 10 minutes.
+      </p>
     </div>
 
     <!-- Loading State -->

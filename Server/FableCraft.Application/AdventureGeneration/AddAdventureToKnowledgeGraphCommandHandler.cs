@@ -198,6 +198,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             });
         }
 
+        await dbContext.Adventures.Where(x => x.Id == adventure.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(a => a.SceneGenerationStatus, ProcessingStatus.InProgress),
+                cancellationToken);
         IExecutionStrategy executionStrategy = dbContext.Database.CreateExecutionStrategy();
         await executionStrategy.ExecuteAsync(async () =>
         {

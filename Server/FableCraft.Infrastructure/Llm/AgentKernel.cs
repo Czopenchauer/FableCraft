@@ -116,9 +116,9 @@ internal sealed class AgentKernel : IAgentKernel
 
                                      return result.Content;
                                  }
-                                 catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadGateway)
+                                 catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
                                  {
-                                     _logger.Error(ex, "Bad Gateway error occurred while calling LLM service. {message}", ex.ResponseContent);
+                                     _logger.Error(ex, "Error occurred while calling LLM service. {message}", ex.ResponseContent);
                                      throw;
                                  }
                              },
