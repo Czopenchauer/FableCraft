@@ -63,9 +63,10 @@
             class="form-input"
             formControlName="referenceTime"
             id="referenceTime"
-            placeholder="e.g., Medieval era, Year 2150, Victorian London"
+            placeholder="e.g., 11-11-2020, 04-04-999"
             type="text"
           />
+          <span class="help-text">Initial date for the story tracker</span>
           <span *ngIf="isFieldInvalid('referenceTime')" class="error-text">
             {{ getFieldError('referenceTime') }}
           </span>
@@ -78,8 +79,8 @@
             class="form-textarea"
             formControlName="authorNotes"
             id="authorNotes"
-            placeholder="Describe the style, tone, and world of your adventure (e.g., 'dark and gritty fantasy with steampunk elements', 'whimsical high fantasy', 'epic heroic saga in a medieval world')..."
-            rows="4"
+            placeholder="Describe the style, tone, and world of your adventure (e.g., 'dark and gritty fantasy with steampunk elements', 'whimsical high fantasy')..."
+            rows="3"
           ></textarea>
           <span *ngIf="isFieldInvalid('authorNotes')" class="error-text">
             {{ getFieldError('authorNotes') }}
@@ -93,8 +94,8 @@
             class="form-textarea"
             formControlName="firstSceneDescription"
             id="firstSceneDescription"
-            placeholder="Describe the opening scene of your adventure. Where does your story begin? What is the situation?"
-            rows="4"
+            placeholder="Describe the opening scene of your adventure. Where does your story begin?"
+            rows="3"
           ></textarea>
           <span *ngIf="isFieldInvalid('firstSceneDescription')" class="error-text">
             {{ getFieldError('firstSceneDescription') }}
@@ -132,7 +133,7 @@
             formControlName="description"
             id="characterDescription"
             placeholder="Physical appearance, personality, skills, motivations, background..."
-            rows="4"
+            rows="3"
           ></textarea>
           <span *ngIf="isFieldInvalid('description', characterGroup)" class="error-text">
             {{ getFieldError('description', characterGroup) }}
@@ -183,7 +184,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="fastLlmConfig">Fast LLM Config *</label>
+            <label class="form-label" for="fastLlmConfig">Fast LLM *</label>
             <select
               [class.input-error]="isFieldInvalid('fastLlmConfig')"
               class="form-select"
@@ -195,13 +196,14 @@
                 {{ preset.name }}
               </option>
             </select>
+            <span class="help-text">Smaller, faster model for simple tasks (e.g., Gemini Flash 2.5)</span>
             <span *ngIf="isFieldInvalid('fastLlmConfig')" class="error-text">
               {{ getFieldError('fastLlmConfig') }}
             </span>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="complexLlmConfig">Complex LLM Config *</label>
+            <label class="form-label" for="complexLlmConfig">Complex LLM *</label>
             <select
               [class.input-error]="isFieldInvalid('complexLlmConfig')"
               class="form-select"
@@ -213,6 +215,7 @@
                 {{ preset.name }}
               </option>
             </select>
+            <span class="help-text">Workhorse for story generation and complex narrative tasks (e.g., Gemini 2.5 Pro)</span>
             <span *ngIf="isFieldInvalid('complexLlmConfig')" class="error-text">
               {{ getFieldError('complexLlmConfig') }}
             </span>
