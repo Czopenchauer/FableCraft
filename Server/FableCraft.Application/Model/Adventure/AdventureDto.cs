@@ -1,6 +1,4 @@
-﻿using FableCraft.Application.Model.Worldbook;
-
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace FableCraft.Application.Model.Adventure;
 
@@ -16,9 +14,9 @@ public class AdventureDto
 
     public required CharacterDto Character { get; init; } = null!;
 
-    public List<LorebookEntryDto> Lorebook { get; init; } = new();
+    public Guid? WorldbookId { get; init; }
 
-    public required string TrackerStructure { get; init; }
+    public required Guid TrackerDefinitionId { get; init; }
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>
@@ -32,20 +30,5 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
         RuleFor(x => x.Character)
             .NotNull().WithMessage("Character is required")
             .SetValidator(new CharacterDtoValidator());
-
-        RuleForEach(x => x.Lorebook)
-            .SetValidator(new LorebookEntryDtoValidator());
-
-        RuleFor(x => x.Lorebook)
-            .Must(HaveUniqueCategories)
-            .WithMessage("Lorebook entries must have unique content");
-    }
-
-    private static bool HaveUniqueCategories(List<LorebookEntryDto>? lorebook)
-    {
-        if (lorebook == null || lorebook.Count == 0)
-            return true;
-
-        return lorebook.Count == lorebook.Select(x => x.Content).Distinct(StringComparer.OrdinalIgnoreCase).Count();
     }
 }

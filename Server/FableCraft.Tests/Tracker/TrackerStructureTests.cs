@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Tests.Tracker;
@@ -11,12 +12,57 @@ public class TrackerStructureTests
         PropertyNameCaseInsensitive = true
     };
 
+    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
+    {
+        var dictionary = new Dictionary<string, object>();
+        var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
+
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.CharactersPresent),
+            new
+            {
+                structure.CharactersPresent.Prompt,
+                structure.CharactersPresent.DefaultValue,
+                structure.CharactersPresent.ExampleValues
+            });
+
+        var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
+
+        // var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
+        // dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Characters), new object[] { charDict });
+
+        return dictionary;
+    }
+    
+    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
+    {
+        var dictionary = new Dictionary<string, object>();
+        var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
+
+        // CharactersPresent is a single FieldDefinition of type Array, so output as array
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
+
+        var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
+        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
+
+        // var charDict = ConvertFieldsToDict(structure.Characters);
+        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
+
+        return dictionary;
+    }
+
     [Test]
     public async Task Story_ShouldHaveCompleteStructure()
     {
         // Act
         var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
-
+        var dictOutput = GetOutputJson(structure);
+        var output = JsonSerializer.Serialize(dictOutput, JsonOptions);
+        
+        var dictSystem = GetSystemPrompt(structure);
+        var outputSystem = JsonSerializer.Serialize(dictSystem, JsonOptions);
         // Assert
         await Assert.That(structure).IsNotNull();
         await Assert.That(structure!.Story).IsNotNull();

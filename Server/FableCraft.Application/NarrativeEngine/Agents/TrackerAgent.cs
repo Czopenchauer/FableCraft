@@ -24,7 +24,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
 
         var trackerStructure = await dbContext
             .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure })
+            .Select(x => new { x.Id, x.TrackerStructure, x.AdventureStartTime })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
         var chatHistory = new ChatHistory();
@@ -65,6 +65,15 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
                                                                                                 """))}
                                         </character>
                                         </new_characters>
+                                      """);
+        }
+
+        if (context.SceneContext.Length == 1)
+        {
+            stringBuilder.AppendLine($"""
+                                         <adventure_start_time>
+                                         {trackerStructure.AdventureStartTime}
+                                         </adventure_start_time>
                                       """);
         }
 
@@ -184,8 +193,8 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
 
-        var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
-        dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
+        // var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
+        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
     }

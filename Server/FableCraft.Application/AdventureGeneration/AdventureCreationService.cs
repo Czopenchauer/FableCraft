@@ -1,10 +1,8 @@
-﻿using System.Text.Json;
-
-using FableCraft.Application.Exceptions;
-using FableCraft.Application.Model;
+﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model.Adventure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
@@ -63,17 +61,20 @@ internal class AdventureCreationService : IAdventureCreationService
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
-        var trackerStructure = JsonSerializer.Deserialize<TrackerStructure>(adventureDto.TrackerStructure, options);
+        var tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken: cancellationToken);
 
-        if (trackerStructure is null)
+        List<LorebookEntry> lorebookEntries = new();
+        if (adventureDto.WorldbookId != null)
         {
-            throw new InvalidOperationException("Failed to deserialize tracker structure.");
+            lorebookEntries = await _dbContext.Lorebooks
+                .Select(entry => new LorebookEntry
+                {
+                    Description = entry.Title,
+                    Content = entry.Content,
+                    Category = entry.Category,
+                    ContentType = ContentType.txt,
+                    Priority = 0
+                }).ToListAsync(cancellationToken);
         }
 
         var adventure = new Adventure
@@ -89,16 +90,8 @@ internal class AdventureCreationService : IAdventureCreationService
                 Name = adventureDto.Character.Name,
                 Description = adventureDto.Character.Description
             },
-            Lorebook = adventureDto.Lorebook.Select(entry => new LorebookEntry
-                {
-                    Description = entry.Description,
-                    Content = entry.Content,
-                    Category = entry.Category,
-                    ContentType = entry.ContentType,
-                    Priority = entry.Order
-                })
-                .ToList(),
-            TrackerStructure = trackerStructure!
+            Lorebook = lorebookEntries,
+            TrackerStructure = tracker.Structure
         };
 
         try

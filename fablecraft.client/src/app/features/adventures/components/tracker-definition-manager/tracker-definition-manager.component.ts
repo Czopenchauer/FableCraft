@@ -13,8 +13,6 @@ import { TrackerDefinitionResponseDto } from '../../models/tracker-definition.mo
 })
 export class TrackerDefinitionManagerComponent implements OnInit {
   definitions: TrackerDefinitionResponseDto[] = [];
-  filteredDefinitions: TrackerDefinitionResponseDto[] = [];
-  searchTerm = '';
   isLoading = false;
   error: string | null = null;
 
@@ -31,7 +29,6 @@ export class TrackerDefinitionManagerComponent implements OnInit {
     this.trackerDefinitionService.getAllDefinitions().subscribe({
       next: (definitions) => {
         this.definitions = definitions;
-        this.filteredDefinitions = definitions;
         this.isLoading = false;
       },
       error: (err) => {
@@ -40,30 +37,6 @@ export class TrackerDefinitionManagerComponent implements OnInit {
         this.isLoading = false;
       }
     });
-  }
-
-  onSearch(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.searchTerm = target.value.toLowerCase();
-    this.filterDefinitions();
-  }
-
-  filterDefinitions(): void {
-    if (!this.searchTerm) {
-      this.filteredDefinitions = this.definitions;
-    } else {
-      this.filteredDefinitions = this.definitions.filter(def =>
-        def.name.toLowerCase().includes(this.searchTerm)
-      );
-    }
-  }
-
-  sortByName(): void {
-    this.filteredDefinitions.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  sortById(): void {
-    this.filteredDefinitions.sort((a, b) => a.id.localeCompare(b.id));
   }
 
   onDelete(definition: TrackerDefinitionResponseDto): void {
