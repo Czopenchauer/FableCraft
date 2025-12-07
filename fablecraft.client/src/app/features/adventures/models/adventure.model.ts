@@ -20,22 +20,16 @@ export interface CharacterDto {
   description: string;
 }
 
-export interface LorebookEntryDto {
-  description: string;
-  content: string;
-  category: string;
-  order: number;
-  contentType: ContentType;
-}
-
 export interface AdventureDto {
   name: string;
   firstSceneDescription: string;
-  authorNotes: string;
   referenceTime: string;
-  trackerStructure: string;
+  authorNotes: string;
   character: CharacterDto;
-  lorebook: LorebookEntryDto[];
+  worldbookId?: string | null;
+  trackerDefinitionId: string;
+  fastLlmConfig: string;
+  complexLlmConfig: string;
 }
 
 export interface AvailableLorebookDto {

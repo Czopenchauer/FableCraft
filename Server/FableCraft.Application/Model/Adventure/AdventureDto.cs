@@ -17,6 +17,10 @@ public class AdventureDto
     public Guid? WorldbookId { get; init; }
 
     public required Guid TrackerDefinitionId { get; init; }
+
+    public required Guid FastLlmConfig { get; init; }
+
+    public required Guid ComplexLlmConfig { get; init; }
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>
