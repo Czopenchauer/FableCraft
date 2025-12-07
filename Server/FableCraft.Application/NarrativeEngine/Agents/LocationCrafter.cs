@@ -45,20 +45,23 @@ internal sealed class LocationCrafter(
                                         """);
         }
 
-        var contextPrompt = $"""
-                             <location_request>
-                             {JsonSerializer.Serialize(request, options)}
-                             </location_request>
+        chatHistory.AddUserMessage($"""
+                                    <location_request>
+                                    {JsonSerializer.Serialize(request, options)}
+                                    </location_request>
+                                    """);
 
-                             <context>
-                             {JsonSerializer.Serialize(context.ContextGathered, options)}
-                             </context>
-                             
-                             <previous_scene>
-                             {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
-                             <previous_scene>
-                             """;
-        chatHistory.AddUserMessage(contextPrompt);
+        chatHistory.AddUserMessage($"""
+                                    <context>
+                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                    </context>
+                                    """);
+
+        chatHistory.AddUserMessage($"""
+                                    <previous_scene>
+                                    {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
+                                    <previous_scene>
+                                    """);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
@@ -83,16 +86,8 @@ internal sealed class LocationCrafter(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction()
+    private static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "LocationCrafterPrompt.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return PromptBuilder.BuildPromptAsync("LocationCrafterPrompt.md");
     }
 }

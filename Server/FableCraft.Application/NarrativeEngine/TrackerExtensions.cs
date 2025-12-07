@@ -14,6 +14,10 @@ public static class TrackerExtensions
             {
                 dict[field.Name] = new object[] { ConvertToSystemJson(field.NestedFields) };
             }
+            else if (field is { Type: FieldType.Object, HasNestedFields: true })
+            {
+                dict[field.Name] = ConvertToSystemJson(field.NestedFields);
+            }
             else if (field.DefaultValue != null)
             {
                 dict[field.Name] = new
@@ -37,6 +41,10 @@ public static class TrackerExtensions
             if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
             {
                 dict[field.Name] = new object[] { ConvertToOutputJson(field.NestedFields) };
+            }
+            else if (field is { Type: FieldType.Object, HasNestedFields: true })
+            {
+                dict[field.Name] = ConvertToOutputJson(field.NestedFields);
             }
             else if (field.DefaultValue != null)
             {

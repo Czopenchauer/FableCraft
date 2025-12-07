@@ -134,15 +134,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "TrackerPrompt.md"
-        );
-
-        var promptTemplate = await File.ReadAllTextAsync(promptPath);
+        var promptTemplate = await PromptBuilder.BuildPromptAsync("TrackerPrompt.md");
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         var serializeOptions = new JsonSerializerOptions
@@ -154,7 +146,6 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         return promptTemplate
             .Replace("{{story_prompt}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.Story)], serializeOptions))
             .Replace("{{main_character_prompt}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.MainCharacter)], serializeOptions))
-            .Replace("{{secondary_character_prompt}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.Characters)], serializeOptions))
             .Replace("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), serializeOptions));
     }
 

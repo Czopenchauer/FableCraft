@@ -107,14 +107,6 @@ internal sealed class MainCharacterDevelopmentAgent(
 
     private async static Task<string> BuildInstruction(TrackerStructure structure)
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "MainCharacterDevelopmentAgentPrompt.md"
-        );
-
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -122,7 +114,7 @@ internal sealed class MainCharacterDevelopmentAgent(
             AllowTrailingCommas = true
         };
 
-        var prompt = await File.ReadAllTextAsync(promptPath);
+        var prompt = await PromptBuilder.BuildPromptAsync("MainCharacterDevelopmentAgentPrompt.md");
         return prompt.Replace("{{main_character_development_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
             .Replace("{{main_character_development}}", JsonSerializer.Serialize(GetOutputJson(structure), options));
     }

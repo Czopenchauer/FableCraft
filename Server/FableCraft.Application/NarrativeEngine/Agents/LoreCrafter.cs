@@ -41,20 +41,23 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
                                         """);
         }
 
-        var contextPrompt = $"""
-                             <lore_creation_context>
-                             {JsonSerializer.Serialize(request, options)}
-                             </lore_creation_context>
+        chatHistory.AddUserMessage($"""
+                                    <lore_creation_context>
+                                    {JsonSerializer.Serialize(request, options)}
+                                    </lore_creation_context>
+                                    """);
 
-                             <context>
-                             {JsonSerializer.Serialize(context.ContextGathered, options)}
-                             </context>
+        chatHistory.AddUserMessage($"""
+                                    <context>
+                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                    </context>
+                                    """);
 
-                             <previous_scene>
-                             {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
-                             <previous_scene>
-                             """;
-        chatHistory.AddUserMessage(contextPrompt);
+        chatHistory.AddUserMessage($"""
+                                    <previous_scene>
+                                    {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
+                                    <previous_scene>
+                                    """);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
@@ -70,16 +73,8 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction()
+    private static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "LoreCrafterPrompt.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return PromptBuilder.BuildPromptAsync("LoreCrafterPrompt.md");
     }
 }

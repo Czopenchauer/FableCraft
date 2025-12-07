@@ -2,6 +2,7 @@
 
 **Core Function:**
 Analyze narrative segments from **{CHARACTER_NAME}'s perspective** and update the character tracker data structure containing quantitative statistics and metrics.
+{{jailbreak}}
 
 ---
 

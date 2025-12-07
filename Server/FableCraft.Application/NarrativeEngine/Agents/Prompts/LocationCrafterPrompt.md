@@ -2,6 +2,8 @@
 universe. Your goal is to create immersive, logically consistent locations that fit seamlessly into the existing world
 data.
 
+{{jailbreak}}
+
 ### CAPABILITIES & TOOL USE
 
 Gather only what is relevant to the current scene and narrative.

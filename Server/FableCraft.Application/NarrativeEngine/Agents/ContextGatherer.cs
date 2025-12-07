@@ -43,38 +43,43 @@ internal sealed class ContextGatherer(
             return;
         }
 
-        var contextPrompt = $"""
-                             <story_summary>
-                             {context.Summary}
-                             </story_summary>
+        chatHistory.AddUserMessage($"""
+                                    <story_summary>
+                                    {context.Summary}
+                                    </story_summary>
+                                    """);
 
-                             <last_scenes>
-                             {string.Join("\n", context.SceneContext
-                                 .OrderByDescending(x => x.SequenceNumber)
-                                 .Take(SceneContextCount)
-                                 .Select(x =>
-                                     $"""
-                                      SCENE NUMBER: {x.SequenceNumber}
-                                      {x.SceneContent}
-                                      {x.PlayerChoice}
-                                      """))}
-                             </last_scenes>
+        chatHistory.AddUserMessage($"""
+                                    <last_scenes>
+                                    {string.Join("\n", context.SceneContext
+                                        .OrderByDescending(x => x.SequenceNumber)
+                                        .Take(SceneContextCount)
+                                        .Select(x =>
+                                            $"""
+                                             SCENE NUMBER: {x.SequenceNumber}
+                                             {x.SceneContent}
+                                             {x.PlayerChoice}
+                                             """))}
+                                    </last_scenes>
+                                    """);
 
-                             <last_narrative_directions>
-                                {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
-                                    .Take(1)
-                                    .Select(z =>
-                                        $"""
-                                         {JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, options)}
-                                         """))}
-                             </last_narrative_directions>
+        chatHistory.AddUserMessage($"""
+                                    <last_narrative_directions>
+                                       {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
+                                           .Take(1)
+                                           .Select(z =>
+                                               $"""
+                                                {JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, options)}
+                                                """))}
+                                    </last_narrative_directions>
+                                    """);
 
-                             <main_character>
-                             {context.MainCharacter.Name}
-                             {context.MainCharacter.Description}
-                             </main_character>
-                             """;
-        chatHistory.AddUserMessage(contextPrompt);
+        chatHistory.AddUserMessage($"""
+                                    <main_character>
+                                    {context.MainCharacter.Name}
+                                    {context.MainCharacter.Description}
+                                    </main_character>
+                                    """);
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
         Kernel kernel = kernelBuilder.Create().Build();
@@ -104,16 +109,8 @@ internal sealed class ContextGatherer(
         }
     }
 
-    private async static Task<string> BuildInstruction()
+    private static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "ContextBuilderAgent.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
     }
 }

@@ -40,27 +40,31 @@ internal sealed class CharacterStateAgent(
             AllowTrailingCommas = true
         };
 
-        var prompt = $"""
-                      <previous_character_state>
-                      {JsonSerializer.Serialize(context.CharacterState, options)}
-                      </previous_character_state>
+        chatHistory.AddUserMessage($"""
+                                    <previous_character_state>
+                                    {JsonSerializer.Serialize(context.CharacterState, options)}
+                                    </previous_character_state>
+                                    """);
 
-                      <recent_scenes>
-                      {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
-                          .OrderByDescending(x => x.SequenceNumber)
-                          .TakeLast(3)
-                          .Select(s => $"""
-                                        SCENE NUMBER: {s.SequenceNumber}
-                                        {s.SceneContent}
-                                        {s.PlayerChoice}
-                                        """))}
-                      </recent_scenes>
+        chatHistory.AddUserMessage($"""
+                                    <recent_scenes>
+                                    {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
+                                        .OrderByDescending(x => x.SequenceNumber)
+                                        .TakeLast(3)
+                                        .Select(s => $"""
+                                                      SCENE NUMBER: {s.SequenceNumber}
+                                                      {s.SceneContent}
+                                                      {s.PlayerChoice}
+                                                      """))}
+                                    </recent_scenes>
+                                    """);
 
-                      <current_scene>
-                      {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
-                      </current_scene>
-                      """;
-        chatHistory.AddUserMessage(prompt);
+        chatHistory.AddUserMessage($"""
+                                    <current_scene>
+                                    {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
+                                    </current_scene>
+                                    """);
+
         var instruction = "Update the character state based on the new scene content and previous character state.";
         chatHistory.AddUserMessage(instruction);
 
@@ -98,15 +102,7 @@ internal sealed class CharacterStateAgent(
 
     private async static Task<string> BuildInstruction(string characterName)
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "CharacterStatePrompt.md"
-        );
-
-        var prompt = await File.ReadAllTextAsync(promptPath);
+        var prompt = await PromptBuilder.BuildPromptAsync("CharacterStatePrompt.md");
         return prompt.Replace("{CHARACTER_NAME}", characterName);
     }
 }

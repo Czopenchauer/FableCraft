@@ -122,14 +122,6 @@ internal sealed class CharacterPlugin(
 
     private async static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "CharacterPrompt.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return await Agents.PromptBuilder.BuildPromptAsync("CharacterPrompt.md");
     }
 }

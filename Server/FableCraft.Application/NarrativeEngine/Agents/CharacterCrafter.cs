@@ -124,13 +124,6 @@ internal sealed class CharacterCrafter(
 
     private async static Task<string> BuildInstruction(TrackerStructure structure)
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "CharacterCrafterPrompt.md"
-        );
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -138,75 +131,21 @@ internal sealed class CharacterCrafter(
             AllowTrailingCommas = true
         };
 
-        var prompt = await File.ReadAllTextAsync(promptPath);
+        var prompt = await PromptBuilder.BuildPromptAsync("CharacterCrafterPrompt.md");
         return prompt.Replace("{{character_tracker_format}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
             .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
     {
-        var charDict = ConvertFieldsToDict(structure.Characters);
+        var charDict = TrackerExtensions.ConvertToOutputJson(structure.Characters);
 
         return charDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = GetDefaultValue(field);
-                }
-            }
-
-            return dict;
-
-            object GetDefaultValue(FieldDefinition field)
-            {
-                return field.Type switch
-                       {
-                           FieldType.Array => new object[1],
-                           FieldType.Object => new { },
-                           FieldType.String => "",
-                           _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                       };
-            }
-        }
     }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
     {
-        var charDict = ConvertFieldsToDict(structure.Characters);
+        var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
         return charDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = new
-                    {
-                        field.Prompt,
-                        field.DefaultValue,
-                        field.ExampleValues
-                    };
-                }
-            }
-
-            return dict;
-        }
     }
 }

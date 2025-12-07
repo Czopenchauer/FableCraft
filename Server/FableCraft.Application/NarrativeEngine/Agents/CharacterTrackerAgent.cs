@@ -45,27 +45,31 @@ internal sealed class CharacterTrackerAgent(
             AllowTrailingCommas = true
         };
 
-        var prompt = $"""
-                      <previous_statistics>
-                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
-                      </previous_statistics>
+        chatHistory.AddUserMessage($"""
+                                    <previous_statistics>
+                                    {JsonSerializer.Serialize(context.CharacterTracker, options)}
+                                    </previous_statistics>
+                                    """);
 
-                      <recent_scenes>
-                      {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
-                          .OrderByDescending(x => x.SequenceNumber)
-                          .TakeLast(3)
-                          .Select(s => $"""
-                                        SCENE NUMBER: {s.SequenceNumber}
-                                        {s.SceneContent}
-                                        {s.PlayerChoice}
-                                        """))}
-                      </recent_scenes>
+        chatHistory.AddUserMessage($"""
+                                    <recent_scenes>
+                                    {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
+                                        .OrderByDescending(x => x.SequenceNumber)
+                                        .TakeLast(3)
+                                        .Select(s => $"""
+                                                      SCENE NUMBER: {s.SequenceNumber}
+                                                      {s.SceneContent}
+                                                      {s.PlayerChoice}
+                                                      """))}
+                                    </recent_scenes>
+                                    """);
 
-                      <current_scene>
-                      {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
-                      </current_scene>
-                      """;
-        chatHistory.AddUserMessage(prompt);
+        chatHistory.AddUserMessage($"""
+                                    <current_scene>
+                                    {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
+                                    </current_scene>
+                                    """);
+
         var instruction = "Update the tracker statistics based on the new scene content and previous tracker state.";
         chatHistory.AddUserMessage(instruction);
 
@@ -103,14 +107,6 @@ internal sealed class CharacterTrackerAgent(
 
     private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "CharacterTrackerAgentPrompt.md"
-        );
-
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -118,7 +114,7 @@ internal sealed class CharacterTrackerAgent(
             AllowTrailingCommas = true
         };
 
-        var prompt = await File.ReadAllTextAsync(promptPath);
+        var prompt = await PromptBuilder.BuildPromptAsync("CharacterTrackerAgentPrompt.md");
         return prompt.Replace("{{character_tracker_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
             .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
             .Replace("{CHARACTER_NAME}", characterName);

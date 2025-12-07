@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -25,7 +24,7 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
-        // chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddSystemMessage(systemPrompt);
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -35,80 +34,76 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
 
         SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
 
-        var stringBuilder = new StringBuilder(systemPrompt);
         if (lastScene != null)
         {
             var narrativeDirection = JsonSerializer.Serialize(lastScene.Metadata.NarrativeMetadata, options);
-            var promptContext = $"""
-                                 <last_scene_narrative_direction>
-                                 {narrativeDirection}
-                                 </last_scene_narrative_direction>
-                                 """;
-
-            stringBuilder.AppendLine(promptContext);
+            chatHistory.AddUserMessage($"""
+                                        <last_scene_narrative_direction>
+                                        {narrativeDirection}
+                                        </last_scene_narrative_direction>
+                                        """);
         }
 
-        stringBuilder.AppendLine($"""
-                                  <main_character>
-                                  {context.MainCharacter.Name}
-                                  {context.MainCharacter.Description}
-                                  </main_character>
-                                  """);
+        chatHistory.AddUserMessage($"""
+                                    <main_character>
+                                    {context.MainCharacter.Name}
+                                    {context.MainCharacter.Description}
+                                    </main_character>
+                                    """);
 
-        stringBuilder.AppendLine($"""
-                                  <extra_context>
-                                  {JsonSerializer.Serialize(context.ContextGathered, options)}
-                                  </extra_context>
-                                  """);
+        chatHistory.AddUserMessage($"""
+                                    <extra_context>
+                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                    </extra_context>
+                                    """);
 
         var lastTracker = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
         if (lastTracker != null)
         {
-            stringBuilder.AppendLine($"""
-                                      <current_scene_tracker>
-                                      {JsonSerializer.Serialize(lastTracker, options)}
-                                      </current_scene_tracker>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                        <current_scene_tracker>
+                                        {JsonSerializer.Serialize(lastTracker, options)}
+                                        </current_scene_tracker>
+                                        """);
         }
 
         if (context.SceneContext.Length > 0)
         {
-            stringBuilder.AppendLine($"""
-                                      <story_summary>
-                                      {context.Summary}
-                                      </story_summary>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                        <story_summary>
+                                        {context.Summary}
+                                        </story_summary>
+                                        """);
 
             if (lastScene != null)
             {
-                stringBuilder.AppendLine($"""
-                                          <current_scene_tracker>
-                                          {JsonSerializer.Serialize(lastScene.Metadata.Tracker, options)}
-                                          </current_scene_tracker>
-                                          """);
+                chatHistory.AddUserMessage($"""
+                                            <current_scene_tracker>
+                                            {JsonSerializer.Serialize(lastScene.Metadata.Tracker, options)}
+                                            </current_scene_tracker>
+                                            """);
             }
 
-            stringBuilder.AppendLine($"""
-                                      <last_scenes>
-                                      {string.Join("\n", context.SceneContext
-                                          .OrderByDescending(x => x.SequenceNumber)
-                                          .Take(SceneContextCount)
-                                          .Select(x =>
-                                              $"""
-                                               SCENE NUMBER: {x.SequenceNumber}
-                                               {x.SceneContent}
-                                               {x.PlayerChoice}
-                                               """))}
-                                      </last_scenes>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                        <last_scenes>
+                                        {string.Join("\n", context.SceneContext
+                                            .OrderByDescending(x => x.SequenceNumber)
+                                            .Take(SceneContextCount)
+                                            .Select(x =>
+                                                $"""
+                                                 SCENE NUMBER: {x.SequenceNumber}
+                                                 {x.SceneContent}
+                                                 {x.PlayerChoice}
+                                                 """))}
+                                        </last_scenes>
+                                        """);
         }
 
-        stringBuilder.AppendLine($"""
-                                 <player_action>
-                                 {context.PlayerAction}
-                                 </player_action>
-                                 """);
-        chatHistory.AddUserMessage(stringBuilder.ToString());
+        chatHistory.AddUserMessage($"""
+                                    <player_action>
+                                    {context.PlayerAction}
+                                    </player_action>
+                                    """);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
@@ -135,16 +130,8 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
         context.GenerationProcessStep = GenerationProcessStep.NarrativeDirectionFinished;
     }
 
-    private async static Task<string> BuildInstruction()
+    private static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "NarrativePrompt.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return PromptBuilder.BuildPromptAsync("NarrativePrompt.md");
     }
 }

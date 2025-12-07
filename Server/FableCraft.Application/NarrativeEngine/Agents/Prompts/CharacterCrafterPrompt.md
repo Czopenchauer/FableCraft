@@ -1,4 +1,5 @@
 ﻿**Generate a richly detailed character based on narrative requirements and world context.**
+{{jailbreak}}
 
 ## Knowledge Graph Integration
 

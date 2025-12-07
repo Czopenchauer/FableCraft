@@ -3,6 +3,7 @@ consistency for {CHARACTER_NAME}.
 
 **Core Function:**
 Analyze narrative segments from **{CHARACTER_NAME}'s perspective** and update the complete character profile including identity, personality, goals, knowledge, relationships, memories, emotions, arc, and behavior.
+{{jailbreak}}
 
 ---
 

@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -39,74 +38,83 @@ internal sealed class WriterAgent(
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true
         };
-        var stringBuilder = new StringBuilder($"""
-                                               <scene_direction>
-                                               {JsonSerializer.Serialize(context.NewNarrativeDirection!.SceneDirection, options)}
-                                               </scene_direction>
+        
+        chatHistory.AddUserMessage($"""
+                                    <scene_direction>
+                                    {JsonSerializer.Serialize(context.NewNarrativeDirection!.SceneDirection, options)}
+                                    </scene_direction>
+                                    """);
 
-                                               <new_lore>
-                                               {JsonSerializer.Serialize(context.NewLore ?? Array.Empty<GeneratedLore>(), options)}
-                                               </new_lore>
+        chatHistory.AddUserMessage($"""
+                                    <new_lore>
+                                    {JsonSerializer.Serialize(context.NewLore ?? Array.Empty<GeneratedLore>(), options)}
+                                    </new_lore>
+                                    """);
 
-                                               <new_locations>
-                                               {JsonSerializer.Serialize(context.NewLocations ?? Array.Empty<LocationGenerationResult>(), options)}
-                                               </new_locations>
+        chatHistory.AddUserMessage($"""
+                                    <new_locations>
+                                    {JsonSerializer.Serialize(context.NewLocations ?? Array.Empty<LocationGenerationResult>(), options)}
+                                    </new_locations>
+                                    """);
 
-                                               Newly created characters. Should be emulated as well as existing ones:
-                                               <new_characters>
-                                               {JsonSerializer.Serialize(context.NewCharacters ?? Array.Empty<CharacterContext>(), options)}
-                                               </new_characters>
-                                               """);
-        stringBuilder.AppendLine($"""
-                                  <main_character>
-                                  {context.MainCharacter.Name}
-                                  {context.MainCharacter.Description}
-                                  </main_character>
-                                  """);
-        stringBuilder.AppendLine($"""
-                                  <extra_context>
-                                  {JsonSerializer.Serialize(context.ContextGathered, options)}
-                                  </extra_context>
-                                  """);
+        chatHistory.AddUserMessage($"""
+                                    These character will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself.
+                                    <new_characters_requests>
+                                    {JsonSerializer.Serialize(context.NewNarrativeDirection.CreationRequests.Characters, options)}
+                                    </new_characters_requests>
+                                    """);
+
+        chatHistory.AddUserMessage($"""
+                                    <main_character>
+                                    {context.MainCharacter.Name}
+                                    {context.MainCharacter.Description}
+                                    </main_character>
+                                    """);
+
+        chatHistory.AddUserMessage($"""
+                                    <extra_context>
+                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                    </extra_context>
+                                    """);
+
         if (context.SceneContext.Length > 0)
         {
-            stringBuilder.AppendLine($"""
-                                      <story_summary>
-                                      {context.Summary}
-                                      </story_summary>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                        <story_summary>
+                                        {context.Summary}
+                                        </story_summary>
+                                        """);
 
             SceneContext? lastScene = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
             if (lastScene != null)
             {
-                stringBuilder.AppendLine($"""
-                                          <current_scene_tracker>
-                                          {JsonSerializer.Serialize(lastScene.Metadata.Tracker, options)}
-                                          </current_scene_tracker>
-                                          """);
+                chatHistory.AddUserMessage($"""
+                                            <current_scene_tracker>
+                                            {JsonSerializer.Serialize(lastScene.Metadata.Tracker, options)}
+                                            </current_scene_tracker>
+                                            """);
             }
 
-            stringBuilder.AppendLine($"""
-                                      <last_scenes>
-                                      {string.Join("\n", context.SceneContext
-                                          .OrderByDescending(x => x.SequenceNumber)
-                                          .Take(SceneContextCount)
-                                          .Select(x =>
-                                              $"""
-                                               SCENE NUMBER: {x.SequenceNumber}
-                                               {x.SceneContent}
-                                               {x.PlayerChoice}
-                                               """))}
-                                      </last_scenes>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                        <last_scenes>
+                                        {string.Join("\n", context.SceneContext
+                                            .OrderByDescending(x => x.SequenceNumber)
+                                            .Take(SceneContextCount)
+                                            .Select(x =>
+                                                $"""
+                                                 SCENE NUMBER: {x.SequenceNumber}
+                                                 {x.SceneContent}
+                                                 {x.PlayerChoice}
+                                                 """))}
+                                        </last_scenes>
+                                        """);
         }
 
-        stringBuilder.AppendLine($"""
-                                  <player_action>
-                                  {context.PlayerAction}
-                                  </player_action>
-                                  """);
-        chatHistory.AddUserMessage(stringBuilder.ToString());
+        chatHistory.AddUserMessage($"""
+                                    <player_action>
+                                    {context.PlayerAction}
+                                    </player_action>
+                                    """);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
@@ -138,16 +146,8 @@ internal sealed class WriterAgent(
         context.GenerationProcessStep = GenerationProcessStep.SceneGenerationFinished;
     }
 
-    private async static Task<string> BuildInstruction()
+    private static Task<string> BuildInstruction()
     {
-        var promptPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "NarrativeEngine",
-            "Agents",
-            "Prompts",
-            "WriterPrompt.md"
-        );
-
-        return await File.ReadAllTextAsync(promptPath);
+        return PromptBuilder.BuildPromptAsync("WriterPrompt.md");
     }
 }
