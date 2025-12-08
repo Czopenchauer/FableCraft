@@ -431,7 +431,7 @@ The scene direction MUST incorporate the results of Phase 1.5 Action Validation:
       - Potential actions they might take independently
       - Factors that might shift their behavior
 
-* **`narrative_goals`**: Flexible objectives for the scene (REPLACES rigid `plot_points_to_hit`)
+* **`narrative_goals`**: Flexible objectives for the scene
     * Frame as goals, not requirements: "AIM FOR" not "MUST ACHIEVE"
     * Provide alternatives: "If NPC cooperates: X. If NPC resists: Y. If NPC pursues own agenda: Z."
     * Focus on situations to create, not outcomes to force
@@ -746,7 +746,7 @@ Use double quotes for all JSON keys and string values. You must output valid JSO
       {
         "action": "The concrete action being attempted",
         "required_skill": "Skill name and required tier for success",
-        "required_resources": "Any items/tools needed",
+        "required_resources": "[Any items/tools needed]",
         "player_capability_assessment": "Brief assessment of player's ability",
         "challenge_tier": "Assessed difficulty tier",
         "outcome": "success | partial_success | failure | dangerous_failure | impossible",

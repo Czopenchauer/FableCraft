@@ -43,6 +43,14 @@ internal sealed class WriterAgent(
                                     <scene_direction>
                                     {JsonSerializer.Serialize(context.NewNarrativeDirection!.SceneDirection, options)}
                                     </scene_direction>
+                                    
+                                    <continuity_check>
+                                    {JsonSerializer.Serialize(context.NewNarrativeDirection!.ContinuityCheck, options)}
+                                    </continuity_check>
+                                    
+                                    <scene_metadata>
+                                    {JsonSerializer.Serialize(context.NewNarrativeDirection!.SceneMetadata, options)}
+                                    </scene_metadata>
                                     """);
 
         chatHistory.AddUserMessage($"""

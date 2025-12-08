@@ -7,6 +7,15 @@ public class NarrativeDirectorOutput
     [JsonPropertyName("extra_context_gathered")]
     public List<ExtraContext> ExtraContextGathered { get; set; } = new();
 
+    [JsonPropertyName("character_emulation_results")]
+    public List<CharacterEmulationResult> CharacterEmulationResults { get; set; } = new();
+
+    [JsonPropertyName("action_processing")]
+    public ActionProcessing ActionProcessing { get; set; } = new();
+
+    [JsonPropertyName("continuity_check")]
+    public ContinuityCheck ContinuityCheck { get; set; } = new();
+
     [JsonPropertyName("scene_metadata")]
     public SceneMetadata SceneMetadata { get; set; } = new();
 
@@ -48,6 +57,120 @@ public class ExtraContext
 
     [JsonPropertyName("key_findings")]
     public string KeyFindings { get; set; } = string.Empty;
+}
+
+public class CharacterEmulationResult
+{
+    [JsonPropertyName("character_name")]
+    public string CharacterName { get; set; } = string.Empty;
+
+    [JsonPropertyName("situation_provided")]
+    public string SituationProvided { get; set; } = string.Empty;
+
+    [JsonPropertyName("assessed_disposition")]
+    public string AssessedDisposition { get; set; } = string.Empty; // cooperative|hostile|neutral|opportunistic|conflicted
+
+    [JsonPropertyName("likely_behavior")]
+    public string LikelyBehavior { get; set; } = string.Empty;
+
+    [JsonPropertyName("own_goals_this_scene")]
+    public string OwnGoalsThisScene { get; set; } = string.Empty;
+
+    [JsonPropertyName("potential_actions")]
+    public List<string> PotentialActions { get; set; } = new();
+
+    [JsonPropertyName("cooperation_likelihood")]
+    public string CooperationLikelihood { get; set; } = string.Empty; // high|medium|low|none
+
+    [JsonPropertyName("factors_that_could_shift")]
+    public string FactorsThatCouldShift { get; set; } = string.Empty;
+
+    [JsonPropertyName("note")]
+    public string Note { get; set; } = "Writer's real-time emulation is authoritative";
+}
+
+public class ActionProcessing
+{
+    [JsonPropertyName("raw_player_action")]
+    public string RawPlayerAction { get; set; } = string.Empty;
+
+    [JsonPropertyName("extracted_actions")]
+    public List<ExtractedAction>? ExtractedActions { get; set; } = new();
+
+    [JsonPropertyName("wishful_elements")]
+    public WishfulElements? WishfulElements { get; set; } = new();
+
+    [JsonPropertyName("chain_result")]
+    public string ChainResult { get; set; } = string.Empty;
+
+    [JsonPropertyName("overall_scene_impact")]
+    public string OverallSceneImpact { get; set; } = string.Empty;
+}
+
+public class ExtractedAction
+{
+    [JsonPropertyName("action")]
+    public string Action { get; set; } = string.Empty;
+
+    [JsonPropertyName("required_skill")]
+    public string RequiredSkill { get; set; } = string.Empty;
+
+    [JsonPropertyName("required_resources")]
+    public string[] RequiredResources { get; set; } = [];
+
+    [JsonPropertyName("player_capability_assessment")]
+    public string PlayerCapabilityAssessment { get; set; } = string.Empty;
+
+    [JsonPropertyName("challenge_tier")]
+    public string ChallengeTier { get; set; } = string.Empty;
+
+    [JsonPropertyName("outcome")]
+    public string Outcome { get; set; } = string.Empty; // success|partial_success|failure|dangerous_failure|impossible
+
+    [JsonPropertyName("outcome_reasoning")]
+    public string OutcomeReasoning { get; set; } = string.Empty;
+
+    [JsonPropertyName("narrative_instruction")]
+    public string NarrativeInstruction { get; set; } = string.Empty;
+}
+
+public class WishfulElements
+{
+    [JsonPropertyName("detected_hopes")]
+    public string DetectedHopes { get; set; } = string.Empty;
+
+    [JsonPropertyName("treatment")]
+    public string Treatment { get; set; } = string.Empty;
+}
+
+public class ContinuityCheck
+{
+    [JsonPropertyName("last_scene_ended")]
+    public string LastSceneEnded { get; set; } = string.Empty;
+
+    [JsonPropertyName("ongoing_elements")]
+    public OngoingElements OngoingElements { get; set; } = new();
+
+    [JsonPropertyName("this_scene_opens")]
+    public string ThisSceneOpens { get; set; } = string.Empty;
+}
+
+public class OngoingElements
+{
+    [JsonPropertyName("location")]
+    public string Location { get; set; } = string.Empty;
+
+    [JsonPropertyName("active_conversation")]
+    public string ActiveConversation { get; set; } = string.Empty;
+
+    [JsonPropertyName("present_npcs")]
+    public string PresentNpcs { get; set; } = string.Empty;
+
+    [JsonPropertyName("unresolved_action")]
+    public string UnresolvedAction { get; set; } = string.Empty;
+
+    [JsonPropertyName("active_status_effects")]
+    public string ActiveStatusEffects { get; set; } = string.Empty;
 }
 
 public class SceneMetadata
@@ -135,6 +258,9 @@ public class MidTermObjective
 
     [JsonPropertyName("estimated_scenes_remaining")]
     public int EstimatedScenesRemaining { get; set; }
+
+    [JsonPropertyName("npc_cooperation_required")]
+    public string NpcCooperationRequired { get; set; } = string.Empty;
 }
 
 public class ShortTermObjective
@@ -150,6 +276,18 @@ public class ShortTermObjective
 
     [JsonPropertyName("can_complete_this_scene")]
     public bool CanCompleteThisScene { get; set; }
+
+    [JsonPropertyName("player_capable")]
+    public bool PlayerCapable { get; set; }
+
+    [JsonPropertyName("npc_cooperation_needed")]
+    public string NpcCooperationNeeded { get; set; } = string.Empty;
+
+    [JsonPropertyName("npc_cooperation_likelihood")]
+    public string NpcCooperationLikelihood { get; set; } = string.Empty;
+
+    [JsonPropertyName("alternative_paths")]
+    public string AlternativePaths { get; set; } = string.Empty;
 
     [JsonPropertyName("urgency")]
     public string Urgency { get; set; } = string.Empty; // immediate|pressing|background
@@ -180,6 +318,9 @@ public class ImmediateDanger
 
     [JsonPropertyName("threat_level")]
     public int ThreatLevel { get; set; }
+
+    [JsonPropertyName("threat_behavior")]
+    public string ThreatBehavior { get; set; } = string.Empty;
 
     [JsonPropertyName("can_be_avoided")]
     public bool CanBeAvoided { get; set; }
@@ -327,6 +468,9 @@ public class CharacterSpecifications
 
     [JsonPropertyName("backstory_depth")]
     public string BackstoryDepth { get; set; } = string.Empty; // minimal|moderate|extensive
+
+    [JsonPropertyName("own_goals")]
+    public List<string> OwnGoals { get; set; } = new();
 }
 
 public class CharacterConstraints
@@ -460,11 +604,29 @@ public class SceneDirection
     [JsonPropertyName("opening_focus")]
     public string OpeningFocus { get; set; } = string.Empty;
 
+    [JsonPropertyName("player_action_outcome")]
+    public PlayerActionOutcome PlayerActionOutcome { get; set; } = new();
+
+    [JsonPropertyName("player_hope_as_inner_monologue")]
+    public PlayerHopeAsInnerMonologue PlayerHopeAsInnerMonologue { get; set; } = new();
+
+    [JsonPropertyName("player_state_to_reflect")]
+    public PlayerStateToReflect PlayerStateToReflect { get; set; } = new();
+
+    [JsonPropertyName("npc_context")]
+    public List<NpcContext> NpcContext { get; set; } = new();
+
+    [JsonPropertyName("narrative_goals")]
+    public List<NarrativeGoal> NarrativeGoals { get; set; } = new();
+
+    [JsonPropertyName("npc_own_agendas")]
+    public List<NpcOwnAgenda> NpcOwnAgendas { get; set; } = new();
+
+    [JsonPropertyName("search_and_discovery_results")]
+    public SearchAndDiscoveryResults SearchAndDiscoveryResults { get; set; } = new();
+
     [JsonPropertyName("required_elements")]
     public List<string> RequiredElements { get; set; } = new();
-
-    [JsonPropertyName("plot_points_to_hit")]
-    public List<string> PlotPointsToHit { get; set; } = new();
 
     [JsonPropertyName("tone_guidance")]
     public string ToneGuidance { get; set; } = string.Empty;
@@ -472,11 +634,146 @@ public class SceneDirection
     [JsonPropertyName("pacing_notes")]
     public string PacingNotes { get; set; } = string.Empty;
 
+    [JsonPropertyName("sensory_details_to_include")]
+    public SensoryDetails SensoryDetailsToInclude { get; set; } = new();
+
+    [JsonPropertyName("key_elements_to_describe")]
+    public List<string> KeyElementsToDescribe { get; set; } = new();
+
     [JsonPropertyName("worldbuilding_opportunity")]
     public string WorldbuildingOpportunity { get; set; } = string.Empty;
 
     [JsonPropertyName("foreshadowing")]
     public List<string> Foreshadowing { get; set; } = new();
+}
+
+public class PlayerActionOutcome
+{
+    [JsonPropertyName("outcome_type")]
+    public string OutcomeType { get; set; } = string.Empty; // success|partial_success|failure|dangerous_failure|impossible
+
+    [JsonPropertyName("narrative_direction")]
+    public string NarrativeDirection { get; set; } = string.Empty;
+
+    [JsonPropertyName("show_attempt")]
+    public bool ShowAttempt { get; set; }
+
+    [JsonPropertyName("consequence_to_depict")]
+    public string ConsequenceToDepict { get; set; } = string.Empty;
+}
+
+public class PlayerHopeAsInnerMonologue
+{
+    [JsonPropertyName("hopes_detected")]
+    public string HopesDetected { get; set; } = string.Empty;
+
+    [JsonPropertyName("inner_monologue_direction")]
+    public string InnerMonologueDirection { get; set; } = string.Empty;
+}
+
+public class SearchAndDiscoveryResults
+{
+    [JsonPropertyName("search_performed")]
+    public bool SearchPerformed { get; set; }
+
+    [JsonPropertyName("items_found")]
+    public List<string> ItemsFound { get; set; } = new();
+
+    [JsonPropertyName("items_not_found")]
+    public List<string> ItemsNotFound { get; set; } = new();
+
+    [JsonPropertyName("discovery_instruction")]
+    public string DiscoveryInstruction { get; set; } = string.Empty;
+}
+
+public class SensoryDetails
+{
+    [JsonPropertyName("sight")]
+    public string Sight { get; set; } = string.Empty;
+
+    [JsonPropertyName("sound")]
+    public string Sound { get; set; } = string.Empty;
+
+    [JsonPropertyName("smell")]
+    public string Smell { get; set; } = string.Empty;
+
+    [JsonPropertyName("touch")]
+    public string Touch { get; set; } = string.Empty;
+
+    [JsonPropertyName("taste")]
+    public string Taste { get; set; } = string.Empty;
+}
+
+public class PlayerStateToReflect
+{
+    [JsonPropertyName("physical_condition")]
+    public string PhysicalCondition { get; set; } = string.Empty;
+
+    [JsonPropertyName("stamina_level")]
+    public string StaminaLevel { get; set; } = string.Empty;
+
+    [JsonPropertyName("status_effects")]
+    public string StatusEffects { get; set; } = string.Empty;
+
+    [JsonPropertyName("emotional_state")]
+    public string EmotionalState { get; set; } = string.Empty;
+
+    [JsonPropertyName("narrative_instruction")]
+    public string NarrativeInstruction { get; set; } = string.Empty;
+}
+
+public class NpcContext
+{
+    [JsonPropertyName("character_name")]
+    public string CharacterName { get; set; } = string.Empty;
+
+    [JsonPropertyName("disposition")]
+    public string Disposition { get; set; } = string.Empty;
+
+    [JsonPropertyName("own_goals")]
+    public string OwnGoals { get; set; } = string.Empty;
+
+    [JsonPropertyName("likely_actions")]
+    public string LikelyActions { get; set; } = string.Empty;
+
+    [JsonPropertyName("note")]
+    public string Note { get; set; } = "Writer's real-time emulation is authoritative - this is context only";
+}
+
+public class NarrativeGoal
+{
+    [JsonPropertyName("goal")]
+    public string Goal { get; set; } = string.Empty;
+
+    [JsonPropertyName("flexibility")]
+    public string Flexibility { get; set; } = string.Empty; // high|medium|low
+
+    [JsonPropertyName("if_npc_cooperates")]
+    public string IfNpcCooperates { get; set; } = string.Empty;
+
+    [JsonPropertyName("if_npc_resists")]
+    public string IfNpcResists { get; set; } = string.Empty;
+
+    [JsonPropertyName("if_npc_pursues_own_agenda")]
+    public string IfNpcPursuesOwnAgenda { get; set; } = string.Empty;
+
+    [JsonPropertyName("note")]
+    public string Note { get; set; } = "Character authenticity takes precedence - these are goals, not requirements";
+}
+
+public class NpcOwnAgenda
+{
+    [JsonPropertyName("character_name")]
+    public string CharacterName { get; set; } = string.Empty;
+
+    [JsonPropertyName("wants")]
+    public string Wants { get; set; } = string.Empty;
+
+    [JsonPropertyName("might_do")]
+    public string MightDo { get; set; } = string.Empty;
+
+    [JsonPropertyName("regardless_of_player")]
+    public string RegardlessOfPlayer { get; set; } = string.Empty;
 }
 
 public class ConsequencesQueue
