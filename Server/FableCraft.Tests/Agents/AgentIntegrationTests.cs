@@ -117,7 +117,7 @@ public class AgentIntegrationTests
     public async Task NarrativeDirectorAgent_OutputMapsToNarrativeDirectorOutput()
     {
         // Arrange
-        var agent = new NarrativeDirectorAgent(_agentKernel, _kernelBuilderFactory, _ragSearch);
+        var agent = new NarrativeDirectorAgent(_agentKernel, _kernelBuilderFactory, _ragSearch, _logger);
         GenerationContext context = AgentTestData.CreateSampleNarrativeContext(_testAdventureId, _dbContext, _testPreset);
 
         // Act

@@ -240,6 +240,9 @@ Plan your 3-4 paragraph structure based on the directive:
     - Empty bottles = someone's coping mechanism
     - Wilted flowers = neglect or absence
 
+6. **Scenes should connect to each other**
+    - Player actions naturally lead from one scene to the next
+
 **Tension Techniques by Level:**
 
 - **Low (1-3)**: Peaceful descriptions, casual dialogue, moments of beauty
@@ -268,7 +271,7 @@ Plan your 3-4 paragraph structure based on the directive:
 After the scene prose, present choices clearly:
 
 1. **Option Presentation**
-    - 3-4 distinct options
+    - 3 distinct options
     - Each option in 1-2 clear sentences
     - Include character suggestions if appropriate
     - Show different approaches (combat, social, stealth, creative)

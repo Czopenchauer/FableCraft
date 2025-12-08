@@ -11,11 +11,13 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch) : IProcessor
+internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch, ILogger logger) : IProcessor
 {
     private const int SceneContextCount = 20;
 
@@ -51,12 +53,6 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
                                     </main_character>
                                     """);
 
-        chatHistory.AddUserMessage($"""
-                                    <extra_context>
-                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
-                                    </extra_context>
-                                    """);
-
         var lastTracker = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
         if (lastTracker != null)
         {
@@ -75,14 +71,11 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
                                         </story_summary>
                                         """);
 
-            if (lastScene != null)
-            {
-                chatHistory.AddUserMessage($"""
-                                            <current_scene_tracker>
-                                            {JsonSerializer.Serialize(lastScene.Metadata.Tracker, options)}
-                                            </current_scene_tracker>
-                                            """);
-            }
+            chatHistory.AddUserMessage($"""
+                                        <extra_context>
+                                        {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                        </extra_context>
+                                        """);
 
             chatHistory.AddUserMessage($"""
                                         <last_scenes>
@@ -108,6 +101,9 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilderFactory, ragSearch);
+        await characterPlugin.Setup(context);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
         var outputFunc = new Func<string, NarrativeDirectorOutput>(response =>
         {

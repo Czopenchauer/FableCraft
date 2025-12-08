@@ -170,10 +170,10 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             {
                 var description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
                 fileToCommit.Add(description);
-                var charStats = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.CharacterStats), ContentType.json);
-                fileToCommit.Add(charStats);
-                var tracker = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.Tracker), ContentType.json);
-                fileToCommit.Add(tracker);
+                // var charStats = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.CharacterStats), ContentType.json);
+                // fileToCommit.Add(charStats);
+                // var tracker = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.Tracker), ContentType.json);
+                // fileToCommit.Add(tracker);
             }
 
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
@@ -207,9 +207,9 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         await _ragBuilder.CognifyAsync(message.AdventureId.ToString(), ct),
                     cancellationToken);
                 
-                await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await _ragBuilder.MemifyAsync(message.AdventureId.ToString(), ct),
-                    cancellationToken);
+                // await _resiliencePipeline.ExecuteAsync(async ct =>
+                //         await _ragBuilder.MemifyAsync(message.AdventureId.ToString(), ct),
+                //     cancellationToken);
                 foreach (Scene scene in scenesToCommit)
                 {
                     scene.CommitStatus = CommitStatus.Commited;

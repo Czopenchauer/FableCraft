@@ -253,10 +253,7 @@ internal sealed class SceneGenerationOrchestrator(
 
             var workflow = BuildEnrichmentWorkflow(processors);
 
-            foreach (IProcessor processor in workflow)
-            {
-                await processor.Invoke(context, cancellationToken);
-            }
+            await Task.WhenAll(workflow.Select(processor => processor.Invoke(context, cancellationToken)));
 
             await UpdateSceneWithEnrichment(scene, context, cancellationToken);
 

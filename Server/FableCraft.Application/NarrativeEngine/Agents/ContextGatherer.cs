@@ -26,7 +26,7 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -43,24 +43,11 @@ internal sealed class ContextGatherer(
             return;
         }
 
-        chatHistory.AddUserMessage($"""
-                                    <story_summary>
-                                    {context.Summary}
-                                    </story_summary>
-                                    """);
-
-        foreach (SceneContext sceneContext in context.SceneContext
-                     .OrderByDescending(x => x.SequenceNumber)
-                     .Take(SceneContextCount))
-        {
-            chatHistory.AddUserMessage(
-                $"""
-                 <last_scene_{sceneContext.SequenceNumber}>
-                 {sceneContext.SceneContent}
-                 {sceneContext.PlayerChoice}
-                 </last_scene>
-                 """);
-        }
+//         chatHistory.AddUserMessage($"""
+//                                     <story_summary>
+//                                     {context.Summary}
+//                                     </story_summary>
+//                                     """);
 
         chatHistory.AddUserMessage($"""
                                     <last_narrative_directions>
@@ -79,6 +66,33 @@ internal sealed class ContextGatherer(
                                     {context.MainCharacter.Description}
                                     </main_character>
                                     """);
+        var lastTracker = context.SceneContext
+            .Where(x => x.Metadata.Tracker != null)
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.Tracker;
+
+        if (lastTracker != null)
+        {
+            chatHistory.AddUserMessage($"""
+                                        <current_scene_tracker>
+                                        {JsonSerializer.Serialize(lastTracker, options)}
+                                        </current_scene_tracker>
+                                        """);
+        }
+
+        foreach (SceneContext sceneContext in context.SceneContext
+                     .OrderByDescending(x => x.SequenceNumber)
+                     .Take(SceneContextCount))
+        {
+            chatHistory.AddUserMessage(
+                $"""
+                 <last_scene_{sceneContext.SequenceNumber}>
+                 {sceneContext.SceneContent}
+                 {sceneContext.PlayerChoice}
+                 </last_scene_{sceneContext.SequenceNumber}>
+                 """);
+        }
+
         var outputFunc = new Func<string, string[]>(response =>
             JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
         Kernel kernel = kernelBuilder.Create().Build();
