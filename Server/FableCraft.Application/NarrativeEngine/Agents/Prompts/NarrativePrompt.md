@@ -718,284 +718,292 @@ Output your thinking step by step in <think> tags and then produce the JSON.
 Use double quotes for all JSON keys and string values. You must output valid JSON wrapped in
 `<narrative_scene_directive>` tags. Use this exact structure:
 
+**Type Guide (do NOT include type annotations in your output - they are for reference only):**
+- `(string)` = text value in quotes, e.g., `"example text"`
+- `(int)` = integer number without quotes, e.g., `5`
+- `(bool)` = boolean without quotes, e.g., `true` or `false`
+- `(string[])` = array of strings, e.g., `["item1", "item2"]`
+- `(int|null)` = integer or null, e.g., `5` or `null`
+- `// array of objects` = array containing multiple objects of this type
+
 <narrative_scene_directive>
 ```json
 {
-  "extra_context_gathered": [
+  "extra_context_gathered": [                                    // array of objects
     {
-      "knowledge": "Describe the specific KG query you performed.",
-      "key_findings": "Summarize the crucial information learned."
+      "knowledge": "(string) Describe the specific KG query you performed.",
+      "key_findings": "(string) Summarize the crucial information learned."
     }
   ],
-  "character_emulation_results": [
+  "character_emulation_results": [                               // array of objects
     {
-      "character_name": "Name of NPC emulated",
-      "situation_provided": "Context you gave to the emulation function",
-      "assessed_disposition": "cooperative | hostile | neutral | opportunistic | conflicted",
-      "likely_behavior": "Summary of how this NPC will likely act",
-      "own_goals_this_scene": "What this NPC wants, independent of player",
-      "potential_actions": ["List of things this NPC might do"],
-      "cooperation_likelihood": "high | medium | low | none",
-      "factors_that_could_shift": "What might change their behavior",
-      "note": "Writer's real-time emulation is authoritative"
+      "character_name": "(string) Name of NPC emulated",
+      "situation_provided": "(string) Context you gave to the emulation function",
+      "assessed_disposition": "(string) cooperative | hostile | neutral | opportunistic | conflicted",
+      "likely_behavior": "(string) Summary of how this NPC will likely act",
+      "own_goals_this_scene": "(string) What this NPC wants, independent of player",
+      "potential_actions": ["(string[]) List of things this NPC might do"],
+      "cooperation_likelihood": "(string) high | medium | low | none",
+      "factors_that_could_shift": "(string) What might change their behavior",
+      "note": "(string) Writer's real-time emulation is authoritative"
     }
   ],
-  "action_processing": {
-    "raw_player_action": "The exact action submitted by the player",
-    "extracted_actions": [
+  "action_processing": {                                         // object
+    "raw_player_action": "(string) The exact action submitted by the player",
+    "extracted_actions": [                                       // array of objects
       {
-        "action": "The concrete action being attempted",
-        "required_skill": "Skill name and required tier for success",
-        "required_resources": "[Any items/tools needed]",
-        "player_capability_assessment": "Brief assessment of player's ability",
-        "challenge_tier": "Assessed difficulty tier",
-        "outcome": "success | partial_success | failure | dangerous_failure | impossible",
-        "outcome_reasoning": "Brief explanation of why this outcome was determined",
-        "narrative_instruction": "How to depict this outcome in the scene"
+        "action": "(string) The concrete action being attempted",
+        "required_skill": "(string) Skill name and required tier for success",
+        "required_resources": ["(string[]) Any items/tools needed"],
+        "player_capability_assessment": "(string) Brief assessment of player's ability",
+        "challenge_tier": "(string) Assessed difficulty tier",
+        "outcome": "(string) success | partial_success | failure | dangerous_failure | impossible",
+        "outcome_reasoning": "(string) Brief explanation of why this outcome was determined",
+        "narrative_instruction": "(string) How to depict this outcome in the scene"
       }
     ],
-    "wishful_elements": {
-      "detected_hopes": "Any hopes/wishes/optimistic framing in the player action",
-      "treatment": "Render as inner monologue only - does not affect world state"
+    "wishful_elements": {                                        // object
+      "detected_hopes": "(string) Any hopes/wishes/optimistic framing in the player action",
+      "treatment": "(string) Render as inner monologue only - does not affect world state"
     },
-    "chain_result": "For multi-part actions: where did the chain break, or did it complete?",
-    "overall_scene_impact": "Summary of how action validation shapes this scene"
+    "chain_result": "(string) For multi-part actions: where did the chain break, or did it complete?",
+    "overall_scene_impact": "(string) Summary of how action validation shapes this scene"
   },
-  "continuity_check": {
-    "last_scene_ended": "Brief description of where/how the last scene concluded",
-    "ongoing_elements": {
-      "location": "Current location (must match last scene unless travel occurred)",
-      "active_conversation": "Any conversation in progress (must continue or conclude)",
-      "present_npcs": "NPCs who were present (must still be present unless departure shown)",
-      "unresolved_action": "Any action that was mid-execution",
-      "active_status_effects": "Status effects that persist from last scene"
+  "continuity_check": {                                          // object
+    "last_scene_ended": "(string) Brief description of where/how the last scene concluded",
+    "ongoing_elements": {                                        // object
+      "location": "(string) Current location (must match last scene unless travel occurred)",
+      "active_conversation": "(string) Any conversation in progress (must continue or conclude)",
+      "present_npcs": "(string) NPCs who were present (must still be present unless departure shown)",
+      "unresolved_action": "(string) Any action that was mid-execution",
+      "active_status_effects": "(string) Status effects that persist from last scene"
     },
-    "this_scene_opens": "How this scene connects to the above - must be direct continuation"
+    "this_scene_opens": "(string) How this scene connects to the above - must be direct continuation"
   },
-  "scene_metadata": {
-    "scene_number": "[Integer]",
-    "narrative_act": "setup | rising_action | climax | falling_action | resolution",
-    "beat_type": "discovery | challenge | choice_point | revelation | transformation | respite",
-    "tension_level": "[Integer 1-10]",
-    "pacing": "slow | building | intense | cooldown",
-    "emotional_target": "Describe the emotional journey, e.g., 'curiosity_to_dread'"
+  "scene_metadata": {                                            // object
+    "scene_number": "(int) Integer value",
+    "narrative_act": "(string) setup | rising_action | climax | falling_action | resolution",
+    "beat_type": "(string) discovery | challenge | choice_point | revelation | transformation | respite",
+    "tension_level": "(int) Integer 1-10",
+    "pacing": "(string) slow | building | intense | cooldown",
+    "emotional_target": "(string) Describe the emotional journey, e.g., 'curiosity_to_dread'"
   },
-  "objectives": {
-    "long_term": [{
-      "name": "Overarching adventure goal",
-      "description": "1-2 sentence summary",
-      "status": "active | dormant | completed | failed",
-      "progress_percentage": "[Integer 0-100]",
-      "stakes": "What's at risk if this fails",
-      "milestones_completed": ["Array of completed arcs"],
-      "milestones_remaining": ["Array of remaining arcs"]
+  "objectives": {                                                // object
+    "long_term": [{                                              // array of objects
+      "name": "(string) Overarching adventure goal",
+      "description": "(string) 1-2 sentence summary",
+      "status": "(string) active | dormant | completed | failed",
+      "progress_percentage": "(int) Integer 0-100",
+      "stakes": "(string) What's at risk if this fails",
+      "milestones_completed": ["(string[]) Array of completed arcs"],
+      "milestones_remaining": ["(string[]) Array of remaining arcs"]
     }],
-    "mid_term": [
+    "mid_term": [                                                // array of objects
       {
-        "name": "Current story arc goal",
-        "description": "Brief summary",
-        "parent_objective": "Name of parent long-term objective",
-        "status": "active | dormant | completed | failed",
-        "urgency": "immediate | pressing | background",
-        "progress_percentage": "[Integer 0-100]",
-        "required_steps": ["Steps needed"],
-        "steps_completed": ["Steps done"],
-        "estimated_scenes_remaining": "[Integer]",
-        "npc_cooperation_required": "Which NPCs need to cooperate, and their assessed likelihood"
+        "name": "(string) Current story arc goal",
+        "description": "(string) Brief summary",
+        "parent_objective": "(string) Name of parent long-term objective",
+        "status": "(string) active | dormant | completed | failed",
+        "urgency": "(string) immediate | pressing | background",
+        "progress_percentage": "(int) Integer 0-100",
+        "required_steps": ["(string[]) Steps needed"],
+        "steps_completed": ["(string[]) Steps done"],
+        "estimated_scenes_remaining": "(int) Integer value",
+        "npc_cooperation_required": "(string) Which NPCs need to cooperate, and their assessed likelihood"
       }
     ],
-    "short_term": [
+    "short_term": [                                              // array of objects
       {
-        "name": "Immediate concrete goal",
-        "description": "1-sentence description",
-        "parent_objective": "Name of parent mid-term objective",
-        "can_complete_this_scene": "[boolean]",
-        "player_capable": "[boolean] - Does player have skills/resources to achieve this?",
-        "npc_cooperation_needed": "Which NPCs must cooperate, if any",
-        "npc_cooperation_likelihood": "Based on emulation",
-        "alternative_paths": "How goal might be achieved if NPC doesn't cooperate",
-        "urgency": "immediate | pressing | background",
-        "expiry_in_scenes": "[Integer 1-3]",
-        "failure_consequence": "Specific consequence of failure/expiry"
+        "name": "(string) Immediate concrete goal",
+        "description": "(string) 1-sentence description",
+        "parent_objective": "(string) Name of parent mid-term objective",
+        "can_complete_this_scene": "(bool) true or false",
+        "player_capable": "(bool) Does player have skills/resources to achieve this?",
+        "npc_cooperation_needed": "(string) Which NPCs must cooperate, if any",
+        "npc_cooperation_likelihood": "(string) Based on emulation",
+        "alternative_paths": "(string) How goal might be achieved if NPC doesn't cooperate",
+        "urgency": "(string) immediate | pressing | background",
+        "expiry_in_scenes": "(int) Integer 1-3",
+        "failure_consequence": "(string) Specific consequence of failure/expiry"
       }
     ]
   },
-  "conflicts": {
-    "immediate_danger": {
-      "description": "Active threat in THIS scene, or 'None - Respite scene'",
-      "threat_level": "[Integer 0-10] - Assessed relative to THIS player's capabilities",
-      "threat_behavior": "Based on emulation, how is threat likely to act?",
-      "can_be_avoided": "[boolean]",
-      "resolution_options": ["2-4 realistic options accounting for player abilities AND NPC likely responses"]
+  "conflicts": {                                                 // object
+    "immediate_danger": {                                        // object
+      "description": "(string) Active threat in THIS scene, or 'None - Respite scene'",
+      "threat_level": "(int) Integer 0-10 - Assessed relative to THIS player's capabilities",
+      "threat_behavior": "(string) Based on emulation, how is threat likely to act?",
+      "can_be_avoided": "(bool) true or false",
+      "resolution_options": ["(string[]) 2-4 realistic options accounting for player abilities AND NPC likely responses"]
     },
-    "emerging_threats": [
+    "emerging_threats": [                                        // array of objects
       {
-        "description": "Future threat from player actions or world events",
-        "scenes_until_active": "[Integer 2-8]",
-        "trigger_condition": "What activates this threat",
-        "threat_level": "[Integer 1-10]"
+        "description": "(string) Future threat from player actions or world events",
+        "scenes_until_active": "(int) Integer 2-8",
+        "trigger_condition": "(string) What activates this threat",
+        "threat_level": "(int) Integer 1-10"
       }
     ],
-    "looming_threats": [
+    "looming_threats": [                                         // array of objects
       {
-        "description": "Large-scale background threat",
-        "current_distance": "far | approaching | near",
-        "escalation_rate": "slow | moderate | fast",
-        "player_awareness": "[boolean]"
+        "description": "(string) Large-scale background threat",
+        "current_distance": "(string) far | approaching | near",
+        "escalation_rate": "(string) slow | moderate | fast",
+        "player_awareness": "(bool) true or false"
       }
     ]
   },
-  "story_threads": {
-    "active": [
+  "story_threads": {                                             // object
+    "active": [                                                  // array of objects
       {
-        "id": "Unique identifier",
-        "name": "Thread name",
-        "status": "opening | developing | ready_to_close | background",
-        "user_investment": "[Integer]",
-        "scenes_active": "[Integer]",
-        "next_development": "Next plot point for this thread",
-        "connection_to_main": "How this connects to main objective"
+        "id": "(string) Unique identifier",
+        "name": "(string) Thread name",
+        "status": "(string) opening | developing | ready_to_close | background",
+        "user_investment": "(int) Integer value",
+        "scenes_active": "(int) Integer value",
+        "next_development": "(string) Next plot point for this thread",
+        "connection_to_main": "(string) How this connects to main objective"
       }
     ],
-    "seeds_available": [
+    "seeds_available": [                                         // array of objects
       {
-        "trigger": "What would activate this thread",
-        "thread_name": "Potential thread name",
-        "potential_value": "low | medium | high"
+        "trigger": "(string) What would activate this thread",
+        "thread_name": "(string) Potential thread name",
+        "potential_value": "(string) low | medium | high"
       }
     ]
   },
-  "creation_requests": {
-    "characters": [],
-    "lore": [],
-    "items": [],
-    "locations": []
+  "creation_requests": {                                         // object
+    "characters": [],                                            // array of CharacterRequest objects (see examples in prompt)
+    "lore": [],                                                  // array of LoreRequest objects (see examples in prompt)
+    "items": [],                                                 // array of ItemRequest objects (see examples in prompt)
+    "locations": []                                              // array of LocationRequest objects (see examples in prompt)
   },
-  "scene_direction": {
-    "opening_focus": "ARTISTIC BRIEF: First camera shot - MUST connect to last scene's ending",
-    "player_action_outcome": {
-      "outcome_type": "success | partial_success | failure | dangerous_failure | impossible",
-      "narrative_direction": "Specific direction for depicting this outcome",
-      "show_attempt": "[boolean] - Should narration show the character trying?",
-      "consequence_to_depict": "Immediate result to show in scene"
+  "scene_direction": {                                           // object
+    "opening_focus": "(string) ARTISTIC BRIEF: First camera shot - MUST connect to last scene's ending",
+    "player_action_outcome": {                                   // object
+      "outcome_type": "(string) success | partial_success | failure | dangerous_failure | impossible",
+      "narrative_direction": "(string) Specific direction for depicting this outcome",
+      "show_attempt": "(bool) Should narration show the character trying?",
+      "consequence_to_depict": "(string) Immediate result to show in scene"
     },
-    "player_hope_as_inner_monologue": {
-      "hopes_detected": "Any wishful elements from player action",
-      "inner_monologue_direction": "How to render these as character thoughts only"
+    "player_hope_as_inner_monologue": {                          // object
+      "hopes_detected": "(string) Any wishful elements from player action",
+      "inner_monologue_direction": "(string) How to render these as character thoughts only"
     },
-    "player_state_to_reflect": {
-      "physical_condition": "Current injuries, health status to show in prose",
-      "stamina_level": "Energy level affecting movement/actions",
-      "status_effects": "Active effects (poisoned, cursed, etc.) to depict",
-      "emotional_state": "Current emotional condition to reflect",
-      "narrative_instruction": "How to weave these into the prose naturally"
+    "player_state_to_reflect": {                                 // object
+      "physical_condition": "(string) Current injuries, health status to show in prose",
+      "stamina_level": "(string) Energy level affecting movement/actions",
+      "status_effects": "(string) Active effects (poisoned, cursed, etc.) to depict",
+      "emotional_state": "(string) Current emotional condition to reflect",
+      "narrative_instruction": "(string) How to weave these into the prose naturally"
     },
-    "npc_context": [
+    "npc_context": [                                             // array of objects
       {
-        "character_name": "NPC name",
-        "disposition": "From your emulation - cooperative/hostile/neutral/etc.",
-        "own_goals": "What this NPC wants this scene",
-        "likely_actions": "What they might do independently",
-        "note": "Writer's real-time emulation is authoritative - this is context only"
+        "character_name": "(string) NPC name",
+        "disposition": "(string) From your emulation - cooperative/hostile/neutral/etc.",
+        "own_goals": "(string) What this NPC wants this scene",
+        "likely_actions": "(string) What they might do independently",
+        "note": "(string) Writer's real-time emulation is authoritative - this is context only"
       }
     ],
-    "narrative_goals": [
+    "narrative_goals": [                                         // array of objects
       {
-        "goal": "What you're aiming to achieve narratively",
-        "flexibility": "high | medium | low",
-        "if_npc_cooperates": "How goal is achieved with cooperation",
-        "if_npc_resists": "Alternative path if NPC doesn't cooperate",
-        "if_npc_pursues_own_agenda": "What happens if NPC prioritizes their goals",
-        "note": "Character authenticity takes precedence - these are goals, not requirements"
+        "goal": "(string) What you're aiming to achieve narratively",
+        "flexibility": "(string) high | medium | low",
+        "if_npc_cooperates": "(string) How goal is achieved with cooperation",
+        "if_npc_resists": "(string) Alternative path if NPC doesn't cooperate",
+        "if_npc_pursues_own_agenda": "(string) What happens if NPC prioritizes their goals",
+        "note": "(string) Character authenticity takes precedence - these are goals, not requirements"
       }
     ],
-    "npc_own_agendas": [
+    "npc_own_agendas": [                                         // array of objects
       {
-        "character_name": "NPC name",
-        "wants": "What they want this scene",
-        "might_do": "Actions they might take to pursue their goals",
-        "regardless_of_player": "Things they'll do even if player doesn't interact with them"
+        "character_name": "(string) NPC name",
+        "wants": "(string) What they want this scene",
+        "might_do": "(string) Actions they might take to pursue their goals",
+        "regardless_of_player": "(string) Things they'll do even if player doesn't interact with them"
       }
     ],
-    "search_and_discovery_results": {
-      "search_performed": "[boolean]",
-      "items_found": ["List of items/info that actually exist"],
-      "items_not_found": ["Hoped-for things that don't exist - must show fruitless search"],
-      "discovery_instruction": "Specific direction for the search scene"
+    "search_and_discovery_results": {                            // object
+      "search_performed": "(bool) true or false",
+      "items_found": ["(string[]) List of items/info that actually exist"],
+      "items_not_found": ["(string[]) Hoped-for things that don't exist - must show fruitless search"],
+      "discovery_instruction": "(string) Specific direction for the search scene"
     },
-    "required_elements": ["3-5 non-negotiable scene details"],
-    "tone_guidance": "ARTISTIC BRIEF: Prose style, voice, emotional arc",
-    "pacing_notes": "ARTISTIC BRIEF: Scene rhythm instructions",
-    "sensory_details_to_include": {
-      "sight": "Visual details",
-      "sound": "Audio details",
-      "smell": "Olfactory details",
-      "touch": "Tactile details",
-      "taste": "If relevant"
+    "required_elements": ["(string[]) 3-5 non-negotiable scene details"],
+    "tone_guidance": "(string) ARTISTIC BRIEF: Prose style, voice, emotional arc",
+    "pacing_notes": "(string) ARTISTIC BRIEF: Scene rhythm instructions",
+    "sensory_details_to_include": {                              // object
+      "sight": "(string) Visual details",
+      "sound": "(string) Audio details",
+      "smell": "(string) Olfactory details",
+      "touch": "(string) Tactile details",
+      "taste": "(string) If relevant"
     },
-    "key_elements_to_describe": ["Objects/characters to focus on with how to describe them"],
-    "worldbuilding_opportunity": "Specific lore to weave in naturally",
-    "foreshadowing": ["1-3 subtle hints for future events"]
+    "key_elements_to_describe": ["(string[]) Objects/characters to focus on with how to describe them"],
+    "worldbuilding_opportunity": "(string) Specific lore to weave in naturally",
+    "foreshadowing": ["(string[]) 1-3 subtle hints for future events"]
   },
-  "consequences_queue": {
-    "immediate": [
+  "consequences_queue": {                                        // object
+    "immediate": [                                               // array of objects
       {
-        "description": "Direct result of player's action",
-        "effect": "How to reflect in scene opening/reactions"
+        "description": "(string) Direct result of player's action",
+        "effect": "(string) How to reflect in scene opening/reactions"
       }
     ],
-    "delayed": [
+    "delayed": [                                                 // array of objects
       {
-        "scenes_until_trigger": "[Integer]",
-        "description": "Delayed consequence from this action",
-        "effect": "What happens when triggered"
+        "scenes_until_trigger": "(int) Integer value",
+        "description": "(string) Delayed consequence from this action",
+        "effect": "(string) What happens when triggered"
       }
     ]
   },
-  "pacing_calibration": {
-    "recent_scene_types": ["Beat types of last 3-5 scenes"],
-    "recommendation": "What kind of scene is needed now",
-    "tension_trajectory": "Tension flow: last scene -> this scene -> next scene",
-    "user_pattern_observed": "Recurring player behaviors",
-    "adjustment": "How to adapt to or challenge player pattern"
+  "pacing_calibration": {                                        // object
+    "recent_scene_types": ["(string[]) Beat types of last 3-5 scenes"],
+    "recommendation": "(string) What kind of scene is needed now",
+    "tension_trajectory": "(string) Tension flow: last scene -> this scene -> next scene",
+    "user_pattern_observed": "(string) Recurring player behaviors",
+    "adjustment": "(string) How to adapt to or challenge player pattern"
   },
-  "continuity_notes": {
-    "promises_to_keep": ["Active promises requiring resolution"],
-    "elements_to_reincorporate": [
+  "continuity_notes": {                                          // object
+    "promises_to_keep": ["(string[]) Active promises requiring resolution"],
+    "elements_to_reincorporate": [                               // array of objects
       {
-        "element": "Chekhov's gun from past",
-        "optimal_reintroduction": "When to bring back",
-        "purpose": "Why it returns"
+        "element": "(string) Chekhov's gun from past",
+        "optimal_reintroduction": "(string) When to bring back",
+        "purpose": "(string) Why it returns"
       }
     ],
-    "relationship_changes": [
+    "relationship_changes": [                                    // array of objects
       {
-        "character": "NPC name",
-        "previous_standing": "[Integer -10 to 10]",
-        "new_standing": "[Integer -10 to 10]",
-        "reason": "Action that caused change"
+        "character": "(string) NPC name",
+        "previous_standing": "(int) Integer -10 to 10",
+        "new_standing": "(int) Integer -10 to 10",
+        "reason": "(string) Action that caused change"
       }
     ]
   },
-  "world_evolution": {
-    "time_progressed": "Duration of last scene",
-    "calendar_position": "Updated date/time",
-    "weather_shift": "Weather/time-of-day changes",
-    "background_events": ["1-2 off-screen events"],
-    "world_state_changes": [
+  "world_evolution": {                                           // object
+    "time_progressed": "(string) Duration of last scene",
+    "calendar_position": "(string) Updated date/time",
+    "weather_shift": "(string) Weather/time-of-day changes",
+    "background_events": ["(string[]) 1-2 off-screen events"],
+    "world_state_changes": [                                     // array of objects
       {
-        "element": "What changed",
-        "previous": "Previous state",
-        "current": "New state",
-        "scenes_until_critical": "[Integer or null]"
+        "element": "(string) What changed",
+        "previous": "(string) Previous state",
+        "current": "(string) New state",
+        "scenes_until_critical": "(int|null) Integer or null"
       }
     ]
   },
-  "meta_narrative": {
-    "detected_patterns": ["Current narrative tropes in play"],
-    "subversion_opportunity": "Chance to subvert a trope",
-    "genre_expectations_met": ["Recent genre elements fulfilled"],
-    "genre_expectations_needed": ["Overdue genre elements to incorporate"]
+  "meta_narrative": {                                            // object
+    "detected_patterns": ["(string[]) Current narrative tropes in play"],
+    "subversion_opportunity": "(string) Chance to subvert a trope",
+    "genre_expectations_met": ["(string[]) Recent genre elements fulfilled"],
+    "genre_expectations_needed": ["(string[]) Overdue genre elements to incorporate"]
   }
 }
 ```

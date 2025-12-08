@@ -116,7 +116,7 @@ public class ExtractedAction
     public string RequiredSkill { get; set; } = string.Empty;
 
     [JsonPropertyName("required_resources")]
-    public string[] RequiredResources { get; set; } = [];
+    public List<string> RequiredResources { get; set; } = new();
 
     [JsonPropertyName("player_capability_assessment")]
     public string PlayerCapabilityAssessment { get; set; } = string.Empty;

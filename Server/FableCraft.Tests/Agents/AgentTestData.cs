@@ -358,7 +358,6 @@ internal static class AgentTestData
             {
                 OpeningFocus = "The heavy oak door swings open, revealing a dimly lit tavern filled with suspicious glances.",
                 RequiredElements = new List<string> { "smoky atmosphere", "nervous innkeeper", "hushed conversations" },
-                PlotPointsToHit = new List<string> { "introduce the mystery", "hint at danger", "present an opportunity for information" },
                 ToneGuidance = "mysterious and slightly threatening",
                 PacingNotes = "slow build of tension",
                 WorldbuildingOpportunity = "describe local customs",
