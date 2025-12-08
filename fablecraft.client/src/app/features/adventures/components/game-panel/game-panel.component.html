@@ -15,6 +15,45 @@
       </button>
       <h1 class="page-title">{{ adventureName || 'Your Adventure' }}</h1>
       <div *ngIf="currentScene && !isLoading && !isRegenerating" class="action-buttons">
+        <!-- Navigation buttons -->
+        <button
+          (click)="goToPreviousScene()"
+          [disabled]="!currentScene.previousScene || isLoading"
+          class="btn-action btn-nav"
+          title="Previous scene"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M15 19l-7-7 7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  [attr.stroke-width]="2"></path>
+          </svg>
+          <span>Previous</span>
+        </button>
+        <button
+          (click)="goToCurrentScene()"
+          [disabled]="isCurrentScene() || isLoading"
+          class="btn-action btn-nav btn-current"
+          title="Jump to current scene"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M13 5l7 7-7 7M5 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  [attr.stroke-width]="2"></path>
+          </svg>
+          <span>Current</span>
+        </button>
+        <button
+          (click)="goToNextScene()"
+          [disabled]="!currentScene.nextScene || isLoading"
+          class="btn-action btn-nav"
+          title="Next scene"
+        >
+          <span>Next</span>
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M9 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  [attr.stroke-width]="2"></path>
+          </svg>
+        </button>
+
+        <!-- Action buttons -->
         <button
           (click)="onRegenerateScene()"
           class="btn-action btn-regenerate"
@@ -44,48 +83,6 @@
       </div>
     </div>
 
-    <!-- Scene Navigation -->
-    <div *ngIf="currentScene && !isInitialLoad" class="scene-navigation">
-      <button
-        (click)="goToPreviousScene()"
-        [disabled]="!currentScene.previousScene || isLoading"
-        class="nav-button nav-previous"
-        title="Previous scene"
-      >
-        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-          <path [attr.d]="'M15 19l-7-7 7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                [attr.stroke-width]="2"></path>
-        </svg>
-        <span>Previous</span>
-      </button>
-
-      <button
-        (click)="goToCurrentScene()"
-        [disabled]="isCurrentScene() || isLoading"
-        class="nav-button nav-current"
-        title="Jump to current scene"
-      >
-        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-          <path [attr.d]="'M13 5l7 7-7 7M5 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                [attr.stroke-width]="2"></path>
-        </svg>
-        <span>Current Scene</span>
-      </button>
-
-      <button
-        (click)="goToNextScene()"
-        [disabled]="!currentScene.nextScene || isLoading"
-        class="nav-button nav-next"
-        title="Next scene"
-      >
-        <span>Next</span>
-        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-          <path [attr.d]="'M9 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                [attr.stroke-width]="2"></path>
-        </svg>
-      </button>
-    </div>
-
     <!-- Loading State -->
     <div *ngIf="isLoading && isInitialLoad" class="loading-state">
       <div class="loading-content">
@@ -98,6 +95,16 @@
             class="opacity-75"></path>
         </svg>
         <p class="loading-text">Loading your adventure...</p>
+      </div>
+    </div>
+
+    <!-- Story Tracker (above scene) - Story and Characters Present only -->
+    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker" class="story-tracker-panel" [class.regenerating]="isRegenerating">
+      <div *ngIf="currentScene.tracker.story" class="story-tracker-section">
+        <app-json-renderer [data]="{story: currentScene.tracker.story}"></app-json-renderer>
+      </div>
+      <div *ngIf="currentScene.tracker.charactersPresent" class="story-tracker-section">
+        <app-json-renderer [data]="{charactersPresent: currentScene.tracker.charactersPresent}"></app-json-renderer>
       </div>
     </div>
 
@@ -116,12 +123,12 @@
         <p class="regenerating-text">Regenerating scene...</p>
       </div>
 
-      <!-- Columns: left tracker, right main content -->
+      <!-- Columns: left character tracker, right main content -->
       <div class="game-columns">
-        <!-- Tracker panel -->
+        <!-- Character Tracker panel (Protagonist and Characters) -->
         <div class="tracker-panel">
           <div class="tracker-header">
-            Tracker
+            Characters
             <span *ngIf="isEnriching" class="enriching-badge">Loading...</span>
             <span *ngIf="enrichmentFailed" class="enrichment-failed-badge">Failed</span>
           </div>
@@ -155,10 +162,15 @@
             </button>
           </div>
 
-          <app-json-renderer
-            *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker"
-            [data]="currentScene.tracker"
-          ></app-json-renderer>
+          <!-- Protagonist -->
+          <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker?.mainCharacter">
+            <app-json-renderer [data]="{mainCharacter: currentScene.tracker.mainCharacter}"></app-json-renderer>
+          </div>
+
+          <!-- Characters -->
+          <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker?.characters">
+            <app-json-renderer [data]="{characters: currentScene.tracker.characters}"></app-json-renderer>
+          </div>
 
           <!-- Display enrichment data if available -->
           <div *ngIf="enrichmentData && !isEnriching" class="enrichment-info">

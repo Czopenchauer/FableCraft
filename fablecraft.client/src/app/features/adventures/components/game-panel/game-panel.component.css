@@ -16,8 +16,7 @@
 }
 
 .game-panel-content {
-  max-width: 1600px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 /* ========== Header ========== */
@@ -151,6 +150,68 @@
 [data-theme="medieval-fantasy"] .btn-delete:hover {
   background: rgba(139, 0, 0, 0.3);
   transform: translateY(-2px);
+}
+
+/* Navigation Buttons */
+.btn-nav {
+  background: transparent;
+}
+
+.btn-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-nav:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme="modern-dark"] .btn-nav:not(:disabled) {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+[data-theme="modern-dark"] .btn-nav:not(:disabled):hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-nav:not(:disabled) {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .btn-nav:not(:disabled):hover {
+  background: rgba(184, 134, 11, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Current Scene Button */
+[data-theme="modern-dark"] .btn-current:not(:disabled) {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+[data-theme="modern-dark"] .btn-current:not(:disabled):hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme="medieval-fantasy"] .btn-current:not(:disabled) {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .btn-current:not(:disabled):hover {
+  background: rgba(184, 134, 11, 0.25);
+  box-shadow: var(--shadow-glow);
 }
 
 /* ========== Scene Navigation ========== */
@@ -380,11 +441,45 @@
 
 /* ========== Scene Container ========== */
 
+/* ========== Story Tracker Panel (above scene) ========== */
+
+.story-tracker-panel {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.story-tracker-panel.regenerating {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.story-tracker-section {
+  flex: 1;
+  min-width: 250px;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-card);
+}
+
+[data-theme="modern-dark"] .story-tracker-section {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+}
+
+[data-theme="medieval-fantasy"] .story-tracker-section {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+}
+
 /* ========== Game Columns (Tracker + Main) ========== */
 
 .game-columns {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 30% 1fr;
   gap: var(--spacing-lg);
   align-items: start;
 }
@@ -395,11 +490,18 @@
   }
 }
 
+/* ========== Character Tracker Panel (side panel) ========== */
+
 .tracker-panel {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-secondary);
   background: var(--bg-card);
+}
+
+.game-content.regenerating .tracker-panel {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 [data-theme="modern-dark"] .tracker-panel {
@@ -827,10 +929,6 @@
 /* ========== Responsive Design ========== */
 
 @media (max-width: 1024px) {
-  .game-panel-content {
-    max-width: 900px;
-  }
-
   .narrative-text {
     font-size: var(--font-size-base);
   }
