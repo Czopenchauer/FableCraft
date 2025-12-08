@@ -445,8 +445,8 @@
 
 .story-tracker-panel {
   display: flex;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   flex-wrap: wrap;
 }
 
@@ -457,11 +457,55 @@
 
 .story-tracker-section {
   flex: 1;
-  min-width: 250px;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-xl);
+  min-width: 200px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-secondary);
   background: var(--bg-card);
+}
+
+/* Compact json-renderer inside story tracker */
+.story-tracker-section .json-node {
+  margin-bottom: 0;
+}
+
+.story-tracker-section .json-panel {
+  margin-bottom: 2px;
+}
+
+.story-tracker-section .json-panel-header {
+  padding: 2px var(--spacing-sm);
+}
+
+.story-tracker-section .json-panel-content {
+  padding-left: var(--spacing-sm);
+  padding-top: 2px;
+  padding-bottom: 0;
+}
+
+.story-tracker-section .json-field {
+  padding: 1px var(--spacing-xs);
+}
+
+.story-tracker-section .json-field-block {
+  padding: 2px var(--spacing-xs);
+}
+
+.story-tracker-section .json-field-block .json-key {
+  margin-bottom: 1px;
+}
+
+.story-tracker-section .json-field-block .json-value {
+  padding-left: var(--spacing-sm);
+}
+
+.story-tracker-section .json-list {
+  margin: 1px 0;
+  padding-left: var(--spacing-xs);
+}
+
+.story-tracker-section .json-list-item {
+  padding: 0;
 }
 
 [data-theme="modern-dark"] .story-tracker-section {
