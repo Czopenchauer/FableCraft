@@ -132,6 +132,8 @@
             <span *ngIf="isEnriching" class="enriching-badge">Loading...</span>
             <span *ngIf="enrichmentFailed" class="enrichment-failed-badge">Failed</span>
           </div>
+
+          <!-- Loading state -->
           <div *ngIf="isEnriching" class="tracker-loading">
             <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
               <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
@@ -162,14 +164,50 @@
             </button>
           </div>
 
-          <!-- Protagonist -->
-          <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker?.mainCharacter">
-            <app-json-renderer [data]="{mainCharacter: currentScene.tracker.mainCharacter}"></app-json-renderer>
-          </div>
+          <!-- Character Tabs -->
+          <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker" class="character-tabs">
+            <!-- Tab Headers -->
+            <div class="character-tabs-header">
+              <!-- Protagonist Tab -->
+              <button
+                (click)="setActiveCharacterTab('protagonist')"
+                [class.active]="isActiveCharacterTab('protagonist')"
+                class="character-tab-btn"
+                type="button"
+              >
+                Protagonist
+              </button>
+              <!-- Character Tabs (one per character on scene) -->
+              <button
+                (click)="setActiveCharacterTab(char)"
+                *ngFor="let char of getCharactersOnScene()"
+                [class.active]="isActiveCharacterTab(char)"
+                class="character-tab-btn"
+                type="button"
+              >
+                {{ char }}
+              </button>
+            </div>
 
-          <!-- Characters -->
-          <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker?.characters">
-            <app-json-renderer [data]="{characters: currentScene.tracker.characters}"></app-json-renderer>
+            <!-- Tab Content -->
+            <div class="character-tabs-content">
+              <!-- Protagonist Content -->
+              <div *ngIf="isActiveCharacterTab('protagonist') && currentScene.tracker.mainCharacter" class="character-tab-panel">
+                <app-json-renderer [data]="currentScene.tracker.mainCharacter"></app-json-renderer>
+              </div>
+
+              <!-- Character Content (for each character on scene) -->
+              <ng-container *ngFor="let charName of getCharactersOnScene()">
+                <div *ngIf="isActiveCharacterTab(charName)" class="character-tab-panel">
+                  <div *ngIf="getCharacterByName(charName) as character">
+                    <app-json-renderer [data]="character"></app-json-renderer>
+                  </div>
+                  <div *ngIf="!getCharacterByName(charName)" class="character-not-found">
+                    <p>Character details not available.</p>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
           </div>
 
           <!-- Display enrichment data if available -->

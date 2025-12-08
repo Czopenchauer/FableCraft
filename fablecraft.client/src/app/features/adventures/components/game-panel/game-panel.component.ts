@@ -23,6 +23,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   enrichmentFailed = false;
   enrichmentData: SceneEnrichmentResult | null = null;
   customAction = '';
+
+  // Character tracker tabs
+  activeCharacterTab: string = 'protagonist';
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -129,6 +133,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           console.log('New scene received:', scene);
           this.currentScene = scene;
           this.customAction = ''; // Reset custom action
+          this.resetCharacterTab(); // Reset to protagonist tab
           this.cdr.detectChanges();
 
           // Immediately start enriching the scene
@@ -345,6 +350,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (scene) => {
           this.currentScene = scene || null;
+          this.resetCharacterTab(); // Reset to protagonist tab
 
           // Check if tracker is missing and trigger enrichment if needed
           if (this.currentScene && !this.currentScene.tracker) {
@@ -365,5 +371,42 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   isCurrentScene(): boolean {
     return !this.currentScene?.nextScene;
+  }
+
+  /**
+   * Get the list of characters present in the scene for tabs
+   */
+  getCharactersOnScene(): any[] {
+    if (!this.currentScene?.tracker?.charactersPresent) return [];
+    return this.currentScene.tracker.charactersPresent;
+  }
+
+  /**
+   * Get character data by name from the characters array
+   */
+  getCharacterByName(name: string): any | null {
+    if (!this.currentScene?.tracker?.characters) return null;
+    return this.currentScene.tracker.characters.find((c: any) => c.name === name) || null;
+  }
+
+  /**
+   * Set the active character tab
+   */
+  setActiveCharacterTab(tabId: string): void {
+    this.activeCharacterTab = tabId;
+  }
+
+  /**
+   * Check if a tab is active
+   */
+  isActiveCharacterTab(tabId: string): boolean {
+    return this.activeCharacterTab === tabId;
+  }
+
+  /**
+   * Reset to protagonist tab when scene changes
+   */
+  private resetCharacterTab(): void {
+    this.activeCharacterTab = 'protagonist';
   }
 }
