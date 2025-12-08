@@ -2,7 +2,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal static class PromptBuilder
 {
-    private const string JailbrakeIncludePlaceholder = "{{jailbrake}}";
+    private const string JailbrakeIncludePlaceholder = "{{jailbreak}}";
 
     public async static Task<string> BuildPromptAsync(string promptFileName)
     {
@@ -33,7 +33,12 @@ internal static class PromptBuilder
             "Jailbrake.md"
         );
 
-        var fileContent = await File.ReadAllTextAsync(filePath);
-        return promptTemplate.Replace(JailbrakeIncludePlaceholder, fileContent);
+        if (File.Exists(filePath))
+        {
+            var fileContent = await File.ReadAllTextAsync(filePath);
+            return promptTemplate.Replace(JailbrakeIncludePlaceholder, fileContent);
+        }
+
+        return promptTemplate;
     }
 }

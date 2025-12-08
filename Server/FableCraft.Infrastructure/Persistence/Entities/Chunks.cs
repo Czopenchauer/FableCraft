@@ -4,6 +4,8 @@ public class Chunk : IEntity
 {
     public required Guid EntityId { get; init; }
 
+    public required Guid? AdventureId { get; set; }
+
     public required string Name { get; set; }
 
     public required ulong ContentHash { get; set; }

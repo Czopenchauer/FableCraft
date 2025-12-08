@@ -101,7 +101,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     Path = lorebookPath,
                     ContentType = lorebookEntry.ContentType.ToString(),
                     KnowledgeGraphNodeId = null,
-                    ContentHash = lorebookHash
+                    ContentHash = lorebookHash,
+                    AdventureId = message.AdventureId
                 };
                 filesToCommit.Add((newLorebookChunk, lorebookEntry.Content));
             }
@@ -134,7 +135,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 Path = characterPath,
                 ContentType = nameof(ContentType.txt),
                 KnowledgeGraphNodeId = null,
-                ContentHash = characterHash
+                ContentHash = characterHash,
+                AdventureId = message.AdventureId
             };
             filesToCommit.Add((newCharacterChunk, characterContent));
         }
@@ -179,9 +181,9 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                             await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),
                         cancellationToken);
 
-                    // await _resiliencePipeline.ExecuteAsync(async ct =>
-                    //         await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
-                    //     cancellationToken);
+                    await _resiliencePipeline.ExecuteAsync(async ct =>
+                            await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
+                        cancellationToken);
 
                     adventure.RagProcessingStatus = ProcessingStatus.Completed;
                     await dbContext.SaveChangesAsync(cancellationToken);

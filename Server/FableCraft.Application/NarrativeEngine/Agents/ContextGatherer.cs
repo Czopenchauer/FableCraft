@@ -49,19 +49,18 @@ internal sealed class ContextGatherer(
                                     </story_summary>
                                     """);
 
-        chatHistory.AddUserMessage($"""
-                                    <last_scenes>
-                                    {string.Join("\n", context.SceneContext
-                                        .OrderByDescending(x => x.SequenceNumber)
-                                        .Take(SceneContextCount)
-                                        .Select(x =>
-                                            $"""
-                                             SCENE NUMBER: {x.SequenceNumber}
-                                             {x.SceneContent}
-                                             {x.PlayerChoice}
-                                             """))}
-                                    </last_scenes>
-                                    """);
+        foreach (SceneContext sceneContext in context.SceneContext
+                     .OrderByDescending(x => x.SequenceNumber)
+                     .Take(SceneContextCount))
+        {
+            chatHistory.AddUserMessage(
+                $"""
+                 <last_scene_{sceneContext.SequenceNumber}>
+                 {sceneContext.SceneContent}
+                 {sceneContext.PlayerChoice}
+                 </last_scene>
+                 """);
+        }
 
         chatHistory.AddUserMessage($"""
                                     <last_narrative_directions>
@@ -99,7 +98,6 @@ internal sealed class ContextGatherer(
                 Query = x.Query,
                 Response = string.Join("\n\n", x.Response.Results)
             }).ToList();
-            context.ContextGathered = new List<ContextBase>();
             context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
         }
         catch (Exception ex)

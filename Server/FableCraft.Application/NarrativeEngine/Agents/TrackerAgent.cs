@@ -19,7 +19,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
 {
     public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext

@@ -11,16 +11,12 @@ internal sealed class TrackerProcessor(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var trackerTask = trackerAgent.Invoke(context, cancellationToken);
-
-        var lastSceneCharacters = context.SceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker?.CharactersPresent ?? [];
+        var tracker = await trackerAgent.Invoke(context, cancellationToken);
         IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
         if (context.Characters.Count != 0)
         {
             characterUpdateTask = context.Characters
-                .Where(x => lastSceneCharacters.Contains(x.Name))
+                .Where(x => tracker.CharactersPresent.Contains(x.Name))
                 .Select(async character =>
                 {
                     var stateTask = characterStateAgent.Invoke(context, character, cancellationToken);
@@ -41,20 +37,15 @@ internal sealed class TrackerProcessor(
                 .ToArray();
         }
 
-        await Task.WhenAll(trackerTask);
-
-        var tracker = await trackerTask;
-
-        // Create new tracker with MainCharacterDevelopment
+        var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
+        context.CharacterUpdates = characterUpdates;
         context.NewTracker = new Tracker
         {
             Story = tracker.Story,
             CharactersPresent = tracker.CharactersPresent,
             MainCharacter = tracker.MainCharacter,
-            Characters = tracker.Characters,
+            Characters = characterUpdates?.Select(x => x.CharacterTracker!).ToArray(),
         };
-        var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
-        context.CharacterUpdates = characterUpdates;
         context.GenerationProcessStep = GenerationProcessStep.TrackerFinished;
     }
 }
