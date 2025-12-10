@@ -44,30 +44,38 @@ internal sealed class CharacterCrafter(
             AllowTrailingCommas = true
         };
 
-        var contextPrompt = $"""
-                             <character_creation_context>
-                             {JsonSerializer.Serialize(request, options)}
-                             </character_creation_context>
-
-                             <context>
-                             {JsonSerializer.Serialize(context.ContextGathered, options)}
-                             </context>
-
-                             <previous_scene>
-                             {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
-                             <previous_scene>
-
-                             <current_scene>
-                             {context.NewScene!.Scene}
-                             <current_scene>
-                             """;
-
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
-        chatHistory.AddUserMessage(contextPrompt);
+        chatHistory.AddUserMessage($"""
+                                    <character_creation_context>
+                                    {JsonSerializer.Serialize(request, options)}
+                                    </character_creation_context>
+                                    """);
+
+        chatHistory.AddUserMessage($"""
+                                    <context>
+                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
+                                    </context>
+                                    """);
+
+        chatHistory.AddUserMessage($"""
+                                    <previous_scene>
+                                    {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
+                                    </previous_scene>
+                                    """);
+
+        if (context.NewScene != null)
+        {
+            chatHistory.AddUserMessage($"""
+                                        <current_scene>
+                                        {context.NewScene.Scene}
+                                        </current_scene>
+                                        """);
+        }
+
         var outputFunc =
             new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker)>(response =>
             {

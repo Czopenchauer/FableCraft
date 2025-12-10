@@ -17,15 +17,7 @@ public class GameScene
 
     public required Guid SceneId { get; init; }
 
-    public required string Text { get; init; }
-
-    public required List<string> Choices { get; init; }
-
-    public required string? SelectedChoice { get; init; }
-
-    public Tracker? Tracker { get; init; }
-
-    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
+    public required SceneGenerationOutput? GenerationOutput { get; init; }
 
     public required bool CanRegenerate { get; init; }
 
@@ -37,42 +29,6 @@ public class SubmitActionRequest
     public Guid AdventureId { get; init; }
 
     public string ActionText { get; init; } = null!;
-}
-
-public class SceneEnrichmentResult
-{
-    public required Guid SceneId { get; init; }
-
-    public required Tracker Tracker { get; init; }
-
-    public required List<CharacterInfo> NewCharacters { get; init; }
-
-    public required List<LocationInfo> NewLocations { get; init; }
-
-    public required List<LoreInfo> NewLore { get; init; }
-}
-
-public class CharacterInfo
-{
-    public Guid CharacterId { get; set; }
-
-    public string Name { get; set; } = null!;
-
-    public string Description { get; set; } = null!;
-}
-
-public class LocationInfo
-{
-    public string Name { get; set; } = null!;
-
-    public string Description { get; set; } = null!;
-}
-
-public class LoreInfo
-{
-    public string Title { get; set; } = null!;
-
-    public string Summary { get; set; } = null!;
 }
 
 public interface IGameService
@@ -87,7 +43,7 @@ public interface IGameService
 
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
 
-    Task<SceneEnrichmentResult> EnrichSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
+    Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -114,6 +70,7 @@ internal class GameService : IGameService
             .Take(2)
             .Include(scene => scene.CharacterActions)
             .Include(x => x.CharacterStates)
+            .Include(x => x.Lorebooks)
             .ToListAsync(cancellationToken);
 
         if (scene == null)
@@ -122,22 +79,20 @@ internal class GameService : IGameService
         }
 
         var lastScene = scene.OrderByDescending(x => x.SequenceNumber).First();
-        lastScene.Metadata.Tracker?.Characters = lastScene.CharacterStates.Select(x => x.Tracker).ToArray();
+        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(lastScene);
         return new GameScene
         {
-            Text = lastScene.NarrativeText,
-            Choices = lastScene.CharacterActions.Select(y => y.ActionDescription)
-                .ToList(),
-            Tracker = lastScene.Metadata.Tracker,
-            NarrativeDirectorOutput = lastScene.Metadata.NarrativeMetadata,
             CanRegenerate = lastScene.CommitStatus == CommitStatus.Uncommited,
             SceneId = lastScene.Id,
-            SelectedChoice = lastScene.CharacterActions.FirstOrDefault(y => y.Selected)
-                                 ?.ActionDescription
-                             ?? string.Empty,
             EnrichmentStatus = lastScene.EnrichmentStatus,
-            PreviousScene = scene.Count > 1 ? scene.OrderByDescending(x => x.SequenceNumber).Skip(1).First().Id : null,
-            NextScene = null
+            PreviousScene = scene.Count > 1
+                ? scene.OrderByDescending(x => x.SequenceNumber)
+                    .Skip(1)
+                    .First()
+                    .Id
+                : null,
+            NextScene = null,
+            GenerationOutput = sceneGenerationOutput
         };
     }
 
@@ -148,6 +103,7 @@ internal class GameService : IGameService
             .OrderByDescending(x => x.SequenceNumber)
             .Include(scene => scene.CharacterActions)
             .Include(x => x.CharacterStates)
+            .Include(x => x.Lorebooks)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (scene == null)
@@ -160,23 +116,17 @@ internal class GameService : IGameService
             .OrderByDescending(x => x.SequenceNumber)
             .Select(x => new { x.Id, x.SequenceNumber })
             .ToListAsync(cancellationToken);
-
-        scene.Metadata.Tracker?.Characters = scene.CharacterStates.Select(x => x.Tracker).ToArray();
+        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(scene);
         return new GameScene
         {
-            Text = scene.NarrativeText,
-            Choices = scene.CharacterActions.Select(y => y.ActionDescription)
-                .ToList(),
-            Tracker = scene.Metadata.Tracker,
-            NarrativeDirectorOutput = scene.Metadata.NarrativeMetadata,
             CanRegenerate = scene.CommitStatus == CommitStatus.Uncommited,
             SceneId = scene.Id,
-            SelectedChoice = scene.CharacterActions.FirstOrDefault(y => y.Selected)
-                                 ?.ActionDescription
-                             ?? string.Empty,
             EnrichmentStatus = scene.EnrichmentStatus,
-            PreviousScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber - 1)?.Id,
-            NextScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)?.Id
+            PreviousScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber - 1)
+                ?.Id,
+            NextScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)
+                ?.Id,
+            GenerationOutput = sceneGenerationOutput
         };
     }
 
@@ -221,13 +171,9 @@ internal class GameService : IGameService
             var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
             return new GameScene
             {
-                Text = scene.GeneratedScene.Scene,
-                Choices = scene.GeneratedScene.Choices.ToList(),
-                Tracker = null,
-                NarrativeDirectorOutput = scene.NarrativeDirectorOutput,
+                GenerationOutput = scene,
                 CanRegenerate = true,
                 SceneId = scene.SceneId,
-                SelectedChoice = null,
                 EnrichmentStatus = EnrichmentStatus.Enriched,
                 PreviousScene = null,
                 NextScene = null
@@ -253,13 +199,9 @@ internal class GameService : IGameService
             await transaction.CommitAsync(cancellationToken);
             return new GameScene
             {
-                Text = nextScene.GeneratedScene.Scene,
-                Choices = nextScene.GeneratedScene.Choices.ToList(),
-                Tracker = nextScene.Tracker,
-                NarrativeDirectorOutput = nextScene.NarrativeDirectorOutput,
                 CanRegenerate = true,
                 SceneId = nextScene.SceneId,
-                SelectedChoice = null,
+                GenerationOutput = nextScene,
                 EnrichmentStatus = EnrichmentStatus.Enriched,
                 PreviousScene = null,
                 NextScene = null
@@ -326,16 +268,14 @@ internal class GameService : IGameService
 
         try
         {
-            SceneGenerationOutputWithoutEnrichment nextScene =
+            var nextScene =
                 await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
+            var generationOutput = SceneGenerationOutput.CreateFromScene(currentScene);
             return new GameScene
             {
-                Text = nextScene.GeneratedScene.Scene,
-                Choices = nextScene.GeneratedScene.Choices.ToList(),
-                NarrativeDirectorOutput = nextScene.NarrativeDirectorOutput,
+                GenerationOutput = generationOutput,
                 CanRegenerate = true,
-                SceneId = nextScene.SceneId,
-                SelectedChoice = null,
+                SceneId = nextScene.Id,
                 EnrichmentStatus = EnrichmentStatus.NotEnriched,
                 PreviousScene = currentScene.Id,
                 NextScene = null
@@ -348,8 +288,7 @@ internal class GameService : IGameService
         }
     }
 
-    public async Task<SceneEnrichmentResult> EnrichSceneAsync(
-        Guid adventureId,
+    public async Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId,
         Guid sceneId,
         CancellationToken cancellationToken)
     {
@@ -368,48 +307,42 @@ internal class GameService : IGameService
         {
             _logger.Warning("Scene {SceneId} is already enriched", sceneId);
             scene.Metadata.Tracker!.Characters = scene.CharacterStates.Select(x => x.Tracker).ToArray();
-            return new SceneEnrichmentResult
+            return new SceneEnrichmentOutput
             {
                 SceneId = sceneId,
-                Tracker = scene.Metadata.Tracker,
-                NewCharacters = scene.CharacterStates.Select(c => new CharacterInfo
+                Tracker = new TrackerDto
                 {
-                    CharacterId = c.CharacterId,
-                    Name = c.CharacterStats.CharacterIdentity.FullName ?? "",
-                    Description = c.Description
-                }).ToList(),
-                NewLocations = new List<LocationInfo>(),
-                NewLore = new List<LoreInfo>(),
+                    Story = scene.Metadata.Tracker!.Story,
+                    MainCharacter = new MainCharacterTrackerDto()
+                    {
+                        Tracker = scene.Metadata.Tracker!.MainCharacter!,
+                        Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
+                        Description = scene.Metadata.MainCharacterDescription!
+                    },
+                    CharactersOnScene = scene.Metadata.Tracker!.CharactersPresent,
+                    Characters = scene.CharacterStates.Select(x => new CharacterStateDto
+                        {
+                            CharacterId = x.CharacterId,
+                            Name = x.CharacterStats.CharacterIdentity.FullName!,
+                            Description = x.Description,
+                            State = x.CharacterStats,
+                            Tracker = x.Tracker,
+                            Development = x.DevelopmentTracker!
+                        })
+                        .ToList(),
+                },
+                NewLore = scene.Lorebooks.Select(x => new LoreDto
+                {
+                    Title = x.Category,
+                    Summary = x.Description
+                }).ToList()
             };
         }
 
         try
         {
-            SceneEnrichmentOutput output = await _sceneGenerationOrchestrator
+            return await _sceneGenerationOrchestrator
                 .EnrichSceneAsync(adventureId, sceneId, cancellationToken);
-
-            output.Tracker.Characters = scene.CharacterStates.Select(x => x.Tracker).ToArray();
-            return new SceneEnrichmentResult
-            {
-                SceneId = output.SceneId,
-                Tracker = output.Tracker,
-                NewCharacters = output.NewCharacters.Select(c => new CharacterInfo
-                {
-                    CharacterId = c.CharacterId,
-                    Name = c.Name,
-                    Description = c.Description
-                }).ToList(),
-                NewLocations = output.NewLocations.Select(l => new LocationInfo
-                {
-                    Name = l.Name,
-                    Description = l.Description
-                }).ToList(),
-                NewLore = output.NewLore.Select(l => new LoreInfo
-                {
-                    Title = l.Title,
-                    Summary = l.Summary
-                }).ToList()
-            };
         }
         catch (Exception ex)
         {

@@ -19,11 +19,60 @@ public class SceneGenerationOutput
 {
     public required Guid SceneId { get; set; }
 
+    public required string? SubmittedAction { get; set; }
+
     public required GeneratedScene GeneratedScene { get; init; }
 
-    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
+    public required NarrativeDirectorOutput? NarrativeDirectorOutput { get; init; }
 
-    public required Tracker Tracker { get; init; }
+    public required TrackerDto? Tracker { get; init; }
+
+    public required List<LoreDto>? NewLore { get; set; }
+
+    public static SceneGenerationOutput CreateFromScene(Scene scene)
+    {
+        return new SceneGenerationOutput
+        {
+            SceneId = scene.Id,
+            GeneratedScene = new GeneratedScene
+            {
+                Scene = scene.NarrativeText,
+                Choices = scene.CharacterActions.Select(x => x.ActionDescription)
+                    .ToArray()
+            },
+            NarrativeDirectorOutput = scene.Metadata.NarrativeMetadata,
+            Tracker = scene.EnrichmentStatus == EnrichmentStatus.Enriched
+                ? new TrackerDto
+                {
+                    Story = scene.Metadata.Tracker!.Story,
+                    MainCharacter = new MainCharacterTrackerDto
+                    {
+                        Tracker = scene.Metadata.Tracker!.MainCharacter!,
+                        Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
+                        Description = scene.Metadata.MainCharacterDescription!
+                    },
+                    CharactersOnScene = scene.Metadata.Tracker!.CharactersPresent,
+                    Characters = scene.CharacterStates.Select(x => new CharacterStateDto
+                        {
+                            CharacterId = x.CharacterId,
+                            Name = x.CharacterStats.CharacterIdentity.FullName!,
+                            Description = x.Description,
+                            State = x.CharacterStats,
+                            Tracker = x.Tracker,
+                            Development = x.DevelopmentTracker!
+                        })
+                        .ToList(),
+                }
+                : null,
+            NewLore = scene.Lorebooks.Select(x => new LoreDto
+                {
+                    Title = x.Category,
+                    Summary = x.Description
+                })
+                .ToList(),
+            SubmittedAction = scene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription
+        };
+    }
 }
 
 public class SceneGenerationOutputWithoutEnrichment
@@ -39,29 +88,9 @@ public class SceneEnrichmentOutput
 {
     public required Guid SceneId { get; set; }
 
-    public required Tracker Tracker { get; init; }
-
-    public required List<CharacterDto> NewCharacters { get; init; }
-
-    public required List<LocationDto> NewLocations { get; init; }
+    public required TrackerDto Tracker { get; init; }
 
     public required List<LoreDto> NewLore { get; init; }
-}
-
-public class CharacterDto
-{
-    public Guid CharacterId { get; set; }
-
-    public string Name { get; set; } = null!;
-
-    public string Description { get; set; } = null!;
-}
-
-public class LocationDto
-{
-    public string Name { get; set; } = null!;
-
-    public string Description { get; set; } = null!;
 }
 
 public class LoreDto
@@ -69,6 +98,41 @@ public class LoreDto
     public string Title { get; set; } = null!;
 
     public string Summary { get; set; } = null!;
+}
+
+public class TrackerDto
+{
+    public required StoryTracker Story { get; init; }
+
+    public required MainCharacterTrackerDto MainCharacter { get; init; }
+
+    public required string[] CharactersOnScene { get; set; }
+
+    public required List<CharacterStateDto> Characters { get; init; }
+}
+
+public class MainCharacterTrackerDto
+{
+    public required CharacterTracker Tracker { get; init; }
+
+    public required CharacterDevelopmentTracker Development { get; init; }
+
+    public required string Description { get; init; }
+}
+
+public class CharacterStateDto
+{
+    public required Guid CharacterId { get; set; }
+
+    public required string Name { get; set; } = null!;
+
+    public required string Description { get; set; } = null!;
+
+    public required CharacterStats State { get; set; }
+
+    public required CharacterTracker Tracker { get; set; }
+
+    public required CharacterDevelopmentTracker Development { get; set; }
 }
 
 internal sealed class SceneGenerationOrchestrator(
@@ -131,25 +195,17 @@ internal sealed class SceneGenerationOrchestrator(
                 .Where(x => x.Id == context.ProcessId)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            Scene newScene = await dbContext.Scenes
+            Scene scene = await dbContext.Scenes
                 .Include(x => x.CharacterActions)
+                .Include(x => x.CharacterStates)
+                .Include(x => x.Lorebooks)
                 .Where(x => x.AdventureId == adventureId)
                 .OrderByDescending(x => x.SequenceNumber).FirstAsync(cancellationToken);
-            return new SceneGenerationOutput
-            {
-                SceneId = newScene.Id,
-                GeneratedScene = new GeneratedScene
-                {
-                    Scene = newScene.NarrativeText,
-                    Choices = newScene.CharacterActions.Select(x => x.ActionDescription).ToArray()
-                },
-                NarrativeDirectorOutput = context.Context.NewNarrativeDirection!,
-                Tracker = context.Context.NewTracker!
-            };
+            return SceneGenerationOutput.CreateFromScene(scene);
         }
     }
 
-    public async Task<SceneGenerationOutputWithoutEnrichment> GenerateSceneAsync(
+    public async Task<Scene> GenerateSceneAsync(
         Guid adventureId,
         string playerAction,
         CancellationToken cancellationToken)
@@ -199,7 +255,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         return await GetGeneratedSceneWithoutEnrichment();
 
-        async Task<SceneGenerationOutputWithoutEnrichment> GetGeneratedSceneWithoutEnrichment()
+        async Task<Scene> GetGeneratedSceneWithoutEnrichment()
         {
             await dbContext.GenerationProcesses
                 .Where(x => x.Id == context.ProcessId)
@@ -208,17 +264,9 @@ internal sealed class SceneGenerationOrchestrator(
             Scene newScene = await dbContext.Scenes
                 .Include(x => x.CharacterActions)
                 .Where(x => x.AdventureId == adventureId)
-                .OrderByDescending(x => x.SequenceNumber).FirstAsync(cancellationToken);
-            return new SceneGenerationOutputWithoutEnrichment
-            {
-                SceneId = newScene.Id,
-                GeneratedScene = new GeneratedScene
-                {
-                    Scene = newScene.NarrativeText,
-                    Choices = newScene.CharacterActions.Select(x => x.ActionDescription).ToArray()
-                },
-                NarrativeDirectorOutput = context.Context.NewNarrativeDirection!
-            };
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstAsync(cancellationToken);
+            return newScene;
         }
     }
 
@@ -263,26 +311,32 @@ internal sealed class SceneGenerationOrchestrator(
             return new SceneEnrichmentOutput
             {
                 SceneId = sceneId,
-                Tracker = context.NewTracker!,
-                NewCharacters = context.NewCharacters?.Select(c => new CharacterDto
-                                {
-                                    CharacterId = c.CharacterId,
-                                    Name = c.Name,
-                                    Description = c.Description
-                                }).ToList()
-                                ?? new List<CharacterDto>(),
-                NewLocations = context.NewLocations?.Select(l => new LocationDto
-                               {
-                                   Name = l.EntityData.Name,
-                                   Description = l.NarrativeData.ShortDescription
-                               }).ToList()
-                               ?? new List<LocationDto>(),
-                NewLore = context.NewLore?.Select(l => new LoreDto
-                          {
-                              Title = l.Title,
-                              Summary = l.Summary
-                          }).ToList()
-                          ?? new List<LoreDto>()
+                Tracker = new TrackerDto
+                {
+                    Story = scene.Metadata.Tracker!.Story,
+                    MainCharacter = new MainCharacterTrackerDto()
+                    {
+                        Tracker = scene.Metadata.Tracker!.MainCharacter!,
+                        Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
+                        Description = scene.Metadata.MainCharacterDescription!
+                    },
+                    CharactersOnScene = scene.Metadata.Tracker!.CharactersPresent,
+                    Characters = scene.CharacterStates.Select(x => new CharacterStateDto
+                        {
+                            CharacterId = x.CharacterId,
+                            Name = x.CharacterStats.CharacterIdentity.FullName!,
+                            Description = x.Description,
+                            State = x.CharacterStats,
+                            Tracker = x.Tracker,
+                            Development = x.DevelopmentTracker!
+                        })
+                        .ToList(),
+                },
+                NewLore = scene.Lorebooks.Select(x => new LoreDto
+                {
+                    Title = x.Category,
+                    Summary = x.Description
+                }).ToList()
             };
         }
         catch (Exception ex)
@@ -388,7 +442,7 @@ internal sealed class SceneGenerationOrchestrator(
                                        Description = x.Description,
                                        CharacterStats = x.CharacterState,
                                        Tracker = x.CharacterTracker!,
-                                       DevelopmentTracker = x.DevelopmentTracker,
+                                       DevelopmentTracker = x.DevelopmentTracker!,
                                        SequenceNumber = scene.SequenceNumber,
                                        SceneId = scene.Id
                                    }).ToList()
@@ -401,7 +455,7 @@ internal sealed class SceneGenerationOrchestrator(
                                            Description = x.Description,
                                            CharacterStats = x.CharacterState,
                                            Tracker = x.CharacterTracker!,
-                                           DevelopmentTracker = x.DevelopmentTracker,
+                                           DevelopmentTracker = x.DevelopmentTracker!,
                                            SequenceNumber = scene.SequenceNumber,
                                            SceneId = scene.Id
                                        }).ToList()

@@ -58,7 +58,7 @@ public class PlayController : ControllerBase
     }
 
     [HttpPost("{adventureId:guid}/scenes/{sceneId:guid}/enrich")]
-    [ProducesResponseType(typeof(SceneEnrichmentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SceneEnrichmentOutput), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> EnrichScene(
@@ -69,7 +69,7 @@ public class PlayController : ControllerBase
         try
         {
             ProcessExecutionContext.AdventureId.Value = adventureId;
-            SceneEnrichmentResult result = await _gameService.EnrichSceneAsync(
+            var result = await _gameService.EnrichSceneAsync(
                 adventureId,
                 sceneId,
                 cancellationToken);
