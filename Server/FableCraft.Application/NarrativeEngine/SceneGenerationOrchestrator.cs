@@ -624,27 +624,6 @@ internal sealed class SceneGenerationOrchestrator(
 
     public async Task<SceneGenerationOutput> GenerateInitialSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        var adventure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.AuthorNotes, x.FirstSceneGuidance, x.AdventureStartTime })
-            .SingleAsync(x => x.Id == adventureId, cancellationToken);
-        var prompt = $"""
-                      Generate adventure's opening scene based on the following context.
-                      Guide about story style and tone:
-                      <adventure_author_notes>
-                      {adventure.AuthorNotes}
-                      </adventure_author_notes>
-
-                      Guide about the first scene specifics. How should it start, what mood to set, important elements to include:
-                      <first_scene_guidance>
-                      {adventure.FirstSceneGuidance}
-                      </first_scene_guidance>
-
-                      Start time of the adventure:
-                      <adventure_start_time>
-                      {adventure.AdventureStartTime}
-                      </adventure_start_time>
-                      """;
-        return await GenerateFullSceneAsync(adventureId, prompt, cancellationToken);
+        return await GenerateFullSceneAsync(adventureId, string.Empty, cancellationToken);
     }
 }

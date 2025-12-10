@@ -67,6 +67,14 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(x => x.WorldbookId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+        
+        modelBuilder.Entity<LorebookEntry>(p =>
+        {
+            p.HasOne(x => x.Scene)
+                .WithMany(x => x.Lorebooks)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<Lorebook>(p =>
         {

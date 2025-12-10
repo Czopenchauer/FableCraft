@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -19,8 +20,8 @@ internal sealed class MainCharacterDevelopmentAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory)
 {
-    public async Task<CharacterDevelopmentTracker?> Invoke(
-        GenerationContext context,
+    public async Task<CharacterDevelopmentTracker?> Invoke(GenerationContext context,
+        Tracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
@@ -45,16 +46,25 @@ internal sealed class MainCharacterDevelopmentAgent(
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        var previousDevelopment = context.SceneContext
+        var previousTracker = context.SceneContext
             ?.OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker?.MainCharacterDevelopment;
+            .FirstOrDefault()?.Metadata.Tracker;
 
+        chatHistory.AddUserMessage($"""
+                                    <story_tracker>
+                                    {JsonSerializer.Serialize(storyTrackerResult, options)}
+                                    </story_tracker>
+                                    """);
         var prompt = $"""
+                      <main_character_tracker>
+                      {JsonSerializer.Serialize(previousTracker?.MainCharacter, options)}
+                      <main_character_tracker>
                       <previous_development>
-                      {JsonSerializer.Serialize(previousDevelopment, options)}
+                      {JsonSerializer.Serialize(previousTracker?.MainCharacterDevelopment, options)}
                       </previous_development>
 
                       <recent_scenes>
@@ -69,7 +79,7 @@ internal sealed class MainCharacterDevelopmentAgent(
                       </recent_scenes>
 
                       <current_scene>
-                      {context.NewScene?.Scene ?? context.PlayerAction}
+                      {context.NewScene?.Scene}
                       </current_scene>
                       """;
         chatHistory.AddUserMessage(prompt);
@@ -78,7 +88,7 @@ internal sealed class MainCharacterDevelopmentAgent(
 
         var outputFunc = new Func<string, CharacterDevelopmentTracker>(response =>
         {
-            Match match = Regex.Match(response, "<main_character_development>(.*?)</main_character_development>", RegexOptions.Singleline);
+            Match match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);
             CharacterDevelopmentTracker tracker;
             if (match.Success)
             {
@@ -115,8 +125,8 @@ internal sealed class MainCharacterDevelopmentAgent(
         };
 
         var prompt = await PromptBuilder.BuildPromptAsync("MainCharacterDevelopmentAgentPrompt.md");
-        return prompt.Replace("{{main_character_development_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
-            .Replace("{{main_character_development}}", JsonSerializer.Serialize(GetOutputJson(structure), options));
+        return prompt.Replace("{{main_character_prompt}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
+            .Replace("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(structure), options));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
@@ -126,38 +136,8 @@ internal sealed class MainCharacterDevelopmentAgent(
             return new Dictionary<string, object>();
         }
 
-        var devDict = ConvertFieldsToDict(structure.MainCharacterDevelopment);
+        var devDict = TrackerExtensions.ConvertToOutputJson(structure.MainCharacterDevelopment);
         return devDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = GetDefaultValue(field);
-                }
-            }
-
-            return dict;
-
-            object GetDefaultValue(FieldDefinition field)
-            {
-                return field.Type switch
-                {
-                    FieldType.Array => new object[1],
-                    FieldType.Object => new { },
-                    FieldType.String => "",
-                    _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                };
-            }
-        }
     }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
@@ -167,31 +147,7 @@ internal sealed class MainCharacterDevelopmentAgent(
             return new Dictionary<string, object>();
         }
 
-        var devDict = ConvertFieldsToDict(structure.MainCharacterDevelopment);
+        var devDict = TrackerExtensions.ConvertToSystemJson(structure.MainCharacterDevelopment);
         return devDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = new
-                    {
-                        field.Prompt,
-                        field.DefaultValue,
-                        field.ExampleValues
-                    };
-                }
-            }
-
-            return dict;
-        }
     }
 }

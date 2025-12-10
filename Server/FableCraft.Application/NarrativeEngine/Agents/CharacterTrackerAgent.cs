@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -22,9 +23,9 @@ internal sealed class CharacterTrackerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
-    public async Task<CharacterTracker> Invoke(
-        GenerationContext generationContext,
+    public async Task<(CharacterTracker, string)> Invoke(GenerationContext generationContext,
         CharacterContext context,
+        Tracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
@@ -42,16 +43,29 @@ internal sealed class CharacterTrackerAgent(
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
         chatHistory.AddUserMessage($"""
-                                    <previous_statistics>
+                                    <story_tracker>
+                                    {JsonSerializer.Serialize(storyTrackerResult, options)}
+                                    </story_tracker>
+                                    """);
+        chatHistory.AddUserMessage($"""
+                                    <previous_tracker>
                                     {JsonSerializer.Serialize(context.CharacterTracker, options)}
-                                    </previous_statistics>
+                                    </previous_tracker>
+                                    <previous_development>
+                                    {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
+                                    </previous_development>
+                                    <previous_character_state>
+                                    {JsonSerializer.Serialize(context.CharacterState, options)}
+                                    </previous_character_state>
                                     """);
 
         chatHistory.AddUserMessage($"""
+                                    CRITICAL! These scenes are written from the perspective of the main character {generationContext.MainCharacter.Name}. Before updating the tracker, rewrite these scenes from the perspective of the character {context.Name}. Make sure to include ONLY their thoughts, feelings, knowledge, and reactions to the events happening in each scene.
                                     <recent_scenes>
                                     {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
                                         .OrderByDescending(x => x.SequenceNumber)
@@ -66,14 +80,14 @@ internal sealed class CharacterTrackerAgent(
 
         chatHistory.AddUserMessage($"""
                                     <current_scene>
-                                    {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
+                                    {generationContext.NewScene?.Scene}
                                     </current_scene>
                                     """);
 
         var instruction = "Update the tracker statistics based on the new scene content and previous tracker state.";
         chatHistory.AddUserMessage(instruction);
 
-        var outputFunc = new Func<string, CharacterTracker>(response =>
+        var outputFunc = new Func<string, (CharacterTracker, string)>(response =>
         {
             Match match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
             CharacterTracker tracker;
@@ -87,7 +101,18 @@ internal sealed class CharacterTrackerAgent(
                 throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
             }
 
-            return tracker;
+            match = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
+            string description;
+            if (match.Success)
+            {
+                description = match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown();
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
+            }
+
+            return (tracker, description);
         });
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -96,7 +121,7 @@ internal sealed class CharacterTrackerAgent(
         Kernel kernelWithKg = kernel.Build();
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        CharacterTracker result = await agentKernel.SendRequestAsync(chatHistory,
+        var result = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             promptExecutionSettings,
             nameof(CharacterTrackerAgent),

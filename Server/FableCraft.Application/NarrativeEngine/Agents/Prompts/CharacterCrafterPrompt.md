@@ -143,6 +143,9 @@ Before creating the character, query relevant information:
 - Generate initial character statistics for Character Tracker:
   {{character_tracker_format}}
 
+- Generate initial character development state for Character Development Agent:
+  {{character_development_format}}
+
 ### 5. Output Format
 
 #### General Description
@@ -376,6 +379,10 @@ TAGS:
 <character_statistics>
 {{character_tracker}}
 </character_statistics>
+
+<character_development>
+{{character_development}}
+</character_development>
 
 ## Special Considerations
 

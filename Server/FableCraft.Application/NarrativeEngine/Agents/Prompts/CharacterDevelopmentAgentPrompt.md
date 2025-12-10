@@ -114,11 +114,10 @@ Update this structure based on narrative events:
 
 Return the complete character development JSON structure:
 
-```xml
 <character_development>
 {{character_development}}
 </character_development>
-```
+
 
 ---
 

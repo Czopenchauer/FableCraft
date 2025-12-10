@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -15,7 +16,7 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
+internal sealed class StoryTrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
 {
     public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -34,7 +35,8 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
         var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine($"""
@@ -82,7 +84,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         {
             stringBuilder.AppendLine($"""
                                          <scene_content>
-                                         {context.NewScene?.Scene ?? context.PlayerAction}
+                                         {context.NewScene.Scene}
                                          </scene_content>
                                       """);
             chatHistory.AddUserMessage(stringBuilder.ToString());
@@ -95,7 +97,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
                                       <previous_trackers>
                                       {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Where(x => x.Metadata.Tracker != null).Take(1)
                                           .Select(s => $"""
-                                                        {JsonSerializer.Serialize(s.Metadata.Tracker, options)}
+                                                        {JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)}
                                                         """))}
                                       </previous_trackers>
                                       <last_scenes>
@@ -129,12 +131,12 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
         Kernel kernel = kernelBuilder.Create().Build();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(TrackerAgent), kernel, cancellationToken);
+        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(MainCharacterTrackerAgent), kernel, cancellationToken);
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var promptTemplate = await PromptBuilder.BuildPromptAsync("TrackerPrompt.md");
+        var promptTemplate = await PromptBuilder.BuildPromptAsync("StoryTrackerPrompt.md");
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         var serializeOptions = new JsonSerializerOptions
@@ -144,8 +146,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
             AllowTrailingCommas = true
         };
         return promptTemplate
-            .Replace("{{story_prompt}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.Story)], serializeOptions))
-            .Replace("{{main_character_prompt}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.MainCharacter)], serializeOptions))
+            .Replace("{{field_update_logic}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.Story)], serializeOptions))
             .Replace("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), serializeOptions));
     }
 
@@ -154,15 +155,7 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
         var dictionary = new Dictionary<string, object>();
         var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
-
-        // CharactersPresent is a single FieldDefinition of type Array, so output as array
         dictionary.Add(nameof(Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
-
-        var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
-        dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
-
-        // var charDict = ConvertFieldsToDict(structure.Characters);
-        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
     }
@@ -180,12 +173,6 @@ internal sealed class TrackerAgent(IAgentKernel agentKernel, IDbContextFactory<A
                 structure.CharactersPresent.DefaultValue,
                 structure.CharactersPresent.ExampleValues
             });
-
-        var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-        dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
-
-        // var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
-        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         return dictionary;
     }

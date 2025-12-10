@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
@@ -22,9 +23,9 @@ internal sealed class CharacterDevelopmentAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
-    public async Task<CharacterDevelopmentTracker?> Invoke(
-        GenerationContext generationContext,
+    public async Task<CharacterDevelopmentTracker?> Invoke(GenerationContext generationContext,
         CharacterContext context,
+        Tracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.ComplexPreset);
@@ -49,14 +50,26 @@ internal sealed class CharacterDevelopmentAgent(
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
-
+        chatHistory.AddUserMessage($"""
+                                    <story_tracker>
+                                    {JsonSerializer.Serialize(storyTrackerResult, options)}
+                                    </story_tracker>
+                                    """);
         var prompt = $"""
+                      <previous_tracker>
+                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
+                      </previous_tracker>
                       <previous_development>
                       {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
                       </previous_development>
+                      <previous_character_state>
+                      {JsonSerializer.Serialize(context.CharacterState, options)}
+                      </previous_character_state>
 
+                      CRITICAL! These scenes are written from the perspective of the main character {generationContext.MainCharacter.Name}. Before updating the tracker, rewrite these scenes from the perspective of the character {context.Name}. Make sure to include ONLY their thoughts, feelings, knowledge, and reactions to the events happening in each scene.
                       <recent_scenes>
                       {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
                           .OrderByDescending(x => x.SequenceNumber)
@@ -69,7 +82,7 @@ internal sealed class CharacterDevelopmentAgent(
                       </recent_scenes>
 
                       <current_scene>
-                      {generationContext.NewScene?.Scene ?? generationContext.PlayerAction}
+                      {generationContext.NewScene!.Scene}
                       </current_scene>
                       """;
         chatHistory.AddUserMessage(prompt);
@@ -130,38 +143,8 @@ internal sealed class CharacterDevelopmentAgent(
             return new Dictionary<string, object>();
         }
 
-        var devDict = ConvertFieldsToDict(structure.CharacterDevelopment);
+        var devDict = TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment);
         return devDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = GetDefaultValue(field);
-                }
-            }
-
-            return dict;
-
-            object GetDefaultValue(FieldDefinition field)
-            {
-                return field.Type switch
-                {
-                    FieldType.Array => new object[1],
-                    FieldType.Object => new { },
-                    FieldType.String => "",
-                    _ => throw new NotSupportedException($"Field type {field.Type} is not supported.")
-                };
-            }
-        }
     }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
@@ -171,31 +154,7 @@ internal sealed class CharacterDevelopmentAgent(
             return new Dictionary<string, object>();
         }
 
-        var devDict = ConvertFieldsToDict(structure.CharacterDevelopment);
+        var devDict = TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment);
         return devDict;
-
-        Dictionary<string, object> ConvertFieldsToDict(params FieldDefinition[] fields)
-        {
-            var dict = new Dictionary<string, object>();
-
-            foreach (FieldDefinition field in fields)
-            {
-                if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
-                {
-                    dict[field.Name] = ConvertFieldsToDict(field.NestedFields);
-                }
-                else if (field.DefaultValue != null)
-                {
-                    dict[field.Name] = new
-                    {
-                        field.Prompt,
-                        field.DefaultValue,
-                        field.ExampleValues
-                    };
-                }
-            }
-
-            return dict;
-        }
     }
 }

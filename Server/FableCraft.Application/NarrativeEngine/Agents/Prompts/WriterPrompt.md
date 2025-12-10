@@ -436,7 +436,7 @@ Before submitting, verify:
 - [ ] First person present tense throughout
 - [ ] Show don't tell
 - [ ] Sensory details appropriate to scene
-- [ ] 3-4 paragraphs, 250-400 words
+- [ ] 4-5 paragraphs, 350-500 words
 - [ ] Ends with clear player agency moment
 - [ ] 3 meaningful, distinct choices presented
 

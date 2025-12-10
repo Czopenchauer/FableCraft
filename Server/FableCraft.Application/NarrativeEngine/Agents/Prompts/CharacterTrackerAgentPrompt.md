@@ -82,6 +82,10 @@ Update this structure based on narrative events:
 - Update any field affected by narrative events
 - Preserve the Name field exactly as provided
 
+**Update character description so it reflects current state accurately.**
+- Description should be about who is {CHARACTER_NAME} now, based on narrative events
+- Include physical, mental, social, and emotional aspects
+
 ---
 
 ## Input Structure
@@ -106,11 +110,13 @@ Update this structure based on narrative events:
 
 Return the complete character tracker JSON structure:
 
-```xml
 <character_tracker>
 {{character_tracker}}
 </character_tracker>
-```
+
+<character_description>
+NEW CHARACTER DESCRIPTION HERE
+</character_description>
 
 ---
 

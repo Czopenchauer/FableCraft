@@ -64,7 +64,7 @@ internal sealed class CharacterCrafter(
         Kernel kernelWithKg = kernel.Build();
 
         chatHistory.AddUserMessage(contextPrompt);
-        var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>(response =>
+        var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker)>(response =>
         {
             Match match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
             CharacterStats? characterStats;
@@ -89,6 +89,18 @@ internal sealed class CharacterCrafter(
             {
                 throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
             }
+            
+            match = Regex.Match(response, "<character_development>(.*?)</character_development>", RegexOptions.Singleline);
+            CharacterDevelopmentTracker developmentTracker;
+            if (match.Success)
+            {
+                developmentTracker = JsonSerializer.Deserialize<CharacterDevelopmentTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                                     ?? throw new InvalidOperationException();
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
+            }
 
             Match descriptionMatch = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
             if (descriptionMatch.Success)
@@ -99,13 +111,13 @@ internal sealed class CharacterCrafter(
                     throw new InvalidCastException("Failed to parse character description from response due to empty description or it not being in correct tags.");
                 }
 
-                return (characterStats, description, tracker);
+                return (characterStats, description, tracker, developmentTracker);
             }
 
             throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
         });
 
-        (CharacterStats characterStats, string description, CharacterTracker tracker) result = await agentKernel.SendRequestAsync(chatHistory,
+        (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker characterDevelopmentTracker) result = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(CharacterCrafter),
@@ -117,6 +129,7 @@ internal sealed class CharacterCrafter(
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
+            DevelopmentTracker = result.characterDevelopmentTracker,
             Name = result.characterStats.CharacterIdentity.FullName!,
             SequenceNumber = 1
         };
@@ -133,7 +146,9 @@ internal sealed class CharacterCrafter(
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterCrafterPrompt.md");
         return prompt.Replace("{{character_tracker_format}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
-            .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options));
+            .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
+            .Replace("{{character_development_format}}", JsonSerializer.Serialize(TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment!), options))
+            .Replace("{{character_development}}", JsonSerializer.Serialize(TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment!), options));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

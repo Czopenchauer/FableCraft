@@ -118,11 +118,14 @@ internal sealed class WriterAgent(
                                         """);
         }
 
-        chatHistory.AddUserMessage($"""
-                                    <player_action>
-                                    {context.PlayerAction}
-                                    </player_action>
-                                    """);
+        if (context.SceneContext.Length > 0)
+        {
+            chatHistory.AddUserMessage($"""
+                                        <player_action>
+                                        {context.PlayerAction}
+                                        </player_action>
+                                        """);
+        }
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

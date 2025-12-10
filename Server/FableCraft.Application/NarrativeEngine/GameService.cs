@@ -218,12 +218,12 @@ internal class GameService : IGameService
                 }
             });
 
-            SceneGenerationOutput scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
+            var scene = await _sceneGenerationOrchestrator.GenerateInitialSceneAsync(adventureId, cancellationToken);
             return new GameScene
             {
                 Text = scene.GeneratedScene.Scene,
                 Choices = scene.GeneratedScene.Choices.ToList(),
-                Tracker = scene.Tracker,
+                Tracker = null,
                 NarrativeDirectorOutput = scene.NarrativeDirectorOutput,
                 CanRegenerate = true,
                 SceneId = scene.SceneId,

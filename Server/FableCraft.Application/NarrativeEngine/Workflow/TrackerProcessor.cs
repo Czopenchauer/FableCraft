@@ -5,33 +5,40 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 internal sealed class TrackerProcessor(
-    TrackerAgent trackerAgent,
+    StoryTrackerAgent storyTracker,
+    MainCharacterTrackerAgent mainCharacterTrackerAgent,
+    MainCharacterDevelopmentAgent mainCharacterDevelopmentAgent,
     CharacterStateAgent characterStateAgent,
-    CharacterTrackerAgent characterTrackerAgent) : IProcessor
+    CharacterTrackerAgent characterTrackerAgent,
+    CharacterDevelopmentAgent characterDevelopmentAgent) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var tracker = await trackerAgent.Invoke(context, cancellationToken);
+        var storyTrackerResult = await storyTracker.Invoke(context, cancellationToken);
+        var tracker = mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+        var trackerDevelopment = mainCharacterDevelopmentAgent.Invoke(context, storyTrackerResult, cancellationToken);
         IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
         if (context.Characters.Count != 0)
         {
             characterUpdateTask = context.Characters
-                .Where(x => tracker.CharactersPresent.Contains(x.Name))
+                .Where(x => storyTrackerResult.CharactersPresent.Contains(x.Name))
                 .Select(async character =>
                 {
-                    var stateTask = characterStateAgent.Invoke(context, character, cancellationToken);
-                    var trackerTask = characterTrackerAgent.Invoke(context, character, cancellationToken);
+                    var stateTask = characterStateAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    var trackerTask = characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    var developmentTracker = characterDevelopmentAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
-                    await Task.WhenAll(stateTask, trackerTask);
-
+                    await Task.WhenAll(stateTask, trackerTask, developmentTracker);
+                    var (charTracker, description) = await trackerTask;
                     return new CharacterContext
                     {
                         CharacterId = character.CharacterId,
                         CharacterState = await stateTask,
-                        CharacterTracker = await trackerTask,
+                        CharacterTracker = charTracker,
                         Name = character.Name,
-                        Description = character.Description,
-                        SequenceNumber = character.SequenceNumber + 1
+                        Description = description,
+                        SequenceNumber = character.SequenceNumber + 1,
+                        DevelopmentTracker = await developmentTracker,
                     };
                 })
                 .ToArray();
@@ -39,13 +46,11 @@ internal sealed class TrackerProcessor(
 
         var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
         context.CharacterUpdates = characterUpdates;
-        context.NewTracker = new Tracker
-        {
-            Story = tracker.Story,
-            CharactersPresent = tracker.CharactersPresent,
-            MainCharacter = tracker.MainCharacter,
-            Characters = characterUpdates?.Select(x => x.CharacterTracker!).ToArray(),
-        };
+        storyTrackerResult.MainCharacter = await tracker;
+        storyTrackerResult.MainCharacterDevelopment = await trackerDevelopment;
+        storyTrackerResult.Characters = characterUpdates?.Select(x => x.CharacterTracker!).ToArray();
+        storyTrackerResult.CharacterDevelopment = characterUpdates?.Select(x => x.DevelopmentTracker!).ToArray();
+        context.NewTracker = storyTrackerResult;
         context.GenerationProcessStep = GenerationProcessStep.TrackerFinished;
     }
 }

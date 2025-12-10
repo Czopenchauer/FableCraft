@@ -6,8 +6,10 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -17,7 +19,12 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBuilderFactory kernelBuilderFactory, IRagSearch ragSearch, ILogger logger) : IProcessor
+internal sealed class NarrativeDirectorAgent(
+    ApplicationDbContext dbContext,
+    IAgentKernel agentKernel,
+    KernelBuilderFactory kernelBuilderFactory,
+    IRagSearch ragSearch,
+    ILogger logger) : IProcessor
 {
     private const int SceneContextCount = 20;
 
@@ -92,11 +99,26 @@ internal sealed class NarrativeDirectorAgent(IAgentKernel agentKernel, KernelBui
                                         """);
         }
 
-        chatHistory.AddUserMessage($"""
-                                    <player_action>
-                                    {context.PlayerAction}
-                                    </player_action>
-                                    """);
+        if (context.SceneContext.Length > 0)
+        {
+            chatHistory.AddUserMessage($"""
+                                        <player_action>
+                                        {context.PlayerAction}
+                                        </player_action>
+                                        """);
+        }
+        else
+        {
+            var instruction = await dbContext.Adventures.Select(x => new { x.Id, x.FirstSceneGuidance }).SingleAsync(x => x.Id == context.AdventureId, cancellationToken: cancellationToken);
+            var initialInstruction = 
+                $"""
+                This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup.
+                <initial_instruction>
+                {instruction.FirstSceneGuidance}
+                </initial_instruction>
+                """;
+            chatHistory.AddUserMessage(initialInstruction);
+        }
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

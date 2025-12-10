@@ -71,16 +71,18 @@ public sealed class Tracker
 
     public string[] CharactersPresent { get; init; } = [];
 
-    public CharacterTracker? MainCharacter { get; init; }
+    public CharacterTracker? MainCharacter { get; set; }
 
     public CharacterTracker[]? Characters { get; set; }
 
-    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; init; }
+    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; set; }
+
+    public CharacterDevelopmentTracker[]? CharacterDevelopment { get; set; }
 }
 
 public sealed class StoryTracker
 {
-    public DateTime Time { get; init; }
+    public required string Time { get; init; }
 
     public required string Location { get; init; }
 
