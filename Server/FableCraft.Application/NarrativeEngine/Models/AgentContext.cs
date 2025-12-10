@@ -57,6 +57,8 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public MainCharacter MainCharacter { get; set; } = null!;
 
+    public string? NewMainCharacterDescription { get; set; }
+
     public CharacterContext[]? NewCharacters { get; set; }
 
     public LocationGenerationResult[]? NewLocations { get; set; }
@@ -76,6 +78,8 @@ internal sealed class GenerationContext
     public Guid? NewSceneId { get; set; }
 
     public required GenerationProcessStep GenerationProcessStep { get; set; }
+
+    public SceneContext? LatestSceneContext => SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
 }
 
 internal sealed class CharacterContext

@@ -18,7 +18,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class MainCharacterTrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
 {
-    public async Task<CharacterTracker> Invoke(GenerationContext context, Tracker storyTrackerResult, CancellationToken cancellationToken)
+    public async Task<(CharacterTracker, string)> Invoke(GenerationContext context, Tracker storyTrackerResult, CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -50,7 +50,7 @@ internal sealed class MainCharacterTrackerAgent(IAgentKernel agentKernel, IDbCon
         stringBuilder.AppendLine($"""
                                   <main_character>
                                   {context.MainCharacter.Name}
-                                  {context.MainCharacter.Description}
+                                  {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
                                   </main_character>
                                   """);
         if ((context.SceneContext?.Length ?? 0) == 0)
@@ -90,16 +90,32 @@ internal sealed class MainCharacterTrackerAgent(IAgentKernel agentKernel, IDbCon
 
         chatHistory.AddUserMessage(stringBuilder.ToString());
         chatHistory.AddUserMessage(instruction);
-        var outputFunc = new Func<string, CharacterTracker>(response =>
+        var outputFunc = new Func<string, (CharacterTracker, string)>(response =>
         {
             Match match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);
+            CharacterTracker tracker;
             if (match.Success)
             {
-                return JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
                        ?? throw new InvalidOperationException();
             }
+            else
+            {
+                throw new InvalidCastException("Failed to parse Tracker from response due to output not being in correct tags.");
+            }
 
-            throw new InvalidCastException("Failed to parse Tracker from response due to output not being in correct tags.");
+            match = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
+            string description;
+            if (match.Success)
+            {
+                description = match.Groups[1].Value.RemoveThinkingBlock().Trim();
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to parse character description from response due to output not being in correct tags.");
+            }
+
+            return (tracker, description);
         });
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();

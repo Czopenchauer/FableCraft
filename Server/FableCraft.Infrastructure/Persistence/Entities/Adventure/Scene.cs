@@ -60,6 +60,8 @@ public class Scene : IEntity
 
 public sealed class Metadata
 {
+    public string? MainCharacterDescription { get; set; }
+
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
     public Tracker? Tracker { get; set; }

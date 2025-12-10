@@ -253,7 +253,10 @@ internal sealed class SceneGenerationOrchestrator(
 
             var workflow = BuildEnrichmentWorkflow(processors);
 
-            await Task.WhenAll(workflow.Select(processor => processor.Invoke(context, cancellationToken)));
+            foreach (IProcessor processor in workflow)
+            {
+                await processor.Invoke(context, cancellationToken);
+            }
 
             await UpdateSceneWithEnrichment(scene, context, cancellationToken);
 
@@ -375,6 +378,7 @@ internal sealed class SceneGenerationOrchestrator(
         };
 
         scene.Metadata.Tracker = context.NewTracker!;
+        scene.Metadata.MainCharacterDescription = context.NewMainCharacterDescription;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
 
         var newCharacterEntities = context.NewCharacters?.Select(x => new Character

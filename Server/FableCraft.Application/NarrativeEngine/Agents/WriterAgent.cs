@@ -75,7 +75,7 @@ internal sealed class WriterAgent(
         chatHistory.AddUserMessage($"""
                                     <main_character>
                                     {context.MainCharacter.Name}
-                                    {context.MainCharacter.Description}
+                                    {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
                                     </main_character>
                                     """);
 

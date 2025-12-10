@@ -56,6 +56,10 @@ internal sealed class CharacterCrafter(
                              <previous_scene>
                              {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
                              <previous_scene>
+
+                             <current_scene>
+                             {context.NewScene!.Scene}
+                             <current_scene>
                              """;
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -64,65 +68,67 @@ internal sealed class CharacterCrafter(
         Kernel kernelWithKg = kernel.Build();
 
         chatHistory.AddUserMessage(contextPrompt);
-        var outputFunc = new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker)>(response =>
-        {
-            Match match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
-            CharacterStats? characterStats;
-            if (match.Success)
+        var outputFunc =
+            new Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker)>(response =>
             {
-                characterStats = JsonSerializer.Deserialize<CharacterStats>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                                 ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse CharacterStats from response due to stats not being in correct tags.");
-            }
-
-            match = Regex.Match(response, "<character_statistics>(.*?)</character_statistics>", RegexOptions.Singleline);
-            CharacterTracker tracker;
-            if (match.Success)
-            {
-                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                          ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
-            }
-            
-            match = Regex.Match(response, "<character_development>(.*?)</character_development>", RegexOptions.Singleline);
-            CharacterDevelopmentTracker developmentTracker;
-            if (match.Success)
-            {
-                developmentTracker = JsonSerializer.Deserialize<CharacterDevelopmentTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                                     ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
-            }
-
-            Match descriptionMatch = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
-            if (descriptionMatch.Success)
-            {
-                var description = descriptionMatch.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown();
-                if (string.IsNullOrEmpty(description))
+                Match match = Regex.Match(response, "<character>(.*?)</character>", RegexOptions.Singleline);
+                CharacterStats? characterStats;
+                if (match.Success)
                 {
-                    throw new InvalidCastException("Failed to parse character description from response due to empty description or it not being in correct tags.");
+                    characterStats = JsonSerializer.Deserialize<CharacterStats>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                                     ?? throw new InvalidOperationException();
+                }
+                else
+                {
+                    throw new InvalidOperationException("Failed to parse CharacterStats from response due to stats not being in correct tags.");
                 }
 
-                return (characterStats, description, tracker, developmentTracker);
-            }
+                match = Regex.Match(response, "<character_statistics>(.*?)</character_statistics>", RegexOptions.Singleline);
+                CharacterTracker tracker;
+                if (match.Success)
+                {
+                    tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                              ?? throw new InvalidOperationException();
+                }
+                else
+                {
+                    throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
+                }
 
-            throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
-        });
+                match = Regex.Match(response, "<character_development>(.*?)</character_development>", RegexOptions.Singleline);
+                CharacterDevelopmentTracker developmentTracker;
+                if (match.Success)
+                {
+                    developmentTracker = JsonSerializer.Deserialize<CharacterDevelopmentTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                                         ?? throw new InvalidOperationException();
+                }
+                else
+                {
+                    throw new InvalidOperationException("Failed to parse CharacterTracker from response due to tracker not being in correct tags.");
+                }
 
-        (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker characterDevelopmentTracker) result = await agentKernel.SendRequestAsync(chatHistory,
-            outputFunc,
-            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
-            nameof(CharacterCrafter),
-            kernelWithKg,
-            cancellationToken);
+                Match descriptionMatch = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
+                if (descriptionMatch.Success)
+                {
+                    var description = descriptionMatch.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown();
+                    if (string.IsNullOrEmpty(description))
+                    {
+                        throw new InvalidCastException("Failed to parse character description from response due to empty description or it not being in correct tags.");
+                    }
+
+                    return (characterStats, description, tracker, developmentTracker);
+                }
+
+                throw new InvalidCastException("Failed to parse description from response due to output not being in correct tags.");
+            });
+
+        (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker characterDevelopmentTracker) result =
+            await agentKernel.SendRequestAsync(chatHistory,
+                outputFunc,
+                kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+                nameof(CharacterCrafter),
+                kernelWithKg,
+                cancellationToken);
         return new CharacterContext
         {
             CharacterId = Guid.NewGuid(),

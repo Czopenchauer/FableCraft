@@ -57,6 +57,10 @@ internal sealed class LoreCrafter(IAgentKernel agentKernel, KernelBuilderFactory
                                     <previous_scene>
                                     {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
                                     <previous_scene>
+                                    
+                                    <current_scene>
+                                    {context.NewScene!.Scene}
+                                    <current_scene>
                                     """);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

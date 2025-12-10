@@ -42,7 +42,7 @@ internal sealed class StoryTrackerAgent(IAgentKernel agentKernel, IDbContextFact
         stringBuilder.AppendLine($"""
                                   <main_character>
                                   {context.MainCharacter.Name}
-                                  {context.MainCharacter.Description}
+                                  {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
                                   </main_character>
                                   <characters>
                                   {string.Join("\n\n", context.Characters.Select(c => $"""
