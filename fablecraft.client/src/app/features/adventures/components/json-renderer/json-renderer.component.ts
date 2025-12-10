@@ -82,15 +82,18 @@ export class JsonRendererComponent implements OnInit, OnChanges {
 
   /**
    * Generate display label for a node
-   * For array items with a "name" property, use the name instead of index
+   * For array items with a "name" or "Name" property, use the name instead of index
    */
   generateLabel(key: string, value: any): string {
     // Check if this is an array index key like "[0]", "[1]", etc.
     const arrayIndexMatch = key.match(/^\[(\d+)\]$/);
 
-    if (arrayIndexMatch && typeof value === 'object' && value !== null && 'name' in value) {
-      // Use the name property if available
-      return value.name;
+    if (arrayIndexMatch && typeof value === 'object' && value !== null) {
+      // Check for 'name' or 'Name' property (case-insensitive check)
+      const nameKey = Object.keys(value).find(k => k.toLowerCase() === 'name');
+      if (nameKey && value[nameKey]) {
+        return value[nameKey];
+      }
     }
 
     // Otherwise use the formatted key

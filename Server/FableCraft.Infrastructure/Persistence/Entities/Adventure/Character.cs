@@ -20,7 +20,7 @@ public sealed class Character
 
     public CharacterTracker Tracker { get; init; } = null!;
 
-    public CharacterDevelopmentTracker? DevelopmentTracker { get; init; }
+    public CharacterDevelopmentTracker DevelopmentTracker { get; init; } = null!;
 }
 
 public class CharacterStats

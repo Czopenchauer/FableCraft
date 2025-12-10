@@ -83,18 +83,81 @@ export interface LorebookGenerationState {
   error?: string;
 }
 
+// Backend API response structure for GameScene
+export interface GameSceneApiResponse {
+  previousScene: string | null;
+  nextScene: string | null;
+  sceneId: string;
+  generationOutput: SceneGenerationOutput | null;
+  canRegenerate: boolean;
+  enrichmentStatus: EnrichmentStatus;
+}
+
+export interface SceneGenerationOutput {
+  sceneId: string;
+  submittedAction: string | null;
+  generatedScene: GeneratedScene;
+  narrativeDirectorOutput: NarrativeDirectorOutput | null;
+  tracker: TrackerDto | null;
+  newLore: LoreInfo[] | null;
+}
+
+export interface GeneratedScene {
+  scene: string;
+  choices: string[];
+}
+
+export interface NarrativeDirectorOutput {
+  [key: string]: any;
+}
+
+export interface TrackerDto {
+  story: StoryTracker;
+  mainCharacter: MainCharacterTrackerDto;
+  charactersOnScene: string[];
+  characters: CharacterStateDto[];
+}
+
+export interface StoryTracker {
+  [key: string]: any;
+}
+
+export interface MainCharacterTrackerDto {
+  tracker: CharacterTracker;
+  development: CharacterDevelopmentTracker;
+  description: string;
+}
+
+export interface CharacterTracker {
+  [key: string]: any;
+}
+
+export interface CharacterDevelopmentTracker {
+  [key: string]: any;
+}
+
+export interface CharacterStateDto {
+  characterId: string;
+  name: string;
+  description: string;
+  state: any;
+  tracker: CharacterTracker;
+  development: CharacterDevelopmentTracker;
+}
+
+// Flattened client-side model for easier use in components
 export interface GameScene {
   previousScene: string | null;
   nextScene: string | null;
   sceneId: string;
   text: string;
   choices: string[] | null;
-  // In the server DTO, this is nullable string; client uses null when no choice selected
   selectedChoice: string | null;
   canRegenerate: boolean;
-  tracker: any;
-  narrativeDirectorOutput: any;
+  tracker: TrackerDto | null;
+  narrativeDirectorOutput: NarrativeDirectorOutput | null;
   enrichmentStatus: EnrichmentStatus;
+  newLore: LoreInfo[] | null;
 }
 
 export enum EnrichmentStatus {
@@ -104,23 +167,11 @@ export enum EnrichmentStatus {
   Failed = 'Failed'
 }
 
+// Backend SceneEnrichmentOutput structure
 export interface SceneEnrichmentResult {
   sceneId: string;
-  tracker: any;
-  newCharacters: CharacterInfo[];
-  newLocations: LocationInfo[];
+  tracker: TrackerDto;
   newLore: LoreInfo[];
-}
-
-export interface CharacterInfo {
-  characterId: string;
-  name: string;
-  description: string;
-}
-
-export interface LocationInfo {
-  name: string;
-  description: string;
 }
 
 export interface LoreInfo {

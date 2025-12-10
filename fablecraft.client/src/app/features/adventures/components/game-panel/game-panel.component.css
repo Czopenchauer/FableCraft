@@ -1307,6 +1307,89 @@
   }
 }
 
+/* ========== Nested Tabs (Description, State, Abilities) ========== */
+
+.nested-tabs-header {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.nested-tab-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.nested-tab-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.nested-tab-btn.active {
+  background: var(--bg-accent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+[data-theme="modern-dark"] .nested-tab-btn {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="modern-dark"] .nested-tab-btn:hover {
+  background: rgba(168, 85, 247, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="modern-dark"] .nested-tab-btn.active {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .nested-tab-btn {
+  color: var(--text-tertiary);
+}
+
+[data-theme="medieval-fantasy"] .nested-tab-btn:hover {
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--text-secondary);
+}
+
+[data-theme="medieval-fantasy"] .nested-tab-btn.active {
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--color-primary);
+}
+
+.nested-tabs-content {
+  min-height: 50px;
+}
+
+.nested-tab-panel {
+  animation: fadeIn var(--transition-base);
+}
+
+/* Responsive nested tabs */
+@media (max-width: 767px) {
+  .nested-tabs-header {
+    gap: 2px;
+  }
+
+  .nested-tab-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+}
+
 .enrichment-info {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);

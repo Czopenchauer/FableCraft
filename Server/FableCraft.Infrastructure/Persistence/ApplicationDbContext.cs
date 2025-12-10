@@ -26,6 +26,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<MainCharacterAction> CharacterActions { get; set; }
 
+    public DbSet<MainCharacter> MainCharacters { get; set; }
+
     public DbSet<Chunk> Chunks { get; set; }
 
     public DbSet<TrackerDefinition> TrackerDefinitions { get; set; }

@@ -176,6 +176,29 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 // fileToCommit.Add(tracker);
             }
 
+            var mainCharacter = await _dbContext.MainCharacters
+                .Select(x => new { x.Id, x.Name, x.AdventureId })
+                .SingleAsync(x => x.AdventureId == message.AdventureId, cancellationToken: cancellationToken);
+            var lastScene = scenesToCommit.OrderByDescending(x => x.SequenceNumber).First();
+            var existingMainCharacterChunk = await _dbContext.Chunks
+                .AsNoTracking()
+                .Where(x => x.EntityId == mainCharacter.Id)
+                .SingleAsync(cancellationToken);
+            var characterContent = $"""
+                                    Name: {mainCharacter.Name}
+
+                                    {lastScene.Metadata.MainCharacterDescription}
+                                    """;
+
+            var mainCharacterBytes = Encoding.UTF8.GetBytes(characterContent);
+            var mainCharacterHash = XxHash64.HashToUInt64(mainCharacterBytes);
+            var mainCharacterName = $"{mainCharacterHash:x16}";
+            var mainCharacterPath = @$"{StartupExtensions.DataDirectory}\{message.AdventureId}\{mainCharacterName}.{nameof(ContentType.txt)}";
+            existingMainCharacterChunk.Name = mainCharacterName;
+            existingMainCharacterChunk.Path = mainCharacterPath;
+            existingMainCharacterChunk.ContentHash = mainCharacterHash;
+            fileToCommit.Add((existingMainCharacterChunk, characterContent));
+
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
@@ -190,23 +213,23 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                             cancellationToken);
                     }
                 }
-                
+
                 var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
                         await _ragBuilder.AddDataAsync(
                             fileToCommit.Select(x => x.Chunk.Path).ToList(),
                             message.AdventureId.ToString(),
                             ct),
                     cancellationToken);
-                
+
                 foreach ((Chunk chunk, _) in fileToCommit)
                 {
                     chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
                 }
-                
+
                 await _resiliencePipeline.ExecuteAsync(async ct =>
                         await _ragBuilder.CognifyAsync(message.AdventureId.ToString(), ct),
                     cancellationToken);
-                
+
                 // await _resiliencePipeline.ExecuteAsync(async ct =>
                 //         await _ragBuilder.MemifyAsync(message.AdventureId.ToString(), ct),
                 //     cancellationToken);
@@ -214,7 +237,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 {
                     scene.CommitStatus = CommitStatus.Commited;
                 }
-                
+
                 foreach ((Chunk chunk, _) in fileToCommit)
                 {
                     if (chunk.Id != Guid.Empty)
@@ -226,6 +249,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         _dbContext.Chunks.Add(chunk);
                     }
                 }
+
                 _dbContext.Scenes.UpdateRange(scenesToCommit);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(CancellationToken.None);

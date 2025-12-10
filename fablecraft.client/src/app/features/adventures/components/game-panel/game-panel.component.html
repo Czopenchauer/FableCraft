@@ -103,8 +103,8 @@
       <div *ngIf="currentScene.tracker.story" class="story-tracker-section">
         <app-json-renderer [data]="{story: currentScene.tracker.story}"></app-json-renderer>
       </div>
-      <div *ngIf="currentScene.tracker.charactersPresent" class="story-tracker-section">
-        <app-json-renderer [data]="{charactersPresent: currentScene.tracker.charactersPresent}"></app-json-renderer>
+      <div *ngIf="currentScene.tracker.charactersOnScene" class="story-tracker-section">
+        <app-json-renderer [data]="{charactersOnScene: currentScene.tracker.charactersOnScene}"></app-json-renderer>
       </div>
     </div>
 
@@ -193,14 +193,88 @@
             <div class="character-tabs-content">
               <!-- Protagonist Content -->
               <div *ngIf="isActiveCharacterTab('protagonist') && currentScene.tracker.mainCharacter" class="character-tab-panel">
-                <app-json-renderer [data]="currentScene.tracker.mainCharacter"></app-json-renderer>
+                <!-- Nested tabs for protagonist -->
+                <div class="nested-tabs-header">
+                  <button
+                    (click)="setActiveNestedTab('description')"
+                    [class.active]="isActiveNestedTab('description')"
+                    class="nested-tab-btn"
+                    type="button"
+                  >
+                    Description
+                  </button>
+                  <button
+                    (click)="setActiveNestedTab('state')"
+                    [class.active]="isActiveNestedTab('state')"
+                    class="nested-tab-btn"
+                    type="button"
+                  >
+                    State
+                  </button>
+                  <button
+                    (click)="setActiveNestedTab('abilities')"
+                    [class.active]="isActiveNestedTab('abilities')"
+                    class="nested-tab-btn"
+                    type="button"
+                  >
+                    Abilities
+                  </button>
+                </div>
+                <div class="nested-tabs-content">
+                  <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                    <app-json-renderer [data]="{description: currentScene.tracker.mainCharacter.description}"></app-json-renderer>
+                  </div>
+                  <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
+                    <app-json-renderer [data]="currentScene.tracker.mainCharacter.tracker"></app-json-renderer>
+                  </div>
+                  <div *ngIf="isActiveNestedTab('abilities')" class="nested-tab-panel">
+                    <app-json-renderer [data]="currentScene.tracker.mainCharacter.development"></app-json-renderer>
+                  </div>
+                </div>
               </div>
 
               <!-- Character Content (for each character on scene) -->
               <ng-container *ngFor="let charName of getCharactersOnScene()">
                 <div *ngIf="isActiveCharacterTab(charName)" class="character-tab-panel">
                   <div *ngIf="getCharacterByName(charName) as character">
-                    <app-json-renderer [data]="character"></app-json-renderer>
+                    <!-- Nested tabs for character -->
+                    <div class="nested-tabs-header">
+                      <button
+                        (click)="setActiveNestedTab('description')"
+                        [class.active]="isActiveNestedTab('description')"
+                        class="nested-tab-btn"
+                        type="button"
+                      >
+                        Description
+                      </button>
+                      <button
+                        (click)="setActiveNestedTab('state')"
+                        [class.active]="isActiveNestedTab('state')"
+                        class="nested-tab-btn"
+                        type="button"
+                      >
+                        State
+                      </button>
+                      <button
+                        (click)="setActiveNestedTab('abilities')"
+                        [class.active]="isActiveNestedTab('abilities')"
+                        class="nested-tab-btn"
+                        type="button"
+                      >
+                        Abilities
+                      </button>
+                    </div>
+                    <div class="nested-tabs-content">
+                      <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                        <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
+                      </div>
+                      <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
+                        <app-json-renderer [data]="character.tracker"></app-json-renderer>
+                      </div>
+                      <div *ngIf="isActiveNestedTab('abilities')" class="nested-tab-panel">
+                        <app-json-renderer [data]="character.development"></app-json-renderer>
+                      </div>
+                    </div>
                   </div>
                   <div *ngIf="!getCharacterByName(charName)" class="character-not-found">
                     <p>Character details not available.</p>
@@ -212,19 +286,7 @@
 
           <!-- Display enrichment data if available -->
           <div *ngIf="enrichmentData && !isEnriching" class="enrichment-info">
-            <div *ngIf="enrichmentData.newCharacters.length > 0" class="enrichment-section">
-              <h4>New Characters:</h4>
-              <div *ngFor="let char of enrichmentData.newCharacters" class="enrichment-item">
-                <strong>{{ char.name }}</strong>: {{ char.description }}
-              </div>
-            </div>
-            <div *ngIf="enrichmentData.newLocations.length > 0" class="enrichment-section">
-              <h4>New Locations:</h4>
-              <div *ngFor="let loc of enrichmentData.newLocations" class="enrichment-item">
-                <strong>{{ loc.name }}</strong>: {{ loc.description }}
-              </div>
-            </div>
-            <div *ngIf="enrichmentData.newLore.length > 0" class="enrichment-section">
+            <div *ngIf="enrichmentData.newLore && enrichmentData.newLore.length > 0" class="enrichment-section">
               <h4>New Lore:</h4>
               <div *ngFor="let lore of enrichmentData.newLore" class="enrichment-item">
                 <strong>{{ lore.title }}</strong>: {{ lore.summary }}

@@ -119,7 +119,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                 {adventure.MainCharacter.Description}
                                 """;
 
-        var characterBytes = Encoding.UTF8.GetBytes(characterContent + adventure.Id);
+        var characterBytes = Encoding.UTF8.GetBytes(characterContent);
         var characterHash = XxHash64.HashToUInt64(characterBytes);
         Chunk? existingCharacterChunk = existingCharacterChunks.FirstOrDefault(x => x.ContentHash == characterHash);
 

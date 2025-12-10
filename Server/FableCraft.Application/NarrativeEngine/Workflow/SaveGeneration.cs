@@ -49,7 +49,8 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
                                         Description = x.Description,
                                         CharacterStats = x.CharacterState,
                                         Tracker = x.CharacterTracker!,
-                                        SequenceNumber = x.SequenceNumber
+                                        SequenceNumber = x.SequenceNumber,
+                                        DevelopmentTracker = x.DevelopmentTracker!
                                     }).ToList()
                                     ?? new List<Character>();
 
@@ -60,7 +61,8 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
                                               Description = x.Description,
                                               CharacterStats = x.CharacterState,
                                               Tracker = x.CharacterTracker!,
-                                              SequenceNumber = x.SequenceNumber
+                                              SequenceNumber = x.SequenceNumber,
+                                              DevelopmentTracker = x.DevelopmentTracker!
                                           })
                                           ?? new List<Character>();
         newCharactersEntities.AddRange(updatesToExistingCharacters);
@@ -82,7 +84,9 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
             }).ToList(),
             CharacterStates = newCharactersEntities.ToList(),
             Lorebooks = newLoreEntities,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow,
+            EnrichmentStatus = EnrichmentStatus.Enriched,
+            CommitStatus = CommitStatus.Uncommited
         };
 
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);

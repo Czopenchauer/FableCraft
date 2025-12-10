@@ -9,6 +9,7 @@ import {
   AvailableLorebookDto,
   ComponentStatus,
   GameScene,
+  GameSceneApiResponse,
   GeneratedLorebookDto,
   GenerateLorebookDto,
   SceneEnrichmentResult
@@ -83,21 +84,24 @@ export class AdventureService {
    * Get current scene for an adventure
    */
   getCurrentScene(adventureId: string): Observable<GameScene> {
-    return this.http.get<GameScene>(`${environment.apiUrl}/api/Play/${adventureId}/current-scene`);
+    return this.http.get<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/current-scene`)
+      .pipe(map(mapApiResponseToGameScene));
   }
 
   /**
    * Get a specific scene by ID
    */
   getScene(adventureId: string, sceneId: string): Observable<GameScene> {
-    return this.http.get<GameScene>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}`);
+    return this.http.get<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}`)
+      .pipe(map(mapApiResponseToGameScene));
   }
 
   /**
    * Submit a player action (choice selection)
    */
   submitAction(adventureId: string, actionText: string): Observable<GameScene> {
-    return this.http.post<GameScene>(`${environment.apiUrl}/api/Play/submit`, {adventureId, actionText});
+    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/submit`, {adventureId, actionText})
+      .pipe(map(mapApiResponseToGameScene));
   }
 
   /**
@@ -111,7 +115,8 @@ export class AdventureService {
    * Regenerate the last scene of an adventure
    */
   regenerateScene(adventureId: string, sceneId: string): Observable<GameScene> {
-    return this.http.post<GameScene>(`${environment.apiUrl}/api/Play/regenerate/${adventureId}/scene/${sceneId}`, {});
+    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/regenerate/${adventureId}/scene/${sceneId}`, {})
+      .pipe(map(mapApiResponseToGameScene));
   }
 
   /**
@@ -150,5 +155,24 @@ function mapServerStatusToClient(server: ServerAdventureCreationStatus): Adventu
       ragProcessing: mapStageToComponentStatus(server.ragProcessing),
       sceneGeneration: mapStageToComponentStatus(server.sceneGeneration)
     }
+  };
+}
+
+// ===== GameScene API Response Mapper =====
+
+function mapApiResponseToGameScene(response: GameSceneApiResponse): GameScene {
+  const genOutput = response.generationOutput;
+  return {
+    previousScene: response.previousScene,
+    nextScene: response.nextScene,
+    sceneId: response.sceneId,
+    text: genOutput?.generatedScene?.scene ?? '',
+    choices: genOutput?.generatedScene?.choices ?? null,
+    selectedChoice: genOutput?.submittedAction ?? null,
+    canRegenerate: response.canRegenerate,
+    tracker: genOutput?.tracker ?? null,
+    narrativeDirectorOutput: genOutput?.narrativeDirectorOutput ?? null,
+    enrichmentStatus: response.enrichmentStatus,
+    newLore: genOutput?.newLore ?? null
   };
 }

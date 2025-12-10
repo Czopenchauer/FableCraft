@@ -15,13 +15,20 @@ using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine;
 
+public class GeneratedSceneOutput
+{
+    public required string Scene { get; init; }
+
+    public required string[] Choices { get; init; }
+}
+
 public class SceneGenerationOutput
 {
     public required Guid SceneId { get; set; }
 
     public required string? SubmittedAction { get; set; }
 
-    public required GeneratedScene GeneratedScene { get; init; }
+    public required GeneratedSceneOutput GeneratedScene { get; init; }
 
     public required NarrativeDirectorOutput? NarrativeDirectorOutput { get; init; }
 
@@ -29,12 +36,12 @@ public class SceneGenerationOutput
 
     public required List<LoreDto>? NewLore { get; set; }
 
-    public static SceneGenerationOutput CreateFromScene(Scene scene)
+    public static SceneGenerationOutput CreateFromScene(Scene scene, MainCharacter mainCharacter)
     {
         return new SceneGenerationOutput
         {
             SceneId = scene.Id,
-            GeneratedScene = new GeneratedScene
+            GeneratedScene = new GeneratedSceneOutput
             {
                 Scene = scene.NarrativeText,
                 Choices = scene.CharacterActions.Select(x => x.ActionDescription)
@@ -49,7 +56,7 @@ public class SceneGenerationOutput
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!,
                         Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
-                        Description = scene.Metadata.MainCharacterDescription!
+                        Description = scene.Metadata.MainCharacterDescription ?? mainCharacter.Description
                     },
                     CharactersOnScene = scene.Metadata.Tracker!.CharactersPresent,
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
@@ -73,15 +80,6 @@ public class SceneGenerationOutput
             SubmittedAction = scene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription
         };
     }
-}
-
-public class SceneGenerationOutputWithoutEnrichment
-{
-    public required Guid SceneId { get; set; }
-
-    public required GeneratedScene GeneratedScene { get; init; }
-
-    public required NarrativeDirectorOutput NarrativeDirectorOutput { get; init; }
 }
 
 public class SceneEnrichmentOutput
@@ -201,7 +199,7 @@ internal sealed class SceneGenerationOrchestrator(
                 .Include(x => x.Lorebooks)
                 .Where(x => x.AdventureId == adventureId)
                 .OrderByDescending(x => x.SequenceNumber).FirstAsync(cancellationToken);
-            return SceneGenerationOutput.CreateFromScene(scene);
+            return SceneGenerationOutput.CreateFromScene(scene, context.Context.MainCharacter);
         }
     }
 

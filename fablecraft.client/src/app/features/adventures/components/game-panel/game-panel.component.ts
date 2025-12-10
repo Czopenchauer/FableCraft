@@ -26,6 +26,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
   // Character tracker tabs
   activeCharacterTab: string = 'protagonist';
+  // Nested tabs for character details (description, state, abilities)
+  activeNestedTab: string = 'description';
 
   private destroy$ = new Subject<void>();
 
@@ -376,9 +378,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   /**
    * Get the list of characters present in the scene for tabs
    */
-  getCharactersOnScene(): any[] {
-    if (!this.currentScene?.tracker?.charactersPresent) return [];
-    return this.currentScene.tracker.charactersPresent;
+  getCharactersOnScene(): string[] {
+    if (!this.currentScene?.tracker?.charactersOnScene) return [];
+    return this.currentScene.tracker.charactersOnScene;
   }
 
   /**
@@ -386,7 +388,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   getCharacterByName(name: string): any | null {
     if (!this.currentScene?.tracker?.characters) return null;
-    return this.currentScene.tracker.characters.find((c: any) => c.name === name) || null;
+    return this.currentScene.tracker.characters.find(c => c.name === name) || null;
   }
 
   /**
@@ -394,6 +396,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   setActiveCharacterTab(tabId: string): void {
     this.activeCharacterTab = tabId;
+    // Reset nested tab when switching characters
+    this.activeNestedTab = 'description';
   }
 
   /**
@@ -404,9 +408,24 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Set the active nested tab (description, state, abilities)
+   */
+  setActiveNestedTab(tabId: string): void {
+    this.activeNestedTab = tabId;
+  }
+
+  /**
+   * Check if a nested tab is active
+   */
+  isActiveNestedTab(tabId: string): boolean {
+    return this.activeNestedTab === tabId;
+  }
+
+  /**
    * Reset to protagonist tab when scene changes
    */
   private resetCharacterTab(): void {
     this.activeCharacterTab = 'protagonist';
+    this.activeNestedTab = 'description';
   }
 }

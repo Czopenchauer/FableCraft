@@ -10,8 +10,8 @@
       </p>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
+    <!-- Loading State - only show when no status data yet -->
+    <div *ngIf="isLoading && !status" class="loading-state">
       <div class="spinner"></div>
       <p class="loading-text">Loading status...</p>
     </div>
@@ -23,9 +23,9 @@
       <button (click)="goToAdventureList()" class="btn btn-secondary">Back to Adventures</button>
     </div>
 
-    <!-- Status List -->
-    <div *ngIf="status && !isLoading" class="status-list">
-      <div *ngFor="let entry of getStatusEntries()"
+    <!-- Status List - keep in DOM to prevent animation reset -->
+    <div *ngIf="status" class="status-list">
+      <div *ngFor="let entry of getStatusEntries(); trackBy: trackByKey"
            [ngClass]="getStatusClass(entry.value)"
            class="status-item">
 

@@ -54,6 +54,10 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
     }));
   }
 
+  trackByKey(index: number, entry: { key: string; value: ComponentStatus }): string {
+    return entry.key;
+  }
+
   getStatusIcon(status: ComponentStatus): string {
     switch (status) {
       case 'Completed':
@@ -92,14 +96,23 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
   retry(): void {
     if (!this.adventureId) return;
 
-    this.isLoading = true;
     this.hasError = false;
+
+    // Immediately reset all statuses to Pending for instant UI feedback
+    if (this.status) {
+      const resetStatuses: Record<string, ComponentStatus> = {};
+      for (const key of Object.keys(this.status.componentStatuses)) {
+        resetStatuses[key] = 'Pending';
+      }
+      this.status = {
+        ...this.status,
+        componentStatuses: resetStatuses
+      };
+    }
 
     this.adventureService.retryCreateAdventure(this.adventureId)
       .subscribe({
         next: () => {
-          this.isLoading = false;
-
           // Create a new destroy$ subject for the new polling session
           this.destroy$ = new Subject<void>();
 
@@ -110,7 +123,6 @@ export class AdventureStatusComponent implements OnInit, OnDestroy {
           console.error('Error retrying adventure creation:', error);
           this.hasError = true;
           this.errorMessage = 'Failed to retry adventure creation. Please try again.';
-          this.isLoading = false;
         }
       });
   }
