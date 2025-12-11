@@ -9,6 +9,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -42,16 +43,15 @@ internal sealed class CharacterDevelopmentAgent(
 
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithStoryTracker(storyTrackerResult, true)
-            .WithCharacterStateContext(context, true)
-            .WithRecentScenesForCharacter(
-                generationContext.SceneContext,
-                generationContext.MainCharacter.Name,
-                context.Name)
-            .WithCurrentScene(generationContext.NewScene!.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
+        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
+        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
+            generationContext.SceneContext,
+            generationContext.MainCharacter.Name,
+            context.Name));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene!.Scene));
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("character_development", true);
 
@@ -72,9 +72,9 @@ internal sealed class CharacterDevelopmentAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private static async Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var options = ChatHistoryBuilder.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterDevelopmentAgentPrompt.md");
         return prompt

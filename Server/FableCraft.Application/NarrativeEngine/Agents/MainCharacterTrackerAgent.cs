@@ -7,6 +7,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -33,26 +34,22 @@ internal sealed class MainCharacterTrackerAgent(
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
 
-        var builder = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithStoryTracker(storyTrackerResult, true)
-            .WithMainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description);
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
+        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description));
 
         if (isFirstScene)
         {
-            builder
-                .WithSceneContent(context.NewScene?.Scene)
-                .WithUserMessage("It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.");
+            chatHistory.AddUserMessage(PromptSections.SceneContent(context.NewScene?.Scene));
+            chatHistory.AddUserMessage("It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.");
         }
         else
         {
-            builder
-                .WithMainCharacterTracker(context.SceneContext!, 1, true)
-                .WithSceneContent(context.NewScene?.Scene)
-                .WithLastScenes(context.SceneContext!, 5);
+            chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext!));
+            chatHistory.AddUserMessage(PromptSections.SceneContent(context.NewScene?.Scene));
+            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext!, 5));
         }
-
-        var chatHistory = builder.Build();
 
         var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("tracker", "character_description", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
@@ -68,9 +65,9 @@ internal sealed class MainCharacterTrackerAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
+    private static async Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var options = ChatHistoryBuilder.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         return await PromptBuilder.BuildPromptAsync("MainCharacterTrackerPrompt.md",

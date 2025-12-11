@@ -5,6 +5,7 @@ using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -23,14 +24,13 @@ internal sealed class LocationCrafter(
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("LocationCrafterPrompt.md");
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithCreatedCharacters(context.NewCharacters)
-            .WithLocationRequest(request)
-            .WithContext(context.ContextGathered)
-            .WithPreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)
-            .WithCurrentScene(context.NewScene?.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.CreatedCharacters(context.NewCharacters));
+        chatHistory.AddUserMessage(PromptSections.LocationRequest(request));
+        chatHistory.AddUserMessage(PromptSections.Context(context.ContextGathered));
+        chatHistory.AddUserMessage(PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

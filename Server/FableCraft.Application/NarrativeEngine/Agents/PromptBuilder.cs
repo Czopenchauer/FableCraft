@@ -39,7 +39,7 @@ internal static class PromptBuilder
     public async static Task<string> BuildPromptWithJsonAsync(string promptFileName, bool ignoreNull = false, params (string placeholder, object value)[] replacements)
     {
         var prompt = await BuildPromptAsync(promptFileName);
-        var options = ChatHistoryBuilder.GetJsonOptions(ignoreNull);
+        var options = PromptSections.GetJsonOptions(ignoreNull);
         foreach (var (placeholder, value) in replacements)
         {
             prompt = prompt.Replace(placeholder, JsonSerializer.Serialize(value, options));

@@ -9,6 +9,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -36,17 +37,16 @@ internal sealed class CharacterTrackerAgent(
 
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithStoryTracker(storyTrackerResult, true)
-            .WithCharacterStateContext(context, true)
-            .WithRecentScenesForCharacter(
-                generationContext.SceneContext ?? [],
-                generationContext.MainCharacter.Name,
-                context.Name,
-                3)
-            .WithCurrentScene(generationContext.NewScene?.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
+        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
+        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
+            generationContext.SceneContext ?? [],
+            generationContext.MainCharacter.Name,
+            context.Name,
+            3));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene?.Scene));
 
         var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("character_tracker", "character_description", true);
 
@@ -67,9 +67,9 @@ internal sealed class CharacterTrackerAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private static async Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var options = ChatHistoryBuilder.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterTrackerAgentPrompt.md");
         return prompt

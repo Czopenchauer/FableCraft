@@ -9,6 +9,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -35,13 +36,12 @@ internal sealed class CharacterCrafter(
 
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithCharacterCreationContext(request)
-            .WithContext(context.ContextGathered)
-            .WithLastScenes(context.SceneContext, 3)
-            .WithCurrentScene(context.NewScene?.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.CharacterCreationContext(request));
+        chatHistory.AddUserMessage(PromptSections.Context(context.ContextGathered));
+        chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext, 3));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
@@ -89,9 +89,9 @@ internal sealed class CharacterCrafter(
         };
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure)
+    private static async Task<string> BuildInstruction(TrackerStructure structure)
     {
-        var options = ChatHistoryBuilder.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterCrafterPrompt.md");
         return prompt

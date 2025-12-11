@@ -8,6 +8,7 @@ using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
@@ -33,13 +34,13 @@ internal sealed class ContextGatherer(
         var systemPrompt = await PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
         var hasSceneContext = context.SceneContext.Length > 0;
 
-        var builder = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithStoryTracker(context);
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
 
         if (context.Characters.Count > 0)
         {
-            builder.WithExistingCharacters(context.Characters);
+            chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters));
         }
 
         if (!hasSceneContext)
@@ -48,21 +49,17 @@ internal sealed class ContextGatherer(
                 .Select(x => new { x.Id, x.FirstSceneGuidance })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
-            builder
-                .WithUserMessage(adventure.FirstSceneGuidance)
-                .WithMainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription);
+            chatHistory.AddUserMessage(adventure.FirstSceneGuidance);
+            chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
         }
         else
         {
-            builder
-                .WithLastNarrativeDirections(context.SceneContext, 1)
-                .WithMainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)
-                .WithMainCharacterTracker(context)
-                .WithCurrentSceneTracker(context.SceneContext)
-                .WithRecentScenes(context.SceneContext, SceneContextCount);
+            chatHistory.AddUserMessage(PromptSections.LastNarrativeDirections(context.SceneContext, 1));
+            chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
+            chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext));
+            chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
+            chatHistory.AddUserMessage(PromptSections.RecentScenes(context.SceneContext, SceneContextCount));
         }
-
-        var chatHistory = builder.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<ContextToFetch>("output");
         Kernel kernel = kernelBuilder.Create().Build();

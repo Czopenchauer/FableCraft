@@ -21,7 +21,7 @@ internal static class ResponseParser
             throw new InvalidCastException($"Failed to parse {typeof(T).Name} from response: <{tag}> tag not found.");
         }
 
-        var options = ChatHistoryBuilder.GetJsonOptions(ignoreNull);
+        var options = PromptSections.GetJsonOptions(ignoreNull);
         return JsonSerializer.Deserialize<T>(content.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
                ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
     }
@@ -64,7 +64,7 @@ internal static class ResponseParser
     {
         return response =>
         {
-            var options = ChatHistoryBuilder.GetJsonOptions(ignoreNull);
+            var options = PromptSections.GetJsonOptions(ignoreNull);
             return JsonSerializer.Deserialize<T>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
                    ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
         };

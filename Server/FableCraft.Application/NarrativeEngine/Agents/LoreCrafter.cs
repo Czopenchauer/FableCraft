@@ -5,6 +5,7 @@ using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -23,21 +24,19 @@ internal sealed class LoreCrafter(
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("LoreCrafterPrompt.md");
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithCreatedCharacters(context.NewCharacters)
-            .WithLoreCreationContext(request)
-            .WithContext(context.ContextGathered)
-            .WithPreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)
-            .WithCurrentScene(context.NewScene?.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.CreatedCharacters(context.NewCharacters));
+        chatHistory.AddUserMessage(PromptSections.LoreCreationContext(request));
+        chatHistory.AddUserMessage(PromptSections.Context(context.ContextGathered));
+        chatHistory.AddUserMessage(PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
-        // LoreCrafter doesn't use XML tags, it returns raw JSON
         var outputParser = ResponseParser.CreateRawJsonParser<GeneratedLore>();
 
         return await agentKernel.SendRequestAsync(

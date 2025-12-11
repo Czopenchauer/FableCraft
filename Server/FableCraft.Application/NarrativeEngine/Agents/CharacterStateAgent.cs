@@ -7,6 +7,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -29,17 +30,16 @@ internal sealed class CharacterStateAgent(
 
         var systemPrompt = await BuildInstruction(context.Name);
 
-        var chatHistory = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithStoryTracker(storyTrackerResult, true)
-            .WithCharacterStateContext(context, true)
-            .WithRecentScenesForCharacter(
-                generationContext.SceneContext ?? [],
-                generationContext.MainCharacter.Name,
-                context.Name,
-                3)
-            .WithCurrentScene(generationContext.NewScene!.Scene)
-            .Build();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
+        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
+        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
+            generationContext.SceneContext ?? [],
+            generationContext.MainCharacter.Name,
+            context.Name,
+            3));
+        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene!.Scene));
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_state", true);
 
@@ -60,7 +60,7 @@ internal sealed class CharacterStateAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(string characterName)
+    private static async Task<string> BuildInstruction(string characterName)
     {
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterStatePrompt.md");
         return prompt.Replace("{CHARACTER_NAME}", characterName);

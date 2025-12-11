@@ -8,6 +8,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
@@ -31,31 +32,28 @@ internal sealed class NarrativeDirectorAgent(
         var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
         var hasSceneContext = context.SceneContext.Length > 0;
 
-        var builder = ChatHistoryBuilder.Create()
-            .WithSystemMessage(systemPrompt)
-            .WithLastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata)
-            .WithStoryTracker(context)
-            .WithMainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)
-            .WithMainCharacterTracker(context)
-            .WithExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters ?? [])
-            .WithExtraContext(context.ContextGathered);
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata));
+        chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
+        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
+        chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext));
+        chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters));
+        chatHistory.AddUserMessage(PromptSections.ExtraContext(context.ContextGathered?.ContextBases));
 
         if (hasSceneContext)
         {
-            builder
-                .WithStorySummary(context.Summary)
-                .WithLastScenes(context.SceneContext, SceneContextCount)
-                .WithPlayerAction(context.PlayerAction);
+            chatHistory.AddUserMessage(PromptSections.StorySummary(context.Summary));
+            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext, SceneContextCount));
+            chatHistory.AddUserMessage(PromptSections.PlayerAction(context.PlayerAction));
         }
         else
         {
             var instruction = await dbContext.Adventures
                 .Select(x => new { x.Id, x.FirstSceneGuidance })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken: cancellationToken);
-            builder.WithInitialInstruction(instruction.FirstSceneGuidance);
+            chatHistory.AddUserMessage(PromptSections.InitialInstruction(instruction.FirstSceneGuidance));
         }
-
-        var chatHistory = builder.Build();
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
