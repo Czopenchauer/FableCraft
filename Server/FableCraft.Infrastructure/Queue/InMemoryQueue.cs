@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Serilog;
+using Serilog.Context;
 
 namespace FableCraft.Infrastructure.Queue;
 
@@ -30,19 +31,23 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<I
                 {
                     while (channel.Reader.TryRead(out IMessage? message))
                     {
+                        var context = LogContext.Clone();
                         ArgumentNullException.ThrowIfNull(message);
                         _ = Task.Run(async () =>
                             {
                                 try
                                 {
-                                    ProcessExecutionContext.AdventureId.Value = message.AdventureId;
-                                    Type messageType = message.GetType();
-                                    Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
-                                    await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
-                                    var handler = scope.ServiceProvider.GetRequiredService(handlerType);
-                                    MethodInfo? handleMethod =
-                                        handlerType.GetMethod(nameof(IMessageHandler<>.HandleAsync));
-                                    await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
+                                    using (LogContext.Push(context))
+                                    {
+                                        ProcessExecutionContext.AdventureId.Value = message.AdventureId;
+                                        Type messageType = message.GetType();
+                                        Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
+                                        await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
+                                        var handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                                        MethodInfo? handleMethod =
+                                            handlerType.GetMethod(nameof(IMessageHandler<>.HandleAsync));
+                                        await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
+                                    }
                                 }
                                 catch (Exception ex)
                                 {

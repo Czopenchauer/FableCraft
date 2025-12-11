@@ -67,7 +67,7 @@ internal sealed class GenerationContext
 
     public NarrativeDirectorOutput? NewNarrativeDirection { get; set; }
 
-    public List<ContextBase>? ContextGathered { get; set; }
+    public ContextBase? ContextGathered { get; set; }
 
     public GeneratedScene? NewScene { get; set; }
 

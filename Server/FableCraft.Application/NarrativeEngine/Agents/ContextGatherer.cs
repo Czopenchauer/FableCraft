@@ -1,16 +1,21 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
+using SearchResult = FableCraft.Application.NarrativeEngine.Models.SearchResult;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
@@ -18,7 +23,8 @@ internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
     IRagSearch ragSearch,
     ILogger logger,
-    KernelBuilderFactory kernelBuilderFactory) : IProcessor
+    KernelBuilderFactory kernelBuilderFactory,
+    ApplicationDbContext dbContext) : IProcessor
 {
     private const int SceneContextCount = 10;
 
@@ -37,64 +43,92 @@ internal sealed class ContextGatherer(
             AllowTrailingCommas = true
         };
 
-        if (context.SceneContext.Length == 0)
-        {
-            context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
-            return;
-        }
-
-//         chatHistory.AddUserMessage($"""
-//                                     <story_summary>
-//                                     {context.Summary}
-//                                     </story_summary>
-//                                     """);
-
-        chatHistory.AddUserMessage($"""
-                                    <last_narrative_directions>
-                                       {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
-                                           .Take(1)
-                                           .Select(z =>
-                                               $"""
-                                                {JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, options)}
-                                                """))}
-                                    </last_narrative_directions>
-                                    """);
-
-        chatHistory.AddUserMessage($"""
-                                    <main_character>
-                                    {context.MainCharacter.Name}
-                                    {context.MainCharacter.Description}
-                                    </main_character>
-                                    """);
-        var lastTracker = context.SceneContext
-            .Where(x => x.Metadata.Tracker != null)
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker;
-
-        if (lastTracker != null)
+        if (context.Characters.Count > 0)
         {
             chatHistory.AddUserMessage($"""
-                                        <current_scene_tracker>
-                                        {JsonSerializer.Serialize(lastTracker, options)}
-                                        </current_scene_tracker>
+                                        <existing_characters>
+                                        {string.Join("\n\n", context.Characters.Select(c => $"""
+                                                                                             <character>
+                                                                                             Name: {c.Name}
+                                                                                             {c.Description}
+                                                                                             </character>
+                                                                                             """))}
+                                        </existing_characters>
                                         """);
         }
 
-        foreach (SceneContext sceneContext in context.SceneContext
-                     .OrderByDescending(x => x.SequenceNumber)
-                     .Take(SceneContextCount))
+        if (context.SceneContext.Length == 0)
         {
+            var adventure = await dbContext.Adventures.Select(x => new { x.Id, x.FirstSceneGuidance }).SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
             chatHistory.AddUserMessage(
                 $"""
-                 <last_scene_{sceneContext.SequenceNumber}>
-                 {sceneContext.SceneContent}
-                 {sceneContext.PlayerChoice}
-                 </last_scene_{sceneContext.SequenceNumber}>
+                 {adventure.FirstSceneGuidance}
                  """);
+            chatHistory.AddUserMessage($"""
+                                        <main_character>
+                                        {context.MainCharacter.Name}
+                                        {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
+                                        </main_character>
+                                        """);
+        }
+        else
+        {
+            chatHistory.AddUserMessage($"""
+                                        <last_narrative_directions>
+                                           {string.Join("\n", context.SceneContext.OrderByDescending(y => y.SequenceNumber)
+                                               .Take(1)
+                                               .Select(z =>
+                                                   $"""
+                                                    {JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, options)}
+                                                    """))}
+                                        </last_narrative_directions>
+                                        """);
+
+            chatHistory.AddUserMessage($"""
+                                        <main_character>
+                                        {context.MainCharacter.Name}
+                                        {context.MainCharacter.Description}
+                                        </main_character>
+                                        """);
+            var lastTracker = context.SceneContext
+                .Where(x => x.Metadata.Tracker != null)
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefault()?.Metadata.Tracker;
+
+            if (lastTracker != null)
+            {
+                chatHistory.AddUserMessage($"""
+                                            <current_scene_tracker>
+                                            {JsonSerializer.Serialize(lastTracker, options)}
+                                            </current_scene_tracker>
+                                            """);
+            }
+
+            foreach (SceneContext sceneContext in context.SceneContext
+                         .OrderByDescending(x => x.SequenceNumber)
+                         .Take(SceneContextCount))
+            {
+                chatHistory.AddUserMessage(
+                    $"""
+                     <last_scene_{sceneContext.SequenceNumber}>
+                     {sceneContext.SceneContent}
+                     {sceneContext.PlayerChoice}
+                     </last_scene_{sceneContext.SequenceNumber}>
+                     """);
+            }
         }
 
-        var outputFunc = new Func<string, string[]>(response =>
-            JsonSerializer.Deserialize<string[]>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options) ?? throw new InvalidOperationException());
+        var outputFunc = new Func<string, ContextToFetch>(response =>
+        {
+            Match match = Regex.Match(response, "<output>(.*?)</output>", RegexOptions.Singleline);
+            if (match.Success)
+            {
+                return JsonSerializer.Deserialize<ContextToFetch>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+                       ?? throw new InvalidOperationException();
+            }
+
+            throw new InvalidCastException("Failed to parse LocationGenerationResult from response due to output not being in correct tags.");
+        });
         Kernel kernel = kernelBuilder.Create().Build();
         var queries = await agentKernel.SendRequestAsync(chatHistory,
             outputFunc,
@@ -106,12 +140,16 @@ internal sealed class ContextGatherer(
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         try
         {
-            var searchResults = await ragSearch.SearchAsync(callerContext, queries, cancellationToken: cancellationToken);
-            context.ContextGathered = searchResults.Select(x => new ContextBase
+            var searchResults = await ragSearch.SearchAsync(callerContext, queries.Queries, cancellationToken: cancellationToken);
+            context.ContextGathered = new ContextBase
             {
-                Query = x.Query,
-                Response = string.Join("\n\n", x.Response.Results)
-            }).ToList();
+                ContextBases = searchResults.Select(x => new SearchResult()
+                {
+                    Query = x.Query,
+                    Response = string.Join("\n\n", x.Response.Results)
+                }).ToArray(),
+                RelevantCharacters = context.Characters.Where(x => queries.CharactersToFetch.Contains(x.CharacterState.CharacterIdentity.FullName)).ToArray()
+            };
             context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
         }
         catch (Exception ex)
@@ -124,5 +162,13 @@ internal sealed class ContextGatherer(
     private static Task<string> BuildInstruction()
     {
         return PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
+    }
+
+    private class ContextToFetch
+    {
+        public string[] Queries { get; set; } = [];
+
+        [JsonPropertyName("characters_to_fetch")]
+        public string[] CharactersToFetch { get; set; } = [];
     }
 }

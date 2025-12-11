@@ -55,6 +55,10 @@ internal sealed class CharacterPlugin(
                      <character_tracker>
                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
                      </character_tracker>
+                     
+                     <character_development_tracker>
+                     {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
+                     </character_development_tracker>
 
                      <context>
                      {JsonSerializer.Serialize(_generationContext.ContextGathered, options)}

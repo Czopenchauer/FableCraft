@@ -59,7 +59,16 @@ internal sealed class NarrativeDirectorAgent(
                                     {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
                                     </main_character>
                                     """);
-
+        chatHistory.AddUserMessage($"""
+                                    <existing_characters>
+                                    {string.Join("\n\n", context.Characters.Select(c => $"""
+                                                                                         <character>
+                                                                                         Name: {c.Name}
+                                                                                         {c.Description}
+                                                                                         </character>
+                                                                                         """))}
+                                    </existing_characters>
+                                    """);
         var lastTracker = context.SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
         if (lastTracker != null)
         {

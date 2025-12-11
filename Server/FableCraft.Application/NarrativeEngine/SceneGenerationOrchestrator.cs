@@ -677,9 +677,4 @@ internal sealed class SceneGenerationOrchestrator(
                 SequenceNumber = x.SequenceNumber
             }).ToList();
     }
-
-    public async Task<SceneGenerationOutput> GenerateInitialSceneAsync(Guid adventureId, CancellationToken cancellationToken)
-    {
-        return await GenerateFullSceneAsync(adventureId, string.Empty, cancellationToken);
-    }
 }

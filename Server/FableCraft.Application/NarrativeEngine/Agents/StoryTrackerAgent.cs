@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -38,85 +37,101 @@ internal sealed class StoryTrackerAgent(IAgentKernel agentKernel, IDbContextFact
             AllowTrailingCommas = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
-        var stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($"""
-                                  <main_character>
-                                  {context.MainCharacter.Name}
-                                  {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
-                                  </main_character>
-                                  <characters>
-                                  {string.Join("\n\n", context.Characters.Select(c => $"""
-                                                                                       {c.Name}
-                                                                                       {c.Description}
-                                                                                       """))}
-                                  </characters>
-                                  """);
-        stringBuilder.AppendLine($"""
-                                  <current_scene>
-                                  {context.NewScene!.Scene}
-                                  </current_scene>
-                                  """);
+        chatHistory.AddUserMessage($"""
+                                     <main_character>
+                                     {context.MainCharacter.Name}
+                                     {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
+                                     </main_character>
+                                     """);
+
+        chatHistory.AddUserMessage($"""
+                                     <characters>
+                                     {string.Join("\n\n", context.Characters.Select(c => $"""
+                                                                                          <character>
+                                                                                          Name: {c.Name}
+                                                                                          {c.Description}
+                                                                                          </character>
+                                                                                          """))}
+                                     </characters>
+                                     """);
+
+        chatHistory.AddUserMessage($"""
+                                     <current_scene>
+                                     {context.NewScene!.Scene}
+                                     </current_scene>
+                                     """);
+
         if (context.NewCharacters?.Length > 0)
         {
-            stringBuilder.AppendLine($"""
-                                        <new_characters>
-                                        <character>
-                                        {string.Join("\n\n", context.NewCharacters.Select(c => $"""
-                                                                                                {c.Name}
-                                                                                                {c.Description}
-                                                                                                """))}
-                                        </character>
-                                        </new_characters>
-                                      """);
+            chatHistory.AddUserMessage($"""
+                                         <new_characters>
+                                         <character>
+                                         {string.Join("\n\n", context.NewCharacters.Select(c => $"""
+                                                                                                 {c.Name}
+                                                                                                 {c.Description}
+                                                                                                 """))}
+                                         </character>
+                                         </new_characters>
+                                         """);
         }
 
         if (context.SceneContext.Length == 1)
         {
-            stringBuilder.AppendLine($"""
+            chatHistory.AddUserMessage($"""
                                          <adventure_start_time>
                                          {trackerStructure.AdventureStartTime}
                                          </adventure_start_time>
-                                      """);
+                                         """);
+        }
+
+        if (context.NewLocations?.Length > 0)
+        {
+            chatHistory.AddUserMessage($"""
+                                         <new_locations>
+                                         {context.NewLocations}
+                                         </new_locations>
+                                         """);
         }
 
         string instruction;
         if ((context.SceneContext?.Length ?? 0) == 0)
         {
-            stringBuilder.AppendLine($"""
+            chatHistory.AddUserMessage($"""
                                          <scene_content>
                                          {context.NewScene.Scene}
                                          </scene_content>
-                                      """);
-            chatHistory.AddUserMessage(stringBuilder.ToString());
+                                         """);
             instruction = "It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.";
             chatHistory.AddUserMessage(instruction);
         }
         else
         {
-            stringBuilder.AppendLine($"""
-                                      <previous_trackers>
-                                      {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Where(x => x.Metadata.Tracker != null).Take(1)
-                                          .Select(s => $"""
-                                                        {JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)}
-                                                        """))}
-                                      </previous_trackers>
-                                      <last_scenes>
-                                      {string.Join("\n", (context.SceneContext ?? Array.Empty<SceneContext>())
-                                          .OrderByDescending(x => x.SequenceNumber)
-                                          .Take(5)
-                                          .Select(x =>
-                                              $"""
-                                               SCENE NUMBER: {x.SequenceNumber}
-                                               {x.SceneContent}
-                                               {x.PlayerChoice}
-                                               """))}
-                                      </last_scenes>
-                                      """);
-            instruction = "Update the tracker based on the new scene content and previous tracker state.";
-        }
+            chatHistory.AddUserMessage($"""
+                                         <previous_trackers>
+                                         {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Where(x => x.Metadata.Tracker != null).Take(1)
+                                             .Select(s => $"""
+                                                           {JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)}
+                                                           """))}
+                                         </previous_trackers>
+                                         """);
 
-        chatHistory.AddUserMessage(stringBuilder.ToString());
-        chatHistory.AddUserMessage(instruction);
+            chatHistory.AddUserMessage($"""
+                                         <last_scenes>
+                                         {string.Join("\n", (context.SceneContext ?? Array.Empty<SceneContext>())
+                                             .OrderByDescending(x => x.SequenceNumber)
+                                             .Take(5)
+                                             .Select(x =>
+                                                 $"""
+                                                  SCENE NUMBER: {x.SequenceNumber}
+                                                  {x.SceneContent}
+                                                  {x.PlayerChoice}
+                                                  """))}
+                                         </last_scenes>
+                                         """);
+
+            instruction = "Update the tracker based on the new scene content and previous tracker state.";
+            chatHistory.AddUserMessage(instruction);
+        }
         var outputFunc = new Func<string, Tracker>(response =>
         {
             Match match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);

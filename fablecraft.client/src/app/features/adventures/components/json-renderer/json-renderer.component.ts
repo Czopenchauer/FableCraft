@@ -83,6 +83,7 @@ export class JsonRendererComponent implements OnInit, OnChanges {
   /**
    * Generate display label for a node
    * For array items with a "name" or "Name" property, use the name instead of index
+   * Falls back to the first string property if no name is found
    */
   generateLabel(key: string, value: any): string {
     // Check if this is an array index key like "[0]", "[1]", etc.
@@ -93,6 +94,12 @@ export class JsonRendererComponent implements OnInit, OnChanges {
       const nameKey = Object.keys(value).find(k => k.toLowerCase() === 'name');
       if (nameKey && value[nameKey]) {
         return value[nameKey];
+      }
+
+      // Fallback: use the first string property value
+      const firstStringKey = Object.keys(value).find(k => typeof value[k] === 'string' && value[k]);
+      if (firstStringKey) {
+        return value[firstStringKey];
       }
     }
 

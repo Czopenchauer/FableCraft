@@ -66,6 +66,16 @@ internal sealed class WriterAgent(
                                     """);
 
         chatHistory.AddUserMessage($"""
+                                    <existing_characters>
+                                    {string.Join("\n\n", context.Characters.Select(c => $"""
+                                                                                         <character>
+                                                                                         Name: {c.Name}
+                                                                                         {c.Description}
+                                                                                         </character>
+                                                                                         """))}
+                                    </existing_characters>
+                                    """);
+        chatHistory.AddUserMessage($"""
                                     These character will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself.
                                     <new_characters_requests>
                                     {JsonSerializer.Serialize(context.NewNarrativeDirection.CreationRequests.Characters, options)}
@@ -74,7 +84,7 @@ internal sealed class WriterAgent(
 
         chatHistory.AddUserMessage($"""
                                     <main_character>
-                                    {context.MainCharacter.Name}
+                                    Name: {context.MainCharacter.Name}
                                     {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
                                     </main_character>
                                     """);

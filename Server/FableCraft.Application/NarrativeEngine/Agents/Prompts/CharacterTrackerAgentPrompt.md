@@ -115,7 +115,9 @@ Return the complete character tracker JSON structure:
 </character_tracker>
 
 <character_description>
-NEW CHARACTER DESCRIPTION HERE
+Write a comprehensive updated description of the {CHARACTER_NAME}'s current state here.
+Include their physical condition, emotional state, relationships, and any notable changes from recent events.
+It should describe the character as they are now, based on the latest narrative.
 </character_description>
 
 ---

@@ -26,8 +26,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
   // Character tracker tabs
   activeCharacterTab: string = 'protagonist';
-  // Nested tabs for character details (description, state, abilities)
-  activeNestedTab: string = 'description';
+  // Nested tabs for character details (state, development, description)
+  activeNestedTab: string = 'state';
 
   private destroy$ = new Subject<void>();
 
@@ -397,7 +397,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   setActiveCharacterTab(tabId: string): void {
     this.activeCharacterTab = tabId;
     // Reset nested tab when switching characters
-    this.activeNestedTab = 'description';
+    this.activeNestedTab = 'state';
   }
 
   /**
@@ -426,6 +426,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   private resetCharacterTab(): void {
     this.activeCharacterTab = 'protagonist';
-    this.activeNestedTab = 'description';
+    this.activeNestedTab = 'state';
   }
 }

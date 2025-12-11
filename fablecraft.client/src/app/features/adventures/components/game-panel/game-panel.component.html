@@ -196,14 +196,6 @@
                 <!-- Nested tabs for protagonist -->
                 <div class="nested-tabs-header">
                   <button
-                    (click)="setActiveNestedTab('description')"
-                    [class.active]="isActiveNestedTab('description')"
-                    class="nested-tab-btn"
-                    type="button"
-                  >
-                    Description
-                  </button>
-                  <button
                     (click)="setActiveNestedTab('state')"
                     [class.active]="isActiveNestedTab('state')"
                     class="nested-tab-btn"
@@ -212,23 +204,31 @@
                     State
                   </button>
                   <button
-                    (click)="setActiveNestedTab('abilities')"
-                    [class.active]="isActiveNestedTab('abilities')"
+                    (click)="setActiveNestedTab('development')"
+                    [class.active]="isActiveNestedTab('development')"
                     class="nested-tab-btn"
                     type="button"
                   >
-                    Abilities
+                    Development
+                  </button>
+                  <button
+                    (click)="setActiveNestedTab('description')"
+                    [class.active]="isActiveNestedTab('description')"
+                    class="nested-tab-btn"
+                    type="button"
+                  >
+                    Description
                   </button>
                 </div>
                 <div class="nested-tabs-content">
-                  <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
-                    <app-json-renderer [data]="{description: currentScene.tracker.mainCharacter.description}"></app-json-renderer>
-                  </div>
                   <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
                     <app-json-renderer [data]="currentScene.tracker.mainCharacter.tracker"></app-json-renderer>
                   </div>
-                  <div *ngIf="isActiveNestedTab('abilities')" class="nested-tab-panel">
+                  <div *ngIf="isActiveNestedTab('development')" class="nested-tab-panel">
                     <app-json-renderer [data]="currentScene.tracker.mainCharacter.development"></app-json-renderer>
+                  </div>
+                  <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                    <app-json-renderer [data]="{description: currentScene.tracker.mainCharacter.description}"></app-json-renderer>
                   </div>
                 </div>
               </div>
@@ -240,14 +240,6 @@
                     <!-- Nested tabs for character -->
                     <div class="nested-tabs-header">
                       <button
-                        (click)="setActiveNestedTab('description')"
-                        [class.active]="isActiveNestedTab('description')"
-                        class="nested-tab-btn"
-                        type="button"
-                      >
-                        Description
-                      </button>
-                      <button
                         (click)="setActiveNestedTab('state')"
                         [class.active]="isActiveNestedTab('state')"
                         class="nested-tab-btn"
@@ -256,23 +248,31 @@
                         State
                       </button>
                       <button
-                        (click)="setActiveNestedTab('abilities')"
-                        [class.active]="isActiveNestedTab('abilities')"
+                        (click)="setActiveNestedTab('development')"
+                        [class.active]="isActiveNestedTab('development')"
                         class="nested-tab-btn"
                         type="button"
                       >
-                        Abilities
+                        Development
+                      </button>
+                      <button
+                        (click)="setActiveNestedTab('description')"
+                        [class.active]="isActiveNestedTab('description')"
+                        class="nested-tab-btn"
+                        type="button"
+                      >
+                        Description
                       </button>
                     </div>
                     <div class="nested-tabs-content">
-                      <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
-                        <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
-                      </div>
                       <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
                         <app-json-renderer [data]="character.tracker"></app-json-renderer>
                       </div>
-                      <div *ngIf="isActiveNestedTab('abilities')" class="nested-tab-panel">
+                      <div *ngIf="isActiveNestedTab('development')" class="nested-tab-panel">
                         <app-json-renderer [data]="character.development"></app-json-renderer>
+                      </div>
+                      <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                        <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
                       </div>
                     </div>
                   </div>
