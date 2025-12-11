@@ -29,31 +29,46 @@ internal sealed class NarrativeDirectorAgent(
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("NarrativePrompt.md");
-        var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
+        SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
         var hasSceneContext = context.SceneContext.Length > 0;
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata));
-        chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
-        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
-        chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext));
-        chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters));
-        chatHistory.AddUserMessage(PromptSections.ExtraContext(context.ContextGathered?.ContextBases));
 
+        var contextPrompt = $"""
+                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+
+                             {PromptSections.MainCharacterTracker(context.SceneContext)}
+
+                             {PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters)}
+
+                             {PromptSections.Context(context.ContextGathered)}
+
+                             {PromptSections.CurrentStoryTracker(context.SceneContext)}
+
+                             {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        string requestPrompt;
         if (hasSceneContext)
         {
-            chatHistory.AddUserMessage(PromptSections.StorySummary(context.Summary));
-            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext, SceneContextCount));
-            chatHistory.AddUserMessage(PromptSections.PlayerAction(context.PlayerAction));
+            requestPrompt = $"""
+                             {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata)}
+
+                             The {context.MainCharacter.Name} action in the last scene was:
+                             {PromptSections.PlayerAction(context.PlayerAction)}
+                             """;
         }
         else
         {
             var instruction = await dbContext.Adventures
                 .Select(x => new { x.Id, x.FirstSceneGuidance })
-                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken: cancellationToken);
-            chatHistory.AddUserMessage(PromptSections.InitialInstruction(instruction.FirstSceneGuidance));
+                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+            requestPrompt = PromptSections.InitialInstruction(instruction.FirstSceneGuidance);
         }
+
+        chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

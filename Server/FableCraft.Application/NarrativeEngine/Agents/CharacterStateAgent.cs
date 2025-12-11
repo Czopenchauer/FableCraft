@@ -32,14 +32,23 @@ internal sealed class CharacterStateAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
-        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
-        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
-            generationContext.SceneContext ?? [],
-            generationContext.MainCharacter.Name,
-            context.Name,
-            3));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene!.Scene));
+
+        var contextPrompt = $"""
+                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+
+                             {PromptSections.RecentScenesForCharacter(
+                                 generationContext.SceneContext ?? [],
+                                 generationContext.MainCharacter.Name,
+                                 context.Name)}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.CharacterStateContext(context)}
+
+                             {PromptSections.CurrentScene(generationContext.NewScene?.Scene)}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_state", true);
 
@@ -60,7 +69,7 @@ internal sealed class CharacterStateAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(string characterName)
+    private async static Task<string> BuildInstruction(string characterName)
     {
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterStatePrompt.md");
         return prompt.Replace("{CHARACTER_NAME}", characterName);

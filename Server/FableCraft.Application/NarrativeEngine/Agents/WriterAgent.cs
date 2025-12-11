@@ -3,7 +3,6 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
-using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -32,25 +31,41 @@ internal sealed class WriterAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.SceneDirection(context.NewNarrativeDirection!.SceneDirection));
-        chatHistory.AddUserMessage(PromptSections.ContinuityCheck(context.NewNarrativeDirection!.ContinuityCheck));
-        chatHistory.AddUserMessage(PromptSections.SceneMetadata(context.NewNarrativeDirection!.SceneMetadata));
-        chatHistory.AddUserMessage(PromptSections.NewLore(context.NewLore));
-        chatHistory.AddUserMessage(PromptSections.NewLocations(context.NewLocations));
-        chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters));
-        chatHistory.AddUserMessage(PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters));
-        chatHistory.AddUserMessage("These character will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself.");
-        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
-        chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext));
-        chatHistory.AddUserMessage(PromptSections.ExtraContext(context.ContextGathered));
 
-        if (hasSceneContext)
-        {
-            chatHistory.AddUserMessage(PromptSections.StorySummary(context.Summary));
-            chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
-            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext, SceneContextCount));
-            chatHistory.AddUserMessage(PromptSections.PlayerAction(context.PlayerAction));
-        }
+        var contextPrompt = $"""
+                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+
+                             {PromptSections.MainCharacterTracker(context.SceneContext)}
+
+                             {PromptSections.ExistingCharacters(context.Characters)}
+
+                             {PromptSections.Context(context.ContextGathered)}
+
+                             {(hasSceneContext ? PromptSections.StorySummary(context.Summary) : "")}
+
+                             {(hasSceneContext ? PromptSections.CurrentStoryTracker(context.SceneContext) : "")}
+
+                             {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.SceneDirection(context.NewNarrativeDirection!.SceneDirection)}
+
+                             {PromptSections.ContinuityCheck(context.NewNarrativeDirection!.ContinuityCheck)}
+
+                             {PromptSections.SceneMetadata(context.NewNarrativeDirection!.SceneMetadata)}
+
+                             {PromptSections.NewLore(context.NewLore)}
+
+                             {PromptSections.NewLocations(context.NewLocations)}
+
+                             These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
+                             {PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters)}
+
+                             {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

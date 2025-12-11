@@ -14,7 +14,7 @@ internal sealed class TrackerProcessor(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var storyTrackerResult = await storyTracker.Invoke(context, cancellationToken);
+        Tracker storyTrackerResult = await storyTracker.Invoke(context, cancellationToken);
         var mainCharTrackerTask = mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
         var trackerDevelopment = mainCharacterDevelopmentAgent.Invoke(context, storyTrackerResult, cancellationToken);
         IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
@@ -29,7 +29,7 @@ internal sealed class TrackerProcessor(
                     var developmentTracker = characterDevelopmentAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
                     await Task.WhenAll(stateTask, trackerTask, developmentTracker);
-                    var (charTracker, description) = await trackerTask;
+                    (CharacterTracker charTracker, var description) = await trackerTask;
                     return new CharacterContext
                     {
                         CharacterId = character.CharacterId,
@@ -38,7 +38,7 @@ internal sealed class TrackerProcessor(
                         Name = character.Name,
                         Description = description,
                         SequenceNumber = character.SequenceNumber + 1,
-                        DevelopmentTracker = await developmentTracker,
+                        DevelopmentTracker = await developmentTracker
                     };
                 })
                 .ToArray();
@@ -46,7 +46,7 @@ internal sealed class TrackerProcessor(
 
         var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
         context.CharacterUpdates = characterUpdates;
-        var (mainCharTracker, mainCharDescription) = await mainCharTrackerTask;
+        (CharacterTracker mainCharTracker, var mainCharDescription) = await mainCharTrackerTask;
         storyTrackerResult.MainCharacter = mainCharTracker;
         context.NewMainCharacterDescription = mainCharDescription;
         storyTrackerResult.MainCharacterDevelopment = await trackerDevelopment;

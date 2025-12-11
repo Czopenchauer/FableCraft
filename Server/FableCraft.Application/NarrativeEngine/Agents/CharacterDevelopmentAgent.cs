@@ -35,8 +35,7 @@ internal sealed class CharacterDevelopmentAgent(
             .Select(x => new { x.Id, x.TrackerStructure })
             .SingleAsync(x => x.Id == generationContext.AdventureId, cancellationToken);
 
-        if (trackerStructure.TrackerStructure.CharacterDevelopment == null ||
-            trackerStructure.TrackerStructure.CharacterDevelopment.Length == 0)
+        if (trackerStructure.TrackerStructure.CharacterDevelopment == null || trackerStructure.TrackerStructure.CharacterDevelopment.Length == 0)
         {
             return null;
         }
@@ -45,13 +44,23 @@ internal sealed class CharacterDevelopmentAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
-        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
-        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
-            generationContext.SceneContext,
-            generationContext.MainCharacter.Name,
-            context.Name));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene!.Scene));
+
+        var contextPrompt = $"""
+                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+
+                             {PromptSections.RecentScenesForCharacter(
+                                 generationContext.SceneContext,
+                                 generationContext.MainCharacter.Name,
+                                 context.Name)}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.CharacterStateContext(context)}
+
+                             {PromptSections.CurrentScene(generationContext.NewScene?.Scene)}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("character_development", true);
 
@@ -72,9 +81,9 @@ internal sealed class CharacterDevelopmentAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterDevelopmentAgentPrompt.md");
         return prompt
@@ -89,6 +98,7 @@ internal sealed class CharacterDevelopmentAgent(
         {
             return new Dictionary<string, object>();
         }
+
         return TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment);
     }
 
@@ -98,6 +108,7 @@ internal sealed class CharacterDevelopmentAgent(
         {
             return new Dictionary<string, object>();
         }
+
         return TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment);
     }
 }

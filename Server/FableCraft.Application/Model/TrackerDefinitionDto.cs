@@ -1,4 +1,5 @@
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
 using FluentValidation;
 
 namespace FableCraft.Application.Model;
@@ -80,7 +81,8 @@ public static class TrackerDefinitionFactory
                 {
                     Name = "Time",
                     Type = FieldType.String,
-                    Prompt = "Adjust time in small increments for natural progression unless explicit directives indicate larger changes. Format: ISO 8601 (YYYY-MM-DDTHH:MM:SS).",
+                    Prompt =
+                        "Adjust time in small increments for natural progression unless explicit directives indicate larger changes. Format: ISO 8601 (YYYY-MM-DDTHH:MM:SS).",
                     DefaultValue = "2024-10-16T09:15:30",
                     ExampleValues =
                     [
@@ -106,7 +108,8 @@ public static class TrackerDefinitionFactory
                 {
                     Name = "Location",
                     Type = FieldType.String,
-                    Prompt = "Provide a detailed and specific location, including exact places like rooms, landmarks, or stores, following this format: 'Specific Place, Building, City, State'.",
+                    Prompt =
+                        "Provide a detailed and specific location, including exact places like rooms, landmarks, or stores, following this format: 'Specific Place, Building, City, State'.",
                     DefaultValue = "Conference Room B, 12th Floor, Apex Corporation, New York, NY",
                     ExampleValues =
                     [

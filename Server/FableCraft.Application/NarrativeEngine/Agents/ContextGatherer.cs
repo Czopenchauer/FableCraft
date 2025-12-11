@@ -36,35 +36,38 @@ internal sealed class ContextGatherer(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
 
-        if (context.Characters.Count > 0)
-        {
-            chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters));
-        }
+        var contextPrompt = $"""
+                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
 
+                             {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
+
+                             {PromptSections.CurrentStoryTracker(context.SceneContext)}
+
+                             {(hasSceneContext ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        string requestPrompt;
         if (!hasSceneContext)
         {
             var adventure = await dbContext.Adventures
                 .Select(x => new { x.Id, x.FirstSceneGuidance })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
-            chatHistory.AddUserMessage(adventure.FirstSceneGuidance);
-            chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
+            requestPrompt = adventure.FirstSceneGuidance;
         }
         else
         {
-            chatHistory.AddUserMessage(PromptSections.LastNarrativeDirections(context.SceneContext, 1));
-            chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
-            chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext));
-            chatHistory.AddUserMessage(PromptSections.CurrentSceneTracker(context.SceneContext));
-            chatHistory.AddUserMessage(PromptSections.RecentScenes(context.SceneContext, SceneContextCount));
+            requestPrompt = PromptSections.LastNarrativeDirections(context.SceneContext);
         }
+
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<ContextToFetch>("output");
         Kernel kernel = kernelBuilder.Create().Build();
 
-        var queries = await agentKernel.SendRequestAsync(
+        ContextToFetch queries = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
@@ -97,9 +100,11 @@ internal sealed class ContextGatherer(
 
     private class ContextToFetch
     {
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public string[] Queries { get; set; } = [];
 
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         [JsonPropertyName("characters_to_fetch")]
-        public string[] CharactersToFetch { get; set; } = [];
+        public string[] CharactersToFetch { get; set;} = [];
     }
 }

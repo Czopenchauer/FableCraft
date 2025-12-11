@@ -36,20 +36,33 @@ internal sealed class MainCharacterTrackerAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
-        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description));
 
+        var contextPrompt = $"""
+                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+
+                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description)}
+
+                             {(!isFirstScene ? PromptSections.MainCharacterTracker(context.SceneContext!) : "")}
+
+                             {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        string requestPrompt;
         if (isFirstScene)
         {
-            chatHistory.AddUserMessage(PromptSections.SceneContent(context.NewScene?.Scene));
-            chatHistory.AddUserMessage("It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.");
+            requestPrompt = $"""
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+
+                             It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
+                             """;
         }
         else
         {
-            chatHistory.AddUserMessage(PromptSections.MainCharacterTracker(context.SceneContext!));
-            chatHistory.AddUserMessage(PromptSections.SceneContent(context.NewScene?.Scene));
-            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext!, 5));
+            requestPrompt = PromptSections.SceneContent(context.NewScene?.Scene);
         }
+
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("tracker", "character_description", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
@@ -65,9 +78,9 @@ internal sealed class MainCharacterTrackerAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure trackerStructure)
+    private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         return await PromptBuilder.BuildPromptAsync("MainCharacterTrackerPrompt.md",
@@ -76,8 +89,12 @@ internal sealed class MainCharacterTrackerAgent(
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-        => TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
+    {
+        return TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
+    }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-        => TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
+    {
+        return TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
+    }
 }

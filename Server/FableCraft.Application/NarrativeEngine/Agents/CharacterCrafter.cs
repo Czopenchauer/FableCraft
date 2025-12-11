@@ -38,11 +38,19 @@ internal sealed class CharacterCrafter(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.CharacterCreationContext(request));
-        chatHistory.AddUserMessage(PromptSections.Context(context.ContextGathered));
-        chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext, 3));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
+        var promptContext = $"""
+                             {PromptSections.Context(context.ContextGathered)}
 
+                             {PromptSections.LastScenes(context.SceneContext, 3)}
+                             """;
+        chatHistory.AddUserMessage(promptContext);
+        var creationRequestPrompt = $"""
+                                     {PromptSections.CurrentScene(context.NewScene?.Scene)}
+
+                                     Here is the character creation request for you to process:
+                                     {PromptSections.CharacterCreationContext(request)}
+                                     """;
+        chatHistory.AddUserMessage(creationRequestPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
@@ -50,13 +58,14 @@ internal sealed class CharacterCrafter(
 
         var outputParser = CreateOutputParser();
 
-        var result = await agentKernel.SendRequestAsync(
-            chatHistory,
-            outputParser,
-            kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
-            nameof(CharacterCrafter),
-            kernelWithKg,
-            cancellationToken);
+        (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker) result =
+            await agentKernel.SendRequestAsync(
+                chatHistory,
+                outputParser,
+                kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
+                nameof(CharacterCrafter),
+                kernelWithKg,
+                cancellationToken);
 
         return new CharacterContext
         {
@@ -89,9 +98,9 @@ internal sealed class CharacterCrafter(
         };
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure structure)
+    private async static Task<string> BuildInstruction(TrackerStructure structure)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterCrafterPrompt.md");
         return prompt
@@ -102,8 +111,12 @@ internal sealed class CharacterCrafter(
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-        => TrackerExtensions.ConvertToOutputJson(structure.Characters);
+    {
+        return TrackerExtensions.ConvertToOutputJson(structure.Characters);
+    }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-        => TrackerExtensions.ConvertToSystemJson(structure.Characters);
+    {
+        return TrackerExtensions.ConvertToSystemJson(structure.Characters);
+    }
 }

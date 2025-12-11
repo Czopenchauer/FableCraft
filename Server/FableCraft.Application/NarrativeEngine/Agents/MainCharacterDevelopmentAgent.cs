@@ -31,24 +31,28 @@ internal sealed class MainCharacterDevelopmentAgent(
             .Select(x => new { x.Id, x.TrackerStructure })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
-        if (trackerStructure.TrackerStructure.MainCharacterDevelopment == null ||
-            trackerStructure.TrackerStructure.MainCharacterDevelopment.Length == 0)
+        if (trackerStructure.TrackerStructure.MainCharacterDevelopment == null || trackerStructure.TrackerStructure.MainCharacterDevelopment.Length == 0)
         {
             return null;
         }
 
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
-        var previousTracker = context.SceneContext
-            .Where(x => x.Metadata.Tracker != null)
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker;
-
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
-        chatHistory.AddUserMessage(PromptSections.MainCharacterTrackerDirect(previousTracker?.MainCharacter, previousTracker?.MainCharacterDevelopment, true));
-        chatHistory.AddUserMessage(PromptSections.RecentScenes(context.SceneContext ?? [], 3));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
+
+        var contextPrompt = $"""
+                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+
+                             {PromptSections.RecentScenes(context.SceneContext ?? [])}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
+
+                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("tracker", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
@@ -64,9 +68,9 @@ internal sealed class MainCharacterDevelopmentAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure structure)
+    private async static Task<string> BuildInstruction(TrackerStructure structure)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
 
         return await PromptBuilder.BuildPromptAsync("MainCharacterDevelopmentAgentPrompt.md",
             ("{{main_character_prompt}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options)),

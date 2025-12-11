@@ -61,7 +61,7 @@ internal class AdventureCreationService : IAdventureCreationService
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
-        var tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken: cancellationToken);
+        TrackerDefinition tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken);
 
         List<LorebookEntry> lorebookEntries = new();
         if (adventureDto.WorldbookId != null)
@@ -77,8 +77,8 @@ internal class AdventureCreationService : IAdventureCreationService
                 }).ToListAsync(cancellationToken);
         }
 
-        var fastLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.FastLlmConfig, cancellationToken: cancellationToken);
-        var complexLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.ComplexLlmConfig, cancellationToken: cancellationToken);
+        LlmPreset fastLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.FastLlmConfig, cancellationToken);
+        LlmPreset complexLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.ComplexLlmConfig, cancellationToken);
         var adventure = new Adventure
         {
             Name = adventureDto.Name,

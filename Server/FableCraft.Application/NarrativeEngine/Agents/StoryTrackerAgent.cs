@@ -33,36 +33,42 @@ internal sealed class StoryTrackerAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription));
-        chatHistory.AddUserMessage(PromptSections.ExistingCharacters(context.Characters));
 
-        if (context.NewCharacters?.Length > 0)
-        {
-            chatHistory.AddUserMessage(PromptSections.NewCharacters(context.NewCharacters));
-        }
+        var contextPrompt = $"""
+                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
 
-        if (context.SceneContext?.Length == 1)
-        {
-            chatHistory.AddUserMessage(PromptSections.AdventureStartTime(trackerStructure.AdventureStartTime));
-        }
+                             {PromptSections.ExistingCharacters(context.Characters)}
 
-        if (context.NewLocations?.Length > 0)
-        {
-            chatHistory.AddUserMessage(PromptSections.NewLocations(context.NewLocations));
-        }
+                             {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
 
+        string requestPrompt;
         if (isFirstScene)
         {
-            chatHistory.AddUserMessage(PromptSections.SceneContent(context.NewScene!.Scene));
-            chatHistory.AddUserMessage("It's the first scene of the adventure. Initialize the tracker based on the scene content.");
+            requestPrompt = $"""
+                             {PromptSections.SceneContent(context.NewScene!.Scene)}
+
+                             It's the first scene of the adventure. Initialize the tracker based on the scene content.
+                             """;
         }
         else
         {
-            chatHistory.AddUserMessage(PromptSections.PreviousStoryTrackers(context.SceneContext!, 1, true));
-            chatHistory.AddUserMessage(PromptSections.LastScenes(context.SceneContext!, 5));
-            chatHistory.AddUserMessage("THIS IS CURRENT SCENE! Update the story tracker based on the scene content and previous trackers.");
-            chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene!.Scene));
+            requestPrompt = $"""
+                             {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
+
+                             {(context.SceneContext?.Length == 1 ? PromptSections.AdventureStartTime(trackerStructure.AdventureStartTime) : "")}
+
+                             {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
+
+                             {(!isFirstScene ? PromptSections.PreviousStoryTrackers(context.SceneContext!) : "")}
+
+                             THIS IS CURRENT SCENE! Update the story tracker based on the scene content and previous trackers.
+                             {PromptSections.CurrentScene(context.NewScene!.Scene)}
+                             """;
         }
+
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<Tracker>("tracker", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
@@ -78,9 +84,9 @@ internal sealed class StoryTrackerAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure trackerStructure)
+    private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         return await PromptBuilder.BuildPromptAsync("StoryTrackerPrompt.md",
@@ -102,12 +108,13 @@ internal sealed class StoryTrackerAgent(
         var dictionary = new Dictionary<string, object>();
         var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
-        dictionary.Add(nameof(Tracker.CharactersPresent), new
-        {
-            structure.CharactersPresent.Prompt,
-            structure.CharactersPresent.DefaultValue,
-            structure.CharactersPresent.ExampleValues
-        });
+        dictionary.Add(nameof(Tracker.CharactersPresent),
+            new
+            {
+                structure.CharactersPresent.Prompt,
+                structure.CharactersPresent.DefaultValue,
+                structure.CharactersPresent.ExampleValues
+            });
         return dictionary;
     }
 }

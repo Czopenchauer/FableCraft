@@ -171,7 +171,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                 ct),
                         cancellationToken);
 
-                    foreach ((Chunk chunk, var _) in filesToCommit)
+                    foreach ((Chunk chunk, _) in filesToCommit)
                     {
                         chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
                         dbContext.Chunks.Add(chunk);

@@ -52,6 +52,9 @@ public class CharacterStats
     [JsonPropertyName("behavioral_state")]
     public BehavioralState? BehavioralState { get; set; }
 
+    [JsonPropertyName("location_state")]
+    public LocationState? LocationState { get; set; }
+
     [JsonPropertyName("integration")]
     public Integration? Integration { get; set; }
 }
@@ -496,6 +499,54 @@ public class ActionTendencies
 
     [JsonPropertyName("response_to_kindness")]
     public string? ResponseToKindness { get; set; }
+}
+
+public class LocationState
+{
+    [JsonPropertyName("current_location")]
+    public CurrentLocation? CurrentLocation { get; set; }
+
+    [JsonPropertyName("location_history")]
+    public List<LocationHistory>? LocationHistory { get; set; }
+
+    [JsonPropertyName("known_locations")]
+    public List<string>? KnownLocations { get; set; }
+}
+
+public class CurrentLocation
+{
+    [JsonPropertyName("place_name")]
+    public string? PlaceName { get; set; }
+
+    [JsonPropertyName("location_type")]
+    public string? LocationType { get; set; }
+
+    [JsonPropertyName("scene_reference")]
+    public string? SceneReference { get; set; }
+
+    [JsonPropertyName("familiarity")]
+    public string? Familiarity { get; set; }
+
+    [JsonPropertyName("comfort_level")]
+    public string? ComfortLevel { get; set; }
+}
+
+public class LocationHistory
+{
+    [JsonPropertyName("place_name")]
+    public string? PlaceName { get; set; }
+
+    [JsonPropertyName("arrived_scene")]
+    public string? ArrivedScene { get; set; }
+
+    [JsonPropertyName("departed_scene")]
+    public string? DepartedScene { get; set; }
+
+    [JsonPropertyName("reason_for_visit")]
+    public string? ReasonForVisit { get; set; }
+
+    [JsonPropertyName("notable_events_there")]
+    public List<string>? NotableEventsThere { get; set; }
 }
 
 public class Integration

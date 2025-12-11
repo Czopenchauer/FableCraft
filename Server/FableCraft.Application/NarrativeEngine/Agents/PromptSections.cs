@@ -7,18 +7,18 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Builds formatted prompt sections with XML tags for narrative engine agents
+///     Builds formatted prompt sections with XML tags for narrative engine agents
 /// </summary>
 internal static class PromptSections
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private readonly static JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
         AllowTrailingCommas = true
     };
 
-    private static readonly JsonSerializerOptions JsonOptionsIgnoreNull = new()
+    private readonly static JsonSerializerOptions JsonOptionsIgnoreNull = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
@@ -27,48 +27,48 @@ internal static class PromptSections
     };
 
     public static JsonSerializerOptions GetJsonOptions(bool ignoreNull = false)
-        => ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
-
-    // ===== Story & Scene Sections =====
-
-    public static string StoryTracker<T>(T tracker, bool ignoreNull = false) =>
-        $"""
-         <story_tracker>
-         {JsonSerializer.Serialize(tracker, GetJsonOptions(ignoreNull))}
-         </story_tracker>
-         """;
-
-    public static string CurrentSceneTracker(SceneContext[] sceneContext, bool ignoreNull = false)
     {
-        var tracker = sceneContext
+        return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
+    }
+
+    public static string StoryTracker(StoryTracker tracker, bool ignoreNull = false)
+    {
+        return $"""
+                <story_tracker>
+                {JsonSerializer.Serialize(tracker, GetJsonOptions(ignoreNull))}
+                </story_tracker>
+                """;
+    }
+
+    public static string CurrentStoryTracker(SceneContext[] sceneContext)
+    {
+        Tracker? tracker = sceneContext
             .Where(x => x.Metadata.Tracker != null)
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.Tracker;
 
         return tracker != null
             ? $"""
-               <current_scene_tracker>
-               {JsonSerializer.Serialize(tracker, GetJsonOptions(ignoreNull))}
-               </current_scene_tracker>
+               <current_story_tracker>
+               {JsonSerializer.Serialize(tracker.Story, GetJsonOptions())}
+               </current_story_tracker>
                """
             : string.Empty;
     }
 
-    public static string LastScenes(SceneContext[] sceneContext, int count, bool skipFirst = true)
+    public static string LastScenes(SceneContext[] sceneContext, int count)
     {
         var scenes = sceneContext
             .OrderByDescending(x => x.SequenceNumber);
 
-        if (skipFirst)
-            scenes = scenes.Skip(1).OrderByDescending(x => x.SequenceNumber);
-
-        var formatted = string.Join("\n", scenes
-            .Take(count)
-            .Select(x => $"""
-                          SCENE NUMBER: {x.SequenceNumber}
-                          {x.SceneContent}
-                          {x.PlayerChoice}
-                          """));
+        var formatted = string.Join("\n",
+            scenes
+                .Take(count)
+                .Select(x => $"""
+                              SCENE NUMBER: {x.SequenceNumber}
+                              {x.SceneContent}
+                              {x.PlayerChoice}
+                              """));
 
         return $"""
                 <last_scenes>
@@ -79,14 +79,15 @@ internal static class PromptSections
 
     public static string RecentScenes(SceneContext[] sceneContext, int count = 3)
     {
-        var formatted = string.Join("\n\n---\n\n", sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .TakeLast(count)
-            .Select(s => $"""
-                          SCENE NUMBER: {s.SequenceNumber}
-                          {s.SceneContent}
-                          {s.PlayerChoice}
-                          """));
+        var formatted = string.Join("\n\n---\n\n",
+            sceneContext
+                .OrderByDescending(x => x.SequenceNumber)
+                .TakeLast(count)
+                .Select(s => $"""
+                              SCENE NUMBER: {s.SequenceNumber}
+                              {s.SceneContent}
+                              {s.PlayerChoice}
+                              """));
 
         return $"""
                 <recent_scenes>
@@ -95,124 +96,119 @@ internal static class PromptSections
                 """;
     }
 
-    public static string SceneContent(string? content) =>
-        string.IsNullOrEmpty(content) ? string.Empty :
-            $"""
-             <scene_content>
-             {content}
-             </scene_content>
-             """;
-
-    public static string CurrentScene(string? content) =>
-        string.IsNullOrEmpty(content) ? string.Empty :
-            $"""
-             <current_scene>
-             {content}
-             </current_scene>
-             """;
-
-    public static string PreviousScene(string? content) =>
-        string.IsNullOrEmpty(content) ? string.Empty :
-            $"""
-             <previous_scene>
-             {content}
-             </previous_scene>
-             """;
-
-    public static string StorySummary(string? summary) =>
-        string.IsNullOrEmpty(summary) ? string.Empty :
-            $"""
-             <story_summary>
-             {summary}
-             </story_summary>
-             """;
-
-    public static string PlayerAction(string action) =>
-        $"""
-         <player_action>
-         {action}
-         </player_action>
-         """;
-
-    // ===== Character Sections =====
-
-    public static string MainCharacter(MainCharacter mainCharacter, string? latestDescription = null) =>
-        $"""
-         <main_character>
-         Name: {mainCharacter.Name}
-         {latestDescription ?? mainCharacter.Description}
-         </main_character>
-         """;
-
-    public static string MainCharacterTracker(SceneContext[] sceneContext, bool ignoreNull = true)
+    public static string SceneContent(string? content)
     {
-        var tracker = sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .Skip(1)
-            .FirstOrDefault()?.Metadata.Tracker;
+        return string.IsNullOrEmpty(content)
+            ? string.Empty
+            : $"""
+               <scene_content>
+               {content}
+               </scene_content>
+               """;
+    }
 
-        if (tracker == null) return string.Empty;
+    public static string CurrentScene(string? content)
+    {
+        return string.IsNullOrEmpty(content)
+            ? string.Empty
+            : $"""
+               Here's the current narrative scene:
+               <current_scene>
+               {content}
+               </current_scene>
+               """;
+    }
 
-        var options = GetJsonOptions(ignoreNull);
+    public static string PreviousScene(string? content)
+    {
+        return string.IsNullOrEmpty(content)
+            ? string.Empty
+            : $"""
+               <previous_scene>
+               {content}
+               </previous_scene>
+               """;
+    }
+
+    public static string StorySummary(string? summary)
+    {
+        return string.IsNullOrEmpty(summary)
+            ? string.Empty
+            : $"""
+               <story_summary>
+               {summary}
+               </story_summary>
+               """;
+    }
+
+    public static string PlayerAction(string action)
+    {
         return $"""
-                <previous_tracker>
-                {JsonSerializer.Serialize(tracker.MainCharacter, options)}
-                </previous_tracker>
-                <previous_development>
-                {JsonSerializer.Serialize(tracker.MainCharacterDevelopment, options)}
-                </previous_development>
+                <player_action>
+                {action}
+                </player_action>
                 """;
     }
 
-    public static string MainCharacterTrackerDirect<T1, T2>(T1? tracker, T2? development, bool ignoreNull = true)
+    // ===== Character Sections =====
+
+    public static string MainCharacter(MainCharacter mainCharacter, string? latestDescription = null)
     {
-        if (tracker == null && development == null) return string.Empty;
+        return $"""
+                The main protagonist of the story. All scenes are written from their perspective:
+                <main_character>
+                Name: {mainCharacter.Name}
+                {latestDescription ?? mainCharacter.Description}
+                </main_character>
+                """;
+    }
 
-        var options = GetJsonOptions(ignoreNull);
-        var sb = new System.Text.StringBuilder();
+    public static string MainCharacterTracker(SceneContext[] sceneContext, bool ignoreNull = true)
+    {
+        Tracker? tracker = sceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.Tracker;
 
-        if (tracker != null)
-            sb.AppendLine($"""
-                           <main_character_tracker>
-                           {JsonSerializer.Serialize(tracker, options)}
-                           </main_character_tracker>
-                           """);
+        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        return $"""
+                Set of trackers for the main character, describing their current state and development throughout the story:
+                <main_character_tracker>
+                {JsonSerializer.Serialize(tracker!.MainCharacter, options)}
 
-        if (development != null)
-            sb.AppendLine($"""
-                           <previous_development>
-                           {JsonSerializer.Serialize(development, options)}
-                           </previous_development>
-                           """);
-
-        return sb.ToString().TrimEnd();
+                {JsonSerializer.Serialize(tracker!.MainCharacterDevelopment, options)}
+                </main_character_tracker>
+                """;
     }
 
     public static string ExistingCharacters(IEnumerable<CharacterContext> characters, IEnumerable<CharacterContext>? extendedCharacters = null)
     {
         var extended = extendedCharacters?.ToList() ?? [];
-        var formatted = string.Join("\n\n", characters.Select(c =>
-        {
-            if (extended.Any(x => x.Name == c.Name))
+        var formatted = string.Join("\n\n",
+            characters.Select(c =>
             {
+                if (extended.Any(x => x.Name == c.Name))
+                {
+                    return $"""
+                            <character>
+                            Name: {c.Name}
+                            {c.Description}
+                            
+                            Current state of the character:
+                            {c.CharacterState}
+                            </character>
+                            """;
+                }
+
                 return $"""
                         <character>
                         Name: {c.Name}
                         {c.Description}
-                        {c.CharacterState}
                         </character>
                         """;
-            }
-
-            return $"""
-                    <character>
-                    Name: {c.Name}
-                    {c.Description}
-                    </character>
-                    """;
-        }));
+            }));
 
         return $"""
+                List of existing characters in the story:
                 <existing_characters>
                 {formatted}
                 </existing_characters>
@@ -221,8 +217,9 @@ internal static class PromptSections
 
     public static string CharacterStateContext(CharacterContext context, bool ignoreNull = true)
     {
-        var options = GetJsonOptions(ignoreNull);
+        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         return $"""
+                Current state and development tracker for the character {context.Name}:
                 <previous_character_state>
                 {JsonSerializer.Serialize(context.CharacterState, options)}
                 </previous_character_state>
@@ -237,14 +234,15 @@ internal static class PromptSections
 
     public static string RecentScenesForCharacter(SceneContext[] sceneContext, string mainCharacterName, string characterName, int count = 3)
     {
-        var scenes = string.Join("\n\n---\n\n", sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .TakeLast(count)
-            .Select(s => $"""
-                          SCENE NUMBER: {s.SequenceNumber}
-                          {s.SceneContent}
-                          {s.PlayerChoice}
-                          """));
+        var scenes = string.Join("\n\n---\n\n",
+            sceneContext
+                .OrderByDescending(x => x.SequenceNumber)
+                .TakeLast(count)
+                .Select(s => $"""
+                              SCENE NUMBER: {s.SequenceNumber}
+                              {s.SceneContent}
+                              {s.PlayerChoice}
+                              """));
 
         return $"""
                 CRITICAL! These scenes are written from the perspective of the main character {mainCharacterName}. Before updating the tracker, rewrite these scenes from the perspective of the character {characterName}. Make sure to include ONLY their thoughts, feelings, knowledge, and reactions to the events happening in each scene.
@@ -279,12 +277,14 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CharacterCreationContext<T>(T context, bool ignoreNull = false) =>
-        $"""
-         <character_creation_context>
-         {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
-         </character_creation_context>
-         """;
+    public static string CharacterCreationContext<T>(T context, bool ignoreNull = false)
+    {
+        return $"""
+                <character_creation_context>
+                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
+                </character_creation_context>
+                """;
+    }
 
     public static string NewCharacterRequests<T>(IEnumerable<T>? requests, bool ignoreNull = false)
     {
@@ -298,26 +298,32 @@ internal static class PromptSections
 
     // ===== Narrative Direction Sections =====
 
-    public static string SceneDirection<T>(T direction, bool ignoreNull = false) =>
-        $"""
-         <scene_direction>
-         {JsonSerializer.Serialize(direction, GetJsonOptions(ignoreNull))}
-         </scene_direction>
-         """;
+    public static string SceneDirection<T>(T direction, bool ignoreNull = false)
+    {
+        return $"""
+                <scene_direction>
+                {JsonSerializer.Serialize(direction, GetJsonOptions(ignoreNull))}
+                </scene_direction>
+                """;
+    }
 
-    public static string ContinuityCheck<T>(T check, bool ignoreNull = false) =>
-        $"""
-         <continuity_check>
-         {JsonSerializer.Serialize(check, GetJsonOptions(ignoreNull))}
-         </continuity_check>
-         """;
+    public static string ContinuityCheck<T>(T check, bool ignoreNull = false)
+    {
+        return $"""
+                <continuity_check>
+                {JsonSerializer.Serialize(check, GetJsonOptions(ignoreNull))}
+                </continuity_check>
+                """;
+    }
 
-    public static string SceneMetadata<T>(T metadata, bool ignoreNull = false) =>
-        $"""
-         <scene_metadata>
-         {JsonSerializer.Serialize(metadata, GetJsonOptions(ignoreNull))}
-         </scene_metadata>
-         """;
+    public static string SceneMetadata<T>(T metadata, bool ignoreNull = false)
+    {
+        return $"""
+                <scene_metadata>
+                {JsonSerializer.Serialize(metadata, GetJsonOptions(ignoreNull))}
+                </scene_metadata>
+                """;
+    }
 
     public static string LastSceneNarrativeDirection<T>(T? direction, bool ignoreNull = false) where T : class
     {
@@ -332,10 +338,11 @@ internal static class PromptSections
 
     public static string LastNarrativeDirections(SceneContext[] sceneContext, int count = 1)
     {
-        var directions = string.Join("\n", sceneContext
-            .OrderByDescending(y => y.SequenceNumber)
-            .Take(count)
-            .Select(z => JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, JsonOptions)));
+        var directions = string.Join("\n",
+            sceneContext
+                .OrderByDescending(y => y.SequenceNumber)
+                .Take(count)
+                .Select(z => JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, JsonOptions)));
 
         return $"""
                 <last_narrative_directions>
@@ -344,65 +351,65 @@ internal static class PromptSections
                 """;
     }
 
-    public static string InitialInstruction(string guidance) =>
-        $"""
-         This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup.
-         <initial_instruction>
-         {guidance}
-         </initial_instruction>
-         """;
-
-    // ===== Location & Lore Sections =====
-
-    public static string NewLocations<T>(T[]? locations, bool ignoreNull = false) =>
-        $"""
-         <new_locations>
-         {JsonSerializer.Serialize(locations ?? [], GetJsonOptions(ignoreNull))}
-         </new_locations>
-         """;
-
-    public static string NewLore<T>(T[]? lore, bool ignoreNull = false) =>
-        $"""
-         <new_lore>
-         {JsonSerializer.Serialize(lore ?? [], GetJsonOptions(ignoreNull))}
-         </new_lore>
-         """;
-
-    public static string LocationRequest<T>(T request, bool ignoreNull = false) =>
-        $"""
-         <location_request>
-         {JsonSerializer.Serialize(request, GetJsonOptions(ignoreNull))}
-         </location_request>
-         """;
-
-    public static string LoreCreationContext<T>(T context, bool ignoreNull = false) =>
-        $"""
-         <lore_creation_context>
-         {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
-         </lore_creation_context>
-         """;
-
-    // ===== Context Sections =====
-
-    public static string ExtraContext<T>(T? context, bool ignoreNull = false) where T : class
+    public static string InitialInstruction(string guidance)
     {
-        if (context == null) return string.Empty;
-
         return $"""
-                <extra_context>
-                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
-                </extra_context>
+                This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup.
+                <initial_instruction>
+                {guidance}
+                </initial_instruction>
                 """;
     }
 
-    public static string Context<T>(T? context, bool ignoreNull = false) where T : class
+    // ===== Location & Lore Sections =====
+
+    public static string NewLocations<T>(T[]? locations, bool ignoreNull = false)
+    {
+        return $"""
+                <new_locations>
+                {JsonSerializer.Serialize(locations ?? [], GetJsonOptions(ignoreNull))}
+                </new_locations>
+                """;
+    }
+
+    public static string NewLore<T>(T[]? lore, bool ignoreNull = false)
+    {
+        return $"""
+                <new_lore>
+                {JsonSerializer.Serialize(lore ?? [], GetJsonOptions(ignoreNull))}
+                </new_lore>
+                """;
+    }
+
+    public static string LocationRequest<T>(T request, bool ignoreNull = false)
+    {
+        return $"""
+                <location_request>
+                {JsonSerializer.Serialize(request, GetJsonOptions(ignoreNull))}
+                </location_request>
+                """;
+    }
+
+    public static string LoreCreationContext<T>(T context, bool ignoreNull = false)
+    {
+        return $"""
+                <lore_creation_context>
+                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
+                </lore_creation_context>
+                """;
+    }
+
+    // ===== Context Sections =====
+
+    public static string Context(ContextBase? context, bool ignoreNull = false)
     {
         if (context == null) return string.Empty;
 
         return $"""
-                <context>
-                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
-                </context>
+                Knowledge extracted from knowledge graph. Do not query the knowledge graph for these facts again.
+                <knowledge_graph_context>
+                {JsonSerializer.Serialize(context.ContextBases, GetJsonOptions(ignoreNull))}
+                </knowledge_graph_context>
                 """;
     }
 
@@ -410,12 +417,13 @@ internal static class PromptSections
 
     public static string PreviousTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = false)
     {
-        var options = GetJsonOptions(ignoreNull);
-        var formatted = string.Join("\n\n", sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .Where(x => x.Metadata.Tracker != null)
-            .Take(count)
-            .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker, options)));
+        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        var formatted = string.Join("\n\n",
+            sceneContext
+                .OrderByDescending(x => x.SequenceNumber)
+                .Where(x => x.Metadata.Tracker != null)
+                .Take(count)
+                .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker, options)));
 
         return $"""
                 <previous_trackers>
@@ -426,12 +434,12 @@ internal static class PromptSections
 
     public static string PreviousStoryTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = true)
     {
-        var options = GetJsonOptions(ignoreNull);
-        var formatted = string.Join("\n\n", sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .Where(x => x.Metadata.Tracker != null)
-            .Take(count)
-            .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)));
+        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        var formatted = string.Join("\n\n",
+            sceneContext
+                .OrderByDescending(x => x.SequenceNumber)
+                .Take(count)
+                .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)));
 
         return $"""
                 <previous_trackers>
@@ -440,26 +448,33 @@ internal static class PromptSections
                 """;
     }
 
-    public static string AdventureStartTime(string startTime) =>
-        $"""
-         <adventure_start_time>
-         {startTime}
-         </adventure_start_time>
-         """;
+    public static string AdventureStartTime(string startTime)
+    {
+        return $"""
+                Set the initial time to:
+                <adventure_start_time>
+                {startTime}
+                </adventure_start_time>
+                """;
+    }
 
     // ===== Generic Tagged Content =====
 
-    public static string Tagged(string tag, string content) =>
-        $"""
-         <{tag}>
-         {content}
-         </{tag}>
-         """;
+    public static string Tagged(string tag, string content)
+    {
+        return $"""
+                <{tag}>
+                {content}
+                </{tag}>
+                """;
+    }
 
-    public static string TaggedJson<T>(string tag, T content, bool ignoreNull = false) =>
-        $"""
-         <{tag}>
-         {JsonSerializer.Serialize(content, GetJsonOptions(ignoreNull))}
-         </{tag}>
-         """;
+    public static string TaggedJson<T>(string tag, T content, bool ignoreNull = false)
+    {
+        return $"""
+                <{tag}>
+                {JsonSerializer.Serialize(content, GetJsonOptions(ignoreNull))}
+                </{tag}>
+                """;
+    }
 }

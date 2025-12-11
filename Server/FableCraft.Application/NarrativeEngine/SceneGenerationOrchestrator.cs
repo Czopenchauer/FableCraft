@@ -68,7 +68,7 @@ public class SceneGenerationOutput
                             Tracker = x.Tracker,
                             Development = x.DevelopmentTracker!
                         })
-                        .ToList(),
+                        .ToList()
                 }
                 : null,
             NewLore = scene.Lorebooks.Select(x => new LoreDto
@@ -312,7 +312,7 @@ internal sealed class SceneGenerationOrchestrator(
                 Tracker = new TrackerDto
                 {
                     Story = scene.Metadata.Tracker!.Story,
-                    MainCharacter = new MainCharacterTrackerDto()
+                    MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!,
                         Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
@@ -328,7 +328,7 @@ internal sealed class SceneGenerationOrchestrator(
                             Tracker = x.Tracker,
                             Development = x.DevelopmentTracker!
                         })
-                        .ToList(),
+                        .ToList()
                 },
                 NewLore = scene.Lorebooks.Select(x => new LoreDto
                 {
@@ -484,7 +484,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         loreEntities.AddRange(locationEntities);
 
-        foreach (var loreEntry in loreEntities)
+        foreach (LorebookEntry loreEntry in loreEntities)
         {
             scene.Lorebooks.Add(loreEntry);
         }
@@ -492,11 +492,11 @@ internal sealed class SceneGenerationOrchestrator(
         dbContext.Scenes.Update(scene);
         await dbContext.SaveChangesAsync(cancellationToken);
         await messageDispatcher.PublishAsync(new SceneGeneratedEvent
-        {
-            AdventureId = scene.AdventureId,
-            SceneId = scene.Id
-        },
-        cancellationToken);
+            {
+                AdventureId = scene.AdventureId,
+                SceneId = scene.Id
+            },
+            cancellationToken);
     }
 
     private async Task<(GenerationContext Context, Guid ProcessId)> GetGenerationContext(Guid adventureId, string playerAction, CancellationToken cancellationToken)

@@ -39,14 +39,23 @@ internal sealed class CharacterTrackerAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.StoryTracker(storyTrackerResult, true));
-        chatHistory.AddUserMessage(PromptSections.CharacterStateContext(context, true));
-        chatHistory.AddUserMessage(PromptSections.RecentScenesForCharacter(
-            generationContext.SceneContext ?? [],
-            generationContext.MainCharacter.Name,
-            context.Name,
-            3));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(generationContext.NewScene?.Scene));
+
+        var contextPrompt = $"""
+                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+
+                             {PromptSections.RecentScenesForCharacter(
+                                 generationContext.SceneContext ?? [],
+                                 generationContext.MainCharacter.Name,
+                                 context.Name)}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.CharacterStateContext(context)}
+
+                             {PromptSections.CurrentScene(generationContext.NewScene?.Scene)}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("character_tracker", "character_description", true);
 
@@ -67,9 +76,9 @@ internal sealed class CharacterTrackerAgent(
             cancellationToken);
     }
 
-    private static async Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var options = PromptSections.GetJsonOptions();
+        JsonSerializerOptions options = PromptSections.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterTrackerAgentPrompt.md");
         return prompt
@@ -79,8 +88,12 @@ internal sealed class CharacterTrackerAgent(
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-        => TrackerExtensions.ConvertToOutputJson(structure.Characters);
+    {
+        return TrackerExtensions.ConvertToOutputJson(structure.Characters);
+    }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-        => TrackerExtensions.ConvertToSystemJson(structure.Characters);
+    {
+        return TrackerExtensions.ConvertToSystemJson(structure.Characters);
+    }
 }

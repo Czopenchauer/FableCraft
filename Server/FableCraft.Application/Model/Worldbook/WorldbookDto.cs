@@ -50,4 +50,3 @@ public class WorldbookUpdateDtoValidator : AbstractValidator<WorldbookUpdateDto>
             .SetValidator(new UpdateLorebookDtoValidator());
     }
 }
-

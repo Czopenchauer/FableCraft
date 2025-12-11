@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FableCraft.Server.Controllers;
 
-public record PageRequest(int Take, int? Skip);
-
 [ApiController]
 [Route("api/[controller]")]
 public class PlayController : ControllerBase

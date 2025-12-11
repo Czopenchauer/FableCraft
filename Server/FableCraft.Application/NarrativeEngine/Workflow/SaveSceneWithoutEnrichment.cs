@@ -36,12 +36,12 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             CommitStatus = CommitStatus.Uncommited
         };
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var lastScene = await dbContext.Scenes
+        Scene? lastScene = await dbContext.Scenes
             .Where(x => x.AdventureId == context.AdventureId)
             .Include(x => x.CharacterActions)
             .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-        var selectedAction = lastScene?.CharacterActions.FirstOrDefault(x => x.Selected);
+            .FirstOrDefaultAsync(cancellationToken);
+        MainCharacterAction? selectedAction = lastScene?.CharacterActions.FirstOrDefault(x => x.Selected);
         if (lastScene != null)
         {
             if (selectedAction != null)

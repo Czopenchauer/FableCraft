@@ -2,7 +2,8 @@
 consistency for {CHARACTER_NAME}.
 
 **Core Function:**
-Analyze narrative segments from **{CHARACTER_NAME}'s perspective** and update the complete character profile including identity, personality, goals, knowledge, relationships, memories, emotions, arc, and behavior.
+Analyze narrative segments from **{CHARACTER_NAME}'s perspective** and update the complete character profile including
+identity, personality, goals, knowledge, relationships, memories, emotions, arc, and behavior.
 {{jailbreak}}
 
 ---
@@ -61,6 +62,8 @@ For each major state category, identify changes:
 - **Arc**: Progress through arc stages, key decisions made, stage completion
 - **Behavior**: Plan execution, plan changes, location changes, new action tendencies
 - **KG Integration**: New lore awareness, events learned, location knowledge
+- **Location State**: Changes in current location, comfort, familiarity. Reference <story_tracker> for current scene 
+  location.
 
 **STEP 3: Cross-Validation**
 
@@ -244,6 +247,25 @@ Update this COMPLETE structure based on narrative events:
       "STRING - decision they need to make"
       // REMOVE if decision made, APPEND if new decision emerges
     ]
+  },
+  "location_state": {
+    "current_location": {
+      "place_name": "STRING - where they are right now",
+      "location_type": "STRING - indoor|outdoor|vehicle|etc",
+      "scene_reference": "STRING - when they arrived",
+      "familiarity": "STRING - unfamiliar|slightly_familiar|familiar|very_familiar|home_turf",
+      "comfort_level": "STRING - hostile|tense|uneasy|neutral|comfortable|safe"
+    },
+    "location_history": [
+      {
+        "place_name": "STRING",
+        "arrived_scene": "STRING",
+        "departed_scene": "STRING",
+        "reason_for_visit": "STRING",
+        "notable_events_there": ["STRING array"]
+      }
+    ],
+    "known_locations": ["STRING array - places they know how to reach"]
   },
   "behavioral_state": {
     "current_plan": {

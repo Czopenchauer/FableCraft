@@ -24,7 +24,7 @@ public class CreateLorebookDto
 
 public class UpdateLorebookDto
 {
-    public Guid? Id { get; init; }  // null = new lorebook, Guid = update existing
+    public Guid? Id { get; init; }
 
     public required string Title { get; init; } = string.Empty;
 
@@ -99,4 +99,3 @@ public class UpdateLorebookDtoValidator : AbstractValidator<UpdateLorebookDto>
             .MaximumLength(100).WithMessage("Lorebook category must not exceed 100 characters");
     }
 }
-

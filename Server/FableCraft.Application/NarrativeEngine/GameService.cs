@@ -1,5 +1,4 @@
 ﻿using FableCraft.Application.Exceptions;
-using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
@@ -79,8 +78,8 @@ internal class GameService : IGameService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
-        var lastScene = scene.OrderByDescending(x => x.SequenceNumber).First();
+        MainCharacter mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
+        Scene lastScene = scene.OrderByDescending(x => x.SequenceNumber).First();
         var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(lastScene, mainCharacter);
         return new GameScene
         {
@@ -100,7 +99,7 @@ internal class GameService : IGameService
 
     public async Task<GameScene> GetSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
-        var scene = await _dbContext.Scenes
+        Scene? scene = await _dbContext.Scenes
             .Where(x => x.Id == sceneId)
             .OrderByDescending(x => x.SequenceNumber)
             .Include(scene => scene.CharacterActions)
@@ -118,7 +117,7 @@ internal class GameService : IGameService
             .OrderByDescending(x => x.SequenceNumber)
             .Select(x => new { x.Id, x.SequenceNumber })
             .ToListAsync(cancellationToken);
-        var mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
+        MainCharacter mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
         var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(scene, mainCharacter);
         return new GameScene
         {
@@ -172,7 +171,7 @@ internal class GameService : IGameService
                 }
             });
 
-            var scene = await _sceneGenerationOrchestrator.GenerateFullSceneAsync(adventureId, string.Empty, cancellationToken);
+            SceneGenerationOutput scene = await _sceneGenerationOrchestrator.GenerateFullSceneAsync(adventureId, string.Empty, cancellationToken);
             return new GameScene
             {
                 GenerationOutput = scene,
@@ -193,17 +192,17 @@ internal class GameService : IGameService
         IExecutionStrategy executionStrategy = _dbContext.Database.CreateExecutionStrategy();
         return await executionStrategy.ExecuteAsync(async () =>
         {
-            var mainCharacter = await _dbContext.MainCharacters
+            MainCharacter mainCharacter = await _dbContext.MainCharacters
                 .Where(x => x.AdventureId == adventureId)
                 .SingleAsync(cancellationToken);
             await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
+            Scene nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
                 lastScene.CharacterActions.First(x => x.Selected).ActionDescription,
                 cancellationToken);
 
             _dbContext.Scenes.Remove(lastScene);
             await transaction.CommitAsync(cancellationToken);
-            
+
             return new GameScene
             {
                 CanRegenerate = true,
@@ -268,7 +267,7 @@ internal class GameService : IGameService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        var currentScene = await _dbContext.Scenes
+        Scene? currentScene = await _dbContext.Scenes
             .Where(s => s.AdventureId == adventureId)
             .OrderByDescending(s => s.SequenceNumber)
             .Include(x => x.CharacterStates)
@@ -283,7 +282,7 @@ internal class GameService : IGameService
 
         try
         {
-            var nextScene =
+            Scene nextScene =
                 await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
             var generationOutput = SceneGenerationOutput.CreateFromScene(nextScene, adventure.MainCharacter);
             return new GameScene
@@ -329,7 +328,7 @@ internal class GameService : IGameService
                 Tracker = new TrackerDto
                 {
                     Story = scene.Metadata.Tracker!.Story,
-                    MainCharacter = new MainCharacterTrackerDto()
+                    MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!,
                         Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
@@ -345,7 +344,7 @@ internal class GameService : IGameService
                             Tracker = x.Tracker,
                             Development = x.DevelopmentTracker!
                         })
-                        .ToList(),
+                        .ToList()
                 },
                 NewLore = scene.Lorebooks.Select(x => new LoreDto
                 {

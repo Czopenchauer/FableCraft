@@ -1,7 +1,6 @@
 ﻿using System.IO.Hashing;
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using System.Threading.RateLimiting;
 
 using FableCraft.Infrastructure.Clients;
@@ -33,9 +32,9 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 {
     private const int MinScenesToCommit = 2;
     private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger _logger;
     private readonly IRagBuilder _ragBuilder;
     private readonly ResiliencePipeline _resiliencePipeline;
-    private readonly ILogger _logger;
 
     public SceneGeneratedEventHandler(ApplicationDbContext dbContext, IRagBuilder ragBuilder, ILogger logger)
     {
@@ -137,7 +136,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                                     """;
                 var bytes = Encoding.UTF8.GetBytes(sceneContent);
                 var hash = XxHash64.HashToUInt64(bytes);
-                var existingChunk = existingSceneChunks.FirstOrDefault(x => x.EntityId == scene.Id && x.ContentHash == hash);
+                Chunk? existingChunk = existingSceneChunks.FirstOrDefault(x => x.EntityId == scene.Id && x.ContentHash == hash);
                 if (existingChunk == null)
                 {
                     var name = $"{hash:x16}";
@@ -168,7 +167,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 .ToListAsync(cancellationToken);
             foreach (var states in characterStatesOnScenes)
             {
-                var description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
+                FileToWrite description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
                 fileToCommit.Add(description);
                 // var charStats = Process(message.AdventureId, existingCharacterChunks, states, x => JsonSerializer.Serialize(x.CharacterStats), ContentType.json);
                 // fileToCommit.Add(charStats);
@@ -178,9 +177,9 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
             var mainCharacter = await _dbContext.MainCharacters
                 .Select(x => new { x.Id, x.Name, x.AdventureId })
-                .SingleAsync(x => x.AdventureId == message.AdventureId, cancellationToken: cancellationToken);
-            var lastScene = scenesToCommit.OrderByDescending(x => x.SequenceNumber).First();
-            var existingMainCharacterChunk = await _dbContext.Chunks
+                .SingleAsync(x => x.AdventureId == message.AdventureId, cancellationToken);
+            Scene lastScene = scenesToCommit.OrderByDescending(x => x.SequenceNumber).First();
+            Chunk existingMainCharacterChunk = await _dbContext.Chunks
                 .AsNoTracking()
                 .Where(x => x.EntityId == mainCharacter.Id)
                 .SingleAsync(cancellationToken);
@@ -204,7 +203,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             {
                 await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 await Task.WhenAll(fileToCommit.Select(x => File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
-                foreach (var (chunk, _) in fileToCommit)
+                foreach ((Chunk chunk, var _) in fileToCommit)
                 {
                     if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
                     {

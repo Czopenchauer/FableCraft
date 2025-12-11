@@ -26,11 +26,23 @@ internal sealed class LoreCrafter(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(PromptSections.CreatedCharacters(context.NewCharacters));
-        chatHistory.AddUserMessage(PromptSections.LoreCreationContext(request));
-        chatHistory.AddUserMessage(PromptSections.Context(context.ContextGathered));
-        chatHistory.AddUserMessage(PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent));
-        chatHistory.AddUserMessage(PromptSections.CurrentScene(context.NewScene?.Scene));
+
+        var contextPrompt = $"""
+                             {PromptSections.CreatedCharacters(context.NewCharacters)}
+
+                             {PromptSections.Context(context.ContextGathered)}
+
+                             {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+
+                             Create new lore based on the following request:
+                             {PromptSections.LoreCreationContext(request)}
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));

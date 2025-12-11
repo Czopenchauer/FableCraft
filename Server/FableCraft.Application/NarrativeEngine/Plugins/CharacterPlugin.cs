@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -55,7 +56,7 @@ internal sealed class CharacterPlugin(
                      <character_tracker>
                      {JsonSerializer.Serialize(context.CharacterTracker, options)}
                      </character_tracker>
-                     
+
                      <character_development_tracker>
                      {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
                      </character_development_tracker>
@@ -121,11 +122,12 @@ internal sealed class CharacterPlugin(
             kernelWithKg,
             CancellationToken.None);
         logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
+        chatHistory.RemoveAt(chatHistory.Count - 1);
         return response;
     }
 
     private async static Task<string> BuildInstruction()
     {
-        return await Agents.PromptBuilder.BuildPromptAsync("CharacterPrompt.md");
+        return await PromptBuilder.BuildPromptAsync("CharacterPrompt.md");
     }
 }
