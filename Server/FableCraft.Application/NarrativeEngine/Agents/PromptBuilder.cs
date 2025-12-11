@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal static class PromptBuilder
@@ -16,6 +18,33 @@ internal static class PromptBuilder
 
         var promptTemplate = await File.ReadAllTextAsync(promptPath);
         return await ReplacePlaceholders(promptTemplate);
+    }
+
+    /// <summary>
+    /// Builds a prompt and replaces placeholders with provided values
+    /// </summary>
+    public async static Task<string> BuildPromptAsync(string promptFileName, params (string placeholder, string value)[] replacements)
+    {
+        var prompt = await BuildPromptAsync(promptFileName);
+        foreach (var (placeholder, value) in replacements)
+        {
+            prompt = prompt.Replace(placeholder, value);
+        }
+        return prompt;
+    }
+
+    /// <summary>
+    /// Builds a prompt and replaces placeholders with JSON-serialized values
+    /// </summary>
+    public async static Task<string> BuildPromptWithJsonAsync(string promptFileName, bool ignoreNull = false, params (string placeholder, object value)[] replacements)
+    {
+        var prompt = await BuildPromptAsync(promptFileName);
+        var options = ChatHistoryBuilder.GetJsonOptions(ignoreNull);
+        foreach (var (placeholder, value) in replacements)
+        {
+            prompt = prompt.Replace(placeholder, JsonSerializer.Serialize(value, options));
+        }
+        return prompt;
     }
 
     private async static Task<string> ReplacePlaceholders(string promptTemplate)

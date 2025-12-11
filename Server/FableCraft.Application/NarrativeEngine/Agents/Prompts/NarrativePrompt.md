@@ -44,40 +44,6 @@ You receive:
 ### Knowledge Graph Plugin
 Query for established world information, lore, history, and story events.
 
-### emulate_character_action Function
-
-```
-emulate_character_action(
-situation: string,      // Current context/situation from character's perspective
-characterName: string   // Exact name from character profile
-)
-```
-
-**USE THIS FUNCTION FOR STRATEGIC PLANNING.** Before setting narrative goals that depend on NPC behavior, emulate key
-characters to understand their likely disposition and actions.
-
-**Your emulation is for PLANNING purposes only.** The Writer will perform real-time emulation during scene execution,
-and their emulation is authoritative. Your emulation helps you:
-- Assess whether NPCs will cooperate or resist
-- Set realistic narrative goals (not impossible ones)
-- Provide informed `resolution_options` that account for NPC personalities
-- Anticipate conflicts and obstacles
-- Understand what NPCs might do proactively (their own goals)
-
-**When to Emulate:**
-- Before setting any plot point that requires NPC cooperation
-- When assessing threats that involve NPC antagonists
-- To understand what NPCs might do independently during the scene
-- When planning social encounters or negotiations
-
-**What to Include in Situation Context:**
-- The player's recent actions and their outcome
-- Current relationship state between player and NPC
-- What the NPC knows (and doesn't know)
-- Other NPCs present and their relationships
-- Environmental factors affecting the NPC
-- The NPC's current goals and priorities
-
 ## Your Workflow
 
 ### PHASE 0: Knowledge Gathering

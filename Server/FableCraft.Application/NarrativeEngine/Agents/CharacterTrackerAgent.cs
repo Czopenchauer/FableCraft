@@ -1,6 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -11,7 +9,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -23,7 +20,8 @@ internal sealed class CharacterTrackerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch)
 {
-    public async Task<(CharacterTracker, string)> Invoke(GenerationContext generationContext,
+    public async Task<(CharacterTracker, string)> Invoke(
+        GenerationContext generationContext,
         CharacterContext context,
         Tracker storyTrackerResult,
         CancellationToken cancellationToken)
@@ -36,125 +34,53 @@ internal sealed class CharacterTrackerAgent(
             .Select(x => new { x.Id, x.TrackerStructure })
             .SingleAsync(x => x.Id == generationContext.AdventureId, cancellationToken);
 
-        var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
-        chatHistory.AddSystemMessage(systemPrompt);
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
 
-        chatHistory.AddUserMessage($"""
-                                    <story_tracker>
-                                    {JsonSerializer.Serialize(storyTrackerResult, options)}
-                                    </story_tracker>
-                                    """);
-        chatHistory.AddUserMessage($"""
-                                    <previous_tracker>
-                                    {JsonSerializer.Serialize(context.CharacterTracker, options)}
-                                    </previous_tracker>
-                                    <previous_development>
-                                    {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
-                                    </previous_development>
-                                    <previous_character_state>
-                                    {JsonSerializer.Serialize(context.CharacterState, options)}
-                                    </previous_character_state>
-                                    """);
+        var chatHistory = ChatHistoryBuilder.Create()
+            .WithSystemMessage(systemPrompt)
+            .WithStoryTracker(storyTrackerResult, true)
+            .WithCharacterStateContext(context, true)
+            .WithRecentScenesForCharacter(
+                generationContext.SceneContext ?? [],
+                generationContext.MainCharacter.Name,
+                context.Name,
+                3)
+            .WithCurrentScene(generationContext.NewScene?.Scene)
+            .Build();
 
-        chatHistory.AddUserMessage($"""
-                                    CRITICAL! These scenes are written from the perspective of the main character {generationContext.MainCharacter.Name}. Before updating the tracker, rewrite these scenes from the perspective of the character {context.Name}. Make sure to include ONLY their thoughts, feelings, knowledge, and reactions to the events happening in each scene.
-                                    <recent_scenes>
-                                    {string.Join("\n\n---\n\n", (generationContext.SceneContext ?? Array.Empty<SceneContext>())
-                                        .OrderByDescending(x => x.SequenceNumber)
-                                        .TakeLast(3)
-                                        .Select(s => $"""
-                                                      SCENE NUMBER: {s.SequenceNumber}
-                                                      {s.SceneContent}
-                                                      {s.PlayerChoice}
-                                                      """))}
-                                    </recent_scenes>
-                                    """);
-
-        chatHistory.AddUserMessage($"""
-                                    <current_scene>
-                                    {generationContext.NewScene?.Scene}
-                                    </current_scene>
-                                    """);
-
-        var instruction = "Update the tracker statistics based on the new scene content and previous tracker state.";
-        chatHistory.AddUserMessage(instruction);
-
-        var outputFunc = new Func<string, (CharacterTracker, string)>(response =>
-        {
-            Match match = Regex.Match(response, "<character_tracker>(.*?)</character_tracker>", RegexOptions.Singleline);
-            CharacterTracker tracker;
-            if (match.Success)
-            {
-                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                          ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
-            }
-
-            match = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
-            string description;
-            if (match.Success)
-            {
-                description = match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse Tracker from response due to output not being in correct tags.");
-            }
-
-            return (tracker, description);
-        });
+        var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("character_tracker", "character_description", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
+
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        var result = await agentKernel.SendRequestAsync(chatHistory,
-            outputFunc,
+
+        return await agentKernel.SendRequestAsync(
+            chatHistory,
+            outputParser,
             promptExecutionSettings,
             nameof(CharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
-        return result;
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
     {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
+        var options = ChatHistoryBuilder.GetJsonOptions();
 
         var prompt = await PromptBuilder.BuildPromptAsync("CharacterTrackerAgentPrompt.md");
-        return prompt.Replace("{{character_tracker_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
+        return prompt
+            .Replace("{{character_tracker_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
             .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
             .Replace("{CHARACTER_NAME}", characterName);
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        var charDict = TrackerExtensions.ConvertToOutputJson(structure.Characters);
-
-        return charDict;
-    }
+        => TrackerExtensions.ConvertToOutputJson(structure.Characters);
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
-        return charDict;
-    }
+        => TrackerExtensions.ConvertToSystemJson(structure.Characters);
 }

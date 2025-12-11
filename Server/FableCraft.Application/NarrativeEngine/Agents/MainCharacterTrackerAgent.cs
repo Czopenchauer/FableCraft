@@ -1,7 +1,4 @@
-﻿using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
@@ -10,15 +7,20 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class MainCharacterTrackerAgent(IAgentKernel agentKernel, IDbContextFactory<ApplicationDbContext> dbContextFactory, KernelBuilderFactory kernelBuilderFactory)
+internal sealed class MainCharacterTrackerAgent(
+    IAgentKernel agentKernel,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    KernelBuilderFactory kernelBuilderFactory)
 {
-    public async Task<(CharacterTracker, string)> Invoke(GenerationContext context, Tracker storyTrackerResult, CancellationToken cancellationToken)
+    public async Task<(CharacterTracker, string)> Invoke(
+        GenerationContext context,
+        Tracker storyTrackerResult,
+        CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -28,126 +30,57 @@ internal sealed class MainCharacterTrackerAgent(IAgentKernel agentKernel, IDbCon
             .Select(x => new { x.Id, x.TrackerStructure, x.AdventureStartTime })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
-        var chatHistory = new ChatHistory();
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
-        chatHistory.AddSystemMessage(systemPrompt);
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-        var stringBuilder = new StringBuilder();
+        var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
 
-        string instruction;
-        chatHistory.AddUserMessage($"""
-                                    <story_tracker>
-                                    {JsonSerializer.Serialize(storyTrackerResult, options)}
-                                    </story_tracker>
-                                    """);
-        
-        stringBuilder.AppendLine($"""
-                                  <main_character>
-                                  {context.MainCharacter.Name}
-                                  {context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description}
-                                  </main_character>
-                                  """);
-        if ((context.SceneContext?.Length ?? 0) == 0)
+        var builder = ChatHistoryBuilder.Create()
+            .WithSystemMessage(systemPrompt)
+            .WithStoryTracker(storyTrackerResult, true)
+            .WithMainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description);
+
+        if (isFirstScene)
         {
-            stringBuilder.AppendLine($"""
-                                         <scene_content>
-                                         {context.NewScene?.Scene}
-                                         </scene_content>
-                                      """);
-            chatHistory.AddUserMessage(stringBuilder.ToString());
-            instruction = "It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.";
-            chatHistory.AddUserMessage(instruction);
+            builder
+                .WithSceneContent(context.NewScene?.Scene)
+                .WithUserMessage("It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.");
         }
         else
         {
-            stringBuilder.AppendLine($"""
-                                      <previous_trackers>
-                                      {string.Join("\n\n", (context.SceneContext ?? Array.Empty<SceneContext>()).OrderByDescending(x => x.SequenceNumber).Where(x => x.Metadata.Tracker != null).Take(1)
-                                          .Select(s => $"""
-                                                        {JsonSerializer.Serialize(s.Metadata.Tracker, options)}
-                                                        """))}
-                                      </previous_trackers>
-                                      <last_scenes>
-                                      {string.Join("\n", (context.SceneContext ?? Array.Empty<SceneContext>())
-                                          .OrderByDescending(x => x.SequenceNumber)
-                                          .Take(5)
-                                          .Select(x =>
-                                              $"""
-                                               SCENE NUMBER: {x.SequenceNumber}
-                                               {x.SceneContent}
-                                               {x.PlayerChoice}
-                                               """))}
-                                      </last_scenes>
-                                      """);
-            instruction = "Update the tracker based on the new scene content and previous tracker state.";
+            builder
+                .WithMainCharacterTracker(context.SceneContext!, 1, true)
+                .WithSceneContent(context.NewScene?.Scene)
+                .WithLastScenes(context.SceneContext!, 5);
         }
 
-        chatHistory.AddUserMessage(stringBuilder.ToString());
-        chatHistory.AddUserMessage(instruction);
-        var outputFunc = new Func<string, (CharacterTracker, string)>(response =>
-        {
-            Match match = Regex.Match(response, "<tracker>(.*?)</tracker>", RegexOptions.Singleline);
-            CharacterTracker tracker;
-            if (match.Success)
-            {
-                tracker = JsonSerializer.Deserialize<CharacterTracker>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                       ?? throw new InvalidOperationException();
-            }
-            else
-            {
-                throw new InvalidCastException("Failed to parse Tracker from response due to output not being in correct tags.");
-            }
+        var chatHistory = builder.Build();
 
-            match = Regex.Match(response, "<character_description>(.*?)</character_description>", RegexOptions.Singleline);
-            string description;
-            if (match.Success)
-            {
-                description = match.Groups[1].Value.RemoveThinkingBlock().Trim();
-            }
-            else
-            {
-                throw new InvalidOperationException("Failed to parse character description from response due to output not being in correct tags.");
-            }
-
-            return (tracker, description);
-        });
+        var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("tracker", "character_description", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
         Kernel kernel = kernelBuilder.Create().Build();
-        return await agentKernel.SendRequestAsync(chatHistory, outputFunc, promptExecutionSettings, nameof(MainCharacterTrackerAgent), kernel, cancellationToken);
+
+        return await agentKernel.SendRequestAsync(
+            chatHistory,
+            outputParser,
+            promptExecutionSettings,
+            nameof(MainCharacterTrackerAgent),
+            kernel,
+            cancellationToken);
     }
 
     private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
     {
-        var promptTemplate = await PromptBuilder.BuildPromptAsync("MainCharacterTrackerPrompt.md");
+        var options = ChatHistoryBuilder.GetJsonOptions();
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
-        var serializeOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
-        return promptTemplate
-            .Replace("{{main_character_prompt}}", JsonSerializer.Serialize(trackerPrompt, serializeOptions))
-            .Replace("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), serializeOptions));
+        return await PromptBuilder.BuildPromptAsync("MainCharacterTrackerPrompt.md",
+            ("{{main_character_prompt}}", JsonSerializer.Serialize(trackerPrompt, options)),
+            ("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), options)));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
-        return mainCharStats;
-    }
+        => TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-        return mainCharStats;
-    }
+        => TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
 }

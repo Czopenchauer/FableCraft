@@ -1,4 +1,5 @@
-﻿You are responsible for maintaining a Story Tracker that records the current state of the narrative environment. This tracker must be updated whenever relevant changes occur during the story. The tracker runs alongside the Main Character tracker and provides environmental context for each scene.
+﻿You are responsible for maintaining a Story Tracker that records the current state of the narrative environment. The output tracker should reflect the current scene!.
+This tracker must be updated whenever relevant changes occur during the story.
 {{jailbreak}}
 ### Tracker Schema
 
@@ -27,7 +28,6 @@ The Story Tracker contains exactly four fields:
 - Update when: Weather changes, moving between interior/exterior, significant time passage
 
 **CharactersPresent** (Array<String>)
-- Array of exact database identifiers for characters in the scene
 - Never alter character name formatting - use exact name provided
 - Empty array `[]` when Main Character is alone
 - Main Character is never included (always assumed present)

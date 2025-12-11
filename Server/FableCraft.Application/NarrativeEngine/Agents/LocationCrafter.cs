@@ -1,6 +1,3 @@
-using System.Text.Json;
-using System.Text.RegularExpressions;
-
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -8,7 +5,6 @@ using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -25,77 +21,30 @@ internal sealed class LocationCrafter(
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
-        var chatHistory = new ChatHistory();
-        var systemPrompt = await BuildInstruction();
-        chatHistory.AddSystemMessage(systemPrompt);
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
+        var systemPrompt = await PromptBuilder.BuildPromptAsync("LocationCrafterPrompt.md");
 
-        if (context.NewCharacters?.Length > 0)
-        {
-            var createdCharactersJson = JsonSerializer.Serialize(context.NewCharacters, options);
-            chatHistory.AddUserMessage($"""
-                                         <created_characters>
-                                         {createdCharactersJson}
-                                         </created_characters>
-                                        """);
-        }
+        var chatHistory = ChatHistoryBuilder.Create()
+            .WithSystemMessage(systemPrompt)
+            .WithCreatedCharacters(context.NewCharacters)
+            .WithLocationRequest(request)
+            .WithContext(context.ContextGathered)
+            .WithPreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)
+            .WithCurrentScene(context.NewScene?.Scene)
+            .Build();
 
-        chatHistory.AddUserMessage($"""
-                                    <location_request>
-                                    {JsonSerializer.Serialize(request, options)}
-                                    </location_request>
-                                    """);
-
-        chatHistory.AddUserMessage($"""
-                                    <context>
-                                    {JsonSerializer.Serialize(context.ContextGathered, options)}
-                                    </context>
-                                    """);
-
-        chatHistory.AddUserMessage($"""
-                                    <previous_scene>
-                                    {context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent ?? string.Empty}
-                                    <previous_scene>
-                                    """);
-        if (context.NewScene != null)
-        {
-            chatHistory.AddUserMessage($"""
-                                        <current_scene>
-                                        {context.NewScene!.Scene}
-                                        <current_scene>
-                                        """);
-        }
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
-        var outputFunc = new Func<string, LocationGenerationResult>(response =>
-        {
-            Match match = Regex.Match(response, "<location>(.*?)</location>", RegexOptions.Singleline);
-            if (match.Success)
-            {
-                return JsonSerializer.Deserialize<LocationGenerationResult>(match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                       ?? throw new InvalidOperationException();
-            }
 
-            throw new InvalidCastException("Failed to parse LocationGenerationResult from response due to output not being in correct tags.");
-        });
+        var outputParser = ResponseParser.CreateJsonParser<LocationGenerationResult>("location");
 
-        return await agentKernel.SendRequestAsync(chatHistory,
-            outputFunc,
+        return await agentKernel.SendRequestAsync(
+            chatHistory,
+            outputParser,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(LocationCrafter),
             kernelWithKg,
             cancellationToken);
-    }
-
-    private static Task<string> BuildInstruction()
-    {
-        return PromptBuilder.BuildPromptAsync("LocationCrafterPrompt.md");
     }
 }

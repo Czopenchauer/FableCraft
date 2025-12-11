@@ -136,7 +136,7 @@ internal class GameService : IGameService
     public async Task<GameScene> RegenerateAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
         var scenes = await _dbContext.Scenes
-            .AsNoTracking()
+            .Include(x => x.CharacterActions)
             .Where(x => x.AdventureId == adventureId)
             .OrderByDescending(x => x.SequenceNumber)
             .Take(2)
@@ -184,7 +184,7 @@ internal class GameService : IGameService
             };
         }
 
-        Scene lastScene = scenes[0];
+        Scene lastScene = scenes.Last();
         if (lastScene.CommitStatus != CommitStatus.Uncommited)
         {
             throw new InvalidOperationException("Can only regenerate the last uncommitted scene");
@@ -197,12 +197,11 @@ internal class GameService : IGameService
                 .Where(x => x.AdventureId == adventureId)
                 .SingleAsync(cancellationToken);
             await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            _dbContext.Scenes.Remove(lastScene);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
             var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
                 lastScene.CharacterActions.First(x => x.Selected).ActionDescription,
                 cancellationToken);
+
+            _dbContext.Scenes.Remove(lastScene);
             await transaction.CommitAsync(cancellationToken);
             
             return new GameScene
