@@ -15,6 +15,13 @@ internal sealed class TrackerProcessor(
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         Tracker storyTrackerResult = await storyTracker.Invoke(context, cancellationToken);
+        var trackerDto = new TrackerDto
+        {
+            Story = storyTrackerResult.Story,
+            MainCharacter = null!,
+            CharactersOnScene = null!,
+            Characters = null!,
+        };
         var mainCharTrackerTask = mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
         var trackerDevelopment = mainCharacterDevelopmentAgent.Invoke(context, storyTrackerResult, cancellationToken);
         IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
@@ -45,7 +52,6 @@ internal sealed class TrackerProcessor(
         }
 
         var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
-        context.CharacterUpdates = characterUpdates;
         (CharacterTracker mainCharTracker, var mainCharDescription) = await mainCharTrackerTask;
         storyTrackerResult.MainCharacter = mainCharTracker;
         context.NewMainCharacterDescription = mainCharDescription;

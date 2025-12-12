@@ -177,15 +177,15 @@
               >
                 Protagonist
               </button>
-              <!-- Character Tabs (one per character on scene) -->
+              <!-- Character Tabs (one per character in tracker.characters) -->
               <button
-                (click)="setActiveCharacterTab(char)"
-                *ngFor="let char of getCharactersOnScene()"
-                [class.active]="isActiveCharacterTab(char)"
+                (click)="setActiveCharacterTab(char.name)"
+                *ngFor="let char of currentScene.tracker.characters"
+                [class.active]="isActiveCharacterTab(char.name)"
                 class="character-tab-btn"
                 type="button"
               >
-                {{ char }}
+                {{ char.name }}
               </button>
             </div>
 
@@ -233,51 +233,46 @@
                 </div>
               </div>
 
-              <!-- Character Content (for each character on scene) -->
-              <ng-container *ngFor="let charName of getCharactersOnScene()">
-                <div *ngIf="isActiveCharacterTab(charName)" class="character-tab-panel">
-                  <div *ngIf="getCharacterByName(charName) as character">
-                    <!-- Nested tabs for character -->
-                    <div class="nested-tabs-header">
-                      <button
-                        (click)="setActiveNestedTab('state')"
-                        [class.active]="isActiveNestedTab('state')"
-                        class="nested-tab-btn"
-                        type="button"
-                      >
-                        State
-                      </button>
-                      <button
-                        (click)="setActiveNestedTab('development')"
-                        [class.active]="isActiveNestedTab('development')"
-                        class="nested-tab-btn"
-                        type="button"
-                      >
-                        Development
-                      </button>
-                      <button
-                        (click)="setActiveNestedTab('description')"
-                        [class.active]="isActiveNestedTab('description')"
-                        class="nested-tab-btn"
-                        type="button"
-                      >
-                        Description
-                      </button>
-                    </div>
-                    <div class="nested-tabs-content">
-                      <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
-                        <app-json-renderer [data]="character.tracker"></app-json-renderer>
-                      </div>
-                      <div *ngIf="isActiveNestedTab('development')" class="nested-tab-panel">
-                        <app-json-renderer [data]="character.development"></app-json-renderer>
-                      </div>
-                      <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
-                        <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
-                      </div>
-                    </div>
+              <!-- Character Content (for each character in tracker.characters) -->
+              <ng-container *ngFor="let character of currentScene.tracker.characters">
+                <div *ngIf="isActiveCharacterTab(character.name)" class="character-tab-panel">
+                  <!-- Nested tabs for character -->
+                  <div class="nested-tabs-header">
+                    <button
+                      (click)="setActiveNestedTab('state')"
+                      [class.active]="isActiveNestedTab('state')"
+                      class="nested-tab-btn"
+                      type="button"
+                    >
+                      State
+                    </button>
+                    <button
+                      (click)="setActiveNestedTab('development')"
+                      [class.active]="isActiveNestedTab('development')"
+                      class="nested-tab-btn"
+                      type="button"
+                    >
+                      Development
+                    </button>
+                    <button
+                      (click)="setActiveNestedTab('description')"
+                      [class.active]="isActiveNestedTab('description')"
+                      class="nested-tab-btn"
+                      type="button"
+                    >
+                      Description
+                    </button>
                   </div>
-                  <div *ngIf="!getCharacterByName(charName)" class="character-not-found">
-                    <p>Character details not available.</p>
+                  <div class="nested-tabs-content">
+                    <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
+                      <app-json-renderer [data]="character.tracker"></app-json-renderer>
+                    </div>
+                    <div *ngIf="isActiveNestedTab('development')" class="nested-tab-panel">
+                      <app-json-renderer [data]="character.development"></app-json-renderer>
+                    </div>
+                    <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                      <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
+                    </div>
                   </div>
                 </div>
               </ng-container>

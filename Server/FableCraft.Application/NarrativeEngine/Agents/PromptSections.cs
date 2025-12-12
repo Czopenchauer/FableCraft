@@ -423,6 +423,24 @@ internal static class PromptSections
                 """;
     }
 
+    public static string ItemRequest<T>(T request, bool ignoreNull = false)
+    {
+        return $"""
+                <item_request>
+                {JsonSerializer.Serialize(request, GetJsonOptions(ignoreNull))}
+                </item_request>
+                """;
+    }
+
+    public static string NewItems<T>(T[]? items, bool ignoreNull = false)
+    {
+        return $"""
+                <new_items>
+                {JsonSerializer.Serialize(items ?? [], GetJsonOptions(ignoreNull))}
+                </new_items>
+                """;
+    }
+
     // ===== Context Sections =====
 
     public static string Context(ContextBase? context, bool ignoreNull = false)

@@ -481,8 +481,19 @@ internal sealed class SceneGenerationOrchestrator(
                                    ContentType = ContentType.json
                                }).ToList()
                                ?? new List<LorebookEntry>();
+        
+        var itemsEntities = context.NewItems?.Select(x => new LorebookEntry
+                               {
+                                   AdventureId = context.AdventureId,
+                                   Description = x.NarrativeData.ShortDescription,
+                                   Content = JsonSerializer.Serialize(x, options),
+                                   Category = x.EntityData.Name,
+                                   ContentType = ContentType.json
+                               }).ToList()
+                               ?? new List<LorebookEntry>();
 
         loreEntities.AddRange(locationEntities);
+        loreEntities.AddRange(itemsEntities);
 
         foreach (LorebookEntry loreEntry in loreEntities)
         {

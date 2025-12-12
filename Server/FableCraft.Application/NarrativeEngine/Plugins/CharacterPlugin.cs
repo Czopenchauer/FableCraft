@@ -71,7 +71,7 @@ internal sealed class CharacterPlugin(
                          .SceneContext
                          .Where(x => x.Metadata.Tracker?.Characters?.Select(y => y.Name).Contains(context.Name) == true)
                          .OrderByDescending(x => x.SequenceNumber)
-                         .TakeLast(5)
+                         .TakeLast(20)
                          .Select(s => $"""
                                        SCENE NUMBER: {s.SequenceNumber}
                                        TIME: {s.Metadata.Tracker?.Story.Time} - LOCATION: {s.Metadata.Tracker?.Story.Location}

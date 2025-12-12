@@ -65,6 +65,8 @@ internal sealed class GenerationContext
 
     public GeneratedLore[]? NewLore { get; set; }
 
+    public GeneratedItem[]? NewItems { get; set; }
+
     public NarrativeDirectorOutput? NewNarrativeDirection { get; set; }
 
     public ContextBase? ContextGathered { get; set; }
