@@ -39,19 +39,38 @@ internal sealed class MainCharacterDevelopmentAgent(
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-
+        var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
         var contextPrompt = $"""
                              {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+                             
+                             {PromptSections.MainCharacter(context.MainCharacter)}
 
-                             {PromptSections.RecentScenes(context.SceneContext ?? [])}
+                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
+                             
+                             {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        var requestPrompt = $"""
-                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
+        string requestPrompt;
+        if (isFirstScene)
+        {
+            requestPrompt = $"""
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
 
-                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                             It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
                              """;
+        }
+        else
+        {
+            requestPrompt = $"""
+                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
+
+                             New scene content:
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             
+                             Update the main_character_tracker based on the new scene.
+                             """;
+        }
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("tracker", true);

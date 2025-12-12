@@ -30,7 +30,7 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
         var hasSceneContext = context.SceneContext.Length > 0;
 

@@ -23,7 +23,7 @@ internal sealed class MainCharacterTrackerAgent(
         Tracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
@@ -42,8 +42,6 @@ internal sealed class MainCharacterTrackerAgent(
 
                              {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description)}
 
-                             {(!isFirstScene ? PromptSections.MainCharacterTracker(context.SceneContext!) : "")}
-
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
@@ -59,7 +57,14 @@ internal sealed class MainCharacterTrackerAgent(
         }
         else
         {
-            requestPrompt = PromptSections.SceneContent(context.NewScene?.Scene);
+            requestPrompt = $"""
+                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
+                             
+                             New scene content:
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+
+                             Update the main_character_tracker based on the new scene.
+                             """;
         }
 
         chatHistory.AddUserMessage(requestPrompt);

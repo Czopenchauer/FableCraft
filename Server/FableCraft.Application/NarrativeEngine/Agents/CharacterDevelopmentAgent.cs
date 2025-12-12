@@ -27,7 +27,7 @@ internal sealed class CharacterDevelopmentAgent(
         Tracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.ComplexPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext

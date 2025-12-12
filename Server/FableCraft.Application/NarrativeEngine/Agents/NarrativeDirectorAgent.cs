@@ -38,7 +38,7 @@ internal sealed class NarrativeDirectorAgent(
         var contextPrompt = $"""
                              {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
 
-                             {PromptSections.MainCharacterTracker(context.SceneContext)}
+                             {PromptSections.MainCharacterTrackerPreGeneration(context.SceneContext)}
 
                              {PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters)}
 
@@ -58,6 +58,8 @@ internal sealed class NarrativeDirectorAgent(
 
                              The {context.MainCharacter.Name} action in the last scene was:
                              {PromptSections.PlayerAction(context.PlayerAction)}
+                             
+                             Generate the next narrative direction for the story based on the above information.
                              """;
         }
         else
@@ -73,9 +75,8 @@ internal sealed class NarrativeDirectorAgent(
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilderFactory, ragSearch);
-        await characterPlugin.Setup(context);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        var characterStatePlugin = new CharacterStatePlugin(context.Characters, logger);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterStatePlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<NarrativeDirectorOutput>("narrative_scene_directive");

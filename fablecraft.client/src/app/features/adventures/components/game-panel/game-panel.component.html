@@ -304,13 +304,26 @@
             </div>
           </div>
 
+          <!-- Submitted Action (what led to this scene) -->
+          <div *ngIf="currentScene.selectedChoice" class="submitted-action-container">
+            <h2 class="submitted-action-title">Your action:</h2>
+            <div class="submitted-action-item">
+              <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
+                <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'"
+                      [attr.stroke-linejoin]="'round'"
+                      [attr.stroke-width]="2"></path>
+              </svg>
+              <div class="choice-text">{{ currentScene.selectedChoice }}</div>
+            </div>
+          </div>
+
           <!-- Choices -->
           <div class="choices-container">
             <!-- Title for current scene -->
             <h2 *ngIf="isCurrentScene()" class="choices-title">What do you do?</h2>
 
             <!-- Title for historical scene -->
-            <h2 *ngIf="!isCurrentScene()" class="choices-title">You chose:</h2>
+            <h2 *ngIf="!isCurrentScene()" class="choices-title">Available choices were:</h2>
 
             <!-- Blocked message for current scene when tracker is missing (but not during enrichment) -->
             <div *ngIf="isCurrentScene() && !isEnriching && !currentScene.tracker && enrichmentFailed" class="choices-blocked-message">
@@ -327,8 +340,7 @@
               <div
                 (click)="isCurrentScene() && !(isRegenerating || isLoading || isEnriching || isActionBlocked()) && onChoiceSelected(choice)"
                 *ngFor="let choice of currentScene.choices?.slice(0, 3)"
-                [class.disabled]="(!isCurrentScene() && !isSelectedChoice(choice)) || (isCurrentScene() && (isLoading || isEnriching))"
-                [class.selected]="isSelectedChoice(choice)"
+                [class.disabled]="!isCurrentScene() || (isCurrentScene() && (isLoading || isEnriching))"
                 [class.interactive]="isCurrentScene() && !isRegenerating && !isLoading && !isEnriching && !isActionBlocked()"
                 class="choice-item"
               >
@@ -338,9 +350,6 @@
                         [attr.stroke-width]="2"></path>
                 </svg>
                 <div class="choice-text">{{ choice }}</div>
-                <svg *ngIf="isSelectedChoice(choice)" [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="selected-icon" viewBox="0 0 24 24">
-                  <path [attr.d]="'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-                </svg>
               </div>
 
               <!-- Custom action - show as input for current scene, or as selected choice for historical scene -->
@@ -374,19 +383,6 @@
                 </button>
               </div>
 
-              <!-- Show custom action as selected choice for historical scenes -->
-              <div *ngIf="!isCurrentScene() && isCustomActionSelected()"
-                   class="choice-item choice-item-last selected">
-                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="choice-arrow" viewBox="0 0 24 24">
-                  <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'"
-                        [attr.stroke-linejoin]="'round'"
-                        [attr.stroke-width]="2"></path>
-                </svg>
-                <div class="choice-text">{{ currentScene.selectedChoice }}</div>
-                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="selected-icon" viewBox="0 0 24 24">
-                  <path [attr.d]="'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-                </svg>
-              </div>
             </div>
           </div>
         </div>

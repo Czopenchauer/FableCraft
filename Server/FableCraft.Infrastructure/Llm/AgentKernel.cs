@@ -77,6 +77,7 @@ internal sealed class AgentKernel : IAgentKernel
         }
         catch (InvalidCastException ex)
         {
+            _logger.Warning(ex, "Error while calling LLM service. {message}", ex.Message);
             chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
             return await GetResponse();
         }

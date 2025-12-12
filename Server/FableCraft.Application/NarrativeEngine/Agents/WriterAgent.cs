@@ -25,7 +25,7 @@ internal sealed class WriterAgent(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
+        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("WriterPrompt.md");
         var hasSceneContext = context.SceneContext.Length > 0;
 
@@ -35,7 +35,7 @@ internal sealed class WriterAgent(
         var contextPrompt = $"""
                              {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
 
-                             {PromptSections.MainCharacterTracker(context.SceneContext)}
+                             {PromptSections.MainCharacterTrackerPreGeneration(context.SceneContext)}
 
                              {PromptSections.ExistingCharacters(context.Characters)}
 
@@ -64,6 +64,8 @@ internal sealed class WriterAgent(
                              {PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters)}
 
                              {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
+                             
+                             Generate a detailed scene based on the above direction and context. Make sure to follow the scene metadata instructions closely.
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 

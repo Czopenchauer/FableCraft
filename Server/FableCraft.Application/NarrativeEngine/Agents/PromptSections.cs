@@ -163,8 +163,13 @@ internal static class PromptSections
                 """;
     }
 
-    public static string MainCharacterTracker(SceneContext[] sceneContext, bool ignoreNull = true)
+    public static string MainCharacterTrackerPreGeneration(SceneContext[] sceneContext, bool ignoreNull = true)
     {
+        if (sceneContext.Length == 0)
+        {
+            return "It's the first scene of the adventure. There's no character tracker yet.";
+        }
+
         Tracker? tracker = sceneContext
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.Tracker;
@@ -172,6 +177,25 @@ internal static class PromptSections
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         return $"""
                 Set of trackers for the main character, describing their current state and development throughout the story:
+                <main_character_tracker>
+                {JsonSerializer.Serialize(tracker!.MainCharacter, options)}
+
+                {JsonSerializer.Serialize(tracker!.MainCharacterDevelopment, options)}
+                </main_character_tracker>
+                """;
+    }
+    
+    public static string MainCharacterTrackerPostScene(SceneContext[] sceneContext, bool ignoreNull = true)
+    {
+        // Skip the latest scene as it does not have the updated tracker yet
+        Tracker? tracker = sceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .Where(x => x.Metadata.Tracker != null)
+            .FirstOrDefault()?.Metadata.Tracker;
+
+        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        return $"""
+                Set of trackers for the main character, describing their current state and development in the previous scene :
                 <main_character_tracker>
                 {JsonSerializer.Serialize(tracker!.MainCharacter, options)}
 

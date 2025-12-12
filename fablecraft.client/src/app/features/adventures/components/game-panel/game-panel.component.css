@@ -645,6 +645,60 @@
   right: var(--spacing-lg);
 }
 
+/* ========== Submitted Action Container ========== */
+
+.submitted-action-container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.submitted-action-title {
+  font-size: var(--font-size-lg);
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+[data-theme="modern-dark"] .submitted-action-title {
+  color: rgba(168, 85, 247, 0.8);
+}
+
+[data-theme="medieval-fantasy"] .submitted-action-title {
+  color: var(--color-accent);
+}
+
+.submitted-action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-card);
+}
+
+[data-theme="modern-dark"] .submitted-action-item {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .submitted-action-item {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+}
+
+.submitted-action-item .choice-arrow {
+  color: var(--color-primary);
+}
+
+.submitted-action-item .choice-text {
+  flex: 1;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+}
+
 /* ========== Choices Container ========== */
 
 .choices-container {
