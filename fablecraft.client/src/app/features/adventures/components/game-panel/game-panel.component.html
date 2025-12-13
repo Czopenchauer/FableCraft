@@ -279,11 +279,11 @@
             </div>
           </div>
 
-          <!-- Display enrichment data if available -->
-          <div *ngIf="enrichmentData && !isEnriching" class="enrichment-info">
-            <div *ngIf="enrichmentData.newLore && enrichmentData.newLore.length > 0" class="enrichment-section">
+          <!-- Display lore data (from enrichment or loaded scene) -->
+          <div *ngIf="!isEnriching && (enrichmentData?.newLore?.length || currentScene.newLore?.length)" class="enrichment-info">
+            <div class="enrichment-section">
               <h4>New Lore:</h4>
-              <div *ngFor="let lore of enrichmentData.newLore" class="enrichment-item">
+              <div *ngFor="let lore of (enrichmentData?.newLore || currentScene.newLore)" class="enrichment-item">
                 <strong>{{ lore.title }}</strong>: {{ lore.summary }}
               </div>
             </div>

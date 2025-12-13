@@ -74,7 +74,8 @@ internal sealed class CharacterPlugin(
                          .TakeLast(20)
                          .Select(s => $"""
                                        SCENE NUMBER: {s.SequenceNumber}
-                                       TIME: {s.Metadata.Tracker?.Story.Time} - LOCATION: {s.Metadata.Tracker?.Story.Location}
+                                       Characters on scene: {string.Join(",", s.Metadata?.Tracker?.CharactersPresent ?? [])}
+                                       TIME: {s.Metadata?.Tracker?.Story.Time} - LOCATION: {s.Metadata?.Tracker?.Story.Location}
                                        {s.SceneContent}
                                        {s.PlayerChoice}
                                        """))}
@@ -112,17 +113,21 @@ internal sealed class CharacterPlugin(
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
+        var chat = new ChatHistory();
+        foreach (ChatMessageContent chatMessageContent in chatHistory)
+        {
+            chat.Add(chatMessageContent);
+        }
 
-        chatHistory.AddUserMessage(situation);
+        chat.AddUserMessage(situation);
         var outputFunc = new Func<string, string>(response => response);
-        var response = await agentKernel.SendRequestAsync(chatHistory,
+        var response = await agentKernel.SendRequestAsync(chat,
             outputFunc,
             _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             $"{nameof(CharacterPlugin)}:{characterName}",
             kernelWithKg,
             CancellationToken.None);
         logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
-        chatHistory.RemoveAt(chatHistory.Count - 1);
         return response;
     }
 

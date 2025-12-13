@@ -39,6 +39,8 @@ internal sealed class MainCharacterTrackerAgent(
 
         var contextPrompt = $"""
                              {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+                             
+                             {PromptSections.NewItems(context.NewItems)}
 
                              {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description)}
 

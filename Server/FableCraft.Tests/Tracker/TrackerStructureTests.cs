@@ -18,14 +18,6 @@ public class TrackerStructureTests
         var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
         dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
 
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.CharactersPresent),
-            new
-            {
-                structure.CharactersPresent.Prompt,
-                structure.CharactersPresent.DefaultValue,
-                structure.CharactersPresent.ExampleValues
-            });
-
         var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
         dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
 

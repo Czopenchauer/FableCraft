@@ -60,11 +60,13 @@ internal sealed class WriterAgent(
 
                              {PromptSections.NewLocations(context.NewLocations)}
 
+                             {PromptSections.NewItems(context.NewItems)}
+
                              These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
                              {PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters)}
 
                              {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
-                             
+
                              Generate a detailed scene based on the above direction and context. Make sure to follow the scene metadata instructions closely.
                              """;
         chatHistory.AddUserMessage(requestPrompt);

@@ -16,12 +16,14 @@ internal static class ResponseParser
     public static T ExtractJson<T>(string response, string tag, bool ignoreNull = false)
     {
         var content = ExtractTagContent(response, tag);
+        JsonSerializerOptions options = PromptSections.GetJsonOptions(ignoreNull);
         if (content == null)
         {
-            throw new InvalidCastException($"Failed to parse {typeof(T).Name} from response: <{tag}> tag not found.");
+            var santized = response.RemoveThinkingBlock().ExtractJsonFromMarkdown();
+            return JsonSerializer.Deserialize<T>(santized, options)
+                   ?? throw new InvalidOperationException($"Failed to extract JSON from response: <{tag}> tag not found and deserialization returned null. Place the json in correct tag.");
         }
 
-        JsonSerializerOptions options = PromptSections.GetJsonOptions(ignoreNull);
         return JsonSerializer.Deserialize<T>(content.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
                ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
     }

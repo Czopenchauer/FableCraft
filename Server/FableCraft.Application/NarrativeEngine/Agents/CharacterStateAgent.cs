@@ -35,6 +35,9 @@ internal sealed class CharacterStateAgent(
 
         var contextPrompt = $"""
                              {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+                             
+                             
+                             {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(
                                  generationContext.SceneContext ?? [],

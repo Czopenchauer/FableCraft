@@ -432,7 +432,7 @@ internal static class PromptSections
                 """;
     }
 
-    public static string NewItems<T>(T[]? items, bool ignoreNull = false)
+    public static string NewItems(GeneratedItem[]? items, bool ignoreNull = false)
     {
         return $"""
                 <new_items>
@@ -484,9 +484,10 @@ internal static class PromptSections
                 .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)));
 
         return $"""
-                <previous_trackers>
+                Here are the story trackers from previous scene. Update their information based on the current scene:
+                <previous_story_trackers>
                 {formatted}
-                </previous_trackers>
+                </previous_story_trackers>
                 """;
     }
 

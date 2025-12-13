@@ -79,7 +79,7 @@ internal sealed class StoryTrackerAgent(
             chatHistory,
             outputParser,
             promptExecutionSettings,
-            nameof(MainCharacterTrackerAgent),
+            nameof(StoryTrackerAgent),
             kernel,
             cancellationToken);
     }

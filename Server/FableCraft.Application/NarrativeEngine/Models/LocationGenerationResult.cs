@@ -42,9 +42,6 @@ internal class NarrativeData
 
     [JsonPropertyName("detailed_description")]
     public string DetailedDescription { get; init; } = string.Empty;
-
-    [JsonPropertyName("dm_notes")]
-    public string DmNotes { get; init; } = string.Empty;
 }
 
 internal class Mechanics

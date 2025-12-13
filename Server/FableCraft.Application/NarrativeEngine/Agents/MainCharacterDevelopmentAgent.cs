@@ -18,7 +18,7 @@ internal sealed class MainCharacterDevelopmentAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory)
 {
-    public async Task<CharacterDevelopmentTracker?> Invoke(
+    public async Task<CharacterDevelopmentTracker> Invoke(
         GenerationContext context,
         Tracker storyTrackerResult,
         CancellationToken cancellationToken)
@@ -31,11 +31,6 @@ internal sealed class MainCharacterDevelopmentAgent(
             .Select(x => new { x.Id, x.TrackerStructure })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
 
-        if (trackerStructure.TrackerStructure.MainCharacterDevelopment == null || trackerStructure.TrackerStructure.MainCharacterDevelopment.Length == 0)
-        {
-            return null;
-        }
-
         var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -45,6 +40,8 @@ internal sealed class MainCharacterDevelopmentAgent(
                              
                              {PromptSections.MainCharacter(context.MainCharacter)}
 
+                             {PromptSections.NewItems(context.NewItems)}
+                             
                              {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
                              
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
