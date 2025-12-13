@@ -5,7 +5,6 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
-using FableCraft.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,7 +22,17 @@ public static class StartupExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
+        services.AddSerilog(config => config
+            .MinimumLevel.Debug()
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.OpenTelemetry()
+            .WriteTo.File(
+                path: Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? throw new InvalidOperationException("FABLECRAFT_LOG_PATH environment variable is not set."),
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}"));
 
         var channel = Channel.CreateBounded<MessageWithContext>(new BoundedChannelOptions(10_000)
         {

@@ -13,7 +13,7 @@ namespace FableCraft.Application;
 
 public static class StartupExtensions
 {
-    public const string DataDirectory = @"C:\Disc\Dev\_projects\FableCraft\data";
+    public static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services,
         IConfiguration configuration)

@@ -102,17 +102,11 @@ internal sealed class StoryTrackerAgent(
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
     {
-        var dictionary = new Dictionary<string, object>();
-        var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
-        dictionary.Add(nameof(Tracker.Story), story);
-        return dictionary;
+        return TrackerExtensions.ConvertToOutputJson(structure.Story);
     }
 
     private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
     {
-        var dictionary = new Dictionary<string, object>();
-        var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
-        dictionary.Add(nameof(Tracker.Story), story);
-        return dictionary;
+        return TrackerExtensions.ConvertToSystemJson(structure.Story);
     }
 }

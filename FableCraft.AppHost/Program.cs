@@ -74,6 +74,8 @@ var server = builder
     .WithOtlpExporter()
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
+    .WithEnvironment("FABLECRAFT_DATA_STORE", $"{TryGetSolutionDirectoryInfo().FullName}/data-store")
+    .WithEnvironment("FABLECRAFT_LOG_PATH", $"{TryGetSolutionDirectoryInfo().FullName}/logs")
     .WaitFor(graphRagApi)
     .WaitFor(serverDatabase);
 
@@ -85,3 +87,15 @@ builder.AddNpmApp("fablecraft-client", "../FableCraft.Client")
     .WaitFor(server);
 
 builder.Build().Run();
+
+
+static DirectoryInfo TryGetSolutionDirectoryInfo()
+{
+    var currentPath = Directory.GetCurrentDirectory();
+    var directory = new DirectoryInfo(currentPath);
+    while (directory != null && !directory.GetFiles("*.sln").Any())
+    {
+        directory = directory.Parent;
+    }
+    return directory!;
+}
