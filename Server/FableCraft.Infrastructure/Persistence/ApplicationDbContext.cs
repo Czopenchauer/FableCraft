@@ -100,15 +100,17 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<AdventureAgentLlmPreset>(p =>
         {
+            p.Property(x => x.AgentName).HasConversion<string>();
+
             p.HasOne(x => x.Adventure)
                 .WithMany(x => x.AgentLlmPresets)
                 .HasForeignKey(x => x.AdventureId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             p.HasOne(x => x.LlmPreset)
                 .WithMany()
                 .HasForeignKey(x => x.LlmPresetId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             p.HasIndex(x => new { x.AdventureId, x.AgentName }).IsUnique();
         });

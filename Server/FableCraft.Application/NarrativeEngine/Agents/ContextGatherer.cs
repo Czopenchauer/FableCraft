@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
@@ -26,15 +28,15 @@ internal sealed class ContextGatherer(
 {
     private const int SceneContextCount = 10;
 
-    protected override string GetName() => nameof(ContextGatherer);
+    protected override AgentName GetAgentName() => AgentName.ContextGatherer;
 
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
+        var systemPrompt = await GetPromptAsync(context);
         var hasSceneContext = context.SceneContext.Length > 0;
 
         var chatHistory = new ChatHistory();

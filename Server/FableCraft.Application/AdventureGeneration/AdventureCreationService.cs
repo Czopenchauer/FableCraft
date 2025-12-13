@@ -92,6 +92,13 @@ internal class AdventureCreationService : IAdventureCreationService
             },
             Lorebook = lorebookEntries,
             TrackerStructure = tracker.Structure,
+            AgentLlmPresets = adventureDto.AgentLlmPresets.Select(p => new AdventureAgentLlmPreset
+                {
+                    LlmPresetId = p.LlmPresetId,
+                    AgentName = p.AgentName,
+                })
+                .ToList(),
+            PromptPath = adventureDto.PromptPath
         };
 
         try

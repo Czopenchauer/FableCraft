@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -21,19 +22,13 @@ internal sealed class StoryTrackerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(StoryTrackerAgent);
+    protected override AgentName GetAgentName() => AgentName.StoryTrackerAgent;
 
     public async Task<StoryTracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
-        var trackerStructure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure, x.AdventureStartTime })
-            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-
-        var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
+        var systemPrompt = await BuildInstruction(context);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
 
         var chatHistory = new ChatHistory();
@@ -62,7 +57,7 @@ internal sealed class StoryTrackerAgent(
             requestPrompt = $"""
                              {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
 
-                             {(context.SceneContext?.Length == 1 ? PromptSections.AdventureStartTime(trackerStructure.AdventureStartTime) : "")}
+                             {(context.SceneContext?.Length == 1 ? PromptSections.AdventureStartTime(context.AdventureStartTime) : "")}
 
                              {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
 
@@ -92,14 +87,16 @@ internal sealed class StoryTrackerAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure trackerStructure)
+    private async Task<string> BuildInstruction(GenerationContext context)
     {
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
-        var trackerPrompt = GetSystemPrompt(trackerStructure);
+        var structure = context.TrackerStructure;
+        var trackerPrompt = GetSystemPrompt(structure);
 
-        return await PromptBuilder.BuildPromptAsync("StoryTrackerPrompt.md",
-            ("{{field_update_logic}}", JsonSerializer.Serialize(trackerPrompt, options)),
-            ("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), options)));
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.StoryTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
+            (PlaceholderNames.StoryTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

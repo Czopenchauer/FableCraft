@@ -23,6 +23,8 @@ public class Adventure : IEntity
 
     public required string? AuthorNotes { get; init; }
 
+    public required string PromptPath { get; set; }
+
     public required MainCharacter MainCharacter { get; set; }
 
     public List<Character> Characters { get; init; } = [];

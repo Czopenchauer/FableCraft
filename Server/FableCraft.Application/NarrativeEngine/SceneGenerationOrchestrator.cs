@@ -304,7 +304,10 @@ internal sealed class SceneGenerationOrchestrator(
     {
         var adventure = await dbContext.Adventures
             .Where(x => x.Id == adventureId)
-            .Select(x => new { x.TrackerStructure, x.MainCharacter })
+            .Include(x => x.AgentLlmPresets)
+            .ThenInclude(x => x.LlmPreset)
+            .Select(x => new { x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
+                PromptPaths = x.PromptPath, x.AdventureStartTime })
             .SingleAsync(cancellationToken);
 
         // Skip the most recent scene as that's the one being enriched, and it has separate field
@@ -323,7 +326,10 @@ internal sealed class SceneGenerationOrchestrator(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
             adventure.MainCharacter,
-            adventureCharacters);
+            adventureCharacters,
+            adventure.AgentLlmPresets.ToArray(),
+            adventure.PromptPaths,
+            adventure.AdventureStartTime);
         return generationContext;
     }
 
@@ -332,9 +338,12 @@ internal sealed class SceneGenerationOrchestrator(
         var adventure = await dbContext
             .Adventures
             .Where(x => x.Id == adventureId)
+            .Include(x => x.AgentLlmPresets)
+            .ThenInclude(x => x.LlmPreset)
             .Select(x => new
             {
-                x.TrackerStructure, x.MainCharacter,
+                x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
+                PromptPaths = x.PromptPath, x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -374,7 +383,10 @@ internal sealed class SceneGenerationOrchestrator(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
             adventure.MainCharacter,
-            adventureCharacters);
+            adventureCharacters,
+            adventure.AgentLlmPresets.ToArray(),
+            adventure.PromptPaths,
+            adventure.AdventureStartTime);
 
         return context;
 

@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model.Adventure;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
@@ -45,6 +46,23 @@ public class AdventureController : ControllerBase
         if (!validationResult.IsValid)
         {
             return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
+        }
+
+        var errors = new Dictionary<string, string[]>();
+        foreach (AgentName agentName in Enum.GetValues<AgentName>())
+        {
+            var exists = System.IO.File.Exists(Path.Combine(
+                adventure.PromptPath,
+                $"{agentName}.md"));
+            if (!exists)
+            {
+                errors.Add($"{agentName}.md", [$"Prompt file for agent '{agentName}' not found in path '{adventure.PromptPath}'."]);
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return BadRequest(Results.ValidationProblem(errors));
         }
 
         AdventureCreationStatus result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);

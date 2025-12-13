@@ -5,7 +5,7 @@ using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
-namespace FableCraft.Application.NarrativeEngine.Agents;
+namespace FableCraft.Application.NarrativeEngine.Agents.Builders;
 
 /// <summary>
 ///     Builds formatted prompt sections with XML tags for narrative engine agents

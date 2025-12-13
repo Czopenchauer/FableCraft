@@ -1,9 +1,11 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
@@ -34,14 +36,14 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
     private const int SceneContextCount = 15;
 
-    protected override string GetName() => nameof(WriterAgent);
+    protected override AgentName GetAgentName() => AgentName.WriterAgent;
 
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("WriterPrompt.md");
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var systemPrompt = await GetPromptAsync(context);
         var hasSceneContext = context.SceneContext.Length > 0;
 
         var chatHistory = new ChatHistory();

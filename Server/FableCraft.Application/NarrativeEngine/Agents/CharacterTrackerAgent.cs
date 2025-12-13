@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -21,7 +22,7 @@ internal sealed class CharacterTrackerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(CharacterTrackerAgent);
+    protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
     public async Task<(CharacterTracker, string)> Invoke(
         GenerationContext generationContext,
@@ -29,15 +30,9 @@ internal sealed class CharacterTrackerAgent(
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext.AdventureId);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
 
-        var trackerStructure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure })
-            .SingleAsync(x => x.Id == generationContext.AdventureId, cancellationToken);
-
-        var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
+        var systemPrompt = await BuildInstruction(generationContext, context.Name);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -80,15 +75,15 @@ internal sealed class CharacterTrackerAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private async Task<string> BuildInstruction(GenerationContext context, string characterName)
     {
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
-
-        var prompt = await PromptBuilder.BuildPromptAsync("CharacterTrackerAgentPrompt.md");
-        return prompt
-            .Replace("{{character_tracker_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
-            .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
-            .Replace("{CHARACTER_NAME}", characterName);
+        var structure = context.TrackerStructure;
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.CharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
+            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            (PlaceholderNames.CharacterName, characterName));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

@@ -1,8 +1,10 @@
-﻿using FluentValidation;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
+using FluentValidation;
 
 namespace FableCraft.Application.Model.Adventure;
 
-public record AdventureAgentLlmPresetDto(Guid LlmPresetId, string AgentName);
+public record AdventureAgentLlmPresetDto(Guid LlmPresetId, AgentName AgentName);
 
 public class AdventureDto
 {
@@ -20,11 +22,15 @@ public class AdventureDto
 
     public required Guid TrackerDefinitionId { get; init; }
 
-    public required AdventureAgentLlmPresetDto[] AdventureAgentLlmPresetDtos { get; set; }
+    public required string PromptPath { get; init; }
+
+    public required AdventureAgentLlmPresetDto[] AgentLlmPresets { get; set; }
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>
 {
+    private readonly static AgentName[] AllAgentNames = Enum.GetValues<AgentName>();
+
     public AdventureDtoValidator()
     {
         RuleFor(x => x.Name)
@@ -34,5 +40,25 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
         RuleFor(x => x.Character)
             .NotNull().WithMessage("Character is required")
             .SetValidator(new CharacterDtoValidator());
+
+        RuleFor(x => x.AgentLlmPresets)
+            .NotNull().WithMessage("Agent LLM presets are required")
+            .Must(presets => presets != null && presets.Length == AllAgentNames.Length)
+            .WithMessage($"All {AllAgentNames.Length} agent presets must be provided")
+            .Must(presets => presets != null && AllAgentNames.All(name => presets.Any(p => p.AgentName == name)))
+            .WithMessage("All agent types must have a preset configured");
+
+        RuleFor(p => p.PromptPath)
+            .NotEmpty().WithMessage("Prompt path is required");
+
+        RuleForEach(x => x.AgentLlmPresets)
+            .ChildRules(preset =>
+            {
+                preset.RuleFor(p => p.AgentName)
+                    .IsInEnum().WithMessage("Invalid agent name");
+
+                preset.RuleFor(p => p.LlmPresetId)
+                    .NotEmpty().WithMessage("LLM preset ID is required");
+            });
     }
 }

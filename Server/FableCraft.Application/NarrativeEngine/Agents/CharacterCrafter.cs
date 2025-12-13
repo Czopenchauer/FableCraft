@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -35,16 +36,10 @@ internal sealed class CharacterCrafter : BaseAgent
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        var trackerStructure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure })
-            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-
-        var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
-
+        var systemPrompt = await BuildInstruction(context);
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
         var promptContext = $"""
@@ -107,16 +102,16 @@ internal sealed class CharacterCrafter : BaseAgent
         };
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure)
+    private async Task<string> BuildInstruction(GenerationContext context)
     {
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
-
-        var prompt = await PromptBuilder.BuildPromptAsync("CharacterCrafterPrompt.md");
-        return prompt
-            .Replace("{{character_tracker_format}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
-            .Replace("{{character_tracker}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
-            .Replace("{{character_development_format}}", JsonSerializer.Serialize(TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment!), options))
-            .Replace("{{character_development}}", JsonSerializer.Serialize(TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment!), options));
+        var structure = context.TrackerStructure;
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.CharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
+            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            (PlaceholderNames.CharacterDevelopmentStructure, JsonSerializer.Serialize(TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment!), options)),
+            (PlaceholderNames.CharacterDevelopmentOutput, JsonSerializer.Serialize(TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment!), options)));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
@@ -129,5 +124,5 @@ internal sealed class CharacterCrafter : BaseAgent
         return TrackerExtensions.ConvertToSystemJson(structure.Characters);
     }
 
-    protected override string GetName() => nameof(CharacterCrafter);
+    protected override AgentName GetAgentName() => AgentName.CharacterCrafter;
 }

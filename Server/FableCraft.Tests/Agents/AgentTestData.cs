@@ -415,7 +415,8 @@ internal static class AgentTestData
                 Description = "A young adventurer with a mysterious past, seeking to prove themselves."
             },
             TrackerStructure = CreateTestTrackerStructure(),
-            Lorebook = new List<LorebookEntry>()
+            Lorebook = new List<LorebookEntry>(),
+            PromptPath = "123"
         };
     }
 

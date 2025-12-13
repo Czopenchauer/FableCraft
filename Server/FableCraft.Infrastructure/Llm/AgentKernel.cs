@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text.Json;
 
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
@@ -115,8 +116,8 @@ internal sealed class AgentKernel : IAgentKernel
                                              {
                                                  AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
                                                  CallerName = operationName,
-                                                 RequestContent = JsonSerializer.Serialize(chatHistory),
-                                                 ResponseContent = JsonSerializer.Serialize(result),
+                                                 RequestContent = chatHistory.ToJsonString(),
+                                                 ResponseContent = result.ToJsonString(),
                                                  InputToken = replyInnerContent?.Usage.InputTokenCount,
                                                  OutputToken = replyInnerContent?.Usage.OutputTokenCount,
                                                  TotalToken = replyInnerContent?.Usage.TotalTokenCount,

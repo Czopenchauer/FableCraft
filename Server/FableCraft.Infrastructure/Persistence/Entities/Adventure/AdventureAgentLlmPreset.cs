@@ -13,8 +13,7 @@ public class AdventureAgentLlmPreset : IEntity
     public LlmPreset LlmPreset { get; set; } = null!;
 
     [Required]
-    [MaxLength(100)]
-    public required string AgentName { get; set; }
+    public required AgentName AgentName { get; set; }
 
     [Key]
     public Guid Id { get; set; }

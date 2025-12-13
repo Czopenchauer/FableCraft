@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -19,15 +20,15 @@ internal sealed class LoreCrafter(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(LoreCrafter);
+    protected override AgentName GetAgentName() => AgentName.LoreCrafter;
 
     public async Task<GeneratedLore> Invoke(
         GenerationContext context,
         LoreRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("LoreCrafterPrompt.md");
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var systemPrompt = await GetPromptAsync(context);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);

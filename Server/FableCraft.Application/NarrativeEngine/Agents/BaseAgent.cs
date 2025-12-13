@@ -1,5 +1,7 @@
-﻿using FableCraft.Infrastructure.Llm;
+using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +9,8 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal abstract class BaseAgent
 {
+    private const string JailbreakPlaceholder = "{{jailbreak}}";
+
     protected readonly IDbContextFactory<ApplicationDbContext> DbContextFactory;
     protected readonly KernelBuilderFactory KernelBuilderFactory;
 
@@ -17,19 +21,50 @@ internal abstract class BaseAgent
         KernelBuilderFactory = kernelBuilderFactory;
     }
 
-    protected abstract string GetName();
+    protected abstract AgentName GetAgentName();
 
-    protected async Task<IKernelBuilder> GetKernelBuilder(Guid adventureId)
+    /// <summary>
+    /// Gets the prompt for the specified agent. Prompt file must be named {AgentName}.md
+    /// </summary>
+    protected async Task<string> GetPromptAsync(GenerationContext generationContext)
+    {
+        var agentName = GetAgentName();
+        var agentPromptPath = Path.Combine(
+            generationContext.PromptPath,
+            $"{agentName}.md"
+        );
+
+        var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
+        return await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
+    }
+
+    private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
+    {
+        if (!promptTemplate.Contains(JailbreakPlaceholder))
+        {
+            return promptTemplate;
+        }
+
+        var filePath = Path.Combine(
+            promptPath,
+            "Jailbrake.md"
+        );
+
+        if (File.Exists(filePath))
+        {
+            var fileContent = await File.ReadAllTextAsync(filePath);
+            return promptTemplate.Replace(JailbreakPlaceholder, fileContent);
+        }
+
+        return promptTemplate;
+    }
+
+    protected async Task<IKernelBuilder> GetKernelBuilder(GenerationContext generationContext)
     {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        var agentName = GetName();
-        var preset = await dbContext
-            .AdventureAgentLlmPresets
-            .AsNoTracking()
-            .Where(x => x.Id == adventureId && x.AgentName == agentName)
-            .Select(x => x.LlmPreset)
-            .SingleAsync();
+        var agentName = GetAgentName();
+        var adventureAgentLlmPreset = generationContext.AgentLlmPreset.Single(x => x.AgentName == agentName);
 
-        return KernelBuilderFactory.Create(preset);
+        return KernelBuilderFactory.Create(adventureAgentLlmPreset.LlmPreset);
     }
 }

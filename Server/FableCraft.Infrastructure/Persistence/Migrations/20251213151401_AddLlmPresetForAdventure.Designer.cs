@@ -3,6 +3,7 @@ using System;
 using FableCraft.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213151401_AddLlmPresetForAdventure")]
+    partial class AddLlmPresetForAdventure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,10 +53,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("PromptPath")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("RagProcessingStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -89,6 +88,10 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("LlmPresetId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PromptPath")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

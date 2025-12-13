@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -19,7 +20,7 @@ internal sealed class CharacterStateAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(CharacterStateAgent);
+    protected override AgentName GetAgentName() => AgentName.CharacterStateAgent;
 
     public async Task<CharacterStats> Invoke(
         GenerationContext generationContext,
@@ -27,10 +28,9 @@ internal sealed class CharacterStateAgent(
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext.AdventureId);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
 
-        var systemPrompt = await BuildInstruction(context.Name);
+        var systemPrompt = await BuildInstruction(generationContext, context.Name);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -73,9 +73,10 @@ internal sealed class CharacterStateAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(string characterName)
+    private async Task<string> BuildInstruction(GenerationContext context, string characterName)
     {
-        var prompt = await PromptBuilder.BuildPromptAsync("CharacterStatePrompt.md");
-        return prompt.Replace("{CHARACTER_NAME}", characterName);
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.CharacterName, characterName));
     }
 }

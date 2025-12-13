@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -19,15 +20,15 @@ internal sealed class ItemCrafter(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(ItemCrafter);
+    protected override AgentName GetAgentName() => AgentName.ItemCrafter;
 
     public async Task<GeneratedItem> Invoke(
         GenerationContext context,
         ItemRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("ItemCrafterPrompt.md");
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var systemPrompt = await GetPromptAsync(context);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);

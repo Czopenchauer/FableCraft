@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -21,7 +22,7 @@ internal sealed class CharacterDevelopmentAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(CharacterDevelopmentAgent);
+    protected override AgentName GetAgentName() => AgentName.CharacterDevelopmentAgent;
 
     public async Task<CharacterDevelopmentTracker?> Invoke(
         GenerationContext generationContext,
@@ -29,20 +30,14 @@ internal sealed class CharacterDevelopmentAgent(
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext.AdventureId);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
 
-        var trackerStructure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure })
-            .SingleAsync(x => x.Id == generationContext.AdventureId, cancellationToken);
-
-        if (trackerStructure.TrackerStructure.CharacterDevelopment == null || trackerStructure.TrackerStructure.CharacterDevelopment.Length == 0)
+        if (generationContext.TrackerStructure.CharacterDevelopment == null || generationContext.TrackerStructure.CharacterDevelopment.Length == 0)
         {
             return null;
         }
 
-        var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure, context.Name);
+        var systemPrompt = await BuildInstruction(generationContext, context.Name);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -85,15 +80,15 @@ internal sealed class CharacterDevelopmentAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure, string characterName)
+    private async Task<string> BuildInstruction(GenerationContext context, string characterName)
     {
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
-
-        var prompt = await PromptBuilder.BuildPromptAsync("CharacterDevelopmentAgentPrompt.md");
-        return prompt
-            .Replace("{{character_development_structure}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options))
-            .Replace("{{character_development}}", JsonSerializer.Serialize(GetOutputJson(structure), options))
-            .Replace("{CHARACTER_NAME}", characterName);
+        var structure = context.TrackerStructure;
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.CharacterDevelopmentStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
+            (PlaceholderNames.CharacterDevelopmentOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            (PlaceholderNames.CharacterName, characterName));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

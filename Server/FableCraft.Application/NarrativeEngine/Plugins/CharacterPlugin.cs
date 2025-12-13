@@ -1,10 +1,12 @@
 ﻿using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
@@ -39,14 +41,14 @@ internal sealed class CharacterPlugin : BaseAgent
     public async Task Setup(GenerationContext generationContext)
     {
         _generationContext = generationContext;
-        _kernelBuilder = await GetKernelBuilder(generationContext.AdventureId);
-        var promptTemplate = await BuildInstruction();
+        _kernelBuilder = await GetKernelBuilder(generationContext);
+        var promptTemplate = await BuildInstruction(generationContext);
         var characters = new List<CharacterContext>(generationContext.Characters);
         characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
         _chatHistory = characters.ToDictionary(character => character.Name,
             context =>
             {
-                var systemPrompt = promptTemplate.Replace("{CHARACTER_NAME}", context.Name);
+                var systemPrompt = promptTemplate.Replace(PlaceholderNames.CharacterName, context.Name);
                 var chatHistory = new ChatHistory();
                 chatHistory.AddSystemMessage(systemPrompt);
                 chatHistory.AddUserMessage(BuildContextMessage(context, generationContext));
@@ -146,10 +148,10 @@ internal sealed class CharacterPlugin : BaseAgent
         return response;
     }
 
-    private async static Task<string> BuildInstruction()
+    private async Task<string> BuildInstruction(GenerationContext context)
     {
-        return await PromptBuilder.BuildPromptAsync("CharacterPrompt.md");
+        return await GetPromptAsync(context);
     }
 
-    protected override string GetName() => nameof(CharacterPlugin);
+    protected override AgentName GetAgentName() => AgentName.CharacterPlugin;
 }

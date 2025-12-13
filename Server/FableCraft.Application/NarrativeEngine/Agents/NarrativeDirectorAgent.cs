@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
@@ -25,13 +26,13 @@ internal sealed class NarrativeDirectorAgent(
 {
     private const int SceneContextCount = 20;
 
-    protected override string GetName() => nameof(NarrativeDirectorAgent);
+    protected override AgentName GetAgentName() => AgentName.NarrativeDirectorAgent;
 
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("NarrativePrompt.md");
+        var systemPrompt = await GetPromptAsync(context);
         SceneContext? lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
         var hasSceneContext = context.SceneContext.Length > 0;
 

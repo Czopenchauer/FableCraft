@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
@@ -16,14 +15,20 @@ internal sealed class GenerationContext
 {
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
-        TrackerStructure trackerStructure, 
+        TrackerStructure trackerStructure,
         MainCharacter mainCharacter,
-        List<CharacterContext> characters)
+        List<CharacterContext> characters,
+        AdventureAgentLlmPreset[] agentLlmPresets,
+        string promptPath,
+        string adventureStartTime)
     {
         SceneContext = sceneContext;
         TrackerStructure = trackerStructure;
         MainCharacter = mainCharacter;
         Characters = characters;
+        AgentLlmPreset = agentLlmPresets;
+        PromptPath = promptPath;
+        AdventureStartTime = adventureStartTime;
     }
 
     public required Guid AdventureId { get; set; }
@@ -48,6 +53,15 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public MainCharacter MainCharacter { get; set; } = null!;
 
+    [JsonIgnore]
+    public AdventureAgentLlmPreset[] AgentLlmPreset { get; set; } = null!;
+
+    [JsonIgnore]
+    public string PromptPath { get; set; } = null!;
+
+    [JsonIgnore]
+    public string AdventureStartTime { get; set; } = null!;
+
     public CharacterContext[]? NewCharacters { get; set; }
 
     public LocationGenerationResult[]? NewLocations { get; set; }
@@ -69,8 +83,6 @@ internal sealed class GenerationContext
     public Guid? NewSceneId { get; set; }
 
     public GenerationProcessStep GenerationProcessStep { get; set; }
-
-    public SceneContext? LatestSceneContext() => SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
 
     public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
 }

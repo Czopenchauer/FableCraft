@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
@@ -19,15 +20,15 @@ internal sealed class LocationCrafter(
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(LocationCrafter);
+    protected override AgentName GetAgentName() => AgentName.LocationCrafter;
 
     public async Task<LocationGenerationResult> Invoke(
         GenerationContext context,
         LocationRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        var systemPrompt = await PromptBuilder.BuildPromptAsync("LocationCrafterPrompt.md");
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var systemPrompt = await GetPromptAsync(context);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);

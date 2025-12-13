@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 using FableCraft.Infrastructure.Llm;
 
-namespace FableCraft.Application.NarrativeEngine.Agents;
+namespace FableCraft.Application.NarrativeEngine.Agents.Builders;
 
 /// <summary>
 ///     Parses LLM responses extracting content from XML tags and deserializing JSON

@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -18,22 +19,16 @@ internal sealed class MainCharacterDevelopmentAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override string GetName() => nameof(MainCharacterDevelopmentAgent);
+    protected override AgentName GetAgentName() => AgentName.MainCharacterDevelopmentAgent;
 
     public async Task<CharacterDevelopmentTracker> Invoke(
         GenerationContext context,
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
-        var trackerStructure = await dbContext
-            .Adventures
-            .Select(x => new { x.Id, x.TrackerStructure })
-            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-
-        var systemPrompt = await BuildInstruction(trackerStructure.TrackerStructure);
+        var systemPrompt = await BuildInstruction(context);
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
@@ -85,13 +80,14 @@ internal sealed class MainCharacterDevelopmentAgent(
             cancellationToken);
     }
 
-    private async static Task<string> BuildInstruction(TrackerStructure structure)
+    private async Task<string> BuildInstruction(GenerationContext context)
     {
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
-
-        return await PromptBuilder.BuildPromptAsync("MainCharacterDevelopmentAgentPrompt.md",
-            ("{{main_character_prompt}}", JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
-            ("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(structure), options)));
+        var structure = context.TrackerStructure;
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
+            (PlaceholderNames.MainCharacterDevelopmentOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

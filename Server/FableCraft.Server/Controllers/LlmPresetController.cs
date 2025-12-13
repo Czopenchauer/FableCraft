@@ -230,8 +230,8 @@ public class LlmPresetController : ControllerBase
         }
 
         // Check if any adventures are using this preset
-        var isUsedByAdventures = await _dbContext.Adventures
-            .AnyAsync(a => a.FastPresetId == id || a.ComplexPresetId == id, cancellationToken);
+        var isUsedByAdventures = await _dbContext.AdventureAgentLlmPresets
+            .AnyAsync(a => a.LlmPresetId == id, cancellationToken);
 
         if (isUsedByAdventures)
         {
