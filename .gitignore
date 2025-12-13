@@ -23,6 +23,9 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+FableCraft.sln.DotSettings.user
+Prompts/*
+!Prompts/Default
 
 # Visual Studio Code
 .vscode/*
