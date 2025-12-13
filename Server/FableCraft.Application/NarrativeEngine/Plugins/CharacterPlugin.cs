@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel;
-using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -29,12 +29,6 @@ internal sealed class CharacterPlugin(
     {
         _generationContext = generationContext;
         _kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
         var promptTemplate = await BuildInstruction();
         var characters = new List<CharacterContext>(generationContext.Characters);
         characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
@@ -42,55 +36,65 @@ internal sealed class CharacterPlugin(
             context =>
             {
                 var systemPrompt = promptTemplate.Replace("{CHARACTER_NAME}", context.Name);
-                var chatHistory = new ChatHistory(systemPrompt);
-                chatHistory.AddUserMessage(
-                    $"""
-                     <character_description>
-                     {context.Description}
-                     </character_description>
-
-                     <character_state>
-                     {JsonSerializer.Serialize(context.CharacterState, options)}
-                     </character_state>
-
-                     <character_tracker>
-                     {JsonSerializer.Serialize(context.CharacterTracker, options)}
-                     </character_tracker>
-
-                     <character_development_tracker>
-                     {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
-                     </character_development_tracker>
-
-                     <context>
-                     {JsonSerializer.Serialize(_generationContext.ContextGathered, options)}
-                     </context>
-
-                     CRITICAL! These scenes are written in the perspective of story protagonist - {generationContext.MainCharacter.Name}!
-                     <previous_scenes_with_character>
-                     {string.Join("\n\n---\n\n", _generationContext
-                         .SceneContext
-                         .Where(x => x.Metadata.Tracker?.Characters?.Select(y => y.Name).Contains(context.Name) == true)
-                         .OrderByDescending(x => x.SequenceNumber)
-                         .TakeLast(20)
-                         .Select(s => $"""
-                                       SCENE NUMBER: {s.SequenceNumber}
-                                       Characters on scene: {string.Join(",", s.Metadata?.Tracker?.CharactersPresent ?? [])}
-                                       TIME: {s.Metadata?.Tracker?.Story.Time} - LOCATION: {s.Metadata?.Tracker?.Story.Location}
-                                       {s.SceneContent}
-                                       {s.PlayerChoice}
-                                       """))}
-                     </previous_scenes_with_character>
-
-                     <current_time>
-                     {_generationContext.SceneContext.MaxBy(x => x.SequenceNumber)?.Metadata.Tracker?.Story.Time}
-                     </current_time>
-                     <current_location>
-                     {_generationContext.SceneContext.MaxBy(x => x.SequenceNumber)?.Metadata.Tracker?.Story.Location}
-                     </current_location>
-                     """);
-
+                var chatHistory = new ChatHistory();
+                chatHistory.AddSystemMessage(systemPrompt);
+                chatHistory.AddUserMessage(BuildContextMessage(context, generationContext));
                 return chatHistory;
             });
+    }
+
+    private string BuildContextMessage(CharacterContext context, GenerationContext generationContext)
+    {
+        var previousScenes = _generationContext
+            .SceneContext
+            .Where(x => x.Characters.Select(y => y.Name).Contains(context.Name) == true)
+            .OrderByDescending(x => x.SequenceNumber)
+            .TakeLast(20)
+            .Select(s => $"""
+                          SCENE NUMBER: {s.SequenceNumber}
+                          <scene_tracker>
+                          {s.Metadata?.Tracker?.Story.ToJsonString()}
+                          </scene_tracker>
+
+                          {s.SceneContent}
+                          {s.PlayerChoice}
+                          """);
+
+        var latestScene = _generationContext.SceneContext.MaxBy(x => x.SequenceNumber);
+
+        return $"""
+                <character_description>
+                {context.Description}
+                </character_description>
+
+                <character_state>
+                {context.CharacterState.ToJsonString()}
+                </character_state>
+
+                <character_tracker>
+                {context.CharacterTracker.ToJsonString()}
+                </character_tracker>
+
+                <character_development_tracker>
+                {context.DevelopmentTracker.ToJsonString()}
+                </character_development_tracker>
+
+                <context>
+                {_generationContext.ContextGathered.ToJsonString()}
+                </context>
+
+                CRITICAL! These scenes are written in the perspective of story protagonist - {generationContext.MainCharacter.Name}!
+                <previous_scenes_with_character>
+                {string.Join("\n\n---\n\n", previousScenes)}
+                </previous_scenes_with_character>
+
+                <current_time>
+                {latestScene?.Metadata.Tracker?.Story.Time}
+                </current_time>
+                <current_location>
+                {latestScene?.Metadata.Tracker?.Story.Location}
+                </current_location>
+                """;
     }
 
     [KernelFunction("emulate_character_action")]

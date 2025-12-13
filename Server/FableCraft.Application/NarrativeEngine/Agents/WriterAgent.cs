@@ -33,15 +33,13 @@ internal sealed class WriterAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+                             {PromptSections.MainCharacter(context)}
 
-                             {PromptSections.MainCharacterTrackerPreGeneration(context.SceneContext)}
+                             {PromptSections.MainCharacterTracker(context.SceneContext)}
 
                              {PromptSections.ExistingCharacters(context.Characters)}
 
                              {PromptSections.Context(context.ContextGathered)}
-
-                             {(hasSceneContext ? PromptSections.StorySummary(context.Summary) : "")}
 
                              {(hasSceneContext ? PromptSections.CurrentStoryTracker(context.SceneContext) : "")}
 
@@ -90,6 +88,5 @@ internal sealed class WriterAgent(
             cancellationToken);
 
         context.NewScene = newScene;
-        context.GenerationProcessStep = GenerationProcessStep.SceneGenerationFinished;
     }
 }

@@ -20,7 +20,7 @@ internal sealed class MainCharacterDevelopmentAgent(
 {
     public async Task<CharacterDevelopmentTracker> Invoke(
         GenerationContext context,
-        Tracker storyTrackerResult,
+        StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
@@ -36,14 +36,12 @@ internal sealed class MainCharacterDevelopmentAgent(
         chatHistory.AddSystemMessage(systemPrompt);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
         var contextPrompt = $"""
-                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
-                             
-                             {PromptSections.MainCharacter(context.MainCharacter)}
+                             {PromptSections.StoryTracker(storyTrackerResult, true)}
+
+                             {PromptSections.MainCharacter(context)}
 
                              {PromptSections.NewItems(context.NewItems)}
-                             
-                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
-                             
+
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
@@ -60,14 +58,15 @@ internal sealed class MainCharacterDevelopmentAgent(
         else
         {
             requestPrompt = $"""
-                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
+                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
-                             
+
                              Update the main_character_tracker based on the new scene.
                              """;
         }
+
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("tracker", true);

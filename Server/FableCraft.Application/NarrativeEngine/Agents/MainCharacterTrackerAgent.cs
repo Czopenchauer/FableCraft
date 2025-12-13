@@ -20,7 +20,7 @@ internal sealed class MainCharacterTrackerAgent(
 {
     public async Task<(CharacterTracker, string)> Invoke(
         GenerationContext context,
-        Tracker storyTrackerResult,
+        StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
@@ -38,11 +38,11 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
+                             {PromptSections.StoryTracker(storyTrackerResult, true)}
                              
                              {PromptSections.NewItems(context.NewItems)}
 
-                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription ?? context.MainCharacter.Description)}
+                             {PromptSections.MainCharacter(context)}
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              """;
@@ -60,7 +60,7 @@ internal sealed class MainCharacterTrackerAgent(
         else
         {
             requestPrompt = $"""
-                             {(!isFirstScene ? PromptSections.MainCharacterTrackerPostScene(context.SceneContext!) : "")}
+                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
                              
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}

@@ -36,9 +36,9 @@ internal sealed class NarrativeDirectorAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+                             {PromptSections.MainCharacter(context)}
 
-                             {PromptSections.MainCharacterTrackerPreGeneration(context.SceneContext)}
+                             {PromptSections.MainCharacterTracker(context.SceneContext)}
 
                              {PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters)}
 
@@ -90,6 +90,5 @@ internal sealed class NarrativeDirectorAgent(
             cancellationToken);
 
         context.NewNarrativeDirection = narrativeOutput;
-        context.GenerationProcessStep = GenerationProcessStep.NarrativeDirectionFinished;
     }
 }

@@ -25,7 +25,7 @@ public static class StartupExtensions
     {
         services.AddSerilog(config => config.ReadFrom.Configuration(configuration).Enrich.FromLogContext());
 
-        var channel = Channel.CreateBounded<IMessage>(new BoundedChannelOptions(10_000)
+        var channel = Channel.CreateBounded<MessageWithContext>(new BoundedChannelOptions(10_000)
         {
             SingleWriter = false,
             SingleReader = false,
@@ -77,16 +77,12 @@ public static class StartupExtensions
                 options.Retry.Delay = TimeSpan.FromSeconds(5);
                 options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(40);
             });
-        ;
 
+        // Default 5 min timeout for RAG search
         services.AddHttpClient<IRagSearch, RagClient>(client =>
-            {
-                client.BaseAddress = new Uri(graphApiBaseUrl);
-
-                client.Timeout = TimeSpan.FromMinutes(10);
-            })
-            .RemoveAllResilienceHandlers()
-            .AddDefaultLlmResiliencePolicies();
+        {
+            client.BaseAddress = new Uri(graphApiBaseUrl);
+        });
 
         services.AddSingleton<KernelBuilderFactory>();
         services.AddTransient<IAgentKernel, AgentKernel>();

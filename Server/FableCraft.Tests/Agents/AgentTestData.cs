@@ -329,7 +329,6 @@ internal static class AgentTestData
         {
             AdventureId = adventureId,
             PlayerAction = "I enter the tavern and look around for anyone who might have information.",
-            Summary = "A young adventurer seeks to uncover the mystery of disappearing villagers in a remote mountain town.",
             SceneContext = Array.Empty<SceneContext>(),
             Characters = new List<CharacterContext>(),
             TrackerStructure = adventure.TrackerStructure,

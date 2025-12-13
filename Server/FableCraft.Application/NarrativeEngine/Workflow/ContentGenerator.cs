@@ -22,7 +22,6 @@ internal class ContentGenerator(
             context.NewItems != null)
         {
             logger.Information("Content already generated, skipping");
-            context.GenerationProcessStep = GenerationProcessStep.ContentCreationFinished;
             return;
         }
 
@@ -83,7 +82,5 @@ internal class ContentGenerator(
             logger.Information("Created {Count} new items", newItems.Length);
             context.NewItems = newItems;
         }
-
-        context.GenerationProcessStep = GenerationProcessStep.ContentCreationFinished;
     }
 }

@@ -14,23 +14,29 @@ internal sealed class TrackerProcessor(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        Tracker storyTrackerResult = context.NewTracker?.Story != null
-            ? context.NewTracker
+        var storyTrackerResult = context.NewTracker?.Story != null
+            ? context.NewTracker.Story
             : await storyTracker.Invoke(context, cancellationToken);
 
-        var mainCharTrackerTask = context.NewTracker?.MainCharacter != null
-            ? Task.FromResult((context.NewTracker!.MainCharacter!, context.NewMainCharacterDescription ?? string.Empty))
+        var tracker = new Tracker
+        {
+            Story = storyTrackerResult
+        };
+        context.NewTracker = tracker;
+        var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
+            ? Task.FromResult(
+                (context.NewTracker!.MainCharacter.MainCharacter!, context.NewTracker.MainCharacter.MainCharacterDescription ?? context.MainCharacter.Description))
             : mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
 
-        var trackerDevelopmentTask = context.NewTracker?.MainCharacterDevelopment != null
-            ? Task.FromResult(context.NewTracker.MainCharacterDevelopment)
+        var trackerDevelopmentTask = context.NewTracker?.MainCharacter?.MainCharacterDevelopment != null
+            ? Task.FromResult(context.NewTracker.MainCharacter.MainCharacterDevelopment)
             : mainCharacterDevelopmentAgent.Invoke(context, storyTrackerResult, cancellationToken);
 
         var alreadyProcessedCharacters = context.CharacterUpdates?
-            .Select(x => x.Name)
-            .ToHashSet() ?? [];
+                                             .Select(x => x.Name)
+                                         ?? [];
 
-        IEnumerable<Task<CharacterContext>>? characterUpdateTask = null;
+        Task<CharacterContext>[]? characterUpdateTask = null;
         if (context.Characters.Count != 0)
         {
             characterUpdateTask = context.Characters
@@ -63,15 +69,27 @@ internal sealed class TrackerProcessor(
                 .ToArray();
         }
 
-        var characterUpdates = characterUpdateTask != null ? await Task.WhenAll(characterUpdateTask) : null;
         (CharacterTracker mainCharTracker, var mainCharDescription) = await mainCharTrackerTask;
-        storyTrackerResult.MainCharacter = mainCharTracker;
-        context.NewMainCharacterDescription = mainCharDescription;
-        storyTrackerResult.MainCharacterDevelopment = await trackerDevelopmentTask;
-        storyTrackerResult.Characters = characterUpdates?.Select(x => x.CharacterTracker!).ToArray();
-        storyTrackerResult.CharacterDevelopment = characterUpdates?.Select(x => x.DevelopmentTracker!).ToArray();
-        context.NewTracker = storyTrackerResult;
-        context.CharacterUpdates = characterUpdates;
-        context.GenerationProcessStep = GenerationProcessStep.TrackerFinished;
+        // ReSharper disable once UseObjectOrCollectionInitializer Unpack it one by one! Exception are unpacked only when awaited, so this allows to save each state.
+        context.NewTracker!.MainCharacter = new MainCharacterTracker
+        {
+            MainCharacter = mainCharTracker,
+            MainCharacterDescription = mainCharDescription
+        };
+        context.NewTracker!.MainCharacter.MainCharacterDevelopment = await trackerDevelopmentTask;
+
+        if(characterUpdateTask != null)
+        {
+            await UnpackCharacterUpdates(context, characterUpdateTask);
+        }
+    }
+
+    private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext>[] tasks)
+    {
+        context.CharacterUpdates ??= new List<CharacterContext>();
+        foreach (var task in tasks)
+        {
+            context.CharacterUpdates.Add(await task);
+        }
     }
 }

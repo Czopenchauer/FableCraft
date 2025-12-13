@@ -1,8 +1,15 @@
-﻿namespace FableCraft.Infrastructure.Queue;
+﻿using Microsoft.Extensions.Diagnostics.Enrichment;
+
+namespace FableCraft.Infrastructure.Queue;
 
 public interface IMessage
 {
     public Guid AdventureId { get; set; }
+}
+
+internal interface IMessageWithEnrichment : IMessage
+{
+    internal ILogEnricher TraceId { get; set; }
 }
 
 public interface IMessageHandler<in TMessage> where TMessage : IMessage

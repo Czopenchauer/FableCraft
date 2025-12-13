@@ -33,9 +33,6 @@ public class TrackerStructureTests
         var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
         dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
 
-        // CharactersPresent is a single FieldDefinition of type Array, so output as array
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
-
         var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
         dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
 

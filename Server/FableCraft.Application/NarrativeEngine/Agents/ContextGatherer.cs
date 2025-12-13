@@ -38,7 +38,7 @@ internal sealed class ContextGatherer(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+                             {PromptSections.MainCharacter(context)}
 
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
 
@@ -90,7 +90,6 @@ internal sealed class ContextGatherer(
                     .Where(x => queries.CharactersToFetch.Contains(x.CharacterState.CharacterIdentity.FullName))
                     .ToArray()
             };
-            context.GenerationProcessStep = GenerationProcessStep.ContextGatheringFinished;
         }
         catch (Exception ex)
         {

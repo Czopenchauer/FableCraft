@@ -24,7 +24,7 @@ internal sealed class CharacterDevelopmentAgent(
     public async Task<CharacterDevelopmentTracker?> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
-        Tracker storyTrackerResult,
+        StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
@@ -46,8 +46,8 @@ internal sealed class CharacterDevelopmentAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
-                             
+                             {PromptSections.StoryTracker(storyTrackerResult, true)}
+
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FableCraft.Server.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]/{adventureId:guid}")]
 public class PlayController : ControllerBase
 {
     private readonly IGameService _gameService;
@@ -17,7 +17,7 @@ public class PlayController : ControllerBase
         _gameService = gameService;
     }
 
-    [HttpGet("{adventureId:guid}/current-scene")]
+    [HttpGet("current-scene")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     public async Task<ActionResult> GetCurrentScene(Guid adventureId, CancellationToken cancellationToken)
     {
@@ -25,7 +25,7 @@ public class PlayController : ControllerBase
         return Ok(scene);
     }
 
-    [HttpGet("{adventureId:guid}/scene/{sceneId:guid}")]
+    [HttpGet("scene/{sceneId:guid}")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     public async Task<ActionResult> GetScene(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
@@ -41,7 +41,6 @@ public class PlayController : ControllerBase
     {
         try
         {
-            ProcessExecutionContext.AdventureId.Value = request.AdventureId;
             GameScene scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
             return Ok(scene);
         }
@@ -55,7 +54,7 @@ public class PlayController : ControllerBase
         }
     }
 
-    [HttpPost("{adventureId:guid}/scenes/{sceneId:guid}/enrich")]
+    [HttpPost("scene/{sceneId:guid}/enrich")]
     [ProducesResponseType(typeof(SceneEnrichmentOutput), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -66,10 +65,8 @@ public class PlayController : ControllerBase
     {
         try
         {
-            ProcessExecutionContext.AdventureId.Value = adventureId;
             var result = await _gameService.EnrichSceneAsync(
                 adventureId,
-                sceneId,
                 cancellationToken);
             return Ok(result);
         }
@@ -83,15 +80,14 @@ public class PlayController : ControllerBase
         }
     }
 
-    [HttpDelete("delete/{adventureId:guid}/scene/{sceneId:guid}")]
+    [HttpDelete("scene/{sceneId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteLastScene(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
         try
         {
-            ProcessExecutionContext.AdventureId.Value = adventureId;
-            await _gameService.DeleteSceneAsync(adventureId, sceneId, cancellationToken);
+            await _gameService.DeleteSceneAsync(adventureId, cancellationToken);
             return NoContent();
         }
         catch (AdventureNotFoundException)
@@ -103,15 +99,14 @@ public class PlayController : ControllerBase
     /// <summary>
     ///     Regenerate the last scene
     /// </summary>
-    [HttpPost("regenerate/{adventureId:guid}/scene/{sceneId:guid}")]
+    [HttpPost("scene/{sceneId:guid}/regenerate")]
     [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
     public async Task<ActionResult> Regenerate(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
     {
         try
         {
-            ProcessExecutionContext.AdventureId.Value = adventureId;
 
-            GameScene scene = await _gameService.RegenerateAsync(adventureId, sceneId, cancellationToken);
+            GameScene scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)

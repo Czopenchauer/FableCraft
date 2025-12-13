@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -35,7 +36,7 @@ internal static class PromptSections
     {
         return $"""
                 <story_tracker>
-                {JsonSerializer.Serialize(tracker, GetJsonOptions(ignoreNull))}
+                {tracker.ToJsonString(GetJsonOptions(ignoreNull))}
                 </story_tracker>
                 """;
     }
@@ -50,7 +51,7 @@ internal static class PromptSections
         return tracker != null
             ? $"""
                <current_story_tracker>
-               {JsonSerializer.Serialize(tracker.Story, GetJsonOptions())}
+               {tracker.Story.ToJsonString(GetJsonOptions())}
                </current_story_tracker>
                """
             : string.Empty;
@@ -130,17 +131,6 @@ internal static class PromptSections
                """;
     }
 
-    public static string StorySummary(string? summary)
-    {
-        return string.IsNullOrEmpty(summary)
-            ? string.Empty
-            : $"""
-               <story_summary>
-               {summary}
-               </story_summary>
-               """;
-    }
-
     public static string PlayerAction(string action)
     {
         return $"""
@@ -150,56 +140,33 @@ internal static class PromptSections
                 """;
     }
 
-    // ===== Character Sections =====
-
-    public static string MainCharacter(MainCharacter mainCharacter, string? latestDescription = null)
+    public static string MainCharacter(GenerationContext context)
     {
         return $"""
                 The main protagonist of the story. All scenes are written from their perspective:
                 <main_character>
-                Name: {mainCharacter.Name}
-                {latestDescription ?? mainCharacter.Description}
+                Name: {context.MainCharacter.Name}
+                {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
                 </main_character>
                 """;
     }
 
-    public static string MainCharacterTrackerPreGeneration(SceneContext[] sceneContext, bool ignoreNull = true)
+    public static string MainCharacterTracker(SceneContext[] sceneContext, bool ignoreNull = true)
     {
         if (sceneContext.Length == 0)
         {
-            return "It's the first scene of the adventure. There's no character tracker yet.";
+            return string.Empty;
         }
 
         Tracker? tracker = sceneContext
             .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker;
-
-        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
-        return $"""
-                Set of trackers for the main character, describing their current state and development throughout the story:
-                <main_character_tracker>
-                {JsonSerializer.Serialize(tracker!.MainCharacter, options)}
-
-                {JsonSerializer.Serialize(tracker!.MainCharacterDevelopment, options)}
-                </main_character_tracker>
-                """;
-    }
-    
-    public static string MainCharacterTrackerPostScene(SceneContext[] sceneContext, bool ignoreNull = true)
-    {
-        // Skip the latest scene as it does not have the updated tracker yet
-        Tracker? tracker = sceneContext
-            .OrderByDescending(x => x.SequenceNumber)
-            .Where(x => x.Metadata.Tracker != null)
-            .FirstOrDefault()?.Metadata.Tracker;
+            .FirstOrDefault(x => x.Metadata.Tracker != null)?.Metadata.Tracker;
 
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         return $"""
                 Set of trackers for the main character, describing their current state and development in the previous scene :
                 <main_character_tracker>
-                {JsonSerializer.Serialize(tracker!.MainCharacter, options)}
-
-                {JsonSerializer.Serialize(tracker!.MainCharacterDevelopment, options)}
+                {tracker!.MainCharacter.ToJsonString(options)}
                 </main_character_tracker>
                 """;
     }
@@ -216,7 +183,7 @@ internal static class PromptSections
                             <character>
                             Name: {c.Name}
                             {c.Description}
-                            
+
                             Current state of the character:
                             {c.CharacterState}
                             </character>
@@ -245,13 +212,13 @@ internal static class PromptSections
         return $"""
                 Current state and development tracker for the character {context.Name}:
                 <previous_character_state>
-                {JsonSerializer.Serialize(context.CharacterState, options)}
+                {context.CharacterState.ToJsonString(options)}
                 </previous_character_state>
                 <previous_tracker>
-                {JsonSerializer.Serialize(context.CharacterTracker, options)}
+                {context.CharacterTracker.ToJsonString(options)}
                 </previous_tracker>
                 <previous_development>
-                {JsonSerializer.Serialize(context.DevelopmentTracker, options)}
+                {context.DevelopmentTracker.ToJsonString(options)}
                 </previous_development>
                 """;
     }
@@ -296,7 +263,7 @@ internal static class PromptSections
 
         return $"""
                 <created_characters>
-                {JsonSerializer.Serialize(characters, GetJsonOptions(ignoreNull))}
+                {characters.ToJsonString(GetJsonOptions(ignoreNull))}
                 </created_characters>
                 """;
     }
@@ -305,7 +272,7 @@ internal static class PromptSections
     {
         return $"""
                 <character_creation_context>
-                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
+                {context.ToJsonString(GetJsonOptions(ignoreNull))}
                 </character_creation_context>
                 """;
     }
@@ -315,18 +282,16 @@ internal static class PromptSections
         var list = requests?.ToArray() ?? [];
         return $"""
                 <new_characters_requests>
-                {JsonSerializer.Serialize(list, GetJsonOptions(ignoreNull))}
+                {list.ToJsonString(GetJsonOptions(ignoreNull))}
                 </new_characters_requests>
                 """;
     }
-
-    // ===== Narrative Direction Sections =====
 
     public static string SceneDirection<T>(T direction, bool ignoreNull = false)
     {
         return $"""
                 <scene_direction>
-                {JsonSerializer.Serialize(direction, GetJsonOptions(ignoreNull))}
+                {direction.ToJsonString(GetJsonOptions(ignoreNull))}
                 </scene_direction>
                 """;
     }
@@ -335,7 +300,7 @@ internal static class PromptSections
     {
         return $"""
                 <continuity_check>
-                {JsonSerializer.Serialize(check, GetJsonOptions(ignoreNull))}
+                {check.ToJsonString(GetJsonOptions(ignoreNull))}
                 </continuity_check>
                 """;
     }
@@ -344,7 +309,7 @@ internal static class PromptSections
     {
         return $"""
                 <scene_metadata>
-                {JsonSerializer.Serialize(metadata, GetJsonOptions(ignoreNull))}
+                {metadata.ToJsonString(GetJsonOptions(ignoreNull))}
                 </scene_metadata>
                 """;
     }
@@ -355,7 +320,7 @@ internal static class PromptSections
 
         return $"""
                 <last_scene_narrative_direction>
-                {JsonSerializer.Serialize(direction, GetJsonOptions(ignoreNull))}
+                {direction.ToJsonString(GetJsonOptions(ignoreNull))}
                 </last_scene_narrative_direction>
                 """;
     }
@@ -366,7 +331,7 @@ internal static class PromptSections
             sceneContext
                 .OrderByDescending(y => y.SequenceNumber)
                 .Take(count)
-                .Select(z => JsonSerializer.Serialize(z.Metadata.NarrativeMetadata, JsonOptions)));
+                .Select(z => z.Metadata.NarrativeMetadata.ToJsonString(JsonOptions)));
 
         return $"""
                 <last_narrative_directions>
@@ -385,13 +350,11 @@ internal static class PromptSections
                 """;
     }
 
-    // ===== Location & Lore Sections =====
-
     public static string NewLocations<T>(T[]? locations, bool ignoreNull = false)
     {
         return $"""
                 <new_locations>
-                {JsonSerializer.Serialize(locations ?? [], GetJsonOptions(ignoreNull))}
+                {(locations ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
                 </new_locations>
                 """;
     }
@@ -400,7 +363,7 @@ internal static class PromptSections
     {
         return $"""
                 <new_lore>
-                {JsonSerializer.Serialize(lore ?? [], GetJsonOptions(ignoreNull))}
+                {(lore ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
                 </new_lore>
                 """;
     }
@@ -409,7 +372,7 @@ internal static class PromptSections
     {
         return $"""
                 <location_request>
-                {JsonSerializer.Serialize(request, GetJsonOptions(ignoreNull))}
+                {request.ToJsonString(GetJsonOptions(ignoreNull))}
                 </location_request>
                 """;
     }
@@ -418,7 +381,7 @@ internal static class PromptSections
     {
         return $"""
                 <lore_creation_context>
-                {JsonSerializer.Serialize(context, GetJsonOptions(ignoreNull))}
+                {context.ToJsonString(GetJsonOptions(ignoreNull))}
                 </lore_creation_context>
                 """;
     }
@@ -427,7 +390,7 @@ internal static class PromptSections
     {
         return $"""
                 <item_request>
-                {JsonSerializer.Serialize(request, GetJsonOptions(ignoreNull))}
+                {request.ToJsonString(GetJsonOptions(ignoreNull))}
                 </item_request>
                 """;
     }
@@ -436,12 +399,10 @@ internal static class PromptSections
     {
         return $"""
                 <new_items>
-                {JsonSerializer.Serialize(items ?? [], GetJsonOptions(ignoreNull))}
+                {(items ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
                 </new_items>
                 """;
     }
-
-    // ===== Context Sections =====
 
     public static string Context(ContextBase? context, bool ignoreNull = false)
     {
@@ -450,27 +411,8 @@ internal static class PromptSections
         return $"""
                 Knowledge extracted from knowledge graph. Do not query the knowledge graph for these facts again.
                 <knowledge_graph_context>
-                {JsonSerializer.Serialize(context.ContextBases, GetJsonOptions(ignoreNull))}
+                {context.ContextBases.ToJsonString(GetJsonOptions(ignoreNull))}
                 </knowledge_graph_context>
-                """;
-    }
-
-    // ===== Tracker Sections =====
-
-    public static string PreviousTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = false)
-    {
-        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
-        var formatted = string.Join("\n\n",
-            sceneContext
-                .OrderByDescending(x => x.SequenceNumber)
-                .Where(x => x.Metadata.Tracker != null)
-                .Take(count)
-                .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker, options)));
-
-        return $"""
-                <previous_trackers>
-                {formatted}
-                </previous_trackers>
                 """;
     }
 
@@ -481,7 +423,7 @@ internal static class PromptSections
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
                 .Take(count)
-                .Select(s => JsonSerializer.Serialize(s.Metadata.Tracker?.Story, options)));
+                .Select(s => s.Metadata.Tracker?.Story.ToJsonString(options)));
 
         return $"""
                 Here are the story trackers from previous scene. Update their information based on the current scene:
@@ -498,26 +440,6 @@ internal static class PromptSections
                 <adventure_start_time>
                 {startTime}
                 </adventure_start_time>
-                """;
-    }
-
-    // ===== Generic Tagged Content =====
-
-    public static string Tagged(string tag, string content)
-    {
-        return $"""
-                <{tag}>
-                {content}
-                </{tag}>
-                """;
-    }
-
-    public static string TaggedJson<T>(string tag, T content, bool ignoreNull = false)
-    {
-        return $"""
-                <{tag}>
-                {JsonSerializer.Serialize(content, GetJsonOptions(ignoreNull))}
-                </{tag}>
                 """;
     }
 }

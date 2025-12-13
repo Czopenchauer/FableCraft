@@ -8,18 +8,28 @@ namespace FableCraft.Application.NarrativeEngine.Models;
 internal enum GenerationProcessStep
 {
     NotStarted,
-    ContextGatheringFinished,
-    NarrativeDirectionFinished,
-    ContentCreationFinished,
-    SceneGenerationFinished,
-    TrackerFinished,
-    Completed,
-    SceneSavedAwaitingEnrichment,
-    EnrichmentStarted
+    SceneGenerated,
+    EnrichmentCompleted
 }
 
 internal sealed class GenerationContext
 {
+    public void SetupRequiredFields(
+        SceneContext[] sceneContext,
+        LlmPreset llmPreset,
+        LlmPreset complexPreset, 
+        TrackerStructure trackerStructure, 
+        MainCharacter mainCharacter,
+        List<CharacterContext> characters)
+    {
+        SceneContext = sceneContext;
+        LlmPreset = llmPreset;
+        ComplexPreset = complexPreset;
+        TrackerStructure = trackerStructure;
+        MainCharacter = mainCharacter;
+        Characters = characters;
+    }
+
     public required Guid AdventureId { get; set; }
 
     public required string PlayerAction { get; set; }
@@ -35,9 +45,6 @@ internal sealed class GenerationContext
     /// </summary>
     [JsonIgnore]
     public LlmPreset ComplexPreset { get; set; } = null!;
-
-    [JsonIgnore]
-    public string? Summary { get; set; }
 
     /// <summary>
     ///     Has to be refetched from DB as there's no point to store it
@@ -57,8 +64,6 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public MainCharacter MainCharacter { get; set; } = null!;
 
-    public string? NewMainCharacterDescription { get; set; }
-
     public CharacterContext[]? NewCharacters { get; set; }
 
     public LocationGenerationResult[]? NewLocations { get; set; }
@@ -75,13 +80,15 @@ internal sealed class GenerationContext
 
     public Tracker? NewTracker { get; set; }
 
-    public CharacterContext[]? CharacterUpdates { get; set; }
+    public List<CharacterContext>? CharacterUpdates { get; set; }
 
     public Guid? NewSceneId { get; set; }
 
-    public required GenerationProcessStep GenerationProcessStep { get; set; }
+    public GenerationProcessStep GenerationProcessStep { get; set; }
 
-    public SceneContext? LatestSceneContext => SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
+    public SceneContext? LatestSceneContext() => SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
+
+    public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
 }
 
 internal sealed class CharacterContext
@@ -114,4 +121,27 @@ internal sealed class SceneContext
     public required IEnumerable<CharacterContext> Characters { get; set; } = [];
 
     public required Metadata Metadata { get; set; } = null!;
+
+    public static SceneContext CreateFromScene(Scene scene)
+    {
+        return new SceneContext
+        {
+            SceneContent = scene.NarrativeText,
+            PlayerChoice = scene.CharacterActions.FirstOrDefault(y => y.Selected)
+                               ?.ActionDescription
+                           ?? string.Empty,
+            Metadata = scene.Metadata,
+            Characters = scene.CharacterStates.Select(y => new CharacterContext
+            {
+                CharacterState = y.CharacterStats,
+                CharacterTracker = y.Tracker,
+                DevelopmentTracker = y.DevelopmentTracker,
+                Description = y.Description,
+                Name = y.CharacterStats.CharacterIdentity.FullName!,
+                CharacterId = y.CharacterId,
+                SequenceNumber = y.SequenceNumber
+            }),
+            SequenceNumber = scene.SequenceNumber
+        };
+    }
 }

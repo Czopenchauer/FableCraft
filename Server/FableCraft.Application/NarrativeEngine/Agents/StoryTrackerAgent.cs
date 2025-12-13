@@ -1,6 +1,8 @@
 using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -16,9 +18,10 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class StoryTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory,
+    IRagSearch ragSearch)
 {
-    public async Task<Tracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
+    public async Task<StoryTracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -35,7 +38,7 @@ internal sealed class StoryTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.MainCharacter(context.MainCharacter, context.LatestSceneContext?.Metadata.MainCharacterDescription)}
+                             {PromptSections.MainCharacter(context)}
 
                              {PromptSections.ExistingCharacters(context.Characters)}
 
@@ -70,17 +73,20 @@ internal sealed class StoryTrackerAgent(
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<Tracker>("tracker", true);
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
-        promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-        Kernel kernel = kernelBuilder.Create().Build();
+        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        Kernel kernelWithKg = kernel.Build();
+
+        var outputParser = ResponseParser.CreateJsonParser<StoryTracker>("tracker", true);
+        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             nameof(StoryTrackerAgent),
-            kernel,
+            kernelWithKg,
             cancellationToken);
     }
 
@@ -90,7 +96,7 @@ internal sealed class StoryTrackerAgent(
         var trackerPrompt = GetSystemPrompt(trackerStructure);
 
         return await PromptBuilder.BuildPromptAsync("StoryTrackerPrompt.md",
-            ("{{field_update_logic}}", JsonSerializer.Serialize(trackerPrompt[nameof(Tracker.Story)], options)),
+            ("{{field_update_logic}}", JsonSerializer.Serialize(trackerPrompt, options)),
             ("{{json_output_format}}", JsonSerializer.Serialize(GetOutputJson(trackerStructure), options)));
     }
 
@@ -99,7 +105,6 @@ internal sealed class StoryTrackerAgent(
         var dictionary = new Dictionary<string, object>();
         var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
-        dictionary.Add(nameof(Tracker.CharactersPresent), structure.CharactersPresent.DefaultValue ?? Array.Empty<string>());
         return dictionary;
     }
 
@@ -108,13 +113,6 @@ internal sealed class StoryTrackerAgent(
         var dictionary = new Dictionary<string, object>();
         var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
-        dictionary.Add(nameof(Tracker.CharactersPresent),
-            new
-            {
-                structure.CharactersPresent.Prompt,
-                structure.CharactersPresent.DefaultValue,
-                structure.CharactersPresent.ExampleValues
-            });
         return dictionary;
     }
 }

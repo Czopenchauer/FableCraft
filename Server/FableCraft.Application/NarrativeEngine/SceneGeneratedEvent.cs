@@ -126,11 +126,11 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 }
 
                 var sceneContent = $"""
-                                    Main character is: {scene.Metadata.Tracker!.MainCharacter?.Name}
+                                    Main character is: {scene.Metadata.Tracker!.MainCharacter!.MainCharacter!.Name}
                                     Time: {scene.Metadata.Tracker.Story.Time}
                                     Location: {scene.Metadata.Tracker.Story.Location}
                                     Weather: {scene.Metadata.Tracker.Story.Weather}
-                                    Characters on scene: {string.Join(", ", scene.Metadata.Tracker.CharactersPresent)}
+                                    Characters on scene: {string.Join(", ", scene.Metadata.Tracker.Story.CharactersPresent)}
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
@@ -186,7 +186,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             var characterContent = $"""
                                     Name: {mainCharacter.Name}
 
-                                    {lastScene.Metadata.MainCharacterDescription}
+                                    {lastScene.Metadata.Tracker!.MainCharacter!.MainCharacterDescription}
                                     """;
 
             var mainCharacterBytes = Encoding.UTF8.GetBytes(characterContent);

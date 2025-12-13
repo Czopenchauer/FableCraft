@@ -1,4 +1,6 @@
-﻿namespace FableCraft.Infrastructure.Persistence.Entities;
+﻿using System.Text.Json;
+
+namespace FableCraft.Infrastructure.Persistence.Entities;
 
 public class GenerationProcess : IEntity
 {
@@ -7,4 +9,9 @@ public class GenerationProcess : IEntity
     public required string Context { get; set; }
 
     public Guid Id { get; set; }
+
+    public T GetContextAs<T>()
+    {
+        return JsonSerializer.Deserialize<T>(Context, DefaultJsonOptions.JsonSerializerOptions)!;
+    }
 }

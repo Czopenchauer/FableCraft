@@ -13,6 +13,7 @@ using Polly;
 using Polly.Retry;
 
 using Serilog;
+using Serilog.Context;
 
 using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
@@ -94,29 +95,32 @@ internal sealed class AgentKernel : IAgentKernel
                              {
                                  try
                                  {
-                                     var stopwatch = Stopwatch.StartNew();
-                                     ChatMessageContent result =
-                                         await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                                     _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
-                                     var replyInnerContent = result.InnerContent as ChatCompletion;
-                                     _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                         replyInnerContent?.Usage.InputTokenCount,
-                                         replyInnerContent?.Usage.OutputTokenCount,
-                                         replyInnerContent?.Usage.TotalTokenCount);
-                                     await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
-                                         {
-                                             AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
-                                             CallerName = operationName,
-                                             RequestContent = JsonSerializer.Serialize(chatHistory),
-                                             ResponseContent = JsonSerializer.Serialize(result),
-                                             InputToken = replyInnerContent?.Usage.InputTokenCount,
-                                             OutputToken = replyInnerContent?.Usage.OutputTokenCount,
-                                             TotalToken = replyInnerContent?.Usage.TotalTokenCount,
-                                             Duration = stopwatch.ElapsedMilliseconds
-                                         },
-                                         token);
+                                     using (LogContext.PushProperty("OperationName", operationName))
+                                     {
+                                         var stopwatch = Stopwatch.StartNew();
+                                         ChatMessageContent result =
+                                             await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
+                                         _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                                         var replyInnerContent = result.InnerContent as ChatCompletion;
+                                         _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                                             replyInnerContent?.Usage.InputTokenCount,
+                                             replyInnerContent?.Usage.OutputTokenCount,
+                                             replyInnerContent?.Usage.TotalTokenCount);
+                                         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+                                             {
+                                                 AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
+                                                 CallerName = operationName,
+                                                 RequestContent = JsonSerializer.Serialize(chatHistory),
+                                                 ResponseContent = JsonSerializer.Serialize(result),
+                                                 InputToken = replyInnerContent?.Usage.InputTokenCount,
+                                                 OutputToken = replyInnerContent?.Usage.OutputTokenCount,
+                                                 TotalToken = replyInnerContent?.Usage.TotalTokenCount,
+                                                 Duration = stopwatch.ElapsedMilliseconds
+                                             },
+                                             token);
 
-                                     return result.Content;
+                                         return result.Content;
+                                     }
                                  }
                                  catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
                                  {

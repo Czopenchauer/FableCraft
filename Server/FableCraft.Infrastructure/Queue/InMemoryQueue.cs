@@ -6,19 +6,25 @@ using Microsoft.Extensions.Hosting;
 
 using Serilog;
 using Serilog.Context;
+using Serilog.Core;
 
 namespace FableCraft.Infrastructure.Queue;
 
-internal class InMemoryMessageDispatcher(Channel<IMessage> channel) : IMessageDispatcher
+internal record MessageWithContext(IMessage Message, ILogEventEnricher? LogContext);
+
+internal class InMemoryMessageDispatcher(Channel<MessageWithContext> channel) : IMessageDispatcher
 {
     public async Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
         where TMessage : IMessage
     {
-        await channel.Writer.WriteAsync(message, cancellationToken);
+        ILogEventEnricher context = LogContext.Clone();
+        IMessage actualMessage = (message as IMessageWithEnrichment) ?? (IMessage)message;
+        var messageWithContext = new MessageWithContext(actualMessage, context);
+        await channel.Writer.WriteAsync(messageWithContext, cancellationToken);
     }
 }
 
-internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<IMessage> channel, ILogger logger) : BackgroundService
+internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<MessageWithContext> channel, ILogger logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -29,15 +35,17 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<I
             {
                 while (await channel.Reader.WaitToReadAsync(stoppingToken))
                 {
-                    while (channel.Reader.TryRead(out IMessage? message))
+                    while (channel.Reader.TryRead(out MessageWithContext? messageWithContext))
                     {
-                        var context = LogContext.Clone();
-                        ArgumentNullException.ThrowIfNull(message);
+                        ArgumentNullException.ThrowIfNull(messageWithContext);
                         _ = Task.Run(async () =>
                             {
+                                IMessage message = messageWithContext.Message;
                                 try
                                 {
-                                    using (LogContext.Push(context))
+                                    using (messageWithContext.LogContext is not null 
+                                               ? LogContext.Push(messageWithContext.LogContext) 
+                                               : null)
                                     {
                                         ProcessExecutionContext.AdventureId.Value = message.AdventureId;
                                         Type messageType = message.GetType();

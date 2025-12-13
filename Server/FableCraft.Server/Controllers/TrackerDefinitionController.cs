@@ -54,14 +54,8 @@ public class TrackerDefinitionController : ControllerBase
         var story = ConvertFieldsToDict(structure.Story);
         dictionary.Add(nameof(Tracker.Story), story);
 
-        dictionary.Add(nameof(Tracker.CharactersPresent),
-            structure.CharactersPresent.ExampleValues?.FirstOrDefault() ?? structure.CharactersPresent.DefaultValue ?? new object[] { });
-
         var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);
-
-        var charDict = ConvertFieldsToDict(structure.Characters);
-        dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
 
         var options = new JsonSerializerOptions
         {

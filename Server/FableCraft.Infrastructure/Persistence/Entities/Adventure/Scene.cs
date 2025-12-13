@@ -60,26 +60,19 @@ public class Scene : IEntity
 
 public sealed class Metadata
 {
-    public string? MainCharacterDescription { get; set; }
-
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
     public Tracker? Tracker { get; set; }
 }
 
+/// <summary>
+/// Tracker for story and main character progress within the adventure. Characters other than the main character are tracked separately - <see cref="Character"/>
+/// </summary>
 public sealed class Tracker
 {
     public required StoryTracker Story { get; init; }
 
-    public string[] CharactersPresent { get; init; } = [];
-
-    public CharacterTracker? MainCharacter { get; set; }
-
-    public CharacterTracker[]? Characters { get; set; }
-
-    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; set; }
-
-    public CharacterDevelopmentTracker[]? CharacterDevelopment { get; set; }
+    public MainCharacterTracker? MainCharacter { get; set; }
 }
 
 public sealed class StoryTracker
@@ -90,8 +83,19 @@ public sealed class StoryTracker
 
     public required string Weather { get; init; }
 
+    public string[] CharactersPresent { get; init; } = [];
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+}
+
+public sealed class MainCharacterTracker
+{
+    public string? MainCharacterDescription { get; set; }
+
+    public CharacterTracker? MainCharacter { get; set; }
+
+    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; set; }
 }
 
 public sealed class CharacterTracker

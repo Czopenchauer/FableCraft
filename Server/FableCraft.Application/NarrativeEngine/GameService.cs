@@ -37,13 +37,13 @@ public interface IGameService
 
     Task<GameScene> GetSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
 
-    Task<GameScene> RegenerateAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
+    Task<GameScene> RegenerateAsync(Guid adventureId, CancellationToken cancellationToken);
 
-    Task DeleteSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
+    Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
 
-    Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken);
+    Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -78,9 +78,8 @@ internal class GameService : IGameService
             throw new AdventureNotFoundException(adventureId);
         }
 
-        MainCharacter mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
         Scene lastScene = scene.OrderByDescending(x => x.SequenceNumber).First();
-        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(lastScene, mainCharacter);
+        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(lastScene);
         return new GameScene
         {
             CanRegenerate = lastScene.CommitStatus == CommitStatus.Uncommited,
@@ -117,8 +116,7 @@ internal class GameService : IGameService
             .OrderByDescending(x => x.SequenceNumber)
             .Select(x => new { x.Id, x.SequenceNumber })
             .ToListAsync(cancellationToken);
-        MainCharacter mainCharacter = await _dbContext.MainCharacters.Where(x => x.AdventureId == adventureId).SingleAsync(cancellationToken);
-        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(scene, mainCharacter);
+        var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(scene);
         return new GameScene
         {
             CanRegenerate = scene.CommitStatus == CommitStatus.Uncommited,
@@ -132,7 +130,7 @@ internal class GameService : IGameService
         };
     }
 
-    public async Task<GameScene> RegenerateAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
+    public async Task<GameScene> RegenerateAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var scenes = await _dbContext.Scenes
             .Include(x => x.CharacterActions)
@@ -171,12 +169,12 @@ internal class GameService : IGameService
                 }
             });
 
-            SceneGenerationOutput scene = await _sceneGenerationOrchestrator.GenerateFullSceneAsync(adventureId, string.Empty, cancellationToken);
+            var scene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, string.Empty, cancellationToken);
             return new GameScene
             {
-                GenerationOutput = scene,
+                GenerationOutput = SceneGenerationOutput.CreateFromScene(scene),
                 CanRegenerate = true,
-                SceneId = scene.SceneId,
+                SceneId = scene.Id,
                 EnrichmentStatus = EnrichmentStatus.Enriched,
                 PreviousScene = null,
                 NextScene = null
@@ -192,9 +190,6 @@ internal class GameService : IGameService
         IExecutionStrategy executionStrategy = _dbContext.Database.CreateExecutionStrategy();
         return await executionStrategy.ExecuteAsync(async () =>
         {
-            MainCharacter mainCharacter = await _dbContext.MainCharacters
-                .Where(x => x.AdventureId == adventureId)
-                .SingleAsync(cancellationToken);
             await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             Scene nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
                 lastScene.CharacterActions.First(x => x.Selected).ActionDescription,
@@ -207,7 +202,7 @@ internal class GameService : IGameService
             {
                 CanRegenerate = true,
                 SceneId = nextScene.Id,
-                GenerationOutput = SceneGenerationOutput.CreateFromScene(nextScene, mainCharacter),
+                GenerationOutput = SceneGenerationOutput.CreateFromScene(nextScene),
                 EnrichmentStatus = EnrichmentStatus.Enriched,
                 PreviousScene = null,
                 NextScene = null
@@ -216,25 +211,22 @@ internal class GameService : IGameService
     }
 
     // TODO: clear knowledge graph entries related to the deleted scene
-    public async Task DeleteSceneAsync(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
+    public async Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        Adventure? adventure = await _dbContext.Adventures
-            .Include(a => a.Scenes)
-            .ThenInclude(s => s.CharacterActions)
-            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+        var scenes = await _dbContext.Scenes
+            .Include(s => s.CharacterActions)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Where(s => s.AdventureId == adventureId)
+            .Take(2)
+            .ToArrayAsync(cancellationToken: cancellationToken);
 
-        if (adventure == null)
-        {
-            throw new AdventureNotFoundException(adventureId);
-        }
-
-        if (adventure.Scenes.Count == 0)
+        if (scenes.Length == 0)
         {
             _logger.Warning("Adventure {AdventureId} has no scenes to delete", adventureId);
             throw new InvalidOperationException("No scenes to delete");
         }
 
-        Scene lastScene = adventure.Scenes.MaxBy(s => s.SequenceNumber)!;
+        Scene lastScene = scenes.MaxBy(s => s.SequenceNumber)!;
         if (lastScene.CommitStatus != CommitStatus.Uncommited)
         {
             throw new InvalidOperationException("Can only delete the last uncommitted scene");
@@ -245,21 +237,25 @@ internal class GameService : IGameService
             lastScene.SequenceNumber,
             adventureId);
 
-        _dbContext.Scenes.Remove(lastScene);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        IExecutionStrategy executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            Scene previousScene = scenes.MinBy(s => s.SequenceNumber)!;
+            var lastSelectedAction = previousScene.CharacterActions.Single(x => x.Selected);
+
+            _dbContext.CharacterActions.Remove(lastSelectedAction);
+            _dbContext.Scenes.Remove(lastScene);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        });
     }
 
     public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures
-            .Include(x => x.MainCharacter)
-            .Select(x =>
-                new
-                {
-                    AdventureId = x.Id,
-                    x.MainCharacter
-                })
-            .FirstOrDefaultAsync(a => a.AdventureId == adventureId, cancellationToken);
+            .Select(ad => new { ad.Id })
+            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
 
         if (adventure is null)
         {
@@ -280,11 +276,16 @@ internal class GameService : IGameService
             throw new InvalidOperationException("Cannot submit action: adventure has no scenes");
         }
 
+        if (currentScene.EnrichmentStatus != EnrichmentStatus.Enriched)
+        {
+            throw new InvalidOperationException("Cannot submit action: adventure has no enrichment status");
+        }
+
         try
         {
             Scene nextScene =
                 await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
-            var generationOutput = SceneGenerationOutput.CreateFromScene(nextScene, adventure.MainCharacter);
+            var generationOutput = SceneGenerationOutput.CreateFromScene(nextScene);
             return new GameScene
             {
                 GenerationOutput = generationOutput,
@@ -303,11 +304,11 @@ internal class GameService : IGameService
     }
 
     public async Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId,
-        Guid sceneId,
         CancellationToken cancellationToken)
     {
         Scene? scene = await _dbContext.Scenes
-            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .Where(s => s.AdventureId == adventureId)
+            .OrderByDescending(s => s.SequenceNumber)
             .Include(x => x.CharacterStates)
             .Include(x => x.CharacterActions)
             .Include(x => x.Lorebooks)
@@ -315,26 +316,24 @@ internal class GameService : IGameService
 
         if (scene == null)
         {
-            throw new InvalidOperationException($"Scene {sceneId} not found for adventure {adventureId}");
+            throw new InvalidOperationException($"Scene not found for adventure {adventureId}");
         }
 
         if (scene.EnrichmentStatus == EnrichmentStatus.Enriched)
         {
-            _logger.Warning("Scene {SceneId} is already enriched", sceneId);
-            scene.Metadata.Tracker!.Characters = scene.CharacterStates.Select(x => x.Tracker).ToArray();
+            _logger.Warning("Scene {SceneId} is already enriched", scene.Id);
             return new SceneEnrichmentOutput
             {
-                SceneId = sceneId,
+                SceneId = scene.Id,
                 Tracker = new TrackerDto
                 {
                     Story = scene.Metadata.Tracker!.Story,
                     MainCharacter = new MainCharacterTrackerDto
                     {
-                        Tracker = scene.Metadata.Tracker!.MainCharacter!,
-                        Development = scene.Metadata.Tracker!.MainCharacterDevelopment!,
-                        Description = scene.Metadata.MainCharacterDescription!
+                        Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
+                        Development = scene.Metadata.Tracker!.MainCharacter!.MainCharacterDevelopment!,
+                        Description = scene.Metadata.Tracker!.MainCharacter.MainCharacterDescription!
                     },
-                    CharactersOnScene = scene.Metadata.Tracker!.CharactersPresent,
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                         {
                             CharacterId = x.CharacterId,
@@ -357,11 +356,11 @@ internal class GameService : IGameService
         try
         {
             return await _sceneGenerationOrchestrator
-                .EnrichSceneAsync(adventureId, sceneId, cancellationToken);
+                .EnrichSceneAsync(adventureId, scene.Id, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to enrich scene {SceneId} for adventure {AdventureId}", sceneId, adventureId);
+            _logger.Error(ex, "Failed to enrich scene {SceneId} for adventure {AdventureId}", scene.Id, adventureId);
             throw;
         }
     }

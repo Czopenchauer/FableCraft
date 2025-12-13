@@ -114,6 +114,6 @@ internal sealed class SaveGeneration(IDbContextFactory<ApplicationDbContext> dbC
                 SceneId = newScene.Id
             },
             cancellationToken);
-        context.GenerationProcessStep = GenerationProcessStep.Completed;
+        context.GenerationProcessStep = GenerationProcessStep.SceneGenerated;
     }
 }

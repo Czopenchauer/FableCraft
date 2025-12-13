@@ -61,6 +61,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseMiddleware<AdventureContextMiddleware>();
+
 app.MapControllers();
 
 app.MapFallbackToFile("/index.html");

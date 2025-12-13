@@ -22,7 +22,7 @@ internal sealed class CharacterStateAgent(
     public async Task<CharacterStats> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
-        Tracker storyTrackerResult,
+        StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
@@ -34,9 +34,8 @@ internal sealed class CharacterStateAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.StoryTracker(storyTrackerResult.Story, true)}
-                             
-                             
+                             {PromptSections.StoryTracker(storyTrackerResult, true)}
+
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(

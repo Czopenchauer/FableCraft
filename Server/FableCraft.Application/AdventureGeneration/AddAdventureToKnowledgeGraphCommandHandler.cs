@@ -209,7 +209,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await sceneGenerationOrchestrator.GenerateFullSceneAsync(message.AdventureId, string.Empty, cancellationToken);
+                await sceneGenerationOrchestrator.GenerateSceneAsync(message.AdventureId, string.Empty, cancellationToken);
                 adventure.SceneGenerationStatus = ProcessingStatus.Completed;
                 dbContext.Adventures.Update(adventure);
                 await dbContext.SaveChangesAsync(cancellationToken);

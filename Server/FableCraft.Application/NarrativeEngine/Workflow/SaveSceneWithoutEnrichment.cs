@@ -79,6 +79,5 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
         });
 
         context.NewSceneId = newScene.Id;
-        context.GenerationProcessStep = GenerationProcessStep.SceneSavedAwaitingEnrichment;
     }
 }
