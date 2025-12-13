@@ -16,15 +16,11 @@ internal sealed class GenerationContext
 {
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
-        LlmPreset llmPreset,
-        LlmPreset complexPreset, 
         TrackerStructure trackerStructure, 
         MainCharacter mainCharacter,
         List<CharacterContext> characters)
     {
         SceneContext = sceneContext;
-        LlmPreset = llmPreset;
-        ComplexPreset = complexPreset;
         TrackerStructure = trackerStructure;
         MainCharacter = mainCharacter;
         Characters = characters;
@@ -33,18 +29,6 @@ internal sealed class GenerationContext
     public required Guid AdventureId { get; set; }
 
     public required string PlayerAction { get; set; }
-
-    /// <summary>
-    ///     The LLM preset to use for generation
-    /// </summary>
-    [JsonIgnore]
-    public LlmPreset LlmPreset { get; set; } = null!;
-
-    /// <summary>
-    ///     The LLM preset to use for generation
-    /// </summary>
-    [JsonIgnore]
-    public LlmPreset ComplexPreset { get; set; } = null!;
 
     /// <summary>
     ///     Has to be refetched from DB as there's no point to store it

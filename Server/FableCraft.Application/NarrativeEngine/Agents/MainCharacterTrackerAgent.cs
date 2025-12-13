@@ -16,15 +16,17 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class MainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
+    protected override string GetName() => nameof(MainCharacterTrackerAgent);
+
     public async Task<(CharacterTracker, string)> Invoke(
         GenerationContext context,
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
             .Adventures

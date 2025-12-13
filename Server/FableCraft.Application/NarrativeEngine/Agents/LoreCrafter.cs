@@ -2,8 +2,10 @@ using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -13,15 +15,18 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class LoreCrafter(
     IAgentKernel agentKernel,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch)
+    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
+    protected override string GetName() => nameof(LoreCrafter);
+
     public async Task<GeneratedLore> Invoke(
         GenerationContext context,
         LoreRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("LoreCrafterPrompt.md");
 
         var chatHistory = new ChatHistory();

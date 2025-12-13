@@ -40,6 +40,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Lorebook> Lorebooks { get; set; }
 
+    public DbSet<AdventureAgentLlmPreset> AdventureAgentLlmPresets { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -89,21 +91,26 @@ public class ApplicationDbContext : DbContext
             p.Property(c => c.SceneGenerationStatus).HasConversion<string>();
             p.Property(x => x.TrackerStructure).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
             p.HasIndex(x => x.Name).IsUnique();
-
-            p.HasOne(x => x.FastPreset)
-                .WithMany()
-                .HasForeignKey(x => x.FastPresetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            p.HasOne(x => x.ComplexPreset)
-                .WithMany()
-                .HasForeignKey(x => x.ComplexPresetId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<LlmPreset>(p =>
         {
             p.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<AdventureAgentLlmPreset>(p =>
+        {
+            p.HasOne(x => x.Adventure)
+                .WithMany(x => x.AgentLlmPresets)
+                .HasForeignKey(x => x.AdventureId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            p.HasOne(x => x.LlmPreset)
+                .WithMany()
+                .HasForeignKey(x => x.LlmPresetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            p.HasIndex(x => new { x.AdventureId, x.AgentName }).IsUnique();
         });
 
         modelBuilder.Entity<TrackerDefinition>(p =>

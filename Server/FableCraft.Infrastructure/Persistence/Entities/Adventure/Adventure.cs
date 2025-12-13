@@ -33,13 +33,7 @@ public class Adventure : IEntity
 
     public List<Scene> Scenes { get; init; } = [];
 
-    public Guid? FastPresetId { get; set; }
-
-    public LlmPreset? FastPreset { get; set; }
-
-    public Guid? ComplexPresetId { get; set; }
-
-    public LlmPreset? ComplexPreset { get; set; }
+    public List<AdventureAgentLlmPreset> AgentLlmPresets { get; init; } = [];
 
     [Key]
     public Guid Id { get; set; }

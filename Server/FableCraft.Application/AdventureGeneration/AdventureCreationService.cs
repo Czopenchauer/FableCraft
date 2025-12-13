@@ -77,8 +77,6 @@ internal class AdventureCreationService : IAdventureCreationService
                 }).ToListAsync(cancellationToken);
         }
 
-        LlmPreset fastLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.FastLlmConfig, cancellationToken);
-        LlmPreset complexLlm = await _dbContext.LlmPresets.SingleAsync(x => x.Id == adventureDto.ComplexLlmConfig, cancellationToken);
         var adventure = new Adventure
         {
             Name = adventureDto.Name,
@@ -94,8 +92,6 @@ internal class AdventureCreationService : IAdventureCreationService
             },
             Lorebook = lorebookEntries,
             TrackerStructure = tracker.Structure,
-            FastPreset = fastLlm,
-            ComplexPreset = complexLlm
         };
 
         try

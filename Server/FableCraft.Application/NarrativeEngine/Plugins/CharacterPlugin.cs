@@ -6,6 +6,7 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -15,20 +16,30 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
-internal sealed class CharacterPlugin(
-    IAgentKernel agentKernel,
-    ILogger logger,
-    KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch)
+internal sealed class CharacterPlugin : BaseAgent
 {
     private Dictionary<string, ChatHistory> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
+    private readonly IAgentKernel _agentKernel;
+    private readonly ILogger _logger;
+    private readonly IRagSearch _ragSearch;
+
+    public CharacterPlugin(IAgentKernel agentKernel,
+        ILogger logger,
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        KernelBuilderFactory kernelBuilderFactory,
+        IRagSearch ragSearch) : base(dbContextFactory, kernelBuilderFactory)
+    {
+        _agentKernel = agentKernel;
+        _logger = logger;
+        _ragSearch = ragSearch;
+    }
 
     public async Task Setup(GenerationContext generationContext)
     {
         _generationContext = generationContext;
-        _kernelBuilder = kernelBuilderFactory.Create(generationContext.LlmPreset);
+        _kernelBuilder = await GetKernelBuilder(generationContext.AdventureId);
         var promptTemplate = await BuildInstruction();
         var characters = new List<CharacterContext>(generationContext.Characters);
         characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
@@ -106,15 +117,15 @@ internal sealed class CharacterPlugin(
         [Description("The name of the character whose action is to be emulated. Use exactly the same name as defined in the character context.")]
         string characterName)
     {
-        logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
+        _logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
         if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
         {
-            logger.Information("Character {CharacterName} not found in chat history. Current chatHistory: {history}", characterName, _chatHistory.Keys);
+            _logger.Information("Character {CharacterName} not found in chat history. Current chatHistory: {history}", characterName, _chatHistory.Keys);
             return "Character not found.";
         }
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
         var chat = new ChatHistory();
@@ -125,13 +136,13 @@ internal sealed class CharacterPlugin(
 
         chat.AddUserMessage(situation);
         var outputFunc = new Func<string, string>(response => response);
-        var response = await agentKernel.SendRequestAsync(chat,
+        var response = await _agentKernel.SendRequestAsync(chat,
             outputFunc,
             _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             $"{nameof(CharacterPlugin)}:{characterName}",
             kernelWithKg,
             CancellationToken.None);
-        logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
+        _logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
         return response;
     }
 
@@ -139,4 +150,6 @@ internal sealed class CharacterPlugin(
     {
         return await PromptBuilder.BuildPromptAsync("CharacterPrompt.md");
     }
+
+    protected override string GetName() => nameof(CharacterPlugin);
 }

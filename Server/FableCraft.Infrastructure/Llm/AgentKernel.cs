@@ -6,6 +6,7 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Services;
 
 using OpenAI.Chat;
 
@@ -14,6 +15,7 @@ using Polly.Retry;
 
 using Serilog;
 using Serilog.Context;
+using Serilog.Core.Enrichers;
 
 using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
@@ -95,7 +97,10 @@ internal sealed class AgentKernel : IAgentKernel
                              {
                                  try
                                  {
-                                     using (LogContext.PushProperty("OperationName", operationName))
+                                     using (LogContext.Push(
+                                                new PropertyEnricher("OperationName", operationName),
+                                                new PropertyEnricher("Model", chatCompletionService.GetModelId())
+                                            ))
                                      {
                                          var stopwatch = Stopwatch.StartNew();
                                          ChatMessageContent result =

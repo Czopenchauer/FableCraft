@@ -304,7 +304,7 @@ internal sealed class SceneGenerationOrchestrator(
     {
         var adventure = await dbContext.Adventures
             .Where(x => x.Id == adventureId)
-            .Select(x => new { x.TrackerStructure, x.MainCharacter, x.FastPreset, x.ComplexPreset })
+            .Select(x => new { x.TrackerStructure, x.MainCharacter })
             .SingleAsync(cancellationToken);
 
         // Skip the most recent scene as that's the one being enriched, and it has separate field
@@ -321,8 +321,6 @@ internal sealed class SceneGenerationOrchestrator(
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
         generationContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
-            adventure.FastPreset!,
-            adventure.ComplexPreset!,
             adventure.TrackerStructure,
             adventure.MainCharacter,
             adventureCharacters);
@@ -336,8 +334,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Where(x => x.Id == adventureId)
             .Select(x => new
             {
-                x.TrackerStructure, x.MainCharacter, x.FastPreset,
-                Complex = x.ComplexPreset
+                x.TrackerStructure, x.MainCharacter,
             })
             .SingleAsync(cancellationToken);
 
@@ -350,10 +347,6 @@ internal sealed class SceneGenerationOrchestrator(
             .ToListAsync(cancellationToken);
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
         GenerationProcess? generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken);
-        LlmPreset llmPreset = adventure.FastPreset
-                              ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
-        LlmPreset complexPreset = adventure.Complex
-                                  ?? throw new InvalidOperationException("No LLM preset configured for this adventure.");
         GenerationContext context;
         if (generationProcess != null)
         {
@@ -377,9 +370,8 @@ internal sealed class SceneGenerationOrchestrator(
             throw new InvalidOperationException("Failed to deserialize generation context from the database.");
         }
 
-        context.SetupRequiredFields(scenes.Select(SceneContext.CreateFromScene).ToArray(),
-            llmPreset,
-            complexPreset,
+        context.SetupRequiredFields(
+            scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
             adventure.MainCharacter,
             adventureCharacters);
@@ -391,14 +383,8 @@ internal sealed class SceneGenerationOrchestrator(
             var newContext = new GenerationContext
             {
                 AdventureId = adventureId,
-                SceneContext = scenes.Select(SceneContext.CreateFromScene).ToArray(),
                 PlayerAction = playerAction,
-                GenerationProcessStep = GenerationProcessStep.NotStarted,
-                TrackerStructure = adventure.TrackerStructure,
-                MainCharacter = adventure.MainCharacter,
-                Characters = adventureCharacters,
-                LlmPreset = llmPreset,
-                ComplexPreset = complexPreset
+                GenerationProcessStep = GenerationProcessStep.NotStarted
             };
             var process = new GenerationProcess
             {

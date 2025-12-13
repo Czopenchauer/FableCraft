@@ -336,7 +336,6 @@ internal static class AgentTestData
             NewLocations = Array.Empty<LocationGenerationResult>(),
             NewLore = Array.Empty<GeneratedLore>(),
             GenerationProcessStep = GenerationProcessStep.NotStarted,
-            LlmPreset = llmPreset
         };
     }
 

@@ -19,12 +19,14 @@ internal sealed class StoryTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch)
+    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
+    protected override string GetName() => nameof(StoryTrackerAgent);
+
     public async Task<StoryTracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
             .Adventures

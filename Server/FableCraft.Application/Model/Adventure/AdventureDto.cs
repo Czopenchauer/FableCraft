@@ -2,6 +2,8 @@
 
 namespace FableCraft.Application.Model.Adventure;
 
+public record AdventureAgentLlmPresetDto(Guid LlmPresetId, string AgentName);
+
 public class AdventureDto
 {
     public required string Name { get; init; } = string.Empty;
@@ -18,9 +20,7 @@ public class AdventureDto
 
     public required Guid TrackerDefinitionId { get; init; }
 
-    public required Guid FastLlmConfig { get; init; }
-
-    public required Guid ComplexLlmConfig { get; init; }
+    public required AdventureAgentLlmPresetDto[] AdventureAgentLlmPresetDtos { get; set; }
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>

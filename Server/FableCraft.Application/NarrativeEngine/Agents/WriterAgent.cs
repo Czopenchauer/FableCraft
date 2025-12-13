@@ -3,7 +3,9 @@ using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -13,19 +15,32 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class WriterAgent(
-    IAgentKernel agentKernel,
-    ILogger logger,
-    KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : IProcessor
+internal sealed class WriterAgent : BaseAgent, IProcessor
 {
+    private readonly IAgentKernel _agentKernel;
+    private readonly ILogger _logger;
+    private readonly IRagSearch _ragSearch;
+
+    public WriterAgent(IAgentKernel agentKernel,
+        ILogger logger,
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        KernelBuilderFactory kernelBuilderFactory,
+        IRagSearch ragSearch) : base(dbContextFactory, kernelBuilderFactory)
+    {
+        _agentKernel = agentKernel;
+        _logger = logger;
+        _ragSearch = ragSearch;
+    }
+
     private const int SceneContextCount = 15;
+
+    protected override string GetName() => nameof(WriterAgent);
 
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("WriterPrompt.md");
         var hasSceneContext = context.SceneContext.Length > 0;
 
@@ -70,16 +85,16 @@ internal sealed class WriterAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var characterPlugin = new CharacterPlugin(agentKernel, logger, kernelBuilderFactory, ragSearch);
+        var characterPlugin = new CharacterPlugin(_agentKernel, _logger, DbContextFactory, KernelBuilderFactory, _ragSearch);
         await characterPlugin.Setup(context);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("new_scene");
 
-        GeneratedScene newScene = await agentKernel.SendRequestAsync(
+        GeneratedScene newScene = await _agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),

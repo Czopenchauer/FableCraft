@@ -15,19 +15,28 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterCrafter(
-    IAgentKernel agentKernel,
-    IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch)
+internal sealed class CharacterCrafter : BaseAgent
 {
+    private readonly IAgentKernel _agentKernel;
+    private readonly IRagSearch _ragSearch;
+
+    public CharacterCrafter(
+        IAgentKernel agentKernel,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        KernelBuilderFactory kernelBuilderFactory,
+        IRagSearch ragSearch) : base(contextFactory, kernelBuilderFactory)
+    {
+        _agentKernel = agentKernel;
+        _ragSearch = ragSearch;
+    }
+
     public async Task<CharacterContext> Invoke(
         GenerationContext context,
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.ComplexPreset);
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var trackerStructure = await dbContext
             .Adventures
@@ -52,14 +61,14 @@ internal sealed class CharacterCrafter(
                                      """;
         chatHistory.AddUserMessage(creationRequestPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId));
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();
 
         (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker) result =
-            await agentKernel.SendRequestAsync(
+            await _agentKernel.SendRequestAsync(
                 chatHistory,
                 outputParser,
                 kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
@@ -119,4 +128,6 @@ internal sealed class CharacterCrafter(
     {
         return TrackerExtensions.ConvertToSystemJson(structure.Characters);
     }
+
+    protected override string GetName() => nameof(CharacterCrafter);
 }

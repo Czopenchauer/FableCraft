@@ -22,15 +22,18 @@ internal sealed class ContextGatherer(
     IRagSearch ragSearch,
     ILogger logger,
     KernelBuilderFactory kernelBuilderFactory,
-    ApplicationDbContext dbContext) : IProcessor
+    IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory), IProcessor
 {
     private const int SceneContextCount = 10;
+
+    protected override string GetName() => nameof(ContextGatherer);
 
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = kernelBuilderFactory.Create(context.LlmPreset);
+        IKernelBuilder kernelBuilder = await GetKernelBuilder(context.AdventureId);
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var systemPrompt = await PromptBuilder.BuildPromptAsync("ContextBuilderAgent.md");
         var hasSceneContext = context.SceneContext.Length > 0;
 
