@@ -4,15 +4,12 @@ namespace FableCraft.Application.NarrativeEngine.Models;
 
 public sealed class GeneratedLore
 {
-    [JsonPropertyName("title")]
+    [JsonPropertyName("name")]
     public string Title { get; init; } = null!;
 
-    [JsonPropertyName("formatType")]
-    public string FormatType { get; init; } = null!;
+    [JsonPropertyName("description")]
+    public string Description { get; init; } = null!;
 
-    [JsonPropertyName("text")]
-    public string Text { get; init; } = null!;
-
-    [JsonPropertyName("summary")]
-    public string Summary { get; init; } = null!;
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

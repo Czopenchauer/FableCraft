@@ -1,3 +1,4 @@
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -9,8 +10,6 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal abstract class BaseAgent
 {
-    private const string JailbreakPlaceholder = "{{jailbreak}}";
-
     protected readonly IDbContextFactory<ApplicationDbContext> DbContextFactory;
     protected readonly KernelBuilderFactory KernelBuilderFactory;
 
@@ -40,7 +39,7 @@ internal abstract class BaseAgent
 
     private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
     {
-        if (!promptTemplate.Contains(JailbreakPlaceholder))
+        if (!promptTemplate.Contains(PlaceholderNames.Jailbreak))
         {
             return promptTemplate;
         }
@@ -53,7 +52,7 @@ internal abstract class BaseAgent
         if (File.Exists(filePath))
         {
             var fileContent = await File.ReadAllTextAsync(filePath);
-            return promptTemplate.Replace(JailbreakPlaceholder, fileContent);
+            return promptTemplate.Replace(PlaceholderNames.Jailbreak, fileContent);
         }
 
         return promptTemplate;

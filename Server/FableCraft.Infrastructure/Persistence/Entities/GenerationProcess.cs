@@ -12,6 +12,6 @@ public class GenerationProcess : IEntity
 
     public T GetContextAs<T>()
     {
-        return JsonSerializer.Deserialize<T>(Context, DefaultJsonOptions.JsonSerializerOptions)!;
+        return JsonSerializer.Deserialize<T>(Context, JsonExtensions.JsonSerializerOptions)!;
     }
 }

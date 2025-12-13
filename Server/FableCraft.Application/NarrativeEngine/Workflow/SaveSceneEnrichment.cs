@@ -56,7 +56,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         var loreEntities = context.NewLore?.Select(x => new LorebookEntry
                            {
                                AdventureId = context.AdventureId,
-                               Description = x.Summary,
+                               Description = x.Description,
                                Category = x.Title,
                                Content = x.ToJsonString(),
                                ContentType = ContentType.json
@@ -66,9 +66,9 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         var locationEntities = context.NewLocations?.Select(x => new LorebookEntry
                                {
                                    AdventureId = context.AdventureId,
-                                   Description = x.NarrativeData.ShortDescription,
+                                   Description = x.Description,
                                    Content = x.ToJsonString(),
-                                   Category = x.EntityData.Name,
+                                   Category = x.Title,
                                    ContentType = ContentType.json
                                }).ToList()
                                ?? new List<LorebookEntry>();
@@ -76,9 +76,9 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         var itemsEntities = context.NewItems?.Select(x => new LorebookEntry
                             {
                                 AdventureId = context.AdventureId,
-                                Description = x.NarrativeData.ShortDescription,
+                                Description = x.Description,
                                 Content = x.ToJsonString(),
-                                Category = x.EntityData.Name,
+                                Category = x.Name,
                                 ContentType = ContentType.json
                             }).ToList()
                             ?? new List<LorebookEntry>();

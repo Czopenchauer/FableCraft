@@ -66,7 +66,7 @@ internal sealed class MainCharacterDevelopmentAgent(
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("tracker", true);
+        var outputParser = ResponseParser.CreateJsonParser<CharacterDevelopmentTracker>("character_development", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
         Kernel kernel = kernelBuilder.Create().Build();

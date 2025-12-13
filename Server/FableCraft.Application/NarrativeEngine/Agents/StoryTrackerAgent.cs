@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -75,7 +73,7 @@ internal sealed class StoryTrackerAgent(
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<StoryTracker>("tracker", true);
+        var outputParser = ResponseParser.CreateJsonParser<StoryTracker>("story_tracker", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
@@ -89,23 +87,10 @@ internal sealed class StoryTrackerAgent(
 
     private async Task<string> BuildInstruction(GenerationContext context)
     {
-        JsonSerializerOptions options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
-        var trackerPrompt = GetSystemPrompt(structure);
-
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
-            (PlaceholderNames.StoryTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
-            (PlaceholderNames.StoryTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
-    }
-
-    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToOutputJson(structure.Story);
-    }
-
-    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToSystemJson(structure.Story);
+            (PlaceholderNames.StoryTrackerStructure, TrackerExtensions.ConvertToSystemJson(structure.Story).ToJsonString()),
+            (PlaceholderNames.StoryTrackerOutput, TrackerExtensions.ConvertToOutputJson(structure.Story).ToJsonString()));
     }
 }

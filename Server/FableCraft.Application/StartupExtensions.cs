@@ -28,7 +28,6 @@ public static class StartupExtensions
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
             .AddScoped<IProcessor, TrackerProcessor>()
-            .AddScoped<IProcessor, SaveGeneration>()
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
             .AddScoped<IProcessor, NarrativeDirectorAgent>()

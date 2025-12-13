@@ -55,7 +55,7 @@ internal sealed class LoreCrafter(
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateRawJsonParser<GeneratedLore>();
+        var outputParser = ResponseParser.CreateJsonParser<GeneratedLore>("lore");
 
         return await agentKernel.SendRequestAsync(
             chatHistory,

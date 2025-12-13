@@ -197,7 +197,8 @@ internal sealed class SceneGenerationOrchestrator(
         {
             processors.First(p => p is ContextGatherer),
             processors.First(p => p is NarrativeDirectorAgent),
-            processors.First(p => p is WriterAgent)
+            processors.First(p => p is WriterAgent),
+            processors.First(p => p is SaveSceneWithoutEnrichment)
         };
 
         var stopwatch = Stopwatch.StartNew();

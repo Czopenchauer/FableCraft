@@ -2,7 +2,7 @@
 
 namespace FableCraft.Infrastructure.Persistence;
 
-public static class DefaultJsonOptions
+public static class JsonExtensions
 {
     public readonly static JsonSerializerOptions JsonSerializerOptions = new()
     {
