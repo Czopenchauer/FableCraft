@@ -58,7 +58,7 @@ internal sealed class NarrativeDirectorAgent(
         if (hasSceneContext)
         {
             requestPrompt = $"""
-                             {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata)}
+                             {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata.NarrativeTracking)}
 
                              The {context.MainCharacter.Name} action in the last scene was:
                              {PromptSections.PlayerAction(context.PlayerAction)}

@@ -65,11 +65,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
-                             {PromptSections.SceneDirection(context.NewNarrativeDirection!.SceneDirection)}
-
-                             {PromptSections.ContinuityCheck(context.NewNarrativeDirection!.ContinuityCheck)}
-
-                             {PromptSections.SceneMetadata(context.NewNarrativeDirection!.SceneMetadata)}
+                             Your new instructions:
+                             {PromptSections.SceneDirection(context.NewNarrativeDirection!.WriterInstructions)}
 
                              {PromptSections.NewLore(context.NewLore)}
 
@@ -82,7 +79,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
 
-                             Generate a detailed scene based on the above direction and context. Make sure to follow the scene metadata instructions closely.
+                             Generate a detailed scene based on the above direction and context. Make sure to follow the scene direction instructions closely.
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 

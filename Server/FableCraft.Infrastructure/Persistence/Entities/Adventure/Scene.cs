@@ -105,3 +105,9 @@ public sealed class CharacterTracker
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
+
+public sealed class CharacterDevelopmentTracker
+{
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+}
