@@ -270,57 +270,49 @@ internal sealed class SceneGenerationOrchestrator(
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.Enriching),
                 cancellationToken);
 
-        try
+        GenerationContext context = await BuildEnrichmentContext(adventureId, cancellationToken);
+
+        var workflow = new[]
         {
-            GenerationContext context = await BuildEnrichmentContext(adventureId, cancellationToken);
+            processors.First(p => p is ContentGenerator),
+            processors.First(p => p is TrackerProcessor),
+            processors.First(p => p is SaveSceneEnrichment)
+        };
 
-            var workflow = new[]
+        var stopwatch = Stopwatch.StartNew();
+        foreach (IProcessor processor in workflow)
+        {
+            try
             {
-                processors.First(p => p is ContentGenerator),
-                processors.First(p => p is TrackerProcessor),
-                processors.First(p => p is SaveSceneEnrichment)
-            };
-
-            var stopwatch = Stopwatch.StartNew();
-            foreach (IProcessor processor in workflow)
-            {
-                try
-                {
-                    stopwatch.Restart();
-                    await processor.Invoke(context, cancellationToken);
-                    await dbContext.GenerationProcesses
-                        .Where(x => x.AdventureId == adventureId)
-                        .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
-                            cancellationToken);
-                    logger.Information("[Enrichment] Step {GenerationProcessStep} took {ElapsedMilliseconds} ms",
-                        context.GenerationProcessStep,
-                        stopwatch.ElapsedMilliseconds);
-                }
-                catch (Exception ex)
-                {
-                    await dbContext.GenerationProcesses
-                        .Where(x => x.AdventureId == adventureId)
-                        .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
-                            cancellationToken);
-                    logger.Error(ex,
-                        "Error during scene Enrichment for adventure {AdventureId} at step {GenerationProcessStep}",
-                        adventureId,
-                        context.GenerationProcessStep);
-                    throw;
-                }
+                stopwatch.Restart();
+                await processor.Invoke(context, cancellationToken);
+                await dbContext.GenerationProcesses
+                    .Where(x => x.AdventureId == adventureId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
+                        cancellationToken);
+                logger.Information("[Enrichment] Step {GenerationProcessStep} took {ElapsedMilliseconds} ms",
+                    context.GenerationProcessStep,
+                    stopwatch.ElapsedMilliseconds);
             }
+            catch (Exception ex)
+            {
+                await dbContext.GenerationProcesses
+                    .Where(x => x.AdventureId == adventureId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
+                        cancellationToken);
+                await dbContext.Scenes
+                    .Where(s => s.Id == sceneId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.EnrichmentFailed),
+                        cancellationToken);
+                logger.Error(ex,
+                    "Error during scene Enrichment for adventure {AdventureId} at step {GenerationProcessStep}",
+                    adventureId,
+                    context.GenerationProcessStep);
+                throw;
+            }
+        }
 
-            return SceneEnrichmentOutput.CreateFromScene(scene);
-        }
-        catch (Exception ex)
-        {
-            await dbContext.Scenes
-                .Where(s => s.Id == sceneId)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.EnrichmentFailed),
-                    cancellationToken);
-            logger.Error(ex, "Failed to enrich scene {SceneId} for adventure {AdventureId}", sceneId, adventureId);
-            throw;
-        }
+        return SceneEnrichmentOutput.CreateFromScene(scene);
     }
 
     private async Task<GenerationContext> BuildEnrichmentContext(
@@ -331,8 +323,11 @@ internal sealed class SceneGenerationOrchestrator(
             .Where(x => x.Id == adventureId)
             .Include(x => x.AgentLlmPresets)
             .ThenInclude(x => x.LlmPreset)
-            .Select(x => new { x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime })
+            .Select(x => new
+            {
+                x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
+                PromptPaths = x.PromptPath, x.AdventureStartTime
+            })
             .SingleAsync(cancellationToken);
 
         // Skip the most recent scene as that's the one being enriched, and it has separate field

@@ -181,7 +181,7 @@ internal static class PromptSections
                 {
                     return $"""
                             <character>
-                            Name: {c.Name}
+                            **Name**: {c.Name}
                             {c.Description}
 
                             Current state of the character:

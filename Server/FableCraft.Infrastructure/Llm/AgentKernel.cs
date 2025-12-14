@@ -22,6 +22,11 @@ using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
 namespace FableCraft.Infrastructure.Llm;
 
+public static class Telemetry
+{
+    public readonly static ActivitySource LlmActivitySource = new("LlmCall");
+}
+
 public interface IAgentKernel
 {
     Task<T> SendRequestAsync<T>(
@@ -100,13 +105,13 @@ internal sealed class AgentKernel : IAgentKernel
                                  {
                                      using (LogContext.Push(
                                                 new PropertyEnricher("OperationName", operationName),
-                                                new PropertyEnricher("Model", chatCompletionService.GetModelId())
+                                                new PropertyEnricher("Model", chatCompletionService.GetModelId()),
+                                                new PropertyEnricher("AdventureId", ProcessExecutionContext.AdventureId.Value)
                                             ))
                                      {
-                                         using var llmActivity = new Activity("LlmCall")
-                                             .SetTag("llm.operation", operationName)
-                                             .SetTag("llm.model", chatCompletionService.GetModelId())
-                                             .Start();
+                                         using var llmActivity = Telemetry.LlmActivitySource.StartActivity("LlmCall");
+                                         llmActivity?.SetTag("llm.operation", operationName);
+                                         llmActivity?.SetTag("llm.model", chatCompletionService.GetModelId());
 
                                          var stopwatch = Stopwatch.StartNew();
                                          ChatMessageContent result =
