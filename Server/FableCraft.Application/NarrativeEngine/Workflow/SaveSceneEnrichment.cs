@@ -31,7 +31,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                        CharacterStats = x.CharacterState,
                                        Tracker = x.CharacterTracker!,
                                        DevelopmentTracker = x.DevelopmentTracker!,
-                                       SequenceNumber = scene.SequenceNumber,
+                                       SequenceNumber = 0,
                                        SceneId = scene.Id
                                    }).ToList()
                                    ?? new List<Character>();
@@ -44,7 +44,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                            CharacterStats = x.CharacterState,
                                            Tracker = x.CharacterTracker!,
                                            DevelopmentTracker = x.DevelopmentTracker!,
-                                           SequenceNumber = scene.SequenceNumber,
+                                           SequenceNumber = x.SequenceNumber + 1,
                                            SceneId = scene.Id
                                        }).ToList()
                                        ?? new List<Character>();
@@ -56,7 +56,8 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                            {
                                AdventureId = context.AdventureId,
                                Description = x.Description,
-                               Category = x.Title,
+                               Title = x.Title,
+                               Category = nameof(LorebookCategory.Lore),
                                Content = x.ToJsonString(),
                                ContentType = ContentType.json
                            }).ToList()
@@ -66,8 +67,9 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                {
                                    AdventureId = context.AdventureId,
                                    Description = x.Description,
+                                   Title = x.Title,
+                                   Category = nameof(LorebookCategory.Location),
                                    Content = x.ToJsonString(),
-                                   Category = x.Title,
                                    ContentType = ContentType.json
                                }).ToList()
                                ?? new List<LorebookEntry>();
@@ -76,26 +78,28 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                             {
                                 AdventureId = context.AdventureId,
                                 Description = x.Description,
+                                Title = x.Name,
+                                Category = nameof(LorebookCategory.Item),
                                 Content = x.ToJsonString(),
-                                Category = x.Name,
                                 ContentType = ContentType.json
                             }).ToList()
                             ?? new List<LorebookEntry>();
 
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
-        foreach (LorebookEntry loreEntry in loreEntities)
-        {
-            scene.Lorebooks.Add(loreEntry);
-        }
-        
+        scene.Lorebooks = loreEntities;
+
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
             await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var generationProcess = await dbContext.GenerationProcesses.SingleAsync(x => x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
+            var generationProcess = await dbContext.GenerationProcesses.FirstOrDefaultAsync(x => x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
+            if (generationProcess != null)
+            {
+                dbContext.GenerationProcesses.Remove(generationProcess);
+            }
+
             dbContext.Scenes.Update(scene);
-            dbContext.GenerationProcesses.Remove(generationProcess);
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         });

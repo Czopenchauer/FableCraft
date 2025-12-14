@@ -70,7 +70,7 @@ public sealed class Metadata
 /// </summary>
 public sealed class Tracker
 {
-    public required StoryTracker Story { get; init; }
+    public StoryTracker? Story { get; set; }
 
     public MainCharacterTracker? MainCharacter { get; set; }
 }

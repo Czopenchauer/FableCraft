@@ -130,13 +130,6 @@ export class AdventureSettingsModalComponent implements OnChanges {
     return preset?.llmPresetId || null;
   }
 
-  setPresetForAgent(agentName: string, presetId: string | null): void {
-    const preset = this.agentPresets.find(p => p.agentName === agentName);
-    if (preset) {
-      preset.llmPresetId = presetId;
-    }
-  }
-
   applyPresetToAll(presetId: string | null): void {
     if (!presetId) return;
 

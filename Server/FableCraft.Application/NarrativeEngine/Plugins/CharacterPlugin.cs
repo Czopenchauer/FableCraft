@@ -102,10 +102,10 @@ internal sealed class CharacterPlugin : BaseAgent
                 </previous_scenes_with_character>
 
                 <current_time>
-                {latestScene?.Metadata.Tracker?.Story.Time}
+                {latestScene?.Metadata.Tracker?.Story?.Time}
                 </current_time>
                 <current_location>
-                {latestScene?.Metadata.Tracker?.Story.Location}
+                {latestScene?.Metadata.Tracker?.Story?.Location}
                 </current_location>
                 """;
     }

@@ -20,9 +20,11 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   isInitialLoad = true;
   isRegenerating = false;
   isEnriching = false;
+  isRegeneratingEnrichment = false;
   enrichmentFailed = false;
   enrichmentData: SceneEnrichmentResult | null = null;
   customAction = '';
+  private previousTrackerData: any = null;
 
   // Character tracker tabs
   activeCharacterTab: string = 'protagonist';
@@ -31,6 +33,18 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
   // Settings modal state
   showSettingsModal = false;
+
+  // Regenerate enrichment dropdown state
+  showRegenerateDropdown = false;
+  selectedAgents: Set<string> = new Set(['StoryTracker', 'MainCharacterTracker', 'MainCharacterDevelopment', 'CharacterTracker']);
+
+  // Available agents for regeneration
+  readonly availableAgents = [
+    { id: 'StoryTracker', label: 'Story Tracker', description: 'Time, location, weather, characters present' },
+    { id: 'MainCharacterTracker', label: 'Protagonist State', description: 'Main character tracker & description' },
+    { id: 'MainCharacterDevelopment', label: 'Protagonist Development', description: 'Main character growth & changes' },
+    { id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers' }
+  ];
 
   private destroy$ = new Subject<void>();
 
@@ -195,6 +209,120 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   retryEnrichment(): void {
     if (!this.currentScene || this.isEnriching) return;
     this.enrichSceneData(this.currentScene.sceneId);
+  }
+
+  /**
+   * Regenerate enrichment for specific agents
+   */
+  onRegenerateEnrichment(agentsToRegenerate: string[]): void {
+    if (!this.adventureId || !this.currentScene || this.isRegeneratingEnrichment || this.isEnriching) return;
+
+    // Store the current tracker data for fallback
+    this.previousTrackerData = this.currentScene.tracker ? JSON.parse(JSON.stringify(this.currentScene.tracker)) : null;
+
+    this.isRegeneratingEnrichment = true;
+
+    this.adventureService.regenerateEnrichment(this.adventureId, this.currentScene.sceneId, agentsToRegenerate)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isRegeneratingEnrichment = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (enrichment) => {
+          console.log('Regenerated enrichment received:', enrichment);
+          this.enrichmentData = enrichment;
+
+          // Update the current scene's tracker with regenerated data
+          if (this.currentScene) {
+            this.currentScene.tracker = enrichment.tracker;
+          }
+
+          this.previousTrackerData = null; // Clear the backup
+          this.toastService.success('Enrichment regenerated successfully.');
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error regenerating enrichment:', err);
+
+          // Restore previous tracker data on failure
+          if (this.currentScene && this.previousTrackerData) {
+            this.currentScene.tracker = this.previousTrackerData;
+          }
+
+          this.previousTrackerData = null;
+          this.toastService.error('Failed to regenerate enrichment. Previous values restored.');
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Check if regenerate enrichment button should be shown
+   */
+  canRegenerateEnrichment(): boolean {
+    return !!(this.currentScene?.tracker && !this.isEnriching && !this.isRegeneratingEnrichment && !this.isLoading && !this.isRegenerating);
+  }
+
+  /**
+   * Toggle the regenerate dropdown menu
+   */
+  toggleRegenerateDropdown(): void {
+    this.showRegenerateDropdown = !this.showRegenerateDropdown;
+  }
+
+  /**
+   * Close the regenerate dropdown
+   */
+  closeRegenerateDropdown(): void {
+    this.showRegenerateDropdown = false;
+  }
+
+  /**
+   * Toggle agent selection
+   */
+  toggleAgentSelection(agentId: string): void {
+    if (this.selectedAgents.has(agentId)) {
+      this.selectedAgents.delete(agentId);
+    } else {
+      this.selectedAgents.add(agentId);
+    }
+  }
+
+  /**
+   * Check if an agent is selected
+   */
+  isAgentSelected(agentId: string): boolean {
+    return this.selectedAgents.has(agentId);
+  }
+
+  /**
+   * Regenerate with selected agents
+   */
+  regenerateSelectedAgents(): void {
+    if (this.selectedAgents.size === 0) {
+      this.toastService.warning('Please select at least one agent to regenerate.');
+      return;
+    }
+
+    this.closeRegenerateDropdown();
+    this.onRegenerateEnrichment(Array.from(this.selectedAgents));
+  }
+
+  /**
+   * Select all agents
+   */
+  selectAllAgents(): void {
+    this.availableAgents.forEach(agent => this.selectedAgents.add(agent.id));
+  }
+
+  /**
+   * Deselect all agents
+   */
+  deselectAllAgents(): void {
+    this.selectedAgents.clear();
   }
 
   /**

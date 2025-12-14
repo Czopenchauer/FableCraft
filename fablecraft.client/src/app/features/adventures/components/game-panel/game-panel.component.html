@@ -116,7 +116,7 @@
     </div>
 
     <!-- Story Tracker (above scene) - Story and Characters Present only -->
-    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker" class="story-tracker-panel" [class.regenerating]="isRegenerating">
+    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker" class="story-tracker-panel" [class.regenerating]="isRegenerating" [class.regenerating-enrichment]="isRegeneratingEnrichment">
       <div *ngIf="currentScene.tracker.story" class="story-tracker-section">
         <app-json-renderer [data]="{story: currentScene.tracker.story}"></app-json-renderer>
       </div>
@@ -143,11 +143,76 @@
       <!-- Columns: left character tracker, right main content -->
       <div class="game-columns">
         <!-- Character Tracker panel (Protagonist and Characters) -->
-        <div class="tracker-panel">
+        <div class="tracker-panel" [class.regenerating-enrichment]="isRegeneratingEnrichment">
+          <!-- Regenerating enrichment overlay -->
+          <div *ngIf="isRegeneratingEnrichment" class="regenerating-enrichment-overlay">
+            <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+              <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
+                      class="opacity-25"></circle>
+              <path
+                [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                [attr.fill]="'currentColor'"
+                class="opacity-75"></path>
+            </svg>
+            <p class="regenerating-text">Regenerating tracker...</p>
+          </div>
+
           <div class="tracker-header">
             Characters
             <span *ngIf="isEnriching" class="enriching-badge">Loading...</span>
             <span *ngIf="enrichmentFailed" class="enrichment-failed-badge">Failed</span>
+            <!-- Regenerate enrichment dropdown -->
+            <div *ngIf="canRegenerateEnrichment()" class="regenerate-dropdown-container">
+              <button
+                (click)="toggleRegenerateDropdown()"
+                class="btn-regenerate-enrichment"
+                [class.active]="showRegenerateDropdown"
+                title="Regenerate tracker data"
+              >
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path
+                    [attr.d]="'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'"
+                    [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                    [attr.stroke-width]="2"></path>
+                </svg>
+              </button>
+              <!-- Dropdown menu -->
+              <div *ngIf="showRegenerateDropdown" class="regenerate-dropdown-menu">
+                <div class="dropdown-header">
+                  <span>Select agents to regenerate</span>
+                  <button (click)="closeRegenerateDropdown()" class="dropdown-close" title="Close">
+                    <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                      <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="dropdown-options">
+                  <label *ngFor="let agent of availableAgents" class="dropdown-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isAgentSelected(agent.id)"
+                      (change)="toggleAgentSelection(agent.id)"
+                    />
+                    <div class="option-content">
+                      <span class="option-label">{{ agent.label }}</span>
+                      <span class="option-description">{{ agent.description }}</span>
+                    </div>
+                  </label>
+                </div>
+                <div class="dropdown-actions">
+                  <button (click)="selectAllAgents()" class="btn-dropdown-action" type="button">All</button>
+                  <button (click)="deselectAllAgents()" class="btn-dropdown-action" type="button">None</button>
+                  <button
+                    (click)="regenerateSelectedAgents()"
+                    class="btn-dropdown-regenerate"
+                    [disabled]="selectedAgents.size === 0"
+                    type="button"
+                  >
+                    Regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Loading state -->

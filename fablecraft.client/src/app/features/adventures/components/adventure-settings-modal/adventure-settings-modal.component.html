@@ -89,13 +89,12 @@
               <div class="agent-name">{{ formatAgentName(preset.agentName) }}</div>
               <div class="preset-controls">
                 <select
-                  (change)="setPresetForAgent(preset.agentName, $any($event.target).value || null)"
+                  [(ngModel)]="preset.llmPresetId"
                   [disabled]="isSaving"
-                  [value]="preset.llmPresetId || ''"
                   class="form-select"
                 >
-                  <option value="">Not assigned</option>
-                  <option *ngFor="let p of availablePresets" [value]="p.id">{{ p.name }}</option>
+                  <option [ngValue]="null">Not assigned</option>
+                  <option *ngFor="let p of availablePresets" [ngValue]="p.id">{{ p.name }}</option>
                 </select>
                 <button
                   (click)="onEditPreset(preset.llmPresetId)"

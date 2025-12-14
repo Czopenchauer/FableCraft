@@ -23,10 +23,8 @@ internal sealed class TrackerProcessor(
             throw new InvalidOperationException();
         }
 
-        context.NewTracker = new Tracker
-        {
-            Story = storyTrackerResult
-        };
+        context.NewTracker ??= new Tracker();
+        context.NewTracker.Story = storyTrackerResult;
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(
                 (context.NewTracker!.MainCharacter.MainCharacter!, context.NewTracker.MainCharacter.MainCharacterDescription ?? context.MainCharacter.Description))

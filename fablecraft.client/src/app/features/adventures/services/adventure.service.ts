@@ -138,6 +138,16 @@ export class AdventureService {
     return this.http.post<SceneEnrichmentResult>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/enrich`, {});
   }
 
+  /**
+   * Regenerate enrichment for specific agents
+   */
+  regenerateEnrichment(adventureId: string, sceneId: string, agentsToRegenerate: string[]): Observable<SceneEnrichmentResult> {
+    return this.http.post<SceneEnrichmentResult>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/enrich/regenerate`,
+      { adventureId, sceneId, agentsToRegenerate }
+    );
+  }
+
   // ============== Adventure Settings API Methods ==============
 
   /**

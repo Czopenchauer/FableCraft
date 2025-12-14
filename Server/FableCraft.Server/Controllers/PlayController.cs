@@ -80,6 +80,35 @@ public class PlayController : ControllerBase
         }
     }
 
+    [HttpPost("scene/{sceneId:guid}/enrich/regenerate")]
+    [ProducesResponseType(typeof(SceneEnrichmentOutput), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> RegenerateSceneEnrichment(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] RegenerateEnrichmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _gameService.RegenerateEnrichmentAsync(
+                adventureId,
+                sceneId,
+                request.AgentsToRegenerate,
+                cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (AdventureNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpDelete("scene/{sceneId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -105,7 +134,6 @@ public class PlayController : ControllerBase
     {
         try
         {
-
             GameScene scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
             return Ok(scene);
         }

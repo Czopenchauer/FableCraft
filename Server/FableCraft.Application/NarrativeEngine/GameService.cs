@@ -31,6 +31,15 @@ public class SubmitActionRequest
     public string ActionText { get; init; } = null!;
 }
 
+public class RegenerateEnrichmentRequest
+{
+    public Guid AdventureId { get; init; }
+
+    public Guid SceneId { get; init; }
+
+    public List<string> AgentsToRegenerate { get; init; } = new();
+}
+
 public interface IGameService
 {
     Task<GameScene> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken);
@@ -44,6 +53,12 @@ public interface IGameService
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
 
     Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, CancellationToken cancellationToken);
+
+    Task<SceneEnrichmentOutput> RegenerateEnrichmentAsync(
+        Guid adventureId,
+        Guid sceneId,
+        List<string> agentsToRegenerate,
+        CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -327,7 +342,7 @@ internal class GameService : IGameService
                 SceneId = scene.Id,
                 Tracker = new TrackerDto
                 {
-                    Story = scene.Metadata.Tracker!.Story,
+                    Story = scene.Metadata.Tracker!.Story!,
                     MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
@@ -361,6 +376,36 @@ internal class GameService : IGameService
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to enrich scene {SceneId} for adventure {AdventureId}", scene.Id, adventureId);
+            throw;
+        }
+    }
+
+    public async Task<SceneEnrichmentOutput> RegenerateEnrichmentAsync(
+        Guid adventureId,
+        Guid sceneId,
+        List<string> agentsToRegenerate,
+        CancellationToken cancellationToken)
+    {
+        Scene? scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .Include(x => x.CharacterStates)
+            .Include(x => x.CharacterActions)
+            .Include(x => x.Lorebooks)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new AdventureNotFoundException(adventureId);
+        }
+
+        try
+        {
+            return await _sceneGenerationOrchestrator
+                .RegenerateEnrichmentAsync(adventureId, sceneId, agentsToRegenerate, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to regenerate enrichment for scene {SceneId} in adventure {AdventureId}", sceneId, adventureId);
             throw;
         }
     }

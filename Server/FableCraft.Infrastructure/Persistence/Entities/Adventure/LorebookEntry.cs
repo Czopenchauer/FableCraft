@@ -13,6 +13,8 @@ public class LorebookEntry : IEntity
 
     public Adventure Adventure { get; init; } = null!;
 
+    public string? Title { get; init; } = null!;
+
     [Required]
     public string Description { get; init; } = null!;
 

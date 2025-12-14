@@ -45,6 +45,8 @@ internal sealed class StoryTrackerAgent(
         if (isFirstScene)
         {
             requestPrompt = $"""
+                             {(context.SceneContext?.Length < 1 ? PromptSections.AdventureStartTime(context.AdventureStartTime) : "")}
+                             
                              {PromptSections.SceneContent(context.NewScene!.Scene)}
 
                              It's the first scene of the adventure. Initialize the tracker based on the scene content.
@@ -54,8 +56,6 @@ internal sealed class StoryTrackerAgent(
         {
             requestPrompt = $"""
                              {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
-
-                             {(context.SceneContext?.Length == 1 ? PromptSections.AdventureStartTime(context.AdventureStartTime) : "")}
 
                              {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
 
