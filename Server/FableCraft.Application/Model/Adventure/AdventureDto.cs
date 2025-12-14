@@ -1,10 +1,15 @@
+using System.Text.Json.Serialization;
+
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using FluentValidation;
 
 namespace FableCraft.Application.Model.Adventure;
 
-public record AdventureAgentLlmPresetDto(Guid LlmPresetId, AgentName AgentName);
+public record AdventureAgentLlmPresetDto(
+    Guid LlmPresetId,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))]
+    AgentName AgentName);
 
 public class AdventureDto
 {

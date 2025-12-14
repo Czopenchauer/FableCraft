@@ -182,43 +182,62 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="fastLlmConfig">Fast LLM *</label>
-            <select
-              [class.input-error]="isFieldInvalid('fastLlmConfig')"
-              class="form-select"
-              formControlName="fastLlmConfig"
-              id="fastLlmConfig"
-            >
-              <option value="">-- Select LLM --</option>
-              <option *ngFor="let preset of llmPresets" [ngValue]="preset.id">
-                {{ preset.name }}
-              </option>
-            </select>
-            <span class="help-text">Smaller, faster model for simple tasks (e.g., Gemini Flash 2.5)</span>
-            <span *ngIf="isFieldInvalid('fastLlmConfig')" class="error-text">
-              {{ getFieldError('fastLlmConfig') }}
-            </span>
-          </div>
+        <div class="form-group">
+          <label class="form-label" for="promptPath">Prompt Path *</label>
+          <input
+            [class.input-error]="isFieldInvalid('promptPath')"
+            class="form-input"
+            formControlName="promptPath"
+            id="promptPath"
+            placeholder="Path to prompt templates directory"
+            type="text"
+          />
+          <span class="help-text">Path to the directory containing agent prompt templates</span>
+          <span *ngIf="isFieldInvalid('promptPath')" class="error-text">
+            {{ getFieldError('promptPath') }}
+          </span>
+        </div>
+      </div>
 
-          <div class="form-group">
-            <label class="form-label" for="complexLlmConfig">Complex LLM *</label>
+      <!-- Agent LLM Presets Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h2 class="section-title">Agent LLM Presets</h2>
+          <p class="section-subtitle">Assign LLM presets to each agent</p>
+        </div>
+
+        <!-- Apply to all agents -->
+        <div class="apply-all-row">
+          <label class="form-label" for="applyToAll">Apply to all agents</label>
+          <div class="apply-all-controls">
             <select
-              [class.input-error]="isFieldInvalid('complexLlmConfig')"
+              (change)="applyPresetToAll($any($event.target).value)"
               class="form-select"
-              formControlName="complexLlmConfig"
-              id="complexLlmConfig"
+              id="applyToAll"
+            >
+              <option value="">-- Select preset to apply --</option>
+              <option *ngFor="let preset of llmPresets" [value]="preset.id">
+                {{ preset.name }}
+              </option>
+            </select>
+            <span class="help-text">Select a preset to assign it to all agents at once</span>
+          </div>
+        </div>
+
+        <div class="agents-grid" formGroupName="agentPresets">
+          <div *ngFor="let agentName of agentNames" class="agent-preset-row">
+            <label class="agent-label" [for]="'agent-' + agentName">{{ formatAgentName(agentName) }} *</label>
+            <select
+              [class.input-error]="isFieldInvalid(agentName, agentPresetsGroup)"
+              class="form-select agent-select"
+              [formControlName]="agentName"
+              [id]="'agent-' + agentName"
             >
               <option value="">-- Select LLM --</option>
               <option *ngFor="let preset of llmPresets" [ngValue]="preset.id">
                 {{ preset.name }}
               </option>
             </select>
-            <span class="help-text">Workhorse for story generation and complex narrative tasks (e.g., Gemini 2.5 Pro)</span>
-            <span *ngIf="isFieldInvalid('complexLlmConfig')" class="error-text">
-              {{ getFieldError('complexLlmConfig') }}
-            </span>
           </div>
         </div>
       </div>

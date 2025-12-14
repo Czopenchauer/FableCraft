@@ -94,7 +94,6 @@ public class TrackerStructureTests
 
         // Assert
         await Assert.That(structure).IsNotNull();
-        await Assert.That(structure!.CharactersPresent).IsNotNull();
     }
 
     [Test]

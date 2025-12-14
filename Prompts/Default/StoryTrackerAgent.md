@@ -71,6 +71,6 @@ The Story Tracker contains exactly four fields:
 
 When outputting the tracker state, use this structure:
 
-<tracker>
+<story_tracker>
 {{story_tracker_output}}
-</tracker>
+</story_tracker>

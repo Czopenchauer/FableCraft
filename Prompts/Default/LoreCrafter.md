@@ -68,9 +68,9 @@ You must provide the output in this structure:
 
 ```json
 {
-  "title": "A creative, thematic title for this lore entry",
+  "name": "A creative, thematic title for this lore entry",
   "formatType": "The narrative vehicle used (e.g., 'Internal Monologue', 'Historical Scroll')",
-  "text": "The rich, immersive prose content. Use \\n for paragraph breaks.",
+  "description": "The rich, immersive prose content. Use \\n for paragraph breaks.",
   "summary": "A concise, dry summary of the FACTS established, suitable for a database.",
   "knowledgeGraphReferences": [
     "List of specific entities, events, or lore pieces from the knowledge graph that were incorporated or referenced"

@@ -16,7 +16,6 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var scene = dbContext
             .Scenes
-            .Include(x => x.Metadata)
             .Include(x => x.CharacterStates)
             .Include(x => x.Lorebooks)
             .Single(x => x.Id == context.NewSceneId && x.AdventureId == context.AdventureId);
@@ -85,16 +84,15 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
 
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
-
+        foreach (LorebookEntry loreEntry in loreEntities)
+        {
+            scene.Lorebooks.Add(loreEntry);
+        }
+        
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
             await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            foreach (LorebookEntry loreEntry in loreEntities)
-            {
-                scene.Lorebooks.Add(loreEntry);
-            }
-
             var generationProcess = await dbContext.GenerationProcesses.SingleAsync(x => x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
             dbContext.Scenes.Update(scene);
             dbContext.GenerationProcesses.Remove(generationProcess);

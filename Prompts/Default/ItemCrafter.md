@@ -140,19 +140,14 @@ You must output correctly formatted JSON in XML tags:
 
 <item>
 {
-  "entity_data": {
-    "name": "String - The item's name",
-    "type": "String - matches input type (weapon|armor|consumable|quest_item|artifact|tool|currency|document)",
-    "subtype": "String - specific category (e.g., 'longsword', 'plate', 'potion', 'key')",
-    "power_level": "String - matches input (mundane|uncommon|rare|legendary|unique)",
-    "tags": ["Array", "of", "searchable", "tags"]
-  },
-  "narrative_data": {
-    "short_description": "One sentence summary for inventory display",
-    "detailed_description": "Full sensory description - weight, texture, appearance, sound, smell. Scale with power level.",
-    "lore_text": "In-world text that might appear on the item or be known about it. Empty string for mundane items.",
-    "dm_notes": "Hidden information about the item's true nature, secrets, or plot hooks"
-  },
+  "name": "String - The item's name",
+  "description": "Full sensory description - weight, texture, appearance, sound, smell. Scale with power level.",
+  "type": "String - matches input type (weapon|armor|consumable|quest_item|artifact|tool|currency|document)",
+  "subtype": "String - specific category (e.g., 'longsword', 'plate', 'potion', 'key')",
+  "power_level": "String - matches input (mundane|uncommon|rare|legendary|unique)",
+  "tags": ["Array", "of", "searchable", "tags"],
+  "short_description": "One sentence summary for inventory display",
+  "lore_text": "In-world text that might appear on the item or be known about it. Empty string for mundane items.",
   "mechanics": {
     "is_magical": true/false,
     "is_unique": true/false,

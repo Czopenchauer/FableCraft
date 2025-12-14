@@ -39,14 +39,10 @@ public class TrackerDefinitionDtoValidator : AbstractValidator<TrackerDefinition
             .WithMessage("Story section must contain a 'Time' field of type String")
             .Must(story => HasRequiredField(story, "Weather", FieldType.String))
             .WithMessage("Story section must contain a 'Weather' field of type String")
+            .Must(story => HasRequiredField(story, "CharactersPresent", FieldType.Array))
+            .WithMessage("Story section must contain a 'CharactersPresent' field of type Array")
             .Must(story => HasRequiredField(story, "Location", FieldType.String))
             .WithMessage("Story section must contain a 'Location' field of type String");
-
-        // Validate CharactersPresent section
-        RuleFor(x => x.Structure.CharactersPresent)
-            .NotNull().WithMessage("CharactersPresent field is required")
-            .Must(field => field.Type == FieldType.Array)
-            .WithMessage("CharactersPresent must be of type Array");
 
         // Validate MainCharacter section
         RuleFor(x => x.Structure.MainCharacter)
@@ -117,19 +113,19 @@ public static class TrackerDefinitionFactory
                         "Main Gym Hall, Maple Street Fitness Center, Denver, CO",
                         "South Beach, Miami, FL"
                     ]
+                },
+                new FieldDefinition
+                {
+                    Name = "CharactersPresent",
+                    Type = FieldType.Array,
+                    Prompt = "List of all characters present in the scene.",
+                    DefaultValue = new[] { "No Characters" },
+                    ExampleValues =
+                    [
+                        new[] { "Emma Thompson", "James Miller" }
+                    ]
                 }
             ],
-            CharactersPresent = new FieldDefinition
-            {
-                Name = "CharactersPresent",
-                Type = FieldType.Array,
-                Prompt = "List of all characters present in the scene.",
-                DefaultValue = new[] { "No Characters" },
-                ExampleValues =
-                [
-                    new[] { "Emma Thompson", "James Miller" }
-                ]
-            },
             MainCharacter =
             [
                 new FieldDefinition

@@ -19,6 +19,10 @@ export class AdventureListComponent implements OnInit {
   adventureToDelete: { id: string; name: string } | null = null;
   isDeleting = false;
 
+  // Settings modal state
+  showSettingsModal = false;
+  settingsAdventureId: string | null = null;
+
   constructor(
     private adventureService: AdventureService,
     private router: Router
@@ -96,5 +100,20 @@ export class AdventureListComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/']);
+  }
+
+  openSettings(event: Event, adventureId: string): void {
+    event.stopPropagation();
+    this.settingsAdventureId = adventureId;
+    this.showSettingsModal = true;
+  }
+
+  closeSettingsModal(): void {
+    this.showSettingsModal = false;
+    this.settingsAdventureId = null;
+  }
+
+  onSettingsSaved(): void {
+    this.closeSettingsModal();
   }
 }

@@ -13,6 +13,9 @@ import {GamePanelComponent} from './features/adventures/components/game-panel/ga
 import {
   DeleteConfirmationModalComponent
 } from './features/adventures/components/delete-confirmation-modal/delete-confirmation-modal.component';
+import {
+  AdventureSettingsModalComponent
+} from './features/adventures/components/adventure-settings-modal/adventure-settings-modal.component';
 import {JsonRendererComponent} from './features/adventures/components/json-renderer/json-renderer.component';
 import {ToastComponent} from './shared/components/toast/toast.component';
 import { WorldbookListComponent } from './features/adventures/components/worldbook-list/worldbook-list.component';
@@ -29,6 +32,7 @@ import { LlmPresetManagerComponent } from './features/adventures/components/llm-
     AdventureStatusComponent,
     GamePanelComponent,
     DeleteConfirmationModalComponent,
+    AdventureSettingsModalComponent,
     ToastComponent,
     WorldbookListComponent,
     WorldbookFormComponent,

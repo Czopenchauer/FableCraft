@@ -470,9 +470,9 @@ When characters oppose each other:
 Return the full, updated JSON structure in <tracker> tags, ensuring it is valid JSON without any additional text.
 Ensure that character present are referred by their exact name.
 \
-<tracker>
+<character_development>
 {{main_character_development_output}}
-</tracker>
+</character_development>
 
 ---
 

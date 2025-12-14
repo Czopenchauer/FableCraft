@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model.Adventure;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
@@ -8,6 +9,7 @@ using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FableCraft.Server.Controllers;
 
@@ -17,13 +19,16 @@ public class AdventureController : ControllerBase
 {
     private readonly IAdventureCreationService _adventureCreationService;
     private readonly IMessageDispatcher _messageDispatcher;
+    private readonly ApplicationDbContext _dbContext;
 
     public AdventureController(
         IAdventureCreationService adventureCreationService,
-        IMessageDispatcher messageDispatcher)
+        IMessageDispatcher messageDispatcher,
+        ApplicationDbContext dbContext)
     {
         _adventureCreationService = adventureCreationService;
         _messageDispatcher = messageDispatcher;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -114,5 +119,159 @@ public class AdventureController : ControllerBase
         {
             return NotFound();
         }
+    }
+
+    [HttpGet("defaults")]
+    [ProducesResponseType(typeof(AdventureDefaultsDto), StatusCodes.Status200OK)]
+    public IActionResult GetDefaults()
+    {
+        var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
+
+        return Ok(new AdventureDefaultsDto
+        {
+            DefaultPromptPath = defaultPromptPath
+        });
+    }
+
+    [HttpGet("{adventureId:guid}/settings")]
+    [ProducesResponseType(typeof(AdventureSettingsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAdventureSettings(Guid adventureId, CancellationToken cancellationToken)
+    {
+        var adventure = await _dbContext.Adventures
+            .Include(a => a.AgentLlmPresets)
+            .ThenInclude(p => p.LlmPreset)
+            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+
+        if (adventure == null)
+        {
+            return NotFound();
+        }
+
+        var allAgentNames = Enum.GetValues<AgentName>();
+        var agentPresets = allAgentNames.Select(agentName =>
+        {
+            var existingPreset = adventure.AgentLlmPresets.FirstOrDefault(p => p.AgentName == agentName);
+            return new AgentLlmPresetDto
+            {
+                Id = existingPreset?.Id,
+                AgentName = agentName.ToString(),
+                LlmPresetId = existingPreset?.LlmPresetId,
+                LlmPresetName = existingPreset?.LlmPreset?.Name
+            };
+        }).ToList();
+
+        var response = new AdventureSettingsResponseDto
+        {
+            AdventureId = adventure.Id,
+            Name = adventure.Name,
+            PromptPath = adventure.PromptPath,
+            AgentLlmPresets = agentPresets
+        };
+
+        return Ok(response);
+    }
+
+    [HttpPut("{adventureId:guid}/settings")]
+    [ProducesResponseType(typeof(AdventureSettingsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAdventureSettings(
+        Guid adventureId,
+        [FromBody] UpdateAdventureSettingsDto dto,
+        [FromServices] IValidator<UpdateAdventureSettingsDto> validator,
+        CancellationToken cancellationToken)
+    {
+        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
+        }
+
+        var adventure = await _dbContext.Adventures
+            .Include(a => a.AgentLlmPresets)
+            .ThenInclude(p => p.LlmPreset)
+            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+
+        if (adventure == null)
+        {
+            return NotFound();
+        }
+
+        adventure.PromptPath = dto.PromptPath;
+
+        foreach (var presetDto in dto.AgentLlmPresets)
+        {
+            if (!Enum.TryParse<AgentName>(presetDto.AgentName, out var agentName))
+            {
+                continue;
+            }
+
+            var existingPreset = adventure.AgentLlmPresets.FirstOrDefault(p => p.AgentName == agentName);
+
+            if (presetDto.LlmPresetId.HasValue)
+            {
+                var presetExists = await _dbContext.LlmPresets.AnyAsync(p => p.Id == presetDto.LlmPresetId.Value, cancellationToken);
+                if (!presetExists)
+                {
+                    return BadRequest(Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        { presetDto.AgentName, [$"LLM preset with ID '{presetDto.LlmPresetId}' not found."] }
+                    }));
+                }
+
+                if (existingPreset != null)
+                {
+                    existingPreset.LlmPresetId = presetDto.LlmPresetId.Value;
+                }
+                else
+                {
+                    adventure.AgentLlmPresets.Add(new AdventureAgentLlmPreset
+                    {
+                        Id = Guid.NewGuid(),
+                        AdventureId = adventureId,
+                        AgentName = agentName,
+                        LlmPresetId = presetDto.LlmPresetId.Value
+                    });
+                }
+            }
+            else if (existingPreset != null)
+            {
+                _dbContext.AdventureAgentLlmPresets.Remove(existingPreset);
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _dbContext.Entry(adventure).ReloadAsync(cancellationToken);
+        await _dbContext.Entry(adventure).Collection(a => a.AgentLlmPresets).LoadAsync(cancellationToken);
+        foreach (var preset in adventure.AgentLlmPresets)
+        {
+            await _dbContext.Entry(preset).Reference(p => p.LlmPreset).LoadAsync(cancellationToken);
+        }
+
+        var allAgentNames = Enum.GetValues<AgentName>();
+        var agentPresets = allAgentNames.Select(agentName =>
+        {
+            var existingPreset = adventure.AgentLlmPresets.FirstOrDefault(p => p.AgentName == agentName);
+            return new AgentLlmPresetDto
+            {
+                Id = existingPreset?.Id,
+                AgentName = agentName.ToString(),
+                LlmPresetId = existingPreset?.LlmPresetId,
+                LlmPresetName = existingPreset?.LlmPreset?.Name
+            };
+        }).ToList();
+
+        var response = new AdventureSettingsResponseDto
+        {
+            AdventureId = adventure.Id,
+            Name = adventure.Name,
+            PromptPath = adventure.PromptPath,
+            AgentLlmPresets = agentPresets
+        };
+
+        return Ok(response);
     }
 }

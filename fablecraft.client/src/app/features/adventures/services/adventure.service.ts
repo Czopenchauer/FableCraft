@@ -4,6 +4,7 @@ import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {
   AdventureCreationStatus,
+  AdventureDefaultsDto,
   AdventureDto,
   AdventureListItemDto,
   AvailableLorebookDto,
@@ -14,6 +15,10 @@ import {
   GenerateLorebookDto,
   SceneEnrichmentResult
 } from '../models/adventure.model';
+import {
+  AdventureSettingsResponseDto,
+  UpdateAdventureSettingsDto
+} from '../models/adventure-settings.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -30,6 +35,13 @@ export class AdventureService {
    */
   getAllAdventures(): Observable<AdventureListItemDto[]> {
     return this.http.get<AdventureListItemDto[]>(this.apiUrl);
+  }
+
+  /**
+   * Get default adventure settings (default prompt path)
+   */
+  getDefaults(): Observable<AdventureDefaultsDto> {
+    return this.http.get<AdventureDefaultsDto>(`${this.apiUrl}/defaults`);
   }
 
   /**
@@ -100,7 +112,7 @@ export class AdventureService {
    * Submit a player action (choice selection)
    */
   submitAction(adventureId: string, actionText: string): Observable<GameScene> {
-    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/submit`, {adventureId, actionText})
+    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/submit`, {adventureId, actionText})
       .pipe(map(mapApiResponseToGameScene));
   }
 
@@ -108,14 +120,14 @@ export class AdventureService {
    * Delete the last scene from an adventure
    */
   deleteLastScene(adventureId: string, sceneId: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/api/Play/delete/${adventureId}/scene/${sceneId}`);
+    return this.http.delete<void>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}`);
   }
 
   /**
    * Regenerate the last scene of an adventure
    */
   regenerateScene(adventureId: string, sceneId: string): Observable<GameScene> {
-    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/regenerate/${adventureId}/scene/${sceneId}`, {})
+    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/regenerate`, {})
       .pipe(map(mapApiResponseToGameScene));
   }
 
@@ -123,10 +135,24 @@ export class AdventureService {
    * Enrich a scene with tracker, characters, locations, and lore
    */
   enrichScene(adventureId: string, sceneId: string): Observable<SceneEnrichmentResult> {
-    return this.http.post<SceneEnrichmentResult>(`${environment.apiUrl}/api/Play/${adventureId}/scenes/${sceneId}/enrich`, {});
+    return this.http.post<SceneEnrichmentResult>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/enrich`, {});
   }
 
+  // ============== Adventure Settings API Methods ==============
 
+  /**
+   * Get adventure settings (agent LLM presets and prompt path)
+   */
+  getAdventureSettings(adventureId: string): Observable<AdventureSettingsResponseDto> {
+    return this.http.get<AdventureSettingsResponseDto>(`${this.apiUrl}/${adventureId}/settings`);
+  }
+
+  /**
+   * Update adventure settings (agent LLM presets and prompt path)
+   */
+  updateAdventureSettings(adventureId: string, settings: UpdateAdventureSettingsDto): Observable<AdventureSettingsResponseDto> {
+    return this.http.put<AdventureSettingsResponseDto>(`${this.apiUrl}/${adventureId}/settings`, settings);
+  }
 }
 
 // ===== Types and mappers for server/client contract bridging =====

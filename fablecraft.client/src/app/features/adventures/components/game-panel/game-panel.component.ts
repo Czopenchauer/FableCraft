@@ -29,6 +29,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   // Nested tabs for character details (state, development, description)
   activeNestedTab: string = 'state';
 
+  // Settings modal state
+  showSettingsModal = false;
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -427,5 +430,27 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   private resetCharacterTab(): void {
     this.activeCharacterTab = 'protagonist';
     this.activeNestedTab = 'state';
+  }
+
+  /**
+   * Open the settings modal
+   */
+  openSettingsModal(): void {
+    this.showSettingsModal = true;
+  }
+
+  /**
+   * Close the settings modal
+   */
+  closeSettingsModal(): void {
+    this.showSettingsModal = false;
+  }
+
+  /**
+   * Handle settings saved event
+   */
+  onSettingsSaved(): void {
+    // Optionally reload data or show feedback
+    this.closeSettingsModal();
   }
 }

@@ -163,6 +163,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw;
         }
 
+        await _dbContext.Chunks.Where(x => x.AdventureId == adventureId).ExecuteDeleteAsync(cancellationToken: cancellationToken);
         _dbContext.Adventures.Remove(adventure);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

@@ -18,11 +18,15 @@ internal sealed class TrackerProcessor(
             ? context.NewTracker.Story
             : await storyTracker.Invoke(context, cancellationToken);
 
-        var tracker = new Tracker
+        if (string.IsNullOrEmpty(storyTrackerResult.Location) || string.IsNullOrEmpty(storyTrackerResult.Time) || string.IsNullOrEmpty(storyTrackerResult.Weather))
+        {
+            throw new InvalidOperationException();
+        }
+
+        context.NewTracker = new Tracker
         {
             Story = storyTrackerResult
         };
-        context.NewTracker = tracker;
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(
                 (context.NewTracker!.MainCharacter.MainCharacter!, context.NewTracker.MainCharacter.MainCharacterDescription ?? context.MainCharacter.Description))
@@ -78,7 +82,7 @@ internal sealed class TrackerProcessor(
         };
         context.NewTracker!.MainCharacter.MainCharacterDevelopment = await trackerDevelopmentTask;
 
-        if(characterUpdateTask != null)
+        if (characterUpdateTask != null)
         {
             await UnpackCharacterUpdates(context, characterUpdateTask);
         }

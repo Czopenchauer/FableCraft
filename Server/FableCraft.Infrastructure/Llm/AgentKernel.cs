@@ -103,6 +103,11 @@ internal sealed class AgentKernel : IAgentKernel
                                                 new PropertyEnricher("Model", chatCompletionService.GetModelId())
                                             ))
                                      {
+                                         using var llmActivity = new Activity("LlmCall")
+                                             .SetTag("llm.operation", operationName)
+                                             .SetTag("llm.model", chatCompletionService.GetModelId())
+                                             .Start();
+
                                          var stopwatch = Stopwatch.StartNew();
                                          ChatMessageContent result =
                                              await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);

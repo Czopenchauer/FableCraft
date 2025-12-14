@@ -5,6 +5,7 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
+using FableCraft.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +26,6 @@ public static class StartupExtensions
         services.AddSerilog(config => config
             .MinimumLevel.Debug()
             .Enrich.FromLogContext()
-            .Enrich.WithMachineName()
             .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
             .WriteTo.OpenTelemetry()
@@ -86,11 +86,14 @@ public static class StartupExtensions
                 options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(40);
             });
 
-        // Default 5 min timeout for RAG search
         services.AddHttpClient<IRagSearch, RagClient>(client =>
-        {
-            client.BaseAddress = new Uri(graphApiBaseUrl);
-        });
+            {
+                client.BaseAddress = new Uri(graphApiBaseUrl);
+
+                client.Timeout = TimeSpan.FromMinutes(10);
+            })
+            .RemoveAllResilienceHandlers()
+            .AddDefaultLlmResiliencePolicies();
 
         services.AddSingleton<KernelBuilderFactory>();
         services.AddTransient<IAgentKernel, AgentKernel>();

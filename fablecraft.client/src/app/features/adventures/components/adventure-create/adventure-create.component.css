@@ -379,6 +379,61 @@
   animation: spin 1s linear infinite;
 }
 
+/* Apply to All Row */
+.apply-all-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-primary);
+}
+
+.apply-all-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.apply-all-controls .form-select {
+  max-width: 300px;
+}
+
+[data-theme="medieval-fantasy"] .apply-all-row {
+  background: rgba(184, 134, 11, 0.05);
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .apply-all-row {
+  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+/* Agents Grid */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.agent-preset-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.agent-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.agent-select {
+  width: 100%;
+}
+
 /* Responsive adjustments */
 @media (max-width: 767px) {
   .page-title {
@@ -413,5 +468,9 @@
   .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .agents-grid {
+    grid-template-columns: 1fr;
   }
 }

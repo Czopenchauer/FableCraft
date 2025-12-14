@@ -20,6 +20,11 @@ export interface CharacterDto {
   description: string;
 }
 
+export interface AdventureAgentLlmPresetDto {
+  llmPresetId: string;
+  agentName: string;
+}
+
 export interface AdventureDto {
   name: string;
   firstSceneDescription: string;
@@ -28,8 +33,12 @@ export interface AdventureDto {
   character: CharacterDto;
   worldbookId?: string | null;
   trackerDefinitionId: string;
-  fastLlmConfig: string;
-  complexLlmConfig: string;
+  promptPath: string;
+  agentLlmPresets: AdventureAgentLlmPresetDto[];
+}
+
+export interface AdventureDefaultsDto {
+  defaultPromptPath: string;
 }
 
 export interface AvailableLorebookDto {

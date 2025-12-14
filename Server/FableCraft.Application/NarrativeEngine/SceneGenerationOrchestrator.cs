@@ -281,9 +281,33 @@ internal sealed class SceneGenerationOrchestrator(
                 processors.First(p => p is SaveSceneEnrichment)
             };
 
+            var stopwatch = Stopwatch.StartNew();
             foreach (IProcessor processor in workflow)
             {
-                await processor.Invoke(context, cancellationToken);
+                try
+                {
+                    stopwatch.Restart();
+                    await processor.Invoke(context, cancellationToken);
+                    await dbContext.GenerationProcesses
+                        .Where(x => x.AdventureId == adventureId)
+                        .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
+                            cancellationToken);
+                    logger.Information("[Enrichment] Step {GenerationProcessStep} took {ElapsedMilliseconds} ms",
+                        context.GenerationProcessStep,
+                        stopwatch.ElapsedMilliseconds);
+                }
+                catch (Exception ex)
+                {
+                    await dbContext.GenerationProcesses
+                        .Where(x => x.AdventureId == adventureId)
+                        .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
+                            cancellationToken);
+                    logger.Error(ex,
+                        "Error during scene Enrichment for adventure {AdventureId} at step {GenerationProcessStep}",
+                        adventureId,
+                        context.GenerationProcessStep);
+                    throw;
+                }
             }
 
             return SceneEnrichmentOutput.CreateFromScene(scene);

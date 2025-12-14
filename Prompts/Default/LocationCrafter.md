@@ -37,16 +37,12 @@ You will receive a JSON object containing:
 You must output correctly formatted JSON file in XML tags. Use the following schema:
 <location>
 {
-"entity_data": {
 "name": "String",
+"description": "2-3 paragraphs describing the geography, atmosphere, and sensory details.",
 "type": "String (matches input type)",
 "parent_node_id": "String (from input parent_location)",
-"tags": ["Array", "of", "Strings"]
-},
-"narrative_data": {
-"short_description": "One sentence summary.",
-"detailed_description": "2-3 paragraphs describing the geography, atmosphere, and sensory details.",
-"dm_notes": "Hidden information about the strategic importance or secrets."
+"tags": ["Array", "of", "Strings"],
+"short_description": "One sentence summary."
 },
 "mechanics": {
 "danger_rating": Integer,

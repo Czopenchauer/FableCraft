@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Channels;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ using Serilog.Core;
 
 namespace FableCraft.Infrastructure.Queue;
 
-internal record MessageWithContext(IMessage Message, ILogEventEnricher? LogContext);
+internal record MessageWithContext(IMessage Message, ILogEventEnricher? LogContext, Activity? Activity);
 
 internal class InMemoryMessageDispatcher(Channel<MessageWithContext> channel) : IMessageDispatcher
 {
@@ -18,8 +19,9 @@ internal class InMemoryMessageDispatcher(Channel<MessageWithContext> channel) : 
         where TMessage : IMessage
     {
         ILogEventEnricher context = LogContext.Clone();
+        Activity? currentActivity = Activity.Current;
         IMessage actualMessage = (message as IMessageWithEnrichment) ?? (IMessage)message;
-        var messageWithContext = new MessageWithContext(actualMessage, context);
+        var messageWithContext = new MessageWithContext(actualMessage, context, currentActivity);
         await channel.Writer.WriteAsync(messageWithContext, cancellationToken);
     }
 }
@@ -43,8 +45,12 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
                                 IMessage message = messageWithContext.Message;
                                 try
                                 {
-                                    using (messageWithContext.LogContext is not null 
-                                               ? LogContext.Push(messageWithContext.LogContext) 
+                                    using var linkedActivity = new Activity("ProcessMessage")
+                                        .SetParentId(messageWithContext.Activity!.Id!)
+                                        .Start();
+
+                                    using (messageWithContext.LogContext is not null
+                                               ? LogContext.Push(messageWithContext.LogContext)
                                                : null)
                                     {
                                         ProcessExecutionContext.AdventureId.Value = message.AdventureId;

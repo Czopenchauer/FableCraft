@@ -5,6 +5,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 
+using Npgsql;
+
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -94,6 +96,7 @@ public static class Extensions
             .WithMetrics(metrics =>
             {
                 metrics.AddAspNetCoreInstrumentation()
+                    .AddNpgsqlInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddMeter("Microsoft.SemanticKernel*")
                     .AddRuntimeInstrumentation();
@@ -110,6 +113,7 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddSource("Microsoft.SemanticKernel*")
+                    .AddNpgsql()
                     .AddHttpClientInstrumentation();
             });
 

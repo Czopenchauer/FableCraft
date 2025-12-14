@@ -27,18 +27,20 @@ internal class ContentGenerator(
 
         var creationRequests = context.NewNarrativeDirection!.CreationRequests;
 
+        // Start all content generation tasks in parallel
+        Task<CharacterContext[]>? characterTask = null;
+        Task<GeneratedLore[]>? loreTask = null;
+        Task<LocationGenerationResult[]>? locationTask = null;
+        Task<GeneratedItem[]>? itemTask = null;
+
         if (context.NewCharacters != null)
         {
             logger.Information("Characters already created, skipping ({Count})", context.NewCharacters.Length);
         }
         else
         {
-            var characterCreationTasks = creationRequests.Characters
-                .Select(x => characterCrafter.Invoke(context, x, cancellationToken))
-                .ToList();
-            var characterCreations = await Task.WhenAll(characterCreationTasks);
-            logger.Information("Created {Count} new characters", characterCreations.Length);
-            context.NewCharacters = characterCreations;
+            characterTask = Task.WhenAll(creationRequests.Characters
+                .Select(x => characterCrafter.Invoke(context, x, cancellationToken)).ToArray());
         }
 
         if (context.NewLore != null)
@@ -47,12 +49,8 @@ internal class ContentGenerator(
         }
         else
         {
-            var newLoreTask = creationRequests.Lore
-                .Select(x => loreCrafter.Invoke(context, x, cancellationToken))
-                .ToList();
-            var newLore = await Task.WhenAll(newLoreTask);
-            logger.Information("Created {Count} new lore", newLore.Length);
-            context.NewLore = newLore;
+            loreTask = Task.WhenAll(creationRequests.Lore
+                .Select(x => loreCrafter.Invoke(context, x, cancellationToken)).ToArray());
         }
 
         if (context.NewLocations != null)
@@ -61,12 +59,8 @@ internal class ContentGenerator(
         }
         else
         {
-            var newLocationTask = creationRequests.Locations
-                .Select(location => locationCrafter.Invoke(context, location, cancellationToken))
-                .ToList();
-            var newLocations = await Task.WhenAll(newLocationTask);
-            logger.Information("Created {Count} new locations", newLocations.Length);
-            context.NewLocations = newLocations;
+            locationTask = Task.WhenAll(creationRequests.Locations
+                .Select(location => locationCrafter.Invoke(context, location, cancellationToken)).ToArray());
         }
 
         if (context.NewItems != null)
@@ -75,12 +69,33 @@ internal class ContentGenerator(
         }
         else
         {
-            var newItemTask = creationRequests.Items
-                .Select(item => itemCrafter.Invoke(context, item, cancellationToken))
-                .ToList();
-            var newItems = await Task.WhenAll(newItemTask);
-            logger.Information("Created {Count} new items", newItems.Length);
-            context.NewItems = newItems;
+            itemTask = Task.WhenAll(creationRequests.Items
+                .Select(item => itemCrafter.Invoke(context, item, cancellationToken)).ToArray());
+        }
+
+        // Await all tasks in parallel
+        if (characterTask != null)
+        {
+            context.NewCharacters = await characterTask;
+            logger.Information("Created {Count} new characters", context.NewCharacters.Length);
+        }
+
+        if (loreTask != null)
+        {
+            context.NewLore = await loreTask;
+            logger.Information("Created {Count} new lore", context.NewLore.Length);
+        }
+
+        if (locationTask != null)
+        {
+            context.NewLocations = await locationTask;
+            logger.Information("Created {Count} new locations", context.NewLocations.Length);
+        }
+
+        if (itemTask != null)
+        {
+            context.NewItems = await itemTask;
+            logger.Information("Created {Count} new items", context.NewItems.Length);
         }
     }
 }

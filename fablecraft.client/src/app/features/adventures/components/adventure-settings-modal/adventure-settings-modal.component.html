@@ -1,0 +1,312 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Adventure Settings</h2>
+        <span *ngIf="settings" class="adventure-name">{{ settings.name }}</span>
+        <button
+          (click)="onClose()"
+          [disabled]="isSaving"
+          class="close-button"
+          title="Close"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <svg [attr.fill]="'none'" class="spinner" viewBox="0 0 24 24">
+          <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+          <path
+            [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+            [attr.fill]="'currentColor'"
+            class="opacity-75"></path>
+        </svg>
+        <p>Loading settings...</p>
+      </div>
+
+      <!-- Main Content -->
+      <div *ngIf="!isLoading && settings && !editingPreset" class="modal-body">
+        <!-- Prompt Path Section -->
+        <div class="settings-section">
+          <h3 class="section-title">Prompt Path</h3>
+          <div class="form-group">
+            <label for="promptPath">Path to prompt templates</label>
+            <input
+              [(ngModel)]="promptPath"
+              [disabled]="isSaving"
+              class="form-input"
+              id="promptPath"
+              placeholder="Enter path to prompt templates"
+              type="text"
+            />
+          </div>
+        </div>
+
+        <!-- Agent LLM Presets Section -->
+        <div class="settings-section">
+          <div class="section-header">
+            <h3 class="section-title">Agent LLM Presets</h3>
+            <button
+              (click)="onCreatePreset()"
+              [disabled]="isSaving"
+              class="btn btn-small btn-secondary"
+              title="Create new preset"
+            >
+              <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                <path [attr.d]="'M12 4v16m8-8H4'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+              </svg>
+              <span>New Preset</span>
+            </button>
+          </div>
+          <p class="section-description">Assign LLM presets to each agent for this adventure.</p>
+
+          <!-- Apply to all agents -->
+          <div class="apply-all-row">
+            <label class="form-label" for="applyToAllSettings">Apply to all agents</label>
+            <div class="apply-all-controls">
+              <select
+                (change)="applyPresetToAll($any($event.target).value || null)"
+                [disabled]="isSaving"
+                class="form-select"
+                id="applyToAllSettings"
+              >
+                <option value="">-- Select preset to apply --</option>
+                <option *ngFor="let preset of availablePresets" [value]="preset.id">
+                  {{ preset.name }}
+                </option>
+              </select>
+              <span class="help-text">Select a preset to assign it to all agents at once</span>
+            </div>
+          </div>
+
+          <div class="agents-grid">
+            <div *ngFor="let preset of agentPresets" class="agent-preset-row">
+              <div class="agent-name">{{ formatAgentName(preset.agentName) }}</div>
+              <div class="preset-controls">
+                <select
+                  (change)="setPresetForAgent(preset.agentName, $any($event.target).value || null)"
+                  [disabled]="isSaving"
+                  [value]="preset.llmPresetId || ''"
+                  class="form-select"
+                >
+                  <option value="">Not assigned</option>
+                  <option *ngFor="let p of availablePresets" [value]="p.id">{{ p.name }}</option>
+                </select>
+                <button
+                  (click)="onEditPreset(preset.llmPresetId)"
+                  *ngIf="preset.llmPresetId"
+                  [disabled]="isSaving"
+                  class="btn-icon"
+                  title="Edit preset"
+                >
+                  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                    <path [attr.d]="'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM Preset Editor -->
+      <div *ngIf="!isLoading && editingPreset" class="modal-body">
+        <div class="preset-editor">
+          <div class="preset-editor-header">
+            <button
+              (click)="onCancelPresetEdit()"
+              class="btn-back"
+              title="Back to settings"
+            >
+              <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                <path [attr.d]="'M10 19l-7-7m0 0l7-7m-7 7h18'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+              </svg>
+            </button>
+            <h3>{{ isCreatingPreset ? 'Create LLM Preset' : 'Edit LLM Preset' }}</h3>
+          </div>
+
+          <div class="preset-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="presetName">Name *</label>
+                <input
+                  [(ngModel)]="editingPreset.name"
+                  class="form-input"
+                  id="presetName"
+                  placeholder="Preset name"
+                  type="text"
+                />
+              </div>
+            </div>
+
+            <div class="form-row form-row-2">
+              <div class="form-group">
+                <label for="presetProvider">Provider *</label>
+                <input
+                  [(ngModel)]="editingPreset.provider"
+                  class="form-input"
+                  id="presetProvider"
+                  placeholder="e.g., OpenAI, Anthropic"
+                  type="text"
+                />
+              </div>
+              <div class="form-group">
+                <label for="presetModel">Model *</label>
+                <input
+                  [(ngModel)]="editingPreset.model"
+                  class="form-input"
+                  id="presetModel"
+                  placeholder="e.g., gpt-4, claude-3"
+                  type="text"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="presetBaseUrl">Base URL</label>
+                <input
+                  [(ngModel)]="editingPreset.baseUrl"
+                  class="form-input"
+                  id="presetBaseUrl"
+                  placeholder="Optional custom API endpoint"
+                  type="text"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="presetApiKey">API Key *</label>
+                <input
+                  [(ngModel)]="editingPreset.apiKey"
+                  class="form-input"
+                  id="presetApiKey"
+                  placeholder="API key"
+                  type="password"
+                />
+              </div>
+            </div>
+
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label for="presetMaxTokens">Max Tokens *</label>
+                <input
+                  [(ngModel)]="editingPreset.maxTokens"
+                  class="form-input"
+                  id="presetMaxTokens"
+                  min="1"
+                  type="number"
+                />
+              </div>
+              <div class="form-group">
+                <label for="presetTemperature">Temperature</label>
+                <input
+                  [(ngModel)]="editingPreset.temperature"
+                  class="form-input"
+                  id="presetTemperature"
+                  max="2"
+                  min="0"
+                  step="0.1"
+                  type="number"
+                />
+              </div>
+              <div class="form-group">
+                <label for="presetTopP">Top P</label>
+                <input
+                  [(ngModel)]="editingPreset.topP"
+                  class="form-input"
+                  id="presetTopP"
+                  max="1"
+                  min="0"
+                  step="0.1"
+                  type="number"
+                />
+              </div>
+            </div>
+
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label for="presetTopK">Top K</label>
+                <input
+                  [(ngModel)]="editingPreset.topK"
+                  class="form-input"
+                  id="presetTopK"
+                  min="1"
+                  type="number"
+                />
+              </div>
+              <div class="form-group">
+                <label for="presetFrequencyPenalty">Frequency Penalty</label>
+                <input
+                  [(ngModel)]="editingPreset.frequencyPenalty"
+                  class="form-input"
+                  id="presetFrequencyPenalty"
+                  max="2"
+                  min="-2"
+                  step="0.1"
+                  type="number"
+                />
+              </div>
+              <div class="form-group">
+                <label for="presetPresencePenalty">Presence Penalty</label>
+                <input
+                  [(ngModel)]="editingPreset.presencePenalty"
+                  class="form-input"
+                  id="presetPresencePenalty"
+                  max="2"
+                  min="-2"
+                  step="0.1"
+                  type="number"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="preset-editor-footer">
+            <button
+              (click)="onCancelPresetEdit()"
+              class="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              (click)="onSavePreset()"
+              [disabled]="!editingPreset.name || !editingPreset.provider || !editingPreset.model || !editingPreset.apiKey"
+              class="btn btn-primary"
+            >
+              {{ isCreatingPreset ? 'Create' : 'Save' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div *ngIf="!isLoading && settings && !editingPreset" class="modal-footer">
+        <button
+          (click)="onClose()"
+          [disabled]="isSaving"
+          class="btn btn-secondary"
+        >
+          Cancel
+        </button>
+        <button
+          (click)="onSave()"
+          [disabled]="isSaving"
+          class="btn btn-primary"
+        >
+          <span *ngIf="!isSaving">Save Settings</span>
+          <span *ngIf="isSaving" class="saving-content">
+            <span class="spinner-small"></span>
+            <span>Saving...</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
