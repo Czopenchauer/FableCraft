@@ -31,8 +31,6 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     SceneGenerationOrchestrator sceneGenerationOrchestrator)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
-    private const string DataDirectory = @"C:\Disc\Dev\_projects\FableCraft\data";
-
     private readonly ResiliencePipeline _ioResiliencePipeline = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions
         {
@@ -64,6 +62,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(Path.Combine(StartupExtensions.DataDirectory, message.AdventureId.ToString())))
+        {
+            Directory.CreateDirectory(StartupExtensions.DataDirectory);
+        }
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         Adventure adventure = await dbContext.Adventures
             .Include(x => x.MainCharacter)
@@ -92,7 +94,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 var lorebookBytes = Encoding.UTF8.GetBytes(lorebookEntry.Content + adventure.Id);
                 var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
                 var lorebookName = $"{lorebookHash:x16}";
-                var lorebookPath = @$"{DataDirectory}\{adventure.Id}\{lorebookName}.{lorebookEntry.ContentType.ToString()}";
+                var lorebookPath = @$"{StartupExtensions.DataDirectory}\{adventure.Id}\{lorebookName}.{lorebookEntry.ContentType.ToString()}";
 
                 var newLorebookChunk = new Chunk
                 {
@@ -126,7 +128,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         if (existingCharacterChunk is null)
         {
             var characterName = $"{characterHash:x16}";
-            var characterPath = @$"{DataDirectory}\{adventure.Id}\{characterName}.{nameof(ContentType.txt)}";
+            var characterPath = @$"{StartupExtensions.DataDirectory}\{adventure.Id}\{characterName}.{nameof(ContentType.txt)}";
 
             var newCharacterChunk = new Chunk
             {
@@ -154,7 +156,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 {
                     await _ioResiliencePipeline.ExecuteAsync(async ct =>
                         {
-                            Directory.CreateDirectory(@$"{DataDirectory}\{adventure.Id}");
+                            Directory.CreateDirectory(@$"{StartupExtensions.DataDirectory}\{adventure.Id}");
 
                             await Task.WhenAll(filesToCommit.Select(x =>
                                 File.WriteAllTextAsync(x.Chunk.Path, x.Content, ct)));

@@ -1,5 +1,5 @@
-﻿**Generate a richly detailed character based on narrative requirements and world context.**
-{{jailbreak}}
+﻿{{jailbreak}}
+**Generate a richly detailed character based on narrative requirements and world context.**
 
 ## MANDATORY REASONING PROCESS
 Before ANY output, you MUST complete extended thinking in <think> tags. This is not optional.

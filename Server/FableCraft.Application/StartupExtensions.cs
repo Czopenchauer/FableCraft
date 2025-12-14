@@ -41,7 +41,8 @@ public static class StartupExtensions
             .AddScoped<ItemCrafter>()
             .AddScoped<CharacterStateAgent>()
             .AddScoped<CharacterTrackerAgent>()
-            .AddScoped<LocationCrafter>();
+            .AddScoped<LocationCrafter>()
+            .AddScoped<MainCharacterEmulatorAgent>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
 

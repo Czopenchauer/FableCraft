@@ -62,6 +62,11 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
     public async Task HandleAsync(SceneGeneratedEvent message, CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(Path.Combine(StartupExtensions.DataDirectory, message.AdventureId.ToString())))
+        {
+            Directory.CreateDirectory(StartupExtensions.DataDirectory);
+        }
+
         var currentScene = await _dbContext.Scenes
             .Select(x =>
                 new

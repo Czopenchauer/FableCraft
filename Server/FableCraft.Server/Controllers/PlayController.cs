@@ -1,5 +1,6 @@
 ﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Infrastructure;
 
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +12,12 @@ namespace FableCraft.Server.Controllers;
 public class PlayController : ControllerBase
 {
     private readonly IGameService _gameService;
+    private readonly MainCharacterEmulatorAgent _mainCharacterEmulatorAgent;
 
-    public PlayController(IGameService gameService)
+    public PlayController(IGameService gameService, MainCharacterEmulatorAgent mainCharacterEmulatorAgent)
     {
         _gameService = gameService;
+        _mainCharacterEmulatorAgent = mainCharacterEmulatorAgent;
     }
 
     [HttpGet("current-scene")]
@@ -142,4 +145,42 @@ public class PlayController : ControllerBase
             return NotFound();
         }
     }
+
+    /// <summary>
+    ///     Emulate the main character to generate text from their perspective
+    /// </summary>
+    [HttpPost("emulate-character")]
+    [ProducesResponseType(typeof(MainCharacterEmulationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<MainCharacterEmulationResponse>> EmulateMainCharacter(
+        Guid adventureId,
+        [FromBody] EmulateMainCharacterRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _mainCharacterEmulatorAgent.InvokeAsync(
+                new MainCharacterEmulationRequest
+                {
+                    AdventureId = adventureId,
+                    Instruction = request.Instruction
+                },
+                cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+}
+
+public class EmulateMainCharacterRequest
+{
+    public required string Instruction { get; init; }
 }

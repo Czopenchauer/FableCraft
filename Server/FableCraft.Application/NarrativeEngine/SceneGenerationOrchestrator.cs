@@ -312,6 +312,13 @@ internal sealed class SceneGenerationOrchestrator(
             }
         }
 
+        scene = await dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .Include(x => x.CharacterStates)
+            .Include(x => x.CharacterActions)
+            .Include(x => x.Lorebooks)
+            .SingleAsync(cancellationToken);
+
         return SceneEnrichmentOutput.CreateFromScene(scene);
     }
 

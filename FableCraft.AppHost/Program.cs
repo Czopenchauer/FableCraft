@@ -67,7 +67,7 @@ var graphRagApi = builder
     .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer)
     .WithEnvironment("ENABLE_BACKEND_ACCESS_CONTROL", "true")
     .WithEnvironment("TELEMETRY_DISABLED", "true")
-    .WithEnvironment("VISUALISATION_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\visualization\")
+    .WithEnvironment("VISUALISATION_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\visualization")
     .WithEnvironment("DATA_ROOT_DIRECTORY", @$"{TryGetSolutionDirectoryInfo().FullName}\cognee\data\")
     .WithEnvironment("SYSTEM_ROOT_DIRECTORY", @$"{TryGetSolutionDirectoryInfo().FullName}\cognee\system\")
     .WithEnvironment("CACHING", "true");
@@ -78,7 +78,7 @@ var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
-    .WithEnvironment("FABLECRAFT_DATA_STORE", @$"{TryGetSolutionDirectoryInfo().FullName}\data-store\")
+    .WithEnvironment("FABLECRAFT_DATA_STORE", @$"{TryGetSolutionDirectoryInfo().FullName}\data-store")
     .WithEnvironment("FABLECRAFT_LOG_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\logs\")
     .WithEnvironment("DEFAULT_PROMPT_PATH", promptPath)
     .WaitFor(graphRagApi)

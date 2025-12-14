@@ -140,7 +140,8 @@ async def cognify_dataset(adventure_id: str):
         logger.info("Running cognify for dataset %s", adventure_id)
         result = await cognee.cognify(datasets=[adventure_id])
         logger.info("Cognify result for %s: %s", adventure_id, result)
-        await cognee.visualize_graph(f"./visualization/{adventure_id}/cognify_graph_visualization.html")
+        path = os.environ.get('VISUALISATION_PATH', './visualization')
+        await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during cognify: {str(e)}")
@@ -157,7 +158,8 @@ async def memify_dataset(adventure_id: str):
         logger.info("Running memify for dataset %s", adventure_id)
         mem_result = await cognee.memify(dataset=adventure_id)
         logger.info("Memify result for %s: %s", adventure_id, mem_result)
-        await cognee.visualize_graph(f"./visualization/{adventure_id}/memify_graph_visualization.html")
+        path = os.environ.get('VISUALISATION_PATH', './visualization')
+        await cognee.visualize_graph(f"{path}/{adventure_id}/memify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during memify: {str(e)}")
