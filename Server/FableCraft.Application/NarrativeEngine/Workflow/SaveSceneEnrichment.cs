@@ -30,7 +30,6 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                        Description = x.Description,
                                        CharacterStats = x.CharacterState,
                                        Tracker = x.CharacterTracker!,
-                                       DevelopmentTracker = x.DevelopmentTracker!,
                                        SequenceNumber = 0,
                                        SceneId = scene.Id
                                    }).ToList()
@@ -43,7 +42,6 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                            Description = x.Description,
                                            CharacterStats = x.CharacterState,
                                            Tracker = x.CharacterTracker!,
-                                           DevelopmentTracker = x.DevelopmentTracker!,
                                            SequenceNumber = x.SequenceNumber + 1,
                                            SceneId = scene.Id
                                        }).ToList()

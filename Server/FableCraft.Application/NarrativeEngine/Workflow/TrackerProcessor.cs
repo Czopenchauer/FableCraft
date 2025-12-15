@@ -7,10 +7,8 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 internal sealed class TrackerProcessor(
     StoryTrackerAgent storyTracker,
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
-    MainCharacterDevelopmentAgent mainCharacterDevelopmentAgent,
     CharacterStateAgent characterStateAgent,
-    CharacterTrackerAgent characterTrackerAgent,
-    CharacterDevelopmentAgent characterDevelopmentAgent) : IProcessor
+    CharacterTrackerAgent characterTrackerAgent) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -29,10 +27,6 @@ internal sealed class TrackerProcessor(
             ? Task.FromResult(
                 (context.NewTracker!.MainCharacter.MainCharacter!, context.NewTracker.MainCharacter.MainCharacterDescription ?? context.MainCharacter.Description))
             : mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
-
-        var trackerDevelopmentTask = context.NewTracker?.MainCharacter?.MainCharacterDevelopment != null
-            ? Task.FromResult(context.NewTracker.MainCharacter.MainCharacterDevelopment)
-            : mainCharacterDevelopmentAgent.Invoke(context, storyTrackerResult, cancellationToken);
 
         var alreadyProcessedCharacters = context.CharacterUpdates?
                                              .Select(x => x.Name)
@@ -53,9 +47,8 @@ internal sealed class TrackerProcessor(
 
                     var stateTask = characterStateAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
                     var trackerTask = characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-                    var developmentTracker = characterDevelopmentAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
-                    await Task.WhenAll(stateTask, trackerTask, developmentTracker);
+                    await Task.WhenAll(stateTask, trackerTask);
                     (CharacterTracker charTracker, var description) = await trackerTask;
                     return new CharacterContext
                     {
@@ -64,21 +57,18 @@ internal sealed class TrackerProcessor(
                         CharacterTracker = charTracker,
                         Name = character.Name,
                         Description = description,
-                        SequenceNumber = character.SequenceNumber + 1,
-                        DevelopmentTracker = await developmentTracker
+                        SequenceNumber = character.SequenceNumber + 1
                     };
                 })
                 .ToArray();
         }
 
         (CharacterTracker mainCharTracker, var mainCharDescription) = await mainCharTrackerTask;
-        // ReSharper disable once UseObjectOrCollectionInitializer Unpack it one by one! Exception are unpacked only when awaited, so this allows to save each state.
         context.NewTracker!.MainCharacter = new MainCharacterTracker
         {
             MainCharacter = mainCharTracker,
             MainCharacterDescription = mainCharDescription
         };
-        context.NewTracker!.MainCharacter.MainCharacterDevelopment = await trackerDevelopmentTask;
 
         if (characterUpdateTask != null)
         {

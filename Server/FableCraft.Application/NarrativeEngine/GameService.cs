@@ -346,7 +346,6 @@ internal class GameService : IGameService
                     MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
-                        Development = scene.Metadata.Tracker!.MainCharacter!.MainCharacterDevelopment!,
                         Description = scene.Metadata.Tracker!.MainCharacter.MainCharacterDescription!
                     },
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
@@ -355,8 +354,7 @@ internal class GameService : IGameService
                             Name = x.CharacterStats.CharacterIdentity.FullName!,
                             Description = x.Description,
                             State = x.CharacterStats,
-                            Tracker = x.Tracker,
-                            Development = x.DevelopmentTracker!
+                            Tracker = x.Tracker
                         })
                         .ToList()
                 },

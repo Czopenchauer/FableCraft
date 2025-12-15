@@ -125,7 +125,6 @@ public class ApplicationDbContext : DbContext
         {
             p.Property(x => x.CharacterStats).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterStats>(x, options)!);
             p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x, options)!);
-            p.Property(x => x.DevelopmentTracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterDevelopmentTracker>(x, options)!);
             p.HasIndex(x => x.SequenceNumber);
         });
 

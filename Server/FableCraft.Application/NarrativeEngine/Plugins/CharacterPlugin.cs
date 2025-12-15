@@ -88,10 +88,6 @@ internal sealed class CharacterPlugin : BaseAgent
                 {context.CharacterTracker.ToJsonString()}
                 </character_tracker>
 
-                <character_development_tracker>
-                {context.DevelopmentTracker.ToJsonString()}
-                </character_development_tracker>
-
                 <context>
                 {_generationContext.ContextGathered.ToJsonString()}
                 </context>

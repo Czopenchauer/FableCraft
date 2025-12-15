@@ -55,7 +55,6 @@ public class SceneGenerationOutput
                     MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
-                        Development = scene.Metadata.Tracker!.MainCharacter!.MainCharacterDevelopment!,
                         Description = scene.Metadata.Tracker.MainCharacter.MainCharacterDescription!
                     },
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
@@ -64,8 +63,7 @@ public class SceneGenerationOutput
                             Name = x.CharacterStats.CharacterIdentity.FullName!,
                             Description = x.Description,
                             State = x.CharacterStats,
-                            Tracker = x.Tracker,
-                            Development = x.DevelopmentTracker!
+                            Tracker = x.Tracker
                         })
                         .ToList()
                 }
@@ -100,7 +98,6 @@ public class SceneEnrichmentOutput
                 MainCharacter = new MainCharacterTrackerDto
                 {
                     Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
-                    Development = scene.Metadata.Tracker!.MainCharacter!.MainCharacterDevelopment!,
                     Description = scene.Metadata.Tracker!.MainCharacter.MainCharacterDescription!
                 },
                 Characters = scene.CharacterStates.Select(x => new CharacterStateDto
@@ -109,8 +106,7 @@ public class SceneEnrichmentOutput
                         Name = x.CharacterStats.CharacterIdentity.FullName!,
                         Description = x.Description,
                         State = x.CharacterStats,
-                        Tracker = x.Tracker,
-                        Development = x.DevelopmentTracker!
+                        Tracker = x.Tracker
                     })
                     .ToList()
             },
@@ -143,8 +139,6 @@ public class MainCharacterTrackerDto
 {
     public required CharacterTracker Tracker { get; init; }
 
-    public required CharacterDevelopmentTracker Development { get; init; }
-
     public required string Description { get; init; }
 }
 
@@ -159,8 +153,6 @@ public class CharacterStateDto
     public required CharacterStats State { get; set; }
 
     public required CharacterTracker Tracker { get; set; }
-
-    public required CharacterDevelopmentTracker Development { get; set; }
 }
 
 internal sealed class SceneGenerationOrchestrator(
@@ -434,7 +426,6 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                DevelopmentTracker = cs.DevelopmentTracker,
                 SequenceNumber = cs.SequenceNumber
             }).ToList(),
             // Sequence number 0 indicates newly introduced characters in this scene
@@ -445,7 +436,6 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                DevelopmentTracker = cs.DevelopmentTracker,
                 SequenceNumber = cs.SequenceNumber
             }).ToArray(),
             NewLore = scene.Lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore))
@@ -495,13 +485,6 @@ internal sealed class SceneGenerationOrchestrator(
                     {
                         context.NewTracker.MainCharacter.MainCharacter = null!;
                         context.NewTracker.MainCharacter.MainCharacterDescription = null;
-                    }
-
-                    break;
-                case nameof(EnrichmentAgent.MainCharacterDevelopment):
-                    if (context.NewTracker?.MainCharacter != null)
-                    {
-                        context.NewTracker.MainCharacter.MainCharacterDevelopment = null!;
                     }
 
                     break;
@@ -648,7 +631,6 @@ internal sealed class SceneGenerationOrchestrator(
                 Name = x.CharacterStats.CharacterIdentity.FullName!,
                 CharacterState = x.CharacterStats,
                 CharacterTracker = x.Tracker,
-                DevelopmentTracker = x.DevelopmentTracker,
                 CharacterId = x.CharacterId,
                 SceneId = x.SceneId,
                 SequenceNumber = x.SequenceNumber

@@ -102,8 +102,6 @@ internal sealed class CharacterContext
     public CharacterStats CharacterState { get; set; } = null!;
 
     public CharacterTracker? CharacterTracker { get; set; }
-
-    public CharacterDevelopmentTracker? DevelopmentTracker { get; set; }
 }
 
 internal sealed class SceneContext
@@ -131,7 +129,6 @@ internal sealed class SceneContext
             {
                 CharacterState = y.CharacterStats,
                 CharacterTracker = y.Tracker,
-                DevelopmentTracker = y.DevelopmentTracker,
                 Description = y.Description,
                 Name = y.CharacterStats.CharacterIdentity.FullName!,
                 CharacterId = y.CharacterId,

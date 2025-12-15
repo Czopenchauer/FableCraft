@@ -19,8 +19,6 @@ public sealed class Character
     public CharacterStats CharacterStats { get; init; } = null!;
 
     public CharacterTracker Tracker { get; init; } = null!;
-
-    public CharacterDevelopmentTracker DevelopmentTracker { get; init; } = null!;
 }
 
 public class CharacterStats

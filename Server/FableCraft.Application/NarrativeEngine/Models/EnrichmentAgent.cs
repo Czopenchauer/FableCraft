@@ -14,9 +14,8 @@ public enum EnrichmentAgent
     // Tracker agents
     StoryTracker,
     MainCharacterTracker,
-    MainCharacterDevelopment,
 
-    // All updates for side characters, state, development, tracker are treated atomically. They cannot be partially regenerated.
+    // All updates for side characters, state, tracker are treated atomically. They cannot be partially regenerated.
     CharacterTracker
 }
 

@@ -27,16 +27,6 @@ internal static class PlaceholderNames
     public const string CharacterTrackerOutput = "{{character_tracker_output}}";
 
     /// <summary>
-    /// Character development schema/format definition.
-    /// </summary>
-    public const string CharacterDevelopmentStructure = "{{character_development_structure}}";
-
-    /// <summary>
-    /// Character development output template.
-    /// </summary>
-    public const string CharacterDevelopmentOutput = "{{character_development_output}}";
-
-    /// <summary>
     /// Main character tracker schema/format definition.
     /// </summary>
     public const string MainCharacterTrackerStructure = "{{main_character_tracker_structure}}";
@@ -45,11 +35,6 @@ internal static class PlaceholderNames
     /// Main character tracker output template.
     /// </summary>
     public const string MainCharacterTrackerOutput = "{{main_character_tracker_output}}";
-
-    /// <summary>
-    /// Main character development output template.
-    /// </summary>
-    public const string MainCharacterDevelopmentOutput = "{{main_character_development_output}}";
 
     /// <summary>
     /// Story tracker schema/format definition.

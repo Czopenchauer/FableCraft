@@ -62,7 +62,7 @@ internal sealed class CharacterCrafter : BaseAgent
 
         var outputParser = CreateOutputParser();
 
-        (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker) result =
+        (CharacterStats characterStats, string description, CharacterTracker tracker) result =
             await _agentKernel.SendRequestAsync(
                 chatHistory,
                 outputParser,
@@ -77,20 +77,18 @@ internal sealed class CharacterCrafter : BaseAgent
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
-            DevelopmentTracker = result.developmentTracker,
             Name = result.characterStats.CharacterIdentity.FullName!,
             SequenceNumber = 1
         };
     }
 
-    private static Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, CharacterDevelopmentTracker developmentTracker)>
+    private static Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>
         CreateOutputParser()
     {
         return response =>
         {
             var characterStats = ResponseParser.ExtractJson<CharacterStats>(response, "character");
             var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "character_statistics");
-            var developmentTracker = ResponseParser.ExtractJson<CharacterDevelopmentTracker>(response, "character_development");
             var description = ResponseParser.ExtractText(response, "character_description");
 
             if (string.IsNullOrEmpty(description))
@@ -98,7 +96,7 @@ internal sealed class CharacterCrafter : BaseAgent
                 throw new InvalidCastException("Failed to parse character description from response due to empty description.");
             }
 
-            return (characterStats, description, tracker, developmentTracker);
+            return (characterStats, description, tracker);
         };
     }
 
@@ -109,9 +107,7 @@ internal sealed class CharacterCrafter : BaseAgent
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.CharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
-            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
-            (PlaceholderNames.CharacterDevelopmentStructure, JsonSerializer.Serialize(TrackerExtensions.ConvertToSystemJson(structure.CharacterDevelopment!), options)),
-            (PlaceholderNames.CharacterDevelopmentOutput, JsonSerializer.Serialize(TrackerExtensions.ConvertToOutputJson(structure.CharacterDevelopment!), options)));
+            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

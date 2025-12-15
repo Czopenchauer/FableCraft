@@ -33,8 +33,6 @@ public static class StartupExtensions
             .AddScoped<IProcessor, ContextGatherer>()
             .AddScoped<IProcessor, NarrativeDirectorAgent>()
             .AddScoped<MainCharacterTrackerAgent>()
-            .AddScoped<MainCharacterDevelopmentAgent>()
-            .AddScoped<CharacterDevelopmentAgent>()
             .AddScoped<StoryTrackerAgent>()
             .AddScoped<CharacterCrafter>()
             .AddScoped<LoreCrafter>()

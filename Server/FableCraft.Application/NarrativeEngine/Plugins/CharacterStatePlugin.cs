@@ -46,8 +46,7 @@ internal sealed class CharacterStatePlugin
             character.Name,
             character.Description,
             CharacterState = character.CharacterState,
-            CharacterTracker = character.CharacterTracker,
-            DevelopmentTracker = character.DevelopmentTracker
+            CharacterTracker = character.CharacterTracker
         };
 
         return JsonSerializer.Serialize(result, _jsonOptions);

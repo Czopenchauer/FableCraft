@@ -94,20 +94,12 @@ public sealed class MainCharacterTracker
     public string? MainCharacterDescription { get; set; }
 
     public CharacterTracker? MainCharacter { get; set; }
-
-    public CharacterDevelopmentTracker? MainCharacterDevelopment { get; set; }
 }
 
 public sealed class CharacterTracker
 {
     public required string Name { get; init; }
 
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
-}
-
-public sealed class CharacterDevelopmentTracker
-{
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }

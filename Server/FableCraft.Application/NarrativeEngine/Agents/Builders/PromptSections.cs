@@ -164,7 +164,7 @@ internal static class PromptSections
 
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         return $"""
-                Set of trackers for the main character, describing their current state and development in the previous scene :
+                Set of trackers for the main character, describing their current state in the previous scene:
                 <main_character_tracker>
                 {tracker!.MainCharacter.ToJsonString(options)}
                 </main_character_tracker>
@@ -210,16 +210,13 @@ internal static class PromptSections
     {
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         return $"""
-                Current state and development tracker for the character {context.Name}:
+                Current state tracker for the character {context.Name}:
                 <previous_character_state>
                 {context.CharacterState.ToJsonString(options)}
                 </previous_character_state>
                 <previous_tracker>
                 {context.CharacterTracker.ToJsonString(options)}
                 </previous_tracker>
-                <previous_development>
-                {context.DevelopmentTracker.ToJsonString(options)}
-                </previous_development>
                 """;
     }
 
