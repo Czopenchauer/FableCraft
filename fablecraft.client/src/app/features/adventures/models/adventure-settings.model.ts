@@ -21,22 +21,3 @@ export interface UpdateAgentLlmPresetDto {
   agentName: string;
   llmPresetId?: string | null;
 }
-
-export const AGENT_NAMES = [
-  'WriterAgent',
-  'NarrativeDirectorAgent',
-  'StoryTrackerAgent',
-  'CharacterStateAgent',
-  'CharacterTrackerAgent',
-  'CharacterDevelopmentAgent',
-  'MainCharacterTrackerAgent',
-  'MainCharacterDevelopmentAgent',
-  'CharacterCrafter',
-  'ItemCrafter',
-  'LoreCrafter',
-  'LocationCrafter',
-  'ContextGatherer',
-  'CharacterPlugin'
-] as const;
-
-export type AgentName = typeof AGENT_NAMES[number];

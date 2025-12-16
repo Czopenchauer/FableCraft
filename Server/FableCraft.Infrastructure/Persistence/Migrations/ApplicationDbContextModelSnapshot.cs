@@ -120,10 +120,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DevelopmentTracker")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
 

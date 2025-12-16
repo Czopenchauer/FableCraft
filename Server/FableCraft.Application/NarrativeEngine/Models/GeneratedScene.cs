@@ -4,7 +4,7 @@ namespace FableCraft.Application.NarrativeEngine.Models;
 
 public class GeneratedScene
 {
-    [JsonPropertyName("scene_text")]
+    [JsonPropertyName("scene")]
     public string Scene { get; init; } = null!;
 
     [JsonPropertyName("choices")]

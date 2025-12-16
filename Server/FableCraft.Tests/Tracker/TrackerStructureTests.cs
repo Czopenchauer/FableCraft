@@ -46,7 +46,8 @@ public class TrackerStructureTests
     public async Task Story_ShouldHaveCompleteStructure()
     {
         // Act
-        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
+        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.TrackerOwn, JsonOptions);
+        var tes = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
         var dictOutput = GetOutputJson(structure);
         var output = JsonSerializer.Serialize(dictOutput, JsonOptions);
         

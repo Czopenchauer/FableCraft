@@ -415,21 +415,6 @@ After the scene prose, present choices:
 4. **Meaningful Diversity** - different approaches (combat, social, stealth, creative)
 5. **Choices are in first person present tense** - "I do X", "I say Y".
 
-**Example:**
-```
-
-The guard captain's hand rests on his sword hilt, eyes cold with suspicion. Behind him, the merchant has already begun
-edging toward the back exit. My wounded leg throbs—running isn't really an option.
-
-What do you do?
-
-1. "I have nothing to hide, Captain. Search me if you must." Submit to inspection and hope my documents pass scrutiny.
-
-2. "The merchant—he's the one you want. I saw him with the stolen goods." Redirect suspicion, buying time.
-
-3. Reach slowly for the pouch of coins at my belt. Perhaps the captain's honor has a price.
-
-```
 
 ### PHASE 9: Quality Control
 

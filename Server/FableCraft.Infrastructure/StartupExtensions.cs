@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 
 using Serilog;
+using Serilog.Events;
 
 namespace FableCraft.Infrastructure;
 
@@ -24,7 +25,7 @@ public static class StartupExtensions
         IConfiguration configuration)
     {
         services.AddSerilog(config => config
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .Enrich.FromLogContext()
             .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")

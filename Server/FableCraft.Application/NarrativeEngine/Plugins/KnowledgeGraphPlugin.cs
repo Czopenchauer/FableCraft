@@ -13,6 +13,8 @@ internal class KnowledgeGraphPlugin
 {
     private readonly CallerContext _callerContext;
     private readonly IRagSearch _ragSearch;
+    private const int MaxQueries = 5;
+    private int _queryCount;
 
     public KnowledgeGraphPlugin(IRagSearch ragSearch, CallerContext callerContext)
     {
@@ -29,6 +31,11 @@ internal class KnowledgeGraphPlugin
         [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
         string levelOfDetails)
     {
+        if(_queryCount >= MaxQueries)
+        {
+            return $"Maximum number of knowledge graph queries ({MaxQueries}) reached. You cannot perform more searches!";
+        }
+
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
         var results = await _ragSearch.SearchAsync(_callerContext, queryCombined);
 
@@ -37,6 +44,7 @@ internal class KnowledgeGraphPlugin
             return "Knowledge graph does not contain any data yet.";
         }
 
+        _queryCount++;
         return string.Join("\n\n", results.SelectMany(x => x.Response.Results));
     }
 }

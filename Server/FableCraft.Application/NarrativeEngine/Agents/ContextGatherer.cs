@@ -34,6 +34,12 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        if (context.ContextGathered != null)
+        {
+            logger.Information("Context already gathered for adventure {AdventureId}, skipping context gathering step.", context.AdventureId);
+            return;
+        }
+
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var systemPrompt = await GetPromptAsync(context);
@@ -109,6 +115,6 @@ internal sealed class ContextGatherer(
 
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         [JsonPropertyName("characters_to_fetch")]
-        public string[] CharactersToFetch { get; set;} = [];
+        public string[] CharactersToFetch { get; set; } = [];
     }
 }

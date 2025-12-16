@@ -9,6 +9,7 @@ import {
   AdventureListItemDto,
   AvailableLorebookDto,
   ComponentStatus,
+  DirectoryListingDto,
   GameScene,
   GameSceneApiResponse,
   GeneratedLorebookDto,
@@ -38,10 +39,18 @@ export class AdventureService {
   }
 
   /**
-   * Get default adventure settings (default prompt path)
+   * Get default adventure settings (default prompt path, available agents, available directories)
    */
   getDefaults(): Observable<AdventureDefaultsDto> {
     return this.http.get<AdventureDefaultsDto>(`${this.apiUrl}/defaults`);
+  }
+
+  /**
+   * Get available prompt directories for a given path (for directory browser)
+   */
+  getPromptDirectories(path?: string): Observable<DirectoryListingDto> {
+    const options = path ? { params: { path } } : {};
+    return this.http.get<DirectoryListingDto>(`${this.apiUrl}/prompt-directories`, options);
   }
 
   /**

@@ -35,15 +35,12 @@
         <div class="settings-section">
           <h3 class="section-title">Prompt Path</h3>
           <div class="form-group">
-            <label for="promptPath">Path to prompt templates</label>
-            <input
-              [(ngModel)]="promptPath"
+            <label>Path to prompt templates</label>
+            <app-directory-browser
+              [currentPath]="promptPath"
               [disabled]="isSaving"
-              class="form-input"
-              id="promptPath"
-              placeholder="Enter path to prompt templates"
-              type="text"
-            />
+              (pathSelected)="onPromptPathSelected($event)"
+            ></app-directory-browser>
           </div>
         </div>
 

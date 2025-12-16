@@ -130,6 +130,10 @@ export class AdventureSettingsModalComponent implements OnChanges {
     return preset?.llmPresetId || null;
   }
 
+  onPromptPathSelected(path: string): void {
+    this.promptPath = path;
+  }
+
   applyPresetToAll(presetId: string | null): void {
     if (!presetId) return;
 

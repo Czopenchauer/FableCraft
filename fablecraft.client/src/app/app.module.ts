@@ -22,6 +22,7 @@ import { WorldbookListComponent } from './features/adventures/components/worldbo
 import { WorldbookFormComponent } from './features/adventures/components/worldbook-form/worldbook-form.component';
 import { MenubarComponent } from './shared/components/menubar/menubar.component';
 import { LlmPresetManagerComponent } from './features/adventures/components/llm-preset-manager/llm-preset-manager.component';
+import { DirectoryBrowserComponent } from './shared/components/directory-browser/directory-browser.component';
 
 @NgModule({
   declarations: [
@@ -37,7 +38,8 @@ import { LlmPresetManagerComponent } from './features/adventures/components/llm-
     WorldbookListComponent,
     WorldbookFormComponent,
     MenubarComponent,
-    LlmPresetManagerComponent
+    LlmPresetManagerComponent,
+    DirectoryBrowserComponent
   ],
   imports: [
     BrowserModule,

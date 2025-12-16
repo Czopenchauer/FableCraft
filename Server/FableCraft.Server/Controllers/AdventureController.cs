@@ -127,10 +127,65 @@ public class AdventureController : ControllerBase
     {
         var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
 
+        // Get all agent names from the enum
+        var availableAgents = Enum.GetNames<AgentName>();
+
         return Ok(new AdventureDefaultsDto
         {
-            DefaultPromptPath = defaultPromptPath
+            DefaultPromptPath = defaultPromptPath,
+            AvailableAgents = availableAgents
         });
+    }
+
+    [HttpGet("prompt-directories")]
+    [ProducesResponseType(typeof(DirectoryListingDto), StatusCodes.Status200OK)]
+    public IActionResult GetPromptDirectories([FromQuery] string? path)
+    {
+        var basePath = path;
+        if (string.IsNullOrEmpty(basePath))
+        {
+            var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
+            basePath = Path.GetDirectoryName(defaultPromptPath) ?? "";
+        }
+
+        if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
+        {
+            return Ok(new DirectoryListingDto
+            {
+                CurrentPath = basePath ?? "",
+                ParentPath = null,
+                Directories = []
+            });
+        }
+
+        try
+        {
+            var parentPath = Path.GetDirectoryName(basePath);
+            var directories = Directory.GetDirectories(basePath)
+                .Select(d => new DirectoryEntryDto
+                {
+                    FullPath = d.Replace('\\', '/'),
+                    Name = Path.GetFileName(d)
+                })
+                .OrderBy(d => d.Name)
+                .ToArray();
+
+            return Ok(new DirectoryListingDto
+            {
+                CurrentPath = basePath.Replace('\\', '/'),
+                ParentPath = parentPath?.Replace('\\', '/'),
+                Directories = directories
+            });
+        }
+        catch (Exception)
+        {
+            return Ok(new DirectoryListingDto
+            {
+                CurrentPath = basePath.Replace('\\', '/'),
+                ParentPath = null,
+                Directories = []
+            });
+        }
     }
 
     [HttpGet("{adventureId:guid}/settings")]

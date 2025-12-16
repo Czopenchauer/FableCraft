@@ -25,7 +25,7 @@ public class CharacterStats
 {
     [JsonPropertyName("character_identity")]
     public required CharacterIdentity CharacterIdentity { get; set; }
-    
+
     [JsonExtensionData]
     public IDictionary<string, object>? ExtensionData { get; set; }
 }
@@ -34,4 +34,7 @@ public class CharacterIdentity
 {
     [JsonPropertyName("full_name")]
     public string? FullName { get; set; }
+
+    [JsonExtensionData]
+    public IDictionary<string, object>? ExtensionData { get; set; }
 }

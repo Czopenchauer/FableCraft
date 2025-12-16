@@ -39,6 +39,18 @@ export interface AdventureDto {
 
 export interface AdventureDefaultsDto {
   defaultPromptPath: string;
+  availableAgents: string[];
+}
+
+export interface DirectoryListingDto {
+  currentPath: string;
+  parentPath: string | null;
+  directories: DirectoryEntryDto[];
+}
+
+export interface DirectoryEntryDto {
+  fullPath: string;
+  name: string;
 }
 
 export interface AvailableLorebookDto {

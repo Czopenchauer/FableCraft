@@ -10,7 +10,6 @@ import {TrackerDefinitionService} from '../../services/tracker-definition.servic
 import {LlmPresetResponseDto} from '../../models/llm-preset.model';
 import {WorldbookResponseDto} from '../../models/worldbook.model';
 import {TrackerDefinitionResponseDto} from '../../models/tracker-definition.model';
-import {AGENT_NAMES} from '../../models/adventure-settings.model';
 
 @Component({
   selector: 'app-adventure-create',
@@ -29,11 +28,14 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
   worldbooks: WorldbookResponseDto[] = [];
   trackerDefinitions: TrackerDefinitionResponseDto[] = [];
 
-  // Agent names for configuration
-  agentNames = AGENT_NAMES;
+  // Agent names from backend
+  agentNames: string[] = [];
 
   // Default prompt path from server
   defaultPromptPath = '';
+
+  // Current selected prompt path
+  currentPromptPath = '';
 
   private destroy$ = new Subject<void>();
 
@@ -52,7 +54,6 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.initializeForm();
     this.loadDropdownData();
   }
 
@@ -186,6 +187,11 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
           this.worldbooks = result.worldbooks;
           this.trackerDefinitions = result.trackerDefinitions;
           this.defaultPromptPath = result.defaults.defaultPromptPath;
+          this.currentPromptPath = result.defaults.defaultPromptPath;
+          this.agentNames = result.defaults.availableAgents;
+
+          // Initialize form after we know the agents
+          this.initializeForm();
 
           // Set default prompt path in form
           this.adventureForm.patchValue({
@@ -200,6 +206,13 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  onPromptPathSelected(path: string): void {
+    this.currentPromptPath = path;
+    this.adventureForm.patchValue({
+      promptPath: path
+    });
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {

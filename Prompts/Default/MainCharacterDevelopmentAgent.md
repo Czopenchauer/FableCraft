@@ -426,32 +426,6 @@ For extended training periods:
 - Can summarize rather than play out each session
 - Maximum realistic improvement caps exist (can't go Untrained → Master in a month)
 
-### Skill Atrophy
-
-Skills not used for extended periods (months+) may:
-
-- Not lose levels, but lose "sharpness"
-- First use after long break might be at -1 tier until "warmed up"
-- XP does not decay, but muscle memory needs refreshing
-
-### Multiple Characters
-
-If tracking multiple characters:
-
-- Maintain separate trackers
-- NPCs can use simplified tracking (just proficiency levels, no XP)
-- Only fully track characters with significant ongoing development
-
-### Contested Actions
-
-When characters oppose each other:
-
-- Compare relevant skill levels
-- Apply trait modifiers
-- Consider resource states
-- Higher skill has advantage; matching skills compare other factors
-- Narrate the contest dynamically
-
 ---
 
 ##### TRACKER UPDATE INSTRUCTIONS

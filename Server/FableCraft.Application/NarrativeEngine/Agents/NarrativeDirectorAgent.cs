@@ -30,6 +30,12 @@ internal sealed class NarrativeDirectorAgent(
 
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
+        if (context.NewNarrativeDirection != null)
+        {
+            logger.Information("Skipping NarrativeDirectorAgent because NewNarrativeDirection is already set.");
+            return;
+        }
+
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var systemPrompt = await GetPromptAsync(context);
@@ -62,16 +68,16 @@ internal sealed class NarrativeDirectorAgent(
 
                              The {context.MainCharacter.Name} action in the last scene was:
                              {PromptSections.PlayerAction(context.PlayerAction)}
-                             
+
                              Generate the next narrative direction for the story based on the above information.
                              """;
         }
         else
         {
             var instruction = await dbContext.Adventures
-                .Select(x => new { x.Id, x.FirstSceneGuidance })
+                .Select(x => new { x.Id, x.FirstSceneGuidance, x.AuthorNotes })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-            requestPrompt = PromptSections.InitialInstruction(instruction.FirstSceneGuidance);
+            requestPrompt = PromptSections.InitialInstruction(instruction.FirstSceneGuidance, instruction.AuthorNotes ?? string.Empty);
         }
 
         chatHistory.AddUserMessage(requestPrompt);
