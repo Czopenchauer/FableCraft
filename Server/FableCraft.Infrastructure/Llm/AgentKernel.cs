@@ -127,7 +127,7 @@ internal sealed class AgentKernel : IAgentKernel
                                                  AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
                                                  CallerName = operationName,
                                                  RequestContent = chatHistory.ToJsonString(),
-                                                 ResponseContent = result.ToJsonString(),
+                                                 ResponseContent = result.Content ?? string.Empty,
                                                  InputToken = replyInnerContent?.Usage.InputTokenCount,
                                                  OutputToken = replyInnerContent?.Usage.OutputTokenCount,
                                                  TotalToken = replyInnerContent?.Usage.TotalTokenCount,

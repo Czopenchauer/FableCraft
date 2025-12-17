@@ -30,6 +30,7 @@ export interface AdventureDto {
   firstSceneDescription: string;
   referenceTime: string;
   authorNotes: string;
+  worldSettings: string;
   character: CharacterDto;
   worldbookId?: string | null;
   trackerDefinitionId: string;

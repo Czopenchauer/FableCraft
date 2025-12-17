@@ -438,14 +438,14 @@
                         [attr.stroke-linejoin]="'round'"
                         [attr.stroke-width]="2"></path>
                 </svg>
-                <input
-                  (keypress)="onCustomActionKeyPress($event)"
+                <textarea
+                  (keydown)="onCustomActionKeyDown($event)"
                   [(ngModel)]="customAction"
                   [disabled]="isLoading || isRegenerating || isEnriching || isActionBlocked()"
                   class="custom-action-input"
                   placeholder="Or type your own action..."
-                  type="text"
-                />
+                  rows="1"
+                ></textarea>
                 <button
                   (click)="onCustomActionSubmit()"
                   *ngIf="customAction.trim()"

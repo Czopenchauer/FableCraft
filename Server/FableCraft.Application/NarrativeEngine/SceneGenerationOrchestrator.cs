@@ -386,7 +386,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
             })
             .SingleAsync(cancellationToken);
 
@@ -398,7 +398,25 @@ internal sealed class SceneGenerationOrchestrator(
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
 
-        var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
+        var existingCharacters = await dbContext
+            .Characters
+            .Where(x => x.AdventureId == adventureId)
+            .GroupBy(x => x.CharacterId)
+            .ToListAsync(cancellationToken);
+
+        // Skip the most recent character state as that's the one being regenerated
+        var adventureCharacters = existingCharacters
+            .Select(g => g.OrderByDescending(x => x.SequenceNumber).Skip(1).First())
+            .Select(x => new CharacterContext
+            {
+                Description = x.Description,
+                Name = x.CharacterStats.CharacterIdentity.FullName!,
+                CharacterState = x.CharacterStats,
+                CharacterTracker = x.Tracker,
+                CharacterId = x.CharacterId,
+                SceneId = x.SceneId,
+                SequenceNumber = x.SequenceNumber
+            }).ToList();
 
         var context = new GenerationContext
         {
@@ -453,7 +471,8 @@ internal sealed class SceneGenerationOrchestrator(
             adventureCharacters,
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
-            adventure.AdventureStartTime);
+            adventure.AdventureStartTime,
+            adventure.WorldSettings);
 
         return context;
     }
@@ -506,7 +525,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
             })
             .SingleAsync(cancellationToken);
 
@@ -529,7 +548,8 @@ internal sealed class SceneGenerationOrchestrator(
             adventureCharacters,
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
-            adventure.AdventureStartTime);
+            adventure.AdventureStartTime,
+            adventure.WorldSettings);
         return generationContext;
     }
 
@@ -543,7 +563,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
             })
             .SingleAsync(cancellationToken);
 
@@ -586,7 +606,8 @@ internal sealed class SceneGenerationOrchestrator(
             adventureCharacters,
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
-            adventure.AdventureStartTime);
+            adventure.AdventureStartTime,
+            adventure.WorldSettings);
 
         return context;
 

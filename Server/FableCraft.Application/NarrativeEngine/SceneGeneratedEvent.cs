@@ -212,15 +212,23 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 {
                     if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
                     {
-                        await _resiliencePipeline.ExecuteAsync(async ct =>
-                                await _ragBuilder.UpdateDataAsync(message.AdventureId.ToString(), chunk.KnowledgeGraphNodeId, chunk.Path, ct),
-                            cancellationToken);
+                        try
+                        {
+                            await _resiliencePipeline.ExecuteAsync(async ct =>
+                                    await _ragBuilder.UpdateDataAsync(message.AdventureId.ToString(), chunk.KnowledgeGraphNodeId, chunk.Path, ct),
+                                cancellationToken);
+                        }
+                        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            // If the node was not found, we will add it again
+                            chunk.KnowledgeGraphNodeId = null;
+                        }
                     }
                 }
 
                 var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
                         await _ragBuilder.AddDataAsync(
-                            fileToCommit.Select(x => x.Chunk.Path).ToList(),
+                            fileToCommit.Where(x => string.IsNullOrEmpty(x.Chunk.KnowledgeGraphNodeId)).Select(x => x.Chunk.Path).ToList(),
                             message.AdventureId.ToString(),
                             ct),
                     cancellationToken);

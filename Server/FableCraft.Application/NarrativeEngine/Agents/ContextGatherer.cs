@@ -49,6 +49,8 @@ internal sealed class ContextGatherer(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(context.WorldSettings)}
+
                              {PromptSections.MainCharacter(context)}
 
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}

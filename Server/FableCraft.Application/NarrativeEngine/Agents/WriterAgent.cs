@@ -50,6 +50,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(context.WorldSettings)}
+
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}

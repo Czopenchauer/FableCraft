@@ -446,4 +446,19 @@ internal static class PromptSections
                 </adventure_start_time>
                 """;
     }
+
+    public static string WorldSettings(string? worldSettings)
+    {
+        if (string.IsNullOrWhiteSpace(worldSettings))
+        {
+            return string.Empty;
+        }
+
+        return $"""
+                The following world settings define the rules, systems, and context of this adventure's world:
+                <world_settings>
+                {worldSettings}
+                </world_settings>
+                """;
+    }
 }

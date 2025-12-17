@@ -34,6 +34,8 @@ internal sealed class LocationCrafter(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(context.WorldSettings)}
+
                              {PromptSections.CreatedCharacters(context.NewCharacters)}
 
                              {PromptSections.Context(context.ContextGathered)}

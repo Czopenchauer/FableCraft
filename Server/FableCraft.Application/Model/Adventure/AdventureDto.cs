@@ -21,6 +21,8 @@ public class AdventureDto
 
     public required string AuthorNotes { get; init; } = string.Empty;
 
+    public string? WorldSettings { get; init; }
+
     public required CharacterDto Character { get; init; } = null!;
 
     public Guid? WorldbookId { get; init; }

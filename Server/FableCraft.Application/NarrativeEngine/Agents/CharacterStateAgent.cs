@@ -36,6 +36,8 @@ internal sealed class CharacterStateAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(generationContext.WorldSettings)}
+
                              {PromptSections.StoryTracker(storyTrackerResult, true)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
@@ -54,7 +56,7 @@ internal sealed class CharacterStateAgent(
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_state", true);
+        var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_profile", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));

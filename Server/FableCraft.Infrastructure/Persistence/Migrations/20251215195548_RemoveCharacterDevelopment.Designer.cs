@@ -3,6 +3,7 @@ using System;
 using FableCraft.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215195548_RemoveCharacterDevelopment")]
+    partial class RemoveCharacterDevelopment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -64,9 +67,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("TrackerStructure")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("WorldSettings")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

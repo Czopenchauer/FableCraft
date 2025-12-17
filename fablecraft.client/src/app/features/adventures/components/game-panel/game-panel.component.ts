@@ -359,10 +359,12 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle Enter key press in custom action input
+   * Handle key down in custom action textarea
+   * Enter submits, Shift+Enter adds a new line
    */
-  onCustomActionKeyPress(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
+  onCustomActionKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
       this.onCustomActionSubmit();
     }
   }

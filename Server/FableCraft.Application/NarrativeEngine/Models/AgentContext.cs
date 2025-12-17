@@ -20,7 +20,8 @@ internal sealed class GenerationContext
         List<CharacterContext> characters,
         AdventureAgentLlmPreset[] agentLlmPresets,
         string promptPath,
-        string adventureStartTime)
+        string adventureStartTime,
+        string? worldSettings)
     {
         SceneContext = sceneContext;
         TrackerStructure = trackerStructure;
@@ -29,6 +30,7 @@ internal sealed class GenerationContext
         AgentLlmPreset = agentLlmPresets;
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
+        WorldSettings = worldSettings;
     }
 
     public required Guid AdventureId { get; set; }
@@ -61,6 +63,9 @@ internal sealed class GenerationContext
 
     [JsonIgnore]
     public string AdventureStartTime { get; set; } = null!;
+
+    [JsonIgnore]
+    public string? WorldSettings { get; set; }
 
     public CharacterContext[]? NewCharacters { get; set; }
 

@@ -45,7 +45,8 @@ public sealed class MainCharacterEmulatorAgent(
             {
                 x.MainCharacter,
                 x.AgentLlmPresets,
-                x.PromptPath
+                x.PromptPath,
+                x.WorldSettings
             })
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -89,7 +90,8 @@ public sealed class MainCharacterEmulatorAgent(
             adventure.MainCharacter.Name,
             mainCharacterDescription,
             mainCharacterTracker,
-            recentScenes);
+            recentScenes,
+            adventure.WorldSettings);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -146,8 +148,17 @@ public sealed class MainCharacterEmulatorAgent(
         string characterName,
         string characterDescription,
         MainCharacterTracker? tracker,
-        List<Scene> recentScenes)
+        List<Scene> recentScenes,
+        string? worldSettings)
     {
+        var worldSettingsSection = string.IsNullOrWhiteSpace(worldSettings)
+            ? string.Empty
+            : $"""
+               <world_settings>
+               {worldSettings}
+               </world_settings>
+               """;
+
         var scenesSection = string.Empty;
         if (recentScenes.Count > 0)
         {
@@ -175,17 +186,21 @@ public sealed class MainCharacterEmulatorAgent(
         if (tracker != null)
         {
             return $"""
+                              {worldSettingsSection}
+
                               <character_state>
                               Current tracker information reflecting the character's state:
-                              
+
                               {tracker.ToJsonString()}
                               </character_state>
-                              
+
                               {scenesSection}
                               """;
         }
 
         return $"""
+                {worldSettingsSection}
+
                 <main_character>
                 Name: {characterName}
 

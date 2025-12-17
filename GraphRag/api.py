@@ -5,6 +5,7 @@ from uuid import UUID
 
 import cognee
 import uvicorn
+from cognee.api.v1.exceptions import DocumentNotFoundError
 from cognee.context_global_variables import set_session_user_context_variable
 from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
@@ -262,6 +263,11 @@ async def update_node(request: UpdateDataRequest):
 
         await cognee.update(data_id=request.data_id, dataset_id=dataset.id, data=request.content)
 
+    except DocumentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Data with ID '{request.data_id}' not found in dataset '{request.adventure_id}'"
+        )
     except HTTPException:
         raise
     except Exception as e:

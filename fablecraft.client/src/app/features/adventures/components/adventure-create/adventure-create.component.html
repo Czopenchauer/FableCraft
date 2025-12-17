@@ -88,6 +88,18 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label" for="worldSettings">World Settings</label>
+          <textarea
+            class="form-textarea"
+            formControlName="worldSettings"
+            id="worldSettings"
+            placeholder="Describe the world's rules, magic systems, technology level, geography, factions, or any other setting details that should apply to all scenes..."
+            rows="4"
+          ></textarea>
+          <span class="help-text">Optional background information about the world that will be provided to all AI agents</span>
+        </div>
+
+        <div class="form-group">
           <label class="form-label" for="firstSceneDescription">First Scene Description *</label>
           <textarea
             [class.input-error]="isFieldInvalid('firstSceneDescription')"

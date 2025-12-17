@@ -994,6 +994,11 @@
   font-size: var(--font-size-base);
   line-height: 1.6;
   padding: 0;
+  resize: vertical;
+  min-height: 1.6em;
+  max-height: 200px;
+  overflow-y: auto;
+  field-sizing: content;
 }
 
 .custom-action-input::placeholder {
