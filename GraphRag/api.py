@@ -41,11 +41,11 @@ FastAPIInstrumentor.instrument_app(app)
 
 class AddDataRequest(BaseModel):
     content: List[str]
-    adventure_id: str
+    adventure_ids: List[str]
 
 
 class SearchRequest(BaseModel):
-    adventure_id: str
+    adventure_ids: List[str]
     query: str
     search_type: SearchType
 
@@ -74,12 +74,26 @@ class AddDataResponse(BaseModel):
 
 
 
+class SearchResultItem(BaseModel):
+    dataset_name: str
+    text: str
+
+
 class SearchResponse(BaseModel):
-    results: List[str]
+    results: List[SearchResultItem]
 
 
 class VisualizeRequest(BaseModel):
     path: str
+
+
+class CognifyRequest(BaseModel):
+    adventure_ids: List[str]
+    temporal: bool = False
+
+
+class MemifyRequest(BaseModel):
+    adventure_ids: List[str]
 
 
 class UpdateDataRequest(BaseModel):
@@ -90,41 +104,46 @@ class UpdateDataRequest(BaseModel):
 
 @app.post("/add", status_code=status.HTTP_200_OK)
 async def add_data(data: AddDataRequest):
-    """Add data to a dataset without processing"""
+    """Add data to multiple datasets without processing"""
     try:
-        logger.info("Adding data to dataset %s", data.adventure_id)
-        result = await cognee.add(data.content, dataset_name=data.adventure_id)
-        logger.info("Add completed %s", result)
-        datasets = await cognee.datasets.list_datasets()
-        dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
-        logger.info("Datasets after processing %s: %s", data.adventure_id, dataset_summaries)
+        all_results = {}
 
-        dataset = next((d for d in datasets if d.name == data.adventure_id), None)
-        if not dataset:
-            raise ValueError(f"Dataset '{data.adventure_id}' not found after processing")
+        for adventure_id in data.adventure_ids:
+            logger.info("Adding data to dataset %s", adventure_id)
+            result = await cognee.add(data.content, dataset_name=adventure_id)
+            logger.info("Add completed %s", result)
+            datasets = await cognee.datasets.list_datasets()
+            dataset_summaries = [{"id": getattr(d, "id", None), "name": getattr(d, "name", None)} for d in datasets]
+            logger.info("Datasets after processing %s: %s", adventure_id, dataset_summaries)
 
-        dataset_data = await cognee.datasets.list_data(dataset.id)
+            dataset = next((d for d in datasets if d.name == adventure_id), None)
+            if not dataset:
+                raise ValueError(f"Dataset '{adventure_id}' not found after processing")
 
-        data_ids = set()
-        result_obj = getattr(result, "result", None) if hasattr(result, "result") else result
-        data_ingestion_info = getattr(result_obj, "data_ingestion_info", None)
+            dataset_data = await cognee.datasets.list_data(dataset.id)
 
-        if data_ingestion_info:
-            for info in data_ingestion_info:
-                # info is a dict, not an object
-                data_id = info.get("data_id") if isinstance(info, dict) else getattr(info, "data_id", None)
-                if data_id:
-                    data_ids.add(str(data_id))
+            data_ids = set()
+            result_obj = getattr(result, "result", None) if hasattr(result, "result") else result
+            data_ingestion_info = getattr(result_obj, "data_ingestion_info", None)
 
-        file_name_to_id = {}
-        for item in dataset_data:
-            item_id = str(getattr(item, "id", ""))
-            if item_id in data_ids:
-                file_name = getattr(item, "name", "")
-                file_name_to_id[file_name] = item_id
+            if data_ingestion_info:
+                for info in data_ingestion_info:
+                    # info is a dict, not an object
+                    data_id = info.get("data_id") if isinstance(info, dict) else getattr(info, "data_id", None)
+                    if data_id:
+                        data_ids.add(str(data_id))
 
-        logger.info(file_name_to_id)
-        return file_name_to_id
+            file_name_to_id = {}
+            for item in dataset_data:
+                item_id = str(getattr(item, "id", ""))
+                if item_id in data_ids:
+                    file_name = getattr(item, "name", "")
+                    file_name_to_id[file_name] = item_id
+
+            all_results[adventure_id] = file_name_to_id
+            logger.info("Results for %s: %s", adventure_id, file_name_to_id)
+
+        return all_results
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during add data: {str(e)}")
@@ -134,15 +153,16 @@ async def add_data(data: AddDataRequest):
         )
 
 
-@app.post("/cognify/{adventure_id}", status_code=status.HTTP_200_OK)
-async def cognify_dataset(adventure_id: str):
-    """Run cognify processing on a dataset"""
+@app.post("/cognify", status_code=status.HTTP_200_OK)
+async def cognify_dataset(request: CognifyRequest):
+    """Run cognify processing on multiple datasets"""
     try:
-        logger.info("Running cognify for dataset %s", adventure_id)
-        result = await cognee.cognify(datasets=[adventure_id])
-        logger.info("Cognify result for %s: %s", adventure_id, result)
-        path = os.environ.get('VISUALISATION_PATH', './visualization')
-        await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
+        for adventure_id in request.adventure_ids:
+            logger.info("Running cognify for dataset %s (temporal=%s)", adventure_id, request.temporal)
+            result = await cognee.cognify(datasets=[adventure_id], temporal=request.temporal)
+            logger.info("Cognify result for %s: %s", adventure_id, result)
+            path = os.environ.get('VISUALISATION_PATH', './visualization')
+            await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during cognify: {str(e)}")
@@ -152,15 +172,16 @@ async def cognify_dataset(adventure_id: str):
         )
 
 
-@app.post("/memify/{adventure_id}", status_code=status.HTTP_200_OK)
-async def memify_dataset(adventure_id: str):
-    """Run memify processing on a dataset"""
+@app.post("/memify", status_code=status.HTTP_200_OK)
+async def memify_dataset(request: MemifyRequest):
+    """Run memify processing on multiple datasets"""
     try:
-        logger.info("Running memify for dataset %s", adventure_id)
-        mem_result = await cognee.memify(dataset=adventure_id)
-        logger.info("Memify result for %s: %s", adventure_id, mem_result)
-        path = os.environ.get('VISUALISATION_PATH', './visualization')
-        await cognee.visualize_graph(f"{path}/{adventure_id}/memify_graph_visualization.html")
+        for adventure_id in request.adventure_ids:
+            logger.info("Running memify for dataset %s", adventure_id)
+            mem_result = await cognee.memify(dataset=adventure_id)
+            logger.info("Memify result for %s: %s", adventure_id, mem_result)
+            path = os.environ.get('VISUALISATION_PATH', './visualization')
+            await cognee.visualize_graph(f"{path}/{adventure_id}/memify_graph_visualization.html")
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during memify: {str(e)}")
@@ -192,15 +213,25 @@ async def search(request: SearchRequest, response_model=SearchResponse):
     try:
         user = await get_default_user()
         await set_session_user_context_variable(user)
-        search_results = await cognee.search(datasets=[request.adventure_id], query_type=request.search_type, query_text=request.query, session_id=request.adventure_id)
 
-        results = [
-            text
-            for result in search_results
-            if result.get("search_result")
-            for text in result["search_result"]
-        ]
-        return SearchResponse(results=results)
+        search_results = await cognee.search(
+            datasets=request.adventure_ids,
+            query_type=request.search_type,
+            query_text=request.query,
+            session_id=request.adventure_ids[0] if request.adventure_ids else ""
+        )
+
+        all_results = []
+        for result in search_results:
+            if result.get("search_result"):
+                dataset_name = result.get("dataset_name", "")
+                for text in result["search_result"]:
+                    all_results.append(SearchResultItem(
+                        dataset_name=dataset_name,
+                        text=text
+                    ))
+
+        return SearchResponse(results=all_results)
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during search: {str(e)}")

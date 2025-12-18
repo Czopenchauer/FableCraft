@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using static FableCraft.Infrastructure.Clients.RagClientExtensions;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -61,7 +63,12 @@ internal sealed class CharacterTrackerAgent(
         var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("character_tracker", "character_description", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
+        var datasets = new List<string>
+        {
+            GetWorldDatasetName(generationContext.AdventureId),
+            GetCharacterDatasetName(generationContext.AdventureId, context.CharacterId)
+        };
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 

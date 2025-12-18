@@ -91,7 +91,11 @@ internal sealed class ContextGatherer(
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         try
         {
-            var searchResults = await ragSearch.SearchAsync(callerContext, queries.Queries, cancellationToken: cancellationToken);
+            var searchResults = await ragSearch.SearchAsync(
+                callerContext,
+                [RagClientExtensions.GetWorldDatasetName(context.AdventureId), RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)],
+                queries.Queries,
+                cancellationToken: cancellationToken);
             context.ContextGathered = new ContextBase
             {
                 ContextBases = searchResults.Select(x => new SearchResult

@@ -14,6 +14,8 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
+using static FableCraft.Infrastructure.Clients.RagClientExtensions;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
@@ -123,7 +125,12 @@ internal sealed class CharacterPlugin : BaseAgent
         }
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId));
+        var datasets = new List<string>
+        {
+            GetWorldDatasetName(_generationContext.AdventureId),
+            GetMainCharacterDatasetName(_generationContext.AdventureId)
+        };
+        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
         var chat = new ChatHistory();

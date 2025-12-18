@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using static FableCraft.Infrastructure.Clients.RagClientExtensions;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -71,7 +73,12 @@ internal sealed class StoryTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId));
+        var datasets = new List<string>
+        {
+            GetWorldDatasetName(context.AdventureId),
+            GetMainCharacterDatasetName(context.AdventureId)
+        };
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 

@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using static FableCraft.Infrastructure.Clients.RagClientExtensions;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -59,13 +61,15 @@ internal sealed class CharacterStateAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_profile", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId));
+        var datasets = new List<string>
+        {
+            GetCharacterDatasetName(generationContext.AdventureId, context.CharacterId)
+        };
+        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-        promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
-
         return await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,

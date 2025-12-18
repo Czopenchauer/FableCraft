@@ -79,7 +79,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             return;
         }
 
-        var filesToCommit = new List<(Chunk Chunk, string Content)>();
+        var filesToCommit = new List<(Chunk Chunk, string Content, string Dataset)>();
 
         var existingLorebookChunks = await dbContext.Chunks
             .AsNoTracking()
@@ -106,7 +106,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     ContentHash = lorebookHash,
                     AdventureId = message.AdventureId
                 };
-                filesToCommit.Add((newLorebookChunk, lorebookEntry.Content));
+                filesToCommit.Add((newLorebookChunk, lorebookEntry.Content, RagClientExtensions.GetWorldDatasetName(message.AdventureId)));
             }
         }
 
@@ -140,7 +140,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 ContentHash = characterHash,
                 AdventureId = message.AdventureId
             };
-            filesToCommit.Add((newCharacterChunk, characterContent));
+            filesToCommit.Add((newCharacterChunk, characterContent, RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)));
         }
 
         if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is not ProcessingStatus.Completed)
@@ -166,21 +166,27 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     await Task.WhenAll(filesToCommit.Select(x =>
                         File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
 
-                    var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await ragProcessor.AddDataAsync(
-                                filesToCommit.Select(x => x.Chunk.Path).ToList(),
-                                message.AdventureId.ToString(),
-                                ct),
-                        cancellationToken);
-
-                    foreach ((Chunk chunk, _) in filesToCommit)
+                    foreach (var valueTuplese in filesToCommit.GroupBy(x => x.Dataset))
                     {
-                        chunk.KnowledgeGraphNodeId = addResult[chunk.Name];
-                        dbContext.Chunks.Add(chunk);
+                        var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
+                                await ragProcessor.AddDataAsync(
+                                    valueTuplese.Select(x => x.Chunk.Path).ToList(),
+                                    [valueTuplese.Key],
+                                    ct),
+                            cancellationToken);
+
+                        foreach ((Chunk chunk, _, var dataset) in filesToCommit)
+                        {
+                            chunk.KnowledgeGraphNodeId = addResult[dataset][chunk.Name];
+                        }
                     }
 
                     await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await ragProcessor.CognifyAsync(message.AdventureId.ToString(), ct),
+                            await ragProcessor.CognifyAsync([RagClientExtensions.GetWorldDatasetName(message.AdventureId)], cancellationToken: ct),
+                        cancellationToken);
+
+                    await _resiliencePipeline.ExecuteAsync(async ct =>
+                            await ragProcessor.CognifyAsync([RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)], true, ct),
                         cancellationToken);
 
                     // await _resiliencePipeline.ExecuteAsync(async ct =>
