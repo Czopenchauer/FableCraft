@@ -12,51 +12,46 @@ public class TrackerStructureTests
         PropertyNameCaseInsensitive = true
     };
 
-    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
+    private static TrackerStructure DeserializeStructure(string json)
     {
-        var dictionary = new Dictionary<string, object>();
-        var story = TrackerExtensions.ConvertToSystemJson(structure.Story);
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
-
-        var mainCharStats = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
-
-        // var charDict = TrackerExtensions.ConvertToSystemJson(structure.Characters);
-        // dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Characters), new object[] { charDict });
-
-        return dictionary;
+        var structure = JsonSerializer.Deserialize<TrackerStructure>(json, JsonOptions);
+        if (structure is null)
+        {
+            throw new InvalidOperationException("Failed to deserialize TrackerStructure");
+        }
+        return structure;
     }
-    
-    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
+
+    private async static Task AssertFieldIsValid(FieldDefinition field, string? because = null)
     {
-        var dictionary = new Dictionary<string, object>();
-        var story = TrackerExtensions.ConvertToOutputJson(structure.Story);
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.Story), story);
-
-        var mainCharStats = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
-        dictionary.Add(nameof(Infrastructure.Persistence.Entities.Adventure.Tracker.MainCharacter), mainCharStats);
-
-        // var charDict = ConvertFieldsToDict(structure.Characters);
-        // dictionary.Add(nameof(Tracker.Characters), new object[] { charDict });
-
-        return dictionary;
+        await Assert.That(field.Name).IsNotNull();
+        await Assert.That(field.Prompt).IsNotNull();
     }
+
+    private async static Task AssertStringField(FieldDefinition field, bool hasExampleValues = true)
+    {
+        await AssertFieldIsValid(field);
+        await Assert.That(field.Type).IsEqualTo(FieldType.String);
+        await Assert.That(field.DefaultValue).IsNotNull();
+        await Assert.That(field.HasNestedFields).IsFalse().Because("String field should not have nested fields");
+
+        if (hasExampleValues)
+        {
+            await Assert.That(field.ExampleValues).IsNotNull();
+        }
+    }
+
+    #region Story Tests
 
     [Test]
-    public async Task Story_ShouldHaveCompleteStructure()
+    public async Task Story_ShouldDeserializeAllFields()
     {
         // Act
-        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.TrackerOwn, JsonOptions);
-        var tes = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-        var dictOutput = GetOutputJson(structure);
-        var output = JsonSerializer.Serialize(dictOutput, JsonOptions);
-        
-        var dictSystem = GetSystemPrompt(structure);
-        var outputSystem = JsonSerializer.Serialize(dictSystem, JsonOptions);
+        var structure = DeserializeStructure(TestTracker.InputJson);
+
         // Assert
-        await Assert.That(structure).IsNotNull();
-        await Assert.That(structure!.Story).IsNotNull();
-        await Assert.That(structure.Story!.Length).IsEqualTo(6);
+        await Assert.That(structure.Story).IsNotNull();
+        await Assert.That(structure.Story.Length).IsEqualTo(6);
 
         var expectedFields = new[] { "Time", "Weather", "Location", "PrimaryTopic", "EmotionalTone", "InteractionTheme" };
         var actualFieldNames = structure.Story.Select(f => f.Name).ToArray();
@@ -65,48 +60,61 @@ public class TrackerStructureTests
         {
             await Assert.That(actualFieldNames).Contains(expectedField);
         }
+    }
 
+    [Test]
+    public async Task Story_AllFieldsShouldBeValidStringTypes()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+
+        // Assert
         foreach (FieldDefinition field in structure.Story)
         {
-            await Assert.That(field.IsValid()).IsTrue().Because("Field should be valid");
-            await Assert.That(field.Type).IsEqualTo(FieldType.String);
-            await Assert.That(field.Name).IsNotNull();
-            await Assert.That(field.Prompt).IsNotNull();
-            await Assert.That(field.DefaultValue).IsNotNull();
-            await Assert.That(field.ExampleValues).IsNotNull();
-            await Assert.That(field.ExampleValues!.Count).IsEqualTo(3);
-            await Assert.That(field.HasNestedFields).IsFalse().Because("Field should not have nested fields");
+            await AssertStringField(field);
+            await Assert.That(field.ExampleValues!.Count).IsEqualTo(3)
+                .Because($"Field '{field.Name}' should have 3 example values");
         }
+    }
 
+    [Test]
+    public async Task Story_TimeField_ShouldHaveCorrectDefaults()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition timeField = structure.Story.First(f => f.Name == "Time");
+
+        // Assert
         await Assert.That(timeField.DefaultValue?.ToString()).IsEqualTo("2024-10-16T09:15:30");
         await Assert.That(timeField.Prompt ?? string.Empty).Contains("Adjust time in small increments");
+        await Assert.That(timeField.Prompt ?? string.Empty).Contains("ISO 8601");
+    }
 
+    [Test]
+    public async Task Story_LocationField_ShouldHaveCorrectDefaults()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition locationField = structure.Story.First(f => f.Name == "Location");
+
+        // Assert
         await Assert.That(locationField.DefaultValue?.ToString() ?? string.Empty).Contains("Conference Room B");
         await Assert.That(locationField.Prompt).StartsWith("Provide a detailed and specific location");
     }
 
-    [Test]
-    public async Task CharactersPresent_ShouldHaveCompleteStructure()
-    {
-        // Act
-        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
+    #endregion
 
-        // Assert
-        await Assert.That(structure).IsNotNull();
-    }
+    #region MainCharacter Tests
 
     [Test]
-    public async Task MainCharacter_ShouldHaveCompleteStructure()
+    public async Task MainCharacter_ShouldDeserializeAllFields()
     {
         // Act
-        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
+        var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        await Assert.That(structure).IsNotNull();
-        await Assert.That(structure!.MainCharacter).IsNotNull();
-        await Assert.That(structure.MainCharacter!.Length).IsEqualTo(11);
+        await Assert.That(structure.MainCharacter).IsNotNull();
+        await Assert.That(structure.MainCharacter.Length).IsEqualTo(11);
 
         var expectedFields = new[]
         {
@@ -119,27 +127,59 @@ public class TrackerStructureTests
         {
             await Assert.That(actualFieldNames).Contains(expectedField);
         }
+    }
 
+    [Test]
+    public async Task MainCharacter_AllFieldsShouldBeValid()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+
+        // Assert
         foreach (FieldDefinition field in structure.MainCharacter)
         {
-            await Assert.That(field.IsValid()).IsTrue().Because("Field should be valid");
+            await AssertFieldIsValid(field);
         }
+    }
 
+    [Test]
+    public async Task MainCharacter_StringFieldsShouldHaveCorrectStructure()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         var stringFields = structure.MainCharacter.Where(f => f.Name != "Inventory").ToArray();
+
+        // Assert
         await Assert.That(stringFields.Length).IsEqualTo(10);
+
         foreach (FieldDefinition field in stringFields)
         {
-            await Assert.That(field.Type).IsEqualTo(FieldType.String);
-            await Assert.That(field.DefaultValue).IsNotNull();
-            await Assert.That(field.ExampleValues).IsNotNull();
-            await Assert.That(field.HasNestedFields).IsFalse().Because("Field should not have nested fields");
+            await AssertStringField(field);
         }
+    }
 
+    [Test]
+    public async Task MainCharacter_InventoryField_ShouldBeForEachObjectType()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+
+        // Assert
         await Assert.That(inventoryField.Type).IsEqualTo(FieldType.ForEachObject);
         await Assert.That(inventoryField.DefaultValue).IsNull();
         await Assert.That(inventoryField.ExampleValues).IsNull();
         await Assert.That(inventoryField.HasNestedFields).IsTrue().Because("Inventory field should have nested fields");
+    }
+
+    [Test]
+    public async Task MainCharacter_InventoryNestedFields_ShouldHaveCorrectStructure()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+
+        // Assert
         await Assert.That(inventoryField.NestedFields).IsNotNull();
         await Assert.That(inventoryField.NestedFields!.Length).IsEqualTo(4);
 
@@ -151,39 +191,64 @@ public class TrackerStructureTests
 
         foreach (FieldDefinition field in inventoryField.NestedFields)
         {
-            await Assert.That(field.IsValid()).IsTrue().Because("Nested field should be valid");
-            await Assert.That(field.Type).IsEqualTo(FieldType.String);
-            await Assert.That(field.DefaultValue).IsNotNull();
-            await Assert.That(field.ExampleValues).IsNotNull();
+            await AssertStringField(field);
         }
+    }
 
-        FieldDefinition itemNameField = inventoryField.NestedFields.First(f => f.Name == "ItemName");
+    [Test]
+    public async Task MainCharacter_InventoryNestedFields_ShouldHaveCorrectDefaults()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+
+        // Assert
+        FieldDefinition itemNameField = inventoryField.NestedFields!.First(f => f.Name == "ItemName");
         await Assert.That(itemNameField.DefaultValue?.ToString()).IsEqualTo("Smartphone");
         await Assert.That(itemNameField.ExampleValues?.Count).IsEqualTo(4);
 
-        FieldDefinition locationNestedField = inventoryField.NestedFields.First(f => f.Name == "Location");
+        FieldDefinition locationNestedField = inventoryField.NestedFields!.First(f => f.Name == "Location");
         await Assert.That(locationNestedField.DefaultValue?.ToString()).IsEqualTo("Right pocket");
+    }
 
+    [Test]
+    public async Task MainCharacter_GenderField_ShouldHaveCorrectDefaults()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition genderField = structure.MainCharacter.First(f => f.Name == "Gender");
+
+        // Assert
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Female");
         await Assert.That(genderField.ExampleValues?.Count).IsEqualTo(2);
+    }
 
+    [Test]
+    public async Task MainCharacter_OutfitField_ShouldHaveDetailedDefault()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition outfitField = structure.MainCharacter.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
+
+        // Assert
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Navy blue blazer");
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black leather pumps");
     }
 
+    #endregion
+
+    #region Characters Tests
+
     [Test]
-    public async Task Characters_ShouldHaveCompleteStructure()
+    public async Task Characters_ShouldDeserializeAllFields()
     {
         // Act
-        var structure = JsonSerializer.Deserialize<TrackerStructure>(TestTracker.InputJson, JsonOptions);
+        var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        await Assert.That(structure).IsNotNull();
-        await Assert.That(structure!.Characters).IsNotNull();
-        await Assert.That(structure.Characters!.Length).IsEqualTo(10);
+        await Assert.That(structure.Characters).IsNotNull();
+        await Assert.That(structure.Characters.Length).IsEqualTo(10);
 
         var expectedFields = new[]
         {
@@ -196,25 +261,52 @@ public class TrackerStructureTests
         {
             await Assert.That(actualFieldNames).Contains(expectedField);
         }
+    }
 
+    [Test]
+    public async Task Characters_ShouldNotHaveInventoryField()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var actualFieldNames = structure.Characters.Select(f => f.Name).ToArray();
+
+        // Assert - Characters should not have Inventory (only MainCharacter has it)
         await Assert.That(actualFieldNames).DoesNotContain("Inventory");
+    }
 
+    [Test]
+    public async Task Characters_AllFieldsShouldBeValidStringTypes()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+
+        // Assert
         foreach (FieldDefinition field in structure.Characters)
         {
-            await Assert.That(field.IsValid()).IsTrue();
-            await Assert.That(field.Type).IsEqualTo(FieldType.String);
-            await Assert.That(field.Name).IsNotNull();
-            await Assert.That(field.Prompt).IsNotNull();
-            await Assert.That(field.DefaultValue).IsNotNull();
-            await Assert.That(field.ExampleValues).IsNotNull();
-            await Assert.That(field.HasNestedFields).IsFalse();
+            await AssertStringField(field);
         }
+    }
 
+    [Test]
+    public async Task Characters_GenderField_ShouldHaveCorrectDefaults()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition genderField = structure.Characters.First(f => f.Name == "Gender");
+
+        // Assert - Characters default to Male (different from MainCharacter which defaults to Female)
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Male");
         await Assert.That(genderField.ExampleValues).IsNotNull();
         await Assert.That(genderField.ExampleValues!.Count).IsEqualTo(2);
+    }
 
+    [Test]
+    public async Task Characters_ShouldHaveCorrectDefaultValues()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+
+        // Assert
         FieldDefinition ageField = structure.Characters.First(f => f.Name == "Age");
         await Assert.That(ageField.DefaultValue?.ToString()).IsEqualTo("28");
 
@@ -223,10 +315,144 @@ public class TrackerStructureTests
 
         FieldDefinition makeupField = structure.Characters.First(f => f.Name == "Makeup");
         await Assert.That(makeupField.DefaultValue?.ToString()).IsEqualTo("None");
+    }
 
+    [Test]
+    public async Task Characters_OutfitField_ShouldHaveDetailedDefault()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
         FieldDefinition outfitField = structure.Characters.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
+
+        // Assert
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Dark gray suit");
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black dress shoes");
     }
+
+    #endregion
+
+    #region Conversion Tests
+
+    [Test]
+    public async Task ConvertToSystemJson_ShouldProduceValidJsonForStory()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var systemJson = TrackerExtensions.ConvertToSystemJson(structure.Story);
+
+        // Assert
+        await Assert.That(systemJson).IsNotNull();
+        await Assert.That(systemJson.Count).IsEqualTo(6);
+        await Assert.That(systemJson.ContainsKey("Time")).IsTrue();
+        await Assert.That(systemJson.ContainsKey("Location")).IsTrue();
+    }
+
+    [Test]
+    public async Task ConvertToOutputJson_ShouldProduceValidJsonForStory()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var outputJson = TrackerExtensions.ConvertToOutputJson(structure.Story);
+
+        // Assert
+        await Assert.That(outputJson).IsNotNull();
+        await Assert.That(outputJson.Count).IsEqualTo(6);
+    }
+
+    [Test]
+    public async Task ConvertToSystemJson_ShouldProduceValidJsonForMainCharacter()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var systemJson = TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
+
+        // Assert
+        await Assert.That(systemJson).IsNotNull();
+        await Assert.That(systemJson.Count).IsEqualTo(11);
+        await Assert.That(systemJson.ContainsKey("Name")).IsTrue();
+        await Assert.That(systemJson.ContainsKey("Inventory")).IsTrue();
+    }
+
+    [Test]
+    public async Task ConvertToOutputJson_ShouldProduceValidJsonForMainCharacter()
+    {
+        // Act
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var outputJson = TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
+
+        // Assert
+        await Assert.That(outputJson).IsNotNull();
+        await Assert.That(outputJson.Count).IsEqualTo(11);
+    }
+
+    [Test]
+    public async Task ConvertToSystemJson_ShouldProduceSerializableJson()
+    {
+        // Arrange
+        var structure = DeserializeStructure(TestTracker.InputJson);
+        var systemJson = TrackerExtensions.ConvertToSystemJson(structure.Story);
+
+        // Act
+        var serialized = JsonSerializer.Serialize(systemJson, JsonOptions);
+
+        // Assert
+        await Assert.That(serialized).IsNotNull();
+        await Assert.That(string.IsNullOrEmpty(serialized)).IsFalse();
+    }
+
+    #endregion
+
+    #region Edge Cases
+
+    [Test]
+    public async Task FieldDefinition_HasNestedFields_ShouldReturnFalseForNull()
+    {
+        // Arrange
+        var field = new FieldDefinition
+        {
+            Name = "Test",
+            Prompt = "Test prompt",
+            NestedFields = null
+        };
+
+        // Assert
+        await Assert.That(field.HasNestedFields).IsFalse();
+    }
+
+    [Test]
+    public async Task FieldDefinition_HasNestedFields_ShouldReturnFalseForEmptyArray()
+    {
+        // Arrange
+        var field = new FieldDefinition
+        {
+            Name = "Test",
+            Prompt = "Test prompt",
+            NestedFields = []
+        };
+
+        // Assert
+        await Assert.That(field.HasNestedFields).IsFalse();
+    }
+
+    [Test]
+    public async Task FieldDefinition_HasNestedFields_ShouldReturnTrueForPopulatedArray()
+    {
+        // Arrange
+        var field = new FieldDefinition
+        {
+            Name = "Test",
+            Prompt = "Test prompt",
+            NestedFields =
+            [
+                new FieldDefinition { Name = "Nested", Prompt = "Nested prompt" }
+            ]
+        };
+
+        // Assert
+        await Assert.That(field.HasNestedFields).IsTrue();
+        await Assert.That(field.NestedFields).IsNotNull();
+    }
+
+    #endregion
 }

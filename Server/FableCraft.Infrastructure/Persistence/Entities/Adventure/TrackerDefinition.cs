@@ -49,9 +49,4 @@ public sealed class FieldDefinition
 
     [MemberNotNullWhen(true, nameof(NestedFields))]
     public bool HasNestedFields => NestedFields is { Length: > 0 };
-
-    public bool IsValid()
-    {
-        return !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Prompt);
-    }
 }

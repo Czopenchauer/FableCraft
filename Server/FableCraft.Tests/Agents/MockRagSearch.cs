@@ -4,14 +4,19 @@ namespace FableCraft.Tests.Agents;
 
 internal class MockRagSearch : IRagSearch
 {
-    public Task<SearchResult[]> SearchAsync(CallerContext context, string[] query, string searchType = "GRAPH_COMPLETION", CancellationToken cancellationToken = default)
+    public Task<SearchResult[]> SearchAsync(
+        CallerContext context,
+        List<string> datasets,
+        string[] query,
+        SearchType? searchType = null,
+        CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new[]
         {
             new SearchResult("Mock",
                 new SearchResponse
                 {
-                    Results = new List<string> { "Mock search result for testing purposes." }
+                    Results = [new SearchResultItem { Text = "Mock search result for testing purposes." }]
                 })
         });
     }
