@@ -48,7 +48,8 @@ public class LorebookController : ControllerBase
                 WorldbookId = l.WorldbookId,
                 Title = l.Title,
                 Content = l.Content,
-                Category = l.Category
+                Category = l.Category,
+                ContentType = l.ContentType
             })
             .ToListAsync(cancellationToken);
 
@@ -72,7 +73,8 @@ public class LorebookController : ControllerBase
                 WorldbookId = l.WorldbookId,
                 Title = l.Title,
                 Content = l.Content,
-                Category = l.Category
+                Category = l.Category,
+                ContentType = l.ContentType
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -132,7 +134,8 @@ public class LorebookController : ControllerBase
             WorldbookId = dto.WorldbookId,
             Title = dto.Title,
             Content = dto.Content,
-            Category = dto.Category
+            Category = dto.Category,
+            ContentType = dto.ContentType
         };
 
         _dbContext.Lorebooks.Add(lorebook);
@@ -144,7 +147,8 @@ public class LorebookController : ControllerBase
             WorldbookId = lorebook.WorldbookId,
             Title = lorebook.Title,
             Content = lorebook.Content,
-            Category = lorebook.Category
+            Category = lorebook.Category,
+            ContentType = lorebook.ContentType
         };
 
         return CreatedAtAction(nameof(GetById), new { id = lorebook.Id }, response);
@@ -207,6 +211,7 @@ public class LorebookController : ControllerBase
         lorebook.Title = dto.Title;
         lorebook.Content = dto.Content;
         lorebook.Category = dto.Category;
+        lorebook.ContentType = dto.ContentType;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -216,7 +221,8 @@ public class LorebookController : ControllerBase
             WorldbookId = lorebook.WorldbookId,
             Title = lorebook.Title,
             Content = lorebook.Content,
-            Category = lorebook.Category
+            Category = lorebook.Category,
+            ContentType = lorebook.ContentType
         };
 
         return Ok(response);

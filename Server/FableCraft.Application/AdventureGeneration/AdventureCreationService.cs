@@ -72,7 +72,7 @@ internal class AdventureCreationService : IAdventureCreationService
                     Description = entry.Title,
                     Content = entry.Content,
                     Category = entry.Category,
-                    ContentType = ContentType.txt,
+                    ContentType = entry.ContentType,
                     Priority = 0
                 }).ToListAsync(cancellationToken);
         }

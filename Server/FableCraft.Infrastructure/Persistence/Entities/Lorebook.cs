@@ -13,4 +13,6 @@ public class Lorebook : IEntity
     public required string Content { get; set; }
 
     public required string Category { get; set; }
+
+    public required ContentType ContentType { get; set; }
 }

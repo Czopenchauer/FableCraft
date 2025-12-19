@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using FableCraft.Infrastructure.Persistence.Entities;
+
+using FluentValidation;
 
 namespace FableCraft.Application.Model.Worldbook;
 
@@ -11,6 +13,8 @@ public class LorebookDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
+
+    public required ContentType ContentType { get; set; }
 }
 
 public class CreateLorebookDto
@@ -20,6 +24,8 @@ public class CreateLorebookDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
+
+    public required ContentType ContentType { get; init; }
 }
 
 public class UpdateLorebookDto
@@ -31,6 +37,8 @@ public class UpdateLorebookDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
+
+    public required ContentType ContentType { get; init; }
 }
 
 public class LorebookResponseDto
@@ -44,6 +52,8 @@ public class LorebookResponseDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
+
+    public required ContentType ContentType { get; init; }
 }
 
 public class LorebookDtoValidator : AbstractValidator<LorebookDto>

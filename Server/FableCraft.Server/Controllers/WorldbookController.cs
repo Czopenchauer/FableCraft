@@ -41,7 +41,8 @@ public class WorldbookController : ControllerBase
                     WorldbookId = l.WorldbookId,
                     Title = l.Title,
                     Content = l.Content,
-                    Category = l.Category
+                    Category = l.Category,
+                    ContentType = l.ContentType
                 }).ToList()
             })
             .ToListAsync(cancellationToken);
@@ -71,7 +72,8 @@ public class WorldbookController : ControllerBase
                     WorldbookId = l.WorldbookId,
                     Title = l.Title,
                     Content = l.Content,
-                    Category = l.Category
+                    Category = l.Category,
+                    ContentType = l.ContentType
                 }).ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -139,7 +141,8 @@ public class WorldbookController : ControllerBase
                 Id = Guid.NewGuid(),
                 Title = l.Title,
                 Content = l.Content,
-                Category = l.Category
+                Category = l.Category,
+                ContentType = l.ContentType
             }).ToList()
         };
 
@@ -156,7 +159,8 @@ public class WorldbookController : ControllerBase
                 WorldbookId = l.WorldbookId,
                 Title = l.Title,
                 Content = l.Content,
-                Category = l.Category
+                Category = l.Category,
+                ContentType = l.ContentType
             }).ToList()
         };
 
@@ -246,6 +250,7 @@ public class WorldbookController : ControllerBase
                     existingLorebook.Title = lorebookDto.Title;
                     existingLorebook.Content = lorebookDto.Content;
                     existingLorebook.Category = lorebookDto.Category;
+                    existingLorebook.ContentType = lorebookDto.ContentType;
                     _dbContext.Lorebooks.Update(existingLorebook);
                 }
             }
@@ -256,7 +261,8 @@ public class WorldbookController : ControllerBase
                     WorldbookId = worldbook.Id,
                     Title = lorebookDto.Title,
                     Content = lorebookDto.Content,
-                    Category = lorebookDto.Category
+                    Category = lorebookDto.Category,
+                    ContentType = lorebookDto.ContentType
                 };
                 worldbook.Lorebooks.Add(newLorebook);
                 _dbContext.Worldbooks.Update(worldbook);
@@ -277,7 +283,8 @@ public class WorldbookController : ControllerBase
                 WorldbookId = l.WorldbookId,
                 Title = l.Title,
                 Content = l.Content,
-                Category = l.Category
+                Category = l.Category,
+                ContentType = l.ContentType
             }).ToList()
         };
 

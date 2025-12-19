@@ -54,12 +54,11 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             Chunk? existingChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == lorebookEntry.Id);
             if (existingChunk is null)
             {
-                var contentType = Enum.Parse<ContentType>(lorebookEntry.ContentType.ToString());
                 Chunk newLorebookChunk = ragChunkService.CreateChunk(
                     lorebookEntry.Id,
                     message.AdventureId,
                     lorebookEntry.Content,
-                    contentType);
+                    lorebookEntry.ContentType);
 
                 filesToCommit.Add(new FileToWrite(
                     newLorebookChunk,
