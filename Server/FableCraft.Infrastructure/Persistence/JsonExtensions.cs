@@ -20,4 +20,29 @@ public static class JsonExtensions
     {
         return JsonSerializer.Serialize(obj, options);
     }
+
+    public static T PatchWith<T>(this T original, IDictionary<string, object> updates)
+    {
+        if (updates.Count == 0)
+        {
+            return original;
+        }
+
+        var json = original.ToJsonString();
+        var jsonObject = JsonSerializer.SerializeToNode(json)!;
+
+        foreach (var kvp in updates)
+        {
+            var jsonPath = kvp.Key.Split(".");
+            foreach (var path in jsonPath)
+            {
+                jsonObject = jsonObject![path];
+            }
+
+            jsonObject = JsonSerializer.SerializeToNode(kvp.Value);
+            jsonObject = jsonObject!.Root;
+        }
+
+        return jsonObject.Deserialize<T>(JsonSerializerOptions)!;
+    }
 }

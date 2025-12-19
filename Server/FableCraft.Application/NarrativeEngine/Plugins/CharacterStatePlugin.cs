@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Models;
 
@@ -11,45 +10,37 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterStatePlugin
 {
-    private readonly Dictionary<string, CharacterContext> _charactersByName;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly CharacterContext _context;
+    private readonly ILogger _logger;
 
-    public CharacterStatePlugin(IEnumerable<CharacterContext> characters, ILogger logger)
+    public CharacterStatePlugin(CharacterContext context, ILogger logger)
     {
-        _charactersByName = characters.ToDictionary(
-            c => c.Name,
-            c => c,
-            StringComparer.OrdinalIgnoreCase);
-
-        _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true
-        };
+        _context = context;
+        _logger = logger;
     }
 
-    [KernelFunction("get_character_state")]
+    [KernelFunction("get_relationship")]
     [Description(
-        "Retrieve the current state of a character by their name. Returns detailed information about the character including their description, stats, tracker, and development tracker.")]
-    public string GetCharacterState(
-        [Description("The name of the character to look up. Use exactly the same name as defined in the character context.")]
-        string characterName)
+        "Get a character's current view of their relationship with another character. Returns the relationship data including trust, affection, impression, and other details.")]
+    public string GetRelationship(
+        [Description("The name of the other character (the target of the relationship)")]
+        string targetCharacterName)
     {
-        if (!_charactersByName.TryGetValue(characterName, out CharacterContext? character))
+        _logger.Information("Getting relationship for {CharacterName} -> {TargetCharacterName}",
+            _context.Name, targetCharacterName);
+
+        var relationship = _context.Relationships.SingleOrDefault(x => string.Compare(x.TargetCharacterName, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
+
+        if (relationship == null)
         {
-            return $"Character '{characterName}' not found. Available characters: {string.Join(", ", _charactersByName.Keys)}";
+            return $"No relationship found between '{_context.Name}' and '{targetCharacterName}'.";
         }
 
-        var result = new
-        {
-            character.Name,
-            character.Description,
-            CharacterState = character.CharacterState,
-            CharacterTracker = character.CharacterTracker
-        };
-
-        return JsonSerializer.Serialize(result, _jsonOptions);
+        return $"""
+                {_context.Name}'s view of {targetCharacterName}:
+                {relationship.Data}
+                (Last updated: at {relationship.StoryTracker.Time} in {relationship.StoryTracker.Location})
+                """;
     }
 }
 

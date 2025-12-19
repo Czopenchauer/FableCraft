@@ -86,7 +86,9 @@ internal sealed class CharacterCrafter : BaseAgent
             Description = result.description,
             CharacterTracker = result.tracker,
             Name = result.characterStats.CharacterIdentity.FullName!,
-            SequenceNumber = 1
+            CharacterMemories = new List<CharacterMemory>(),
+            Relationships = new List<CharacterRelationship>(),
+            SceneRewrites = new List<CharacterSceneRewrite>()
         };
     }
 

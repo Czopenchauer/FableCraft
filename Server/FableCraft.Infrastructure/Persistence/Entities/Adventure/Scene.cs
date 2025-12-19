@@ -40,7 +40,13 @@ public class Scene : IEntity
 
     public required DateTimeOffset CreatedAt { get; init; }
 
-    public List<Character> CharacterStates { get; set; } = [];
+    public List<CharacterState> CharacterStates { get; set; } = new();
+
+    public List<CharacterRelationship> CharacterRelationships { get; set; } = new();
+
+    public List<CharacterSceneRewrite> CharacterSceneRewrites { get; set; } = new();
+
+    public List<CharacterMemory> CharacterMemories { get; set; } = new();
 
     public List<MainCharacterAction> CharacterActions { get; init; } = new();
 

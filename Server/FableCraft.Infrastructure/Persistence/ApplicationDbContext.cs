@@ -18,8 +18,6 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<GenerationProcess> GenerationProcesses { get; set; }
 
-    public DbSet<Character> Characters { get; set; }
-
     public DbSet<Scene> Scenes { get; set; }
 
     public DbSet<LorebookEntry> LorebookEntries { get; set; }
@@ -42,6 +40,16 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<AdventureAgentLlmPreset> AdventureAgentLlmPresets { get; set; }
 
+    public DbSet<Character> Characters { get; set; }
+
+    public DbSet<CharacterState> CharacterStates { get; set; }
+
+    public DbSet<CharacterMemory> CharacterMemories { get; set; }
+
+    public DbSet<CharacterRelationship> CharacterRelationships { get; set; }
+
+    public DbSet<CharacterSceneRewrite> CharacterSceneRewrites { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -61,8 +69,10 @@ public class ApplicationDbContext : DbContext
                     x.EntityId,
                     x.ContentHash
                 }).IsUnique();
+
+            p.Property(x => x.ChunkLocation).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<List<ChunkLocation>>(x, options)!);
         });
-        
+
         modelBuilder.Entity<Worldbook>(p =>
         {
             p.HasIndex(x => x.Name).IsUnique();
@@ -71,7 +81,7 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(x => x.WorldbookId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-        
+
         modelBuilder.Entity<LorebookEntry>(p =>
         {
             p.HasOne(x => x.Scene)
@@ -123,9 +133,40 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Character>(p =>
         {
+            p.HasMany(x => x.CharacterStates)
+                .WithOne()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.CharacterMemories)
+                .WithOne()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.CharacterRelationships)
+                .WithOne()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.CharacterSceneRewrites)
+                .WithOne()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasIndex(x => x.AdventureId);
+        });
+
+        modelBuilder.Entity<CharacterState>(p =>
+        {
             p.Property(x => x.CharacterStats).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterStats>(x, options)!);
             p.Property(x => x.Tracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<CharacterTracker>(x, options)!);
             p.HasIndex(x => x.SequenceNumber);
+            p.HasIndex(x => new { x.CharacterId, x.SequenceNumber });
+
+            p.HasOne(x => x.Scene)
+                .WithMany(x => x.CharacterStates)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Scene>(p =>
@@ -139,6 +180,40 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<LlmLog>(p =>
         {
             p.HasIndex(x => x.AdventureId);
+        });
+
+        modelBuilder.Entity<CharacterMemory>(p =>
+        {
+            p.HasIndex(x => new { x.CharacterId });
+            p.HasIndex(x => new { x.CharacterId, x.Salience });
+            p.Property(x => x.StoryTracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+
+            p.HasOne(x => x.Scene)
+                .WithMany(x => x.CharacterMemories)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CharacterRelationship>(p =>
+        {
+            p.HasIndex(x => new { x.CharacterId, x.TargetCharacterName, x.SequenceNumber });
+            p.Property(x => x.StoryTracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+
+            p.HasOne(x => x.Scene)
+                .WithMany(x => x.CharacterRelationships)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CharacterSceneRewrite>(p =>
+        {
+            p.HasIndex(x => new { x.CharacterId, x.SequenceNumber });
+            p.Property(x => x.StoryTracker).HasConversion<string>(x => JsonSerializer.Serialize(x), x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+
+            p.HasOne(x => x.Scene)
+                .WithMany(x => x.CharacterSceneRewrites)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

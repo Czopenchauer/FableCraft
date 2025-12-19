@@ -42,6 +42,7 @@ public static class StartupExtensions
             FullMode = BoundedChannelFullMode.Wait
         });
         services.AddSingleton(channel);
+        services.AddSingleton<IRagChunkService, RagChunkService>();
         services.AddHostedService<InMemoryMessageReader>();
         services.AddSingleton<IMessageDispatcher, InMemoryMessageDispatcher>();
 

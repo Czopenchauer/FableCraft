@@ -1,8 +1,4 @@
-﻿using System.IO.Hashing;
-using System.Net;
-using System.Text;
-using System.Threading.RateLimiting;
-
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -12,12 +8,7 @@ using FableCraft.Infrastructure.Queue;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-using Polly;
-using Polly.Retry;
-
 using Serilog;
-
-using FileToWrite = (FableCraft.Infrastructure.Persistence.Entities.Chunk Chunk, string Content, string Dataset);
 
 namespace FableCraft.Application.NarrativeEngine;
 
@@ -33,39 +24,21 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
     private const int MinScenesToCommit = 2;
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
-    private readonly IRagBuilder _ragBuilder;
-    private readonly ResiliencePipeline _resiliencePipeline;
+    private readonly IRagChunkService _ragChunkService;
 
-    public SceneGeneratedEventHandler(ApplicationDbContext dbContext, IRagBuilder ragBuilder, ILogger logger)
+    public SceneGeneratedEventHandler(
+        ApplicationDbContext dbContext,
+        IRagChunkService ragChunkService,
+        ILogger logger)
     {
         _dbContext = dbContext;
-        _ragBuilder = ragBuilder;
+        _ragChunkService = ragChunkService;
         _logger = logger;
-        _resiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 5,
-                Window = TimeSpan.FromSeconds(1),
-                QueueLimit = 1000
-            }))
-            .AddRetry(new RetryStrategyOptions
-            {
-                MaxRetryAttempts = 3,
-                Delay = TimeSpan.FromSeconds(2),
-                BackoffType = DelayBackoffType.Exponential,
-                ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
-                    ex.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.TooManyRequests)
-            })
-            .Build();
     }
 
     public async Task HandleAsync(SceneGeneratedEvent message, CancellationToken cancellationToken)
     {
-        if (!Directory.Exists(Path.Combine(StartupExtensions.DataDirectory, message.AdventureId.ToString())))
-        {
-            Directory.CreateDirectory(StartupExtensions.DataDirectory);
-        }
+        _ragChunkService.EnsureDirectoryExists(message.AdventureId);
 
         var currentScene = await _dbContext.Scenes
             .Select(x =>
@@ -77,7 +50,6 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             .SingleAsync(x => x.Id == message.SceneId, cancellationToken);
 
         var scenesToCommit = await _dbContext.Scenes
-            .AsNoTracking()
             .Include(x => x.Lorebooks)
             .Include(x => x.CharacterActions)
             .Include(x => x.CharacterStates)
@@ -100,6 +72,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 .AsNoTracking()
                 .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.EntityId))
                 .ToListAsync(cancellationToken);
+
             foreach (Scene scene in scenesToCommit.OrderBy(x => x.SequenceNumber))
             {
                 var existingLorebookChunks = await _dbContext.Chunks
@@ -109,24 +82,20 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
                 foreach (LorebookEntry sceneLorebook in scene.Lorebooks)
                 {
-                    var lorebookBytes = Encoding.UTF8.GetBytes(sceneLorebook.Content);
-                    var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
-                    var lorebookName = $"{lorebookHash:x16}";
-                    var lorebookPath = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{lorebookName}.{sceneLorebook.ContentType.ToString()}";
                     Chunk? lorebookChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == sceneLorebook.Id);
                     if (lorebookChunk is null)
                     {
-                        var newLorebookChunk = new Chunk
-                        {
-                            EntityId = sceneLorebook.Id,
-                            Name = lorebookName,
-                            Path = lorebookPath,
-                            ContentType = sceneLorebook.ContentType.ToString(),
-                            KnowledgeGraphNodeId = null,
-                            ContentHash = lorebookHash,
-                            AdventureId = message.AdventureId
-                        };
-                        fileToCommit.Add((newLorebookChunk, sceneLorebook.Content, RagClientExtensions.GetWorldDatasetName(message.AdventureId)));
+                        var contentType = Enum.Parse<ContentType>(sceneLorebook.ContentType.ToString());
+                        Chunk newLorebookChunk = _ragChunkService.CreateChunk(
+                            sceneLorebook.Id,
+                            message.AdventureId,
+                            sceneLorebook.Content,
+                            contentType);
+
+                        fileToCommit.Add(new FileToWrite(
+                            newLorebookChunk,
+                            sceneLorebook.Content,
+                            [RagClientExtensions.GetWorldDatasetName(message.AdventureId)]));
                     }
                 }
 
@@ -139,28 +108,29 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
-                var bytes = Encoding.UTF8.GetBytes(sceneContent);
-                var hash = XxHash64.HashToUInt64(bytes);
+
+                var hash = _ragChunkService.ComputeHash(sceneContent);
                 Chunk? existingChunk = existingSceneChunks.FirstOrDefault(x => x.EntityId == scene.Id && x.ContentHash == hash);
+
                 if (existingChunk == null)
                 {
-                    var name = $"{hash:x16}";
-                    var path = @$"{StartupExtensions.DataDirectory}\{scene.AdventureId}\{name}.{nameof(ContentType.txt)}";
-                    var chunk = new Chunk
-                    {
-                        EntityId = scene.Id,
-                        Name = name,
-                        Path = path,
-                        ContentType = nameof(ContentType.txt),
-                        KnowledgeGraphNodeId = null,
-                        ContentHash = hash,
-                        AdventureId = message.AdventureId
-                    };
-                    fileToCommit.Add((chunk, sceneContent, RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)));
+                    Chunk chunk = _ragChunkService.CreateChunk(
+                        scene.Id,
+                        message.AdventureId,
+                        sceneContent,
+                        ContentType.txt);
+
+                    fileToCommit.Add(new FileToWrite(
+                        chunk,
+                        sceneContent,
+                        [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
                 }
                 else
                 {
-                    fileToCommit.Add((existingChunk, sceneContent, RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)));
+                    fileToCommit.Add(new FileToWrite(
+                        existingChunk,
+                        sceneContent,
+                        [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
                 }
             }
 
@@ -170,102 +140,77 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             var existingCharacterChunks = await _dbContext.Chunks
                 .Where(x => characterStatesOnScenes.Select(y => y.Key).Contains(x.EntityId))
                 .ToListAsync(cancellationToken);
+
             foreach (var states in characterStatesOnScenes)
             {
-                FileToWrite description = Process(message.AdventureId, existingCharacterChunks, states, x => x.Description, ContentType.txt);
+                var newestState = states.OrderByDescending(y => y.SequenceNumber).First();
+                FileToWrite description = ProcessCharacterState(
+                    message.AdventureId,
+                    newestState.CharacterId,
+                    existingCharacterChunks.Where(x => x.EntityId == newestState.CharacterId).ToList(),
+                    states,
+                    x => x.Description,
+                    ContentType.txt);
                 fileToCommit.Add(description);
             }
 
             var mainCharacter = await _dbContext.MainCharacters
                 .Select(x => new { x.Id, x.Name, x.AdventureId })
                 .SingleAsync(x => x.AdventureId == message.AdventureId, cancellationToken);
+
             Scene lastScene = scenesToCommit.OrderByDescending(x => x.SequenceNumber).First();
             Chunk existingMainCharacterChunk = await _dbContext.Chunks
-                .AsNoTracking()
                 .Where(x => x.EntityId == mainCharacter.Id)
                 .SingleAsync(cancellationToken);
+
             var characterContent = $"""
                                     Name: {mainCharacter.Name}
 
                                     {lastScene.Metadata.Tracker!.MainCharacter!.MainCharacterDescription}
                                     """;
 
-            var mainCharacterBytes = Encoding.UTF8.GetBytes(characterContent);
-            var mainCharacterHash = XxHash64.HashToUInt64(mainCharacterBytes);
+            var mainCharacterHash = _ragChunkService.ComputeHash(characterContent);
             var mainCharacterName = $"{mainCharacterHash:x16}";
-            var mainCharacterPath = @$"{StartupExtensions.DataDirectory}\{message.AdventureId}\{mainCharacterName}.{nameof(ContentType.txt)}";
+            var mainCharacterPath = _ragChunkService.GetChunkPath(message.AdventureId, mainCharacterHash, ContentType.txt);
+
             existingMainCharacterChunk.Name = mainCharacterName;
             existingMainCharacterChunk.Path = mainCharacterPath;
             existingMainCharacterChunk.ContentHash = mainCharacterHash;
-            fileToCommit.Add((existingMainCharacterChunk, characterContent, RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)));
+
+            fileToCommit.Add(new FileToWrite(
+                existingMainCharacterChunk,
+                characterContent,
+                [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
 
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
                 await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                await Task.WhenAll(fileToCommit.Select(x => File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
-                foreach ((Chunk chunk, _, var dataset) in fileToCommit)
-                {
-                    if (!string.IsNullOrEmpty(chunk.KnowledgeGraphNodeId))
-                    {
-                        try
-                        {
-                            await _resiliencePipeline.ExecuteAsync(async ct =>
-                                    await _ragBuilder.UpdateDataAsync(message.AdventureId.ToString(), chunk.KnowledgeGraphNodeId, chunk.Path, ct),
-                                cancellationToken);
-                        }
-                        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
-                        {
-                            // If the node was not found, we will add it again
-                            chunk.KnowledgeGraphNodeId = null;
-                        }
-                    }
-                }
 
-                foreach (var valueTuplese in fileToCommit.GroupBy(x => x.Dataset))
-                {
-                    var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await _ragBuilder.AddDataAsync(
-                                valueTuplese.Select(x => x.Chunk.Path).ToList(),
-                                [valueTuplese.Key],
-                                ct),
-                        cancellationToken);
+                await _ragChunkService.WriteFilesAsync(fileToCommit, cancellationToken);
+                await _ragChunkService.UpdateExistingChunksAsync(fileToCommit, cancellationToken);
+                await _ragChunkService.CommitChunksToRagAsync(fileToCommit, cancellationToken);
+                await _ragChunkService.CognifyDatasetsAsync(
+                    [RagClientExtensions.GetWorldDatasetName(message.AdventureId)],
+                    cancellationToken: cancellationToken);
 
-                    foreach ((Chunk chunk, _, var dataset) in fileToCommit)
-                    {
-                        chunk.KnowledgeGraphNodeId = addResult[dataset][chunk.Name];
-                    }
-                }
-
-                await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await _ragBuilder.CognifyAsync([RagClientExtensions.GetWorldDatasetName(message.AdventureId)], cancellationToken: ct),
-                    cancellationToken);
-
-                await _resiliencePipeline.ExecuteAsync(async ct =>
-                        await _ragBuilder.CognifyAsync([RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)], true, ct),
-                    cancellationToken);
-
-                // await _resiliencePipeline.ExecuteAsync(async ct =>
-                //         await _ragBuilder.MemifyAsync(message.AdventureId.ToString(), ct),
-                //     cancellationToken);
                 foreach (Scene scene in scenesToCommit)
                 {
                     scene.CommitStatus = CommitStatus.Commited;
                 }
 
-                foreach ((Chunk chunk, _, _) in fileToCommit)
+                foreach (FileToWrite file in fileToCommit)
                 {
-                    if (chunk.Id != Guid.Empty)
+                    if (file.Chunk.Id != Guid.Empty)
                     {
-                        _dbContext.Chunks.Update(chunk);
+                        _dbContext.Chunks.Update(file.Chunk);
                     }
                     else
                     {
-                        _dbContext.Chunks.Add(chunk);
+                        _dbContext.Chunks.Add(file.Chunk);
                     }
                 }
 
-                _dbContext.Scenes.UpdateRange(scenesToCommit);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(CancellationToken.None);
             });
@@ -280,45 +225,52 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
         }
     }
 
-    private FileToWrite Process(
+    private FileToWrite ProcessCharacterState(
         Guid adventureId,
+        Guid characterId,
         List<Chunk> existingChunks,
-        IGrouping<Guid, Character> states,
-        Func<Character, string> fieldSelector,
+        IEnumerable<CharacterState> states,
+        Func<CharacterState, string> fieldSelector,
         ContentType contentType)
     {
-        var hashes = states.Select(x =>
-        {
-            var bytes = Encoding.UTF8.GetBytes(fieldSelector(x) + adventureId);
-            var hash = XxHash64.HashToUInt64(bytes);
-            return hash;
-        });
+        var statesList = states.ToList();
+        var hashes = statesList.Select(x => _ragChunkService.ComputeHash(fieldSelector(x))).ToList();
 
-        Character latestState = states.MaxBy(x => x.SequenceNumber)!;
-        var bytes = Encoding.UTF8.GetBytes(fieldSelector(latestState) + adventureId);
-        var hash = XxHash64.HashToUInt64(bytes);
-        var name = $"{hash:x16}";
-        var path = @$"{StartupExtensions.DataDirectory}\{adventureId}\{name}.{contentType.ToString()}";
+        var latestState = statesList.MaxBy(x => x.SequenceNumber)!;
+        var latestContent = fieldSelector(latestState);
+        var hash = _ragChunkService.ComputeHash(latestContent);
+
         Chunk? existingChunk = existingChunks.FirstOrDefault(x => hashes.Contains(x.ContentHash));
+        string[] datasets =
+        [
+            RagClientExtensions.GetCharacterDatasetName(adventureId, characterId),
+            RagClientExtensions.GetMainCharacterDatasetName(adventureId)
+        ];
+
         if (existingChunk == null)
         {
+            var name = $"{hash:x16}";
+            var path = _ragChunkService.GetChunkPath(adventureId, hash, contentType);
+
             var chunk = new Chunk
             {
-                EntityId = latestState.CharacterId,
+                EntityId = latestState.Id,
                 Name = name,
                 Path = path,
                 ContentType = contentType.ToString(),
-                KnowledgeGraphNodeId = null,
                 ContentHash = hash,
-                AdventureId = adventureId
+                AdventureId = adventureId,
+                ChunkLocation = null
             };
-            return (chunk, fieldSelector(latestState), RagClientExtensions.GetMainCharacterDatasetName(latestState.AdventureId));
+            return new FileToWrite(chunk, latestContent, datasets);
         }
 
-        existingChunk.Name = name;
-        existingChunk.Path = path;
+        var updatedName = $"{hash:x16}";
+        existingChunk.Name = updatedName;
+        existingChunk.Path = _ragChunkService.GetChunkPath(adventureId, hash, contentType);
         existingChunk.ContentType = contentType.ToString();
         existingChunk.ContentHash = hash;
-        return (existingChunk, fieldSelector(latestState), RagClientExtensions.GetMainCharacterDatasetName(latestState.AdventureId));
+
+        return new FileToWrite(existingChunk, latestContent, datasets);
     }
 }

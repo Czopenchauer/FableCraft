@@ -254,7 +254,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         if (scene.EnrichmentStatus == EnrichmentStatus.Enriched)
         {
-            SceneEnrichmentOutput.CreateFromScene(scene);
+            return SceneEnrichmentOutput.CreateFromScene(scene);
         }
 
         await dbContext.Scenes
@@ -392,31 +392,18 @@ internal sealed class SceneGenerationOrchestrator(
 
         // Get previous scenes for context (skip the current scene being regenerated)
         var scenes = await dbContext.Scenes
+            .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId && x.SequenceNumber < scene.SequenceNumber)
             .Include(x => x.CharacterActions)
+            .Include(x => x.CharacterMemories)
+            .Include(x => x.CharacterRelationships)
+            .Include(x => x.CharacterSceneRewrites)
             .OrderByDescending(x => x.SequenceNumber)
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
 
-        var existingCharacters = await dbContext
-            .Characters
-            .Where(x => x.AdventureId == adventureId)
-            .GroupBy(x => x.CharacterId)
-            .ToListAsync(cancellationToken);
-
         // Skip the most recent character state as that's the one being regenerated
-        var adventureCharacters = existingCharacters
-            .Select(g => g.OrderByDescending(x => x.SequenceNumber).Skip(1).First())
-            .Select(x => new CharacterContext
-            {
-                Description = x.Description,
-                Name = x.CharacterStats.CharacterIdentity.FullName!,
-                CharacterState = x.CharacterStats,
-                CharacterTracker = x.Tracker,
-                CharacterId = x.CharacterId,
-                SceneId = x.SceneId,
-                SequenceNumber = x.SequenceNumber
-            }).ToList();
+        var adventureCharacters = await GetCharactersForRegeneration(adventureId, cancellationToken);
 
         var context = new GenerationContext
         {
@@ -444,7 +431,9 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                SequenceNumber = cs.SequenceNumber
+                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId).ToList(),
+                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).ToList(),
+                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).ToList(),
             }).ToList(),
             // Sequence number 0 indicates newly introduced characters in this scene
             NewCharacters = scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
@@ -454,7 +443,9 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                SequenceNumber = cs.SequenceNumber
+                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId).ToList(),
+                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).ToList(),
+                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).ToList(),
             }).ToArray(),
             NewLore = scene.Lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore))
                 .Select(lb => JsonSerializer.Deserialize<GeneratedLore>(lb.Content)!).ToArray(),
@@ -641,20 +632,68 @@ internal sealed class SceneGenerationOrchestrator(
     {
         var existingCharacters = await dbContext
             .Characters
+            .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId)
-            .GroupBy(x => x.CharacterId)
+            .Include(x => x.CharacterStates.OrderByDescending(cs => cs.SequenceNumber).Take(1))
+            .Include(x => x.CharacterMemories)
+            .Include(x => x.CharacterRelationships)
+            .Include(x => x.CharacterSceneRewrites.OrderByDescending(c => c.SequenceNumber).Take(20))
             .ToListAsync(cancellationToken);
+
         return existingCharacters
-            .Select(g => g.OrderByDescending(x => x.SequenceNumber).First())
             .Select(x => new CharacterContext
             {
-                Description = x.Description,
-                Name = x.CharacterStats.CharacterIdentity.FullName!,
-                CharacterState = x.CharacterStats,
-                CharacterTracker = x.Tracker,
-                CharacterId = x.CharacterId,
-                SceneId = x.SceneId,
-                SequenceNumber = x.SequenceNumber
+                Description = x.CharacterStates.Single()
+                    .Description,
+                Name = x.Name,
+                CharacterState = x.CharacterStates.Single()
+                    .CharacterStats,
+                CharacterTracker = x.CharacterStates.Single()
+                    .Tracker,
+                CharacterId = x.Id,
+                CharacterMemories = x.CharacterMemories,
+                // Group by target and take latest relationship per target character
+                Relationships = x.CharacterRelationships
+                    .GroupBy(r => r.TargetCharacterName)
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).First())
+                    .ToList(),
+                SceneRewrites = x.CharacterSceneRewrites,
+            }).ToList();
+    }
+
+    private async Task<List<CharacterContext>> GetCharactersForRegeneration(Guid adventureId, CancellationToken cancellationToken)
+    {
+        // Basically Current STATE - 1. Skip the latest states and take the one before that.
+        var existingCharacters = await dbContext
+            .Characters
+            .AsSplitQuery()
+            .Where(x => x.AdventureId == adventureId)
+            .Include(x => x.CharacterStates.OrderByDescending(cs => cs.SequenceNumber).Skip(1).Take(1))
+            .Include(x => x.CharacterMemories)
+            .Include(x => x.CharacterRelationships)
+            .Include(x => x.CharacterSceneRewrites.OrderByDescending(c => c.SequenceNumber).Skip(1).Take(20))
+            .ToListAsync(cancellationToken);
+
+        return existingCharacters
+            .Select(x => new CharacterContext
+            {
+                Description = x.CharacterStates.Single()
+                    .Description,
+                Name = x.Name,
+                CharacterState = x.CharacterStates.Single()
+                    .CharacterStats,
+                CharacterTracker = x.CharacterStates.Single()
+                    .Tracker,
+                CharacterId = x.Id,
+                CharacterMemories = x.CharacterMemories,
+                // Group by target and take second-latest relationship per target (skip the most recent)
+                Relationships = x.CharacterRelationships
+                    .Where(r => r.SequenceNumber > 0)
+                    .GroupBy(r => r.TargetCharacterName)
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).Skip(1).FirstOrDefault())
+                    .Where(r => r != null)
+                    .ToList()!,
+                SceneRewrites = x.CharacterSceneRewrites,
             }).ToList();
     }
 }

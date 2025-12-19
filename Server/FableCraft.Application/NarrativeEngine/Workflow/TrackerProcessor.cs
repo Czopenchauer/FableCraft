@@ -1,14 +1,18 @@
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
+using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 internal sealed class TrackerProcessor(
     StoryTrackerAgent storyTracker,
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
-    CharacterStateAgent characterStateAgent,
-    CharacterTrackerAgent characterTrackerAgent) : IProcessor
+    CharacterReflectionAgent characterReflectionAgent,
+    CharacterTrackerAgent characterTrackerAgent,
+    ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -45,20 +49,74 @@ internal sealed class TrackerProcessor(
                         return context.CharacterUpdates!.First(x => x.Name == character.Name);
                     }
 
-                    var stateTask = characterStateAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    var reflectionTask = characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
                     var trackerTask = characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
-                    await Task.WhenAll(stateTask, trackerTask);
+                    await Task.WhenAll(reflectionTask, trackerTask);
+
+                    var reflectionOutput = await reflectionTask;
                     (CharacterTracker charTracker, var description) = await trackerTask;
-                    return new CharacterContext
+
+                    var characterState = character.CharacterState;
+                    if (reflectionOutput.ExtensionData?.Count == 0)
+                    {
+                        logger.Warning("Character reflection output for character {CharacterName} has no update for character state.", character.Name);
+                        characterState = characterState.PatchWith(reflectionOutput.ExtensionData);
+                    }
+
+                    var characterRelationships = new List<CharacterRelationship>();
+                    foreach (CharacterRelationshipOutput reflectionOutputRelationshipUpdate in reflectionOutput.RelationshipUpdates)
+                    {
+                        if (reflectionOutputRelationshipUpdate.ExtensionData?.Count == 0)
+                        {
+                            logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
+                        }
+
+                        var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Name);
+                        if (relationship == null)
+                        {
+                            characterRelationships.Add(new CharacterRelationship
+                            {
+                                TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
+                                Data = reflectionOutputRelationshipUpdate.ExtensionData.ToJsonString(),
+                                SequenceNumber = 0,
+                                StoryTracker = storyTrackerResult
+                            });
+                        }
+                        else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
+                        {
+                            var updatedRelationship = relationship.PatchWith(reflectionOutputRelationshipUpdate.ExtensionData);
+                            updatedRelationship.SequenceNumber = relationship.SequenceNumber + 1;
+                            characterRelationships.Add(updatedRelationship);
+                        }
+                    }
+
+                    var characterContext = new CharacterContext
                     {
                         CharacterId = character.CharacterId,
-                        CharacterState = await stateTask,
+                        CharacterState = characterState,
                         CharacterTracker = charTracker,
                         Name = character.Name,
                         Description = description,
-                        SequenceNumber = character.SequenceNumber + 1
+                        CharacterMemories = reflectionOutput.Memory!.Select(x => new CharacterMemory
+                        {
+                            Summary = x.Summary,
+                            Salience = x.Salience,
+                            Data = x.ExtensionData.ToJsonString(),
+                            StoryTracker = storyTrackerResult
+                        }).ToList(),
+                        Relationships = characterRelationships,
+                        SceneRewrites =
+                        [
+                            new CharacterSceneRewrite
+                            {
+                                Content = reflectionOutput.SceneRewrite,
+                                StoryTracker = storyTrackerResult,
+                            }
+                        ]
                     };
+
+                    return characterContext;
                 })
                 .ToArray();
         }

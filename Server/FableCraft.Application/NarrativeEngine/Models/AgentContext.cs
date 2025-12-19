@@ -69,6 +69,8 @@ internal sealed class GenerationContext
 
     public CharacterContext[]? NewCharacters { get; set; }
 
+    public List<CharacterContext>? CharacterUpdates { get; set; }
+
     public LocationGenerationResult[]? NewLocations { get; set; }
 
     public GeneratedLore[]? NewLore { get; set; }
@@ -83,8 +85,6 @@ internal sealed class GenerationContext
 
     public Tracker? NewTracker { get; set; }
 
-    public List<CharacterContext>? CharacterUpdates { get; set; }
-
     public Guid? NewSceneId { get; set; }
 
     public GenerationProcessStep GenerationProcessStep { get; set; }
@@ -96,17 +96,19 @@ internal sealed class CharacterContext
 {
     public required Guid CharacterId { get; set; }
 
-    public Guid SceneId { get; set; }
+    public required string Name { get; set; } = null!;
 
-    public string Name { get; set; } = null!;
+    public required string Description { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public required CharacterStats CharacterState { get; set; } = null!;
 
-    public required int SequenceNumber { get; set; }
+    public required CharacterTracker? CharacterTracker { get; set; }
 
-    public CharacterStats CharacterState { get; set; } = null!;
+    public required List<CharacterMemory> CharacterMemories { get; set; } = new();
 
-    public CharacterTracker? CharacterTracker { get; set; }
+    public required List<CharacterRelationship> Relationships { get; set; } = new();
+
+    public required List<CharacterSceneRewrite> SceneRewrites { get; set; } = new();
 }
 
 internal sealed class SceneContext
@@ -116,8 +118,6 @@ internal sealed class SceneContext
     public required string SceneContent { get; set; } = null!;
 
     public required string PlayerChoice { get; set; } = null!;
-
-    public required IEnumerable<CharacterContext> Characters { get; set; } = [];
 
     public required Metadata Metadata { get; set; } = null!;
 
@@ -130,15 +130,6 @@ internal sealed class SceneContext
                                ?.ActionDescription
                            ?? string.Empty,
             Metadata = scene.Metadata,
-            Characters = scene.CharacterStates.Select(y => new CharacterContext
-            {
-                CharacterState = y.CharacterStats,
-                CharacterTracker = y.Tracker,
-                Description = y.Description,
-                Name = y.CharacterStats.CharacterIdentity.FullName!,
-                CharacterId = y.CharacterId,
-                SequenceNumber = y.SequenceNumber
-            }),
             SequenceNumber = scene.SequenceNumber
         };
     }

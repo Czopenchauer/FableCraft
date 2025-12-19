@@ -14,5 +14,6 @@ public enum AgentName
     LocationCrafter,
     ContextGatherer,
     CharacterPlugin,
-    MainCharacterEmulatorAgent
+    MainCharacterEmulatorAgent,
+    CharacterReflectionAgent
 }

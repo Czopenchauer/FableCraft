@@ -1,9 +1,5 @@
-﻿using System.IO.Hashing;
-using System.Net;
-using System.Text;
-using System.Threading.RateLimiting;
-
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -12,9 +8,6 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-
-using Polly;
-using Polly.Retry;
 
 using Adventure = FableCraft.Infrastructure.Persistence.Entities.Adventure.Adventure;
 
@@ -27,45 +20,14 @@ public class AddAdventureToKnowledgeGraphCommand : IMessage
 
 internal class AddAdventureToKnowledgeGraphCommandHandler(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    IRagBuilder ragProcessor,
+    IRagChunkService ragChunkService,
     SceneGenerationOrchestrator sceneGenerationOrchestrator)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
-    private readonly ResiliencePipeline _ioResiliencePipeline = new ResiliencePipelineBuilder()
-        .AddRetry(new RetryStrategyOptions
-        {
-            MaxRetryAttempts = 3,
-            Delay = TimeSpan.FromMilliseconds(500),
-            BackoffType = DelayBackoffType.Exponential,
-            ShouldHandle = new PredicateBuilder()
-                .Handle<IOException>()
-        })
-        .Build();
-
-    private readonly ResiliencePipeline _resiliencePipeline = new ResiliencePipelineBuilder()
-        .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-        {
-            AutoReplenishment = true,
-            PermitLimit = 5,
-            Window = TimeSpan.FromSeconds(1),
-            QueueLimit = 1000
-        }))
-        .AddRetry(new RetryStrategyOptions
-        {
-            MaxRetryAttempts = 3,
-            Delay = TimeSpan.FromSeconds(2),
-            BackoffType = DelayBackoffType.Exponential,
-            ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
-                ex.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.TooManyRequests)
-        })
-        .Build();
-
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
     {
-        if (!Directory.Exists(Path.Combine(StartupExtensions.DataDirectory, message.AdventureId.ToString())))
-        {
-            Directory.CreateDirectory(StartupExtensions.DataDirectory);
-        }
+        ragChunkService.EnsureDirectoryExists(message.AdventureId);
+
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         Adventure adventure = await dbContext.Adventures
             .Include(x => x.MainCharacter)
@@ -73,13 +35,14 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .Include(x => x.Scenes)
             .ThenInclude(scene => scene.CharacterActions)
             .SingleAsync(x => x.Id == message.AdventureId, cancellationToken);
+
         if (adventure.RagProcessingStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)
             && adventure.SceneGenerationStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed))
         {
             return;
         }
 
-        var filesToCommit = new List<(Chunk Chunk, string Content, string Dataset)>();
+        var filesToCommit = new List<FileToWrite>();
 
         var existingLorebookChunks = await dbContext.Chunks
             .AsNoTracking()
@@ -91,22 +54,17 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             Chunk? existingChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == lorebookEntry.Id);
             if (existingChunk is null)
             {
-                var lorebookBytes = Encoding.UTF8.GetBytes(lorebookEntry.Content + adventure.Id);
-                var lorebookHash = XxHash64.HashToUInt64(lorebookBytes);
-                var lorebookName = $"{lorebookHash:x16}";
-                var lorebookPath = @$"{StartupExtensions.DataDirectory}\{adventure.Id}\{lorebookName}.{lorebookEntry.ContentType.ToString()}";
+                var contentType = Enum.Parse<ContentType>(lorebookEntry.ContentType.ToString());
+                Chunk newLorebookChunk = ragChunkService.CreateChunk(
+                    lorebookEntry.Id,
+                    message.AdventureId,
+                    lorebookEntry.Content,
+                    contentType);
 
-                var newLorebookChunk = new Chunk
-                {
-                    EntityId = lorebookEntry.Id,
-                    Name = lorebookName,
-                    Path = lorebookPath,
-                    ContentType = lorebookEntry.ContentType.ToString(),
-                    KnowledgeGraphNodeId = null,
-                    ContentHash = lorebookHash,
-                    AdventureId = message.AdventureId
-                };
-                filesToCommit.Add((newLorebookChunk, lorebookEntry.Content, RagClientExtensions.GetWorldDatasetName(message.AdventureId)));
+                filesToCommit.Add(new FileToWrite(
+                    newLorebookChunk,
+                    lorebookEntry.Content,
+                    [RagClientExtensions.GetWorldDatasetName(message.AdventureId)]));
             }
         }
 
@@ -121,26 +79,21 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                 {adventure.MainCharacter.Description}
                                 """;
 
-        var characterBytes = Encoding.UTF8.GetBytes(characterContent);
-        var characterHash = XxHash64.HashToUInt64(characterBytes);
+        var characterHash = ragChunkService.ComputeHash(characterContent);
         Chunk? existingCharacterChunk = existingCharacterChunks.FirstOrDefault(x => x.ContentHash == characterHash);
 
         if (existingCharacterChunk is null)
         {
-            var characterName = $"{characterHash:x16}";
-            var characterPath = @$"{StartupExtensions.DataDirectory}\{adventure.Id}\{characterName}.{nameof(ContentType.txt)}";
+            Chunk newCharacterChunk = ragChunkService.CreateChunk(
+                adventure.MainCharacter.Id,
+                message.AdventureId,
+                characterContent,
+                ContentType.txt);
 
-            var newCharacterChunk = new Chunk
-            {
-                EntityId = adventure.MainCharacter.Id,
-                Name = characterName,
-                Path = characterPath,
-                ContentType = nameof(ContentType.txt),
-                KnowledgeGraphNodeId = null,
-                ContentHash = characterHash,
-                AdventureId = message.AdventureId
-            };
-            filesToCommit.Add((newCharacterChunk, characterContent, RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)));
+            filesToCommit.Add(new FileToWrite(
+                newCharacterChunk,
+                characterContent,
+                [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
         }
 
         if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is not ProcessingStatus.Completed)
@@ -148,50 +101,27 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             await dbContext.Adventures.Where(x => x.Id == adventure.Id)
                 .ExecuteUpdateAsync(x => x.SetProperty(a => a.RagProcessingStatus, ProcessingStatus.InProgress),
                     cancellationToken);
+
             IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
                 await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
-                    await _ioResiliencePipeline.ExecuteAsync(async ct =>
-                        {
-                            Directory.CreateDirectory(@$"{StartupExtensions.DataDirectory}\{adventure.Id}");
+                    ragChunkService.EnsureDirectoryExists(message.AdventureId);
+                    await ragChunkService.WriteFilesAsync(filesToCommit, cancellationToken);
+                    await ragChunkService.CommitChunksToRagAsync(filesToCommit, cancellationToken);
 
-                            await Task.WhenAll(filesToCommit.Select(x =>
-                                File.WriteAllTextAsync(x.Chunk.Path, x.Content, ct)));
-                        },
-                        cancellationToken);
+                    var worldDataset = RagClientExtensions.GetWorldDatasetName(message.AdventureId);
+                    var mainCharacterDataset = RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId);
 
-                    await Task.WhenAll(filesToCommit.Select(x =>
-                        File.WriteAllTextAsync(x.Chunk.Path, x.Content, cancellationToken)));
+                    await ragChunkService.CognifyDatasetsAsync([worldDataset], cancellationToken: cancellationToken);
+                    await ragChunkService.CognifyDatasetsAsync([mainCharacterDataset], temporal: true, cancellationToken: cancellationToken);
 
-                    foreach (var valueTuplese in filesToCommit.GroupBy(x => x.Dataset))
+                    foreach (FileToWrite file in filesToCommit)
                     {
-                        var addResult = await _resiliencePipeline.ExecuteAsync(async ct =>
-                                await ragProcessor.AddDataAsync(
-                                    valueTuplese.Select(x => x.Chunk.Path).ToList(),
-                                    [valueTuplese.Key],
-                                    ct),
-                            cancellationToken);
-
-                        foreach ((Chunk chunk, _, var dataset) in filesToCommit)
-                        {
-                            chunk.KnowledgeGraphNodeId = addResult[dataset][chunk.Name];
-                        }
+                        dbContext.Chunks.Add(file.Chunk);
                     }
-
-                    await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await ragProcessor.CognifyAsync([RagClientExtensions.GetWorldDatasetName(message.AdventureId)], cancellationToken: ct),
-                        cancellationToken);
-
-                    await _resiliencePipeline.ExecuteAsync(async ct =>
-                            await ragProcessor.CognifyAsync([RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)], true, ct),
-                        cancellationToken);
-
-                    // await _resiliencePipeline.ExecuteAsync(async ct =>
-                    //         await ragProcessor.MemifyAsync(message.AdventureId.ToString(), ct),
-                    //     cancellationToken);
 
                     adventure.RagProcessingStatus = ProcessingStatus.Completed;
                     await dbContext.SaveChangesAsync(cancellationToken);
@@ -211,6 +141,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
         await dbContext.Adventures.Where(x => x.Id == adventure.Id)
             .ExecuteUpdateAsync(x => x.SetProperty(a => a.SceneGenerationStatus, ProcessingStatus.InProgress),
                 cancellationToken);
+
         IExecutionStrategy executionStrategy = dbContext.Database.CreateExecutionStrategy();
         await executionStrategy.ExecuteAsync(async () =>
         {

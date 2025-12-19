@@ -13,8 +13,6 @@ namespace FableCraft.Application;
 
 public static class StartupExtensions
 {
-    public static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
-
     public static IServiceCollection AddApplicationServices(this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -39,6 +37,7 @@ public static class StartupExtensions
             .AddScoped<ItemCrafter>()
             .AddScoped<CharacterStateAgent>()
             .AddScoped<CharacterTrackerAgent>()
+            .AddScoped<CharacterReflectionAgent>()
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>();
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();

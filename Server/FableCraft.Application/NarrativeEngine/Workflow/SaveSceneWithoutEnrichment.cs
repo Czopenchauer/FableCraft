@@ -29,7 +29,6 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
                 ActionDescription = x,
                 Selected = false
             }).ToList(),
-            CharacterStates = new List<Character>(),
             Lorebooks = new List<LorebookEntry>(),
             CreatedAt = DateTimeOffset.UtcNow,
             EnrichmentStatus = EnrichmentStatus.NotEnriched,

@@ -1,40 +1,20 @@
-﻿using System.Text.Json.Serialization;
+﻿namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
-namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
-
-public sealed class Character
+public sealed class Character : IEntity
 {
     public Guid Id { get; set; }
 
-    public Guid CharacterId { get; set; }
-
     public Guid AdventureId { get; set; }
 
-    public Guid SceneId { get; set; }
+    public required string Name { get; set; }
 
-    public int SequenceNumber { get; set; }
+    public int Version { get; set; }
 
-    public required string Description { get; set; }
+    public List<CharacterState> CharacterStates { get; set; } = new();
 
-    public CharacterStats CharacterStats { get; init; } = null!;
+    public List<CharacterRelationship> CharacterRelationships { get; set; } = new();
 
-    public CharacterTracker Tracker { get; init; } = null!;
-}
+    public List<CharacterSceneRewrite> CharacterSceneRewrites { get; set; } = new();
 
-public class CharacterStats
-{
-    [JsonPropertyName("character_identity")]
-    public required CharacterIdentity CharacterIdentity { get; set; }
-
-    [JsonExtensionData]
-    public IDictionary<string, object>? ExtensionData { get; set; }
-}
-
-public class CharacterIdentity
-{
-    [JsonPropertyName("full_name")]
-    public string? FullName { get; set; }
-
-    [JsonExtensionData]
-    public IDictionary<string, object>? ExtensionData { get; set; }
+    public List<CharacterMemory> CharacterMemories { get; set; } = new();
 }

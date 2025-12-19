@@ -94,8 +94,6 @@ internal sealed class NarrativeDirectorAgent(
         };
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var characterStatePlugin = new CharacterStatePlugin(context.Characters, logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterStatePlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<NarrativeDirectorOutput>("narrative_scene_directive");

@@ -14,7 +14,14 @@ public class Chunk : IEntity
 
     public required string ContentType { get; set; }
 
-    public required string? KnowledgeGraphNodeId { get; set; }
+    public required List<ChunkLocation>? ChunkLocation { get; set; }
 
     public Guid Id { get; set; }
+}
+
+public class ChunkLocation
+{
+    public required string DatasetName { get; set; }
+
+    public required string? KnowledgeGraphNodeId { get; set; }
 }

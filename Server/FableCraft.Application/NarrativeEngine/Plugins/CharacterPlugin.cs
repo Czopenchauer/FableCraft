@@ -14,17 +14,18 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterPlugin : BaseAgent
 {
-    private Dictionary<string, ChatHistory> _chatHistory = new();
+    private const int MemoryLimit = 20;
+
+    private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
+    private int _currentSequenceNumber;
     private readonly IAgentKernel _agentKernel;
     private readonly ILogger _logger;
     private readonly IRagSearch _ragSearch;
@@ -44,9 +45,12 @@ internal sealed class CharacterPlugin : BaseAgent
     {
         _generationContext = generationContext;
         _kernelBuilder = await GetKernelBuilder(generationContext);
-        var promptTemplate = await BuildInstruction(generationContext);
+        _currentSequenceNumber = generationContext.SceneContext.Max(x => x.SequenceNumber);
+
         var characters = new List<CharacterContext>(generationContext.Characters);
         characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
+
+        var promptTemplate = await BuildInstruction(generationContext);
         _chatHistory = characters.ToDictionary(character => character.Name,
             context =>
             {
@@ -54,33 +58,39 @@ internal sealed class CharacterPlugin : BaseAgent
                 var chatHistory = new ChatHistory();
                 chatHistory.AddSystemMessage(systemPrompt);
                 chatHistory.AddUserMessage(BuildContextMessage(context, generationContext));
-                return chatHistory;
+                return (context, chatHistory);
             });
     }
 
     private string BuildContextMessage(CharacterContext context, GenerationContext generationContext)
     {
-        var previousScenes = _generationContext
-            .SceneContext
-            .Where(x => x.Characters.Select(y => y.Name).Contains(context.Name) == true)
+        var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
             .TakeLast(20)
             .Select(s => $"""
                           SCENE NUMBER: {s.SequenceNumber}
                           <scene_tracker>
-                          {s.Metadata?.Tracker?.Story.ToJsonString()}
+                          TIME: {s.StoryTracker.Time}
+                          Location: {s.StoryTracker.Weather}
+                          Weather: {s.StoryTracker.Location}
+                          Characters on scene: {string.Join(", ", s.StoryTracker.CharactersPresent)}
                           </scene_tracker>
 
-                          {s.SceneContent}
-                          {s.PlayerChoice}
+                          {s.Content}
                           """);
 
         var latestScene = _generationContext.SceneContext.MaxBy(x => x.SequenceNumber);
+
+        var memoriesSection = BuildMemoriesSection(context);
+
+        var relationshipsSection = BuildRelationshipsSection(context, generationContext);
 
         return $"""
                 <character_description>
                 {context.Description}
                 </character_description>
+
+                {relationshipsSection}
 
                 <character_state>
                 {context.CharacterState.ToJsonString()}
@@ -90,14 +100,11 @@ internal sealed class CharacterPlugin : BaseAgent
                 {context.CharacterTracker.ToJsonString()}
                 </character_tracker>
 
-                <context>
-                {_generationContext.ContextGathered.ToJsonString()}
-                </context>
-
-                CRITICAL! These scenes are written in the perspective of story protagonist - {generationContext.MainCharacter.Name}!
-                <previous_scenes_with_character>
+                <previous_scenes>
                 {string.Join("\n\n---\n\n", previousScenes)}
-                </previous_scenes_with_character>
+                </previous_scenes>
+
+                {memoriesSection}
 
                 <current_time>
                 {latestScene?.Metadata.Tracker?.Story?.Time}
@@ -105,6 +112,40 @@ internal sealed class CharacterPlugin : BaseAgent
                 <current_location>
                 {latestScene?.Metadata.Tracker?.Story?.Location}
                 </current_location>
+                """;
+    }
+
+    private string BuildMemoriesSection(CharacterContext context)
+    {
+        if (context.CharacterMemories.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var memoriesText = string.Join("\n",
+            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.Summary} [{m.Data}]"));
+
+        return $"""
+                <character_memories>
+                These are the {context.Name}'s memories from past scenes (ordered by recency):
+                {memoriesText}
+                </character_memories>
+                """;
+    }
+
+    private string BuildRelationshipsSection(CharacterContext context, GenerationContext generationContext)
+    {
+        var relationshipsText = string.Join("\n\n",
+            context.Relationships.Select(r => $"""
+                                               **{r.TargetCharacterName}**:
+                                               {generationContext.Characters.Single(x => x.Name == r.TargetCharacterName).Description}
+                                               """));
+
+        return $"""
+                <character_relationships>
+                The character's has relationship with these characters:
+                {relationshipsText}
+                </character_relationships>
                 """;
     }
 
@@ -118,20 +159,20 @@ internal sealed class CharacterPlugin : BaseAgent
         string characterName)
     {
         _logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
-        if (!_chatHistory.TryGetValue(characterName, out ChatHistory? chatHistory))
+        if (!_chatHistory.TryGetValue(characterName, out var ctx))
         {
             _logger.Information("Character {CharacterName} not found in chat history. Current chatHistory: {history}", characterName, _chatHistory.Keys);
             return "Character not found.";
         }
 
+        (CharacterContext characterContext, ChatHistory chatHistory) = ctx;
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(_generationContext.AdventureId),
-            GetMainCharacterDatasetName(_generationContext.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), datasets);
+
+        var kgPlugin = new CharacterGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), characterContext, _logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var relationShipPlugin = new CharacterStatePlugin(characterContext, _logger);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
+
         Kernel kernelWithKg = kernel.Build();
         var chat = new ChatHistory();
         foreach (ChatMessageContent chatMessageContent in chatHistory)
