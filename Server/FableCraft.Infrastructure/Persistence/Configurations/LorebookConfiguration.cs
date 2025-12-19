@@ -10,5 +10,6 @@ public class LorebookConfiguration : IEntityTypeConfiguration<Lorebook>
     public void Configure(EntityTypeBuilder<Lorebook> builder)
     {
         builder.HasIndex(x => new { x.WorldbookId, x.Title }).IsUnique();
+        builder.Property(c => c.ContentType).HasConversion<string>();
     }
 }
