@@ -20,12 +20,9 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterPlugin : BaseAgent
 {
-    private const int MemoryLimit = 20;
-
     private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
-    private int _currentSequenceNumber;
     private readonly IAgentKernel _agentKernel;
     private readonly ILogger _logger;
     private readonly IRagSearch _ragSearch;
@@ -45,7 +42,6 @@ internal sealed class CharacterPlugin : BaseAgent
     {
         _generationContext = generationContext;
         _kernelBuilder = await GetKernelBuilder(generationContext);
-        _currentSequenceNumber = generationContext.SceneContext.Max(x => x.SequenceNumber);
 
         var characters = new List<CharacterContext>(generationContext.Characters);
         characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());

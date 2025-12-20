@@ -114,8 +114,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                     var worldDataset = RagClientExtensions.GetWorldDatasetName(message.AdventureId);
                     var mainCharacterDataset = RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId);
 
-                    await ragChunkService.CognifyDatasetsAsync([worldDataset], cancellationToken: cancellationToken);
-                    await ragChunkService.CognifyDatasetsAsync([mainCharacterDataset], temporal: true, cancellationToken: cancellationToken);
+                    await ragChunkService.CognifyDatasetsAsync([worldDataset, mainCharacterDataset], cancellationToken: cancellationToken);
 
                     foreach (FileToWrite file in filesToCommit)
                     {

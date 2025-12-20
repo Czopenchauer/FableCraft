@@ -15,5 +15,6 @@ public enum AgentName
     ContextGatherer,
     CharacterPlugin,
     MainCharacterEmulatorAgent,
+    InitMainCharacterTrackerAgent,
     CharacterReflectionAgent
 }

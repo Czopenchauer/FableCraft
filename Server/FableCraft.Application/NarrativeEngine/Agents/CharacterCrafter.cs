@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -70,7 +71,7 @@ internal sealed class CharacterCrafter : BaseAgent
 
         var outputParser = CreateOutputParser();
 
-        (CharacterStats characterStats, string description, CharacterTracker tracker) result =
+        (CharacterStats characterStats, string description, CharacterTracker tracker, InitialRelationship[] relationships) result =
             await _agentKernel.SendRequestAsync(
                 chatHistory,
                 outputParser,
@@ -87,18 +88,25 @@ internal sealed class CharacterCrafter : BaseAgent
             CharacterTracker = result.tracker,
             Name = result.characterStats.CharacterIdentity.FullName!,
             CharacterMemories = new List<CharacterMemory>(),
-            Relationships = new List<CharacterRelationship>(),
+            Relationships = result.relationships.Select(r => new CharacterRelationship
+            {
+                Data = r.ExtensionData.ToJsonString(),
+                TargetCharacterName = r.Name,
+                StoryTracker = null
+            }).ToList(),
             SceneRewrites = new List<CharacterSceneRewrite>()
         };
     }
 
-    private static Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker)>
+    private static Func<string, (CharacterStats characterStats, string description, CharacterTracker tracker, InitialRelationship[] initialRelationships)>
         CreateOutputParser()
     {
         return response =>
         {
             var characterStats = ResponseParser.ExtractJson<CharacterStats>(response, "character");
             var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "character_statistics");
+            var relationship = ResponseParser.ExtractJson<InitialRelationship[]>(response, "initial_relationships");
+
             var description = ResponseParser.ExtractText(response, "character_description");
 
             if (string.IsNullOrEmpty(description))
@@ -106,7 +114,7 @@ internal sealed class CharacterCrafter : BaseAgent
                 throw new InvalidCastException("Failed to parse character description from response due to empty description.");
             }
 
-            return (characterStats, description, tracker);
+            return (characterStats, description, tracker, relationship);
         };
     }
 
@@ -131,4 +139,12 @@ internal sealed class CharacterCrafter : BaseAgent
     }
 
     protected override AgentName GetAgentName() => AgentName.CharacterCrafter;
+
+    private class InitialRelationship
+    {
+        public string Name { get; set; } = string.Empty;
+
+        [JsonExtensionData]
+        public Dictionary<string, object> ExtensionData { get; set; } = new();
+    }
 }

@@ -2,6 +2,9 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
+using FableCraft.Infrastructure.Llm;
+using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
 
 namespace FableCraft.Infrastructure.Clients;
@@ -47,11 +50,15 @@ public readonly struct SearchType : IEquatable<SearchType>
     private SearchType(string value) => Value = value;
 
     public override string ToString() => Value;
+
     public override int GetHashCode() => Value.GetHashCode();
+
     public override bool Equals(object? obj) => obj is SearchType other && Equals(other);
+
     public bool Equals(SearchType other) => Value == other.Value;
 
     public static bool operator ==(SearchType left, SearchType right) => left.Equals(right);
+
     public static bool operator !=(SearchType left, SearchType right) => !left.Equals(right);
 
     public static implicit operator string(SearchType searchType) => searchType.Value;
@@ -196,7 +203,20 @@ internal class RagClient : IRagBuilder, IRagSearch
             return (query, result ?? new SearchResponse { Results = new List<SearchResultItem>() });
         }).ToArray();
 
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var results = await Task.WhenAll(request);
+        await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+            {
+                CallerName = $"{nameof(IRagSearch)}:{context.CallerType.Name}",
+                AdventureId =  context.AdventureId,
+                RequestContent = queries.ToJsonString(),
+                ResponseContent = results.Select(x => new { x.query, response = x.Item2 }).ToJsonString(),
+                InputToken = null,
+                OutputToken = null,
+                TotalToken = null,
+                Duration = stopwatch.ElapsedMilliseconds
+            },
+            cancellationToken);
         return results.Select(x => new SearchResult(x.query, x.Item2)).ToArray();
     }
 }

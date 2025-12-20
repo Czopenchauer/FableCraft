@@ -1,4 +1,6 @@
-﻿using FableCraft.Infrastructure.Persistence.Entities;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.ServiceDefaults;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +20,7 @@ public interface IKernelBuilder
     PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings();
 }
 
-internal static class LlmProviders
+public static class LlmProviders
 {
     public const string OpenAi = "openai";
     public const string Gemini = "gemini";
@@ -56,6 +58,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
         _preset = preset;
     }
 
+    [Experimental("EXTEXP0001")]
     public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
         Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
@@ -69,8 +72,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             hp.ConfigureHttpClient((_, c) =>
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
-            });
-            hp.AddDefaultLlmResiliencePolicies();
+            }).RemoveAllResilienceHandlers().AddDefaultLlmResiliencePolicies();
         });
 
         return builder;
@@ -144,6 +146,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
         _preset = preset;
     }
 
+    [Experimental("EXTEXP0001")]
     public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
         Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
@@ -157,8 +160,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             hp.ConfigureHttpClient((_, c) =>
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
-            });
-            hp.AddDefaultLlmResiliencePolicies();
+            }).RemoveAllResilienceHandlers().AddDefaultLlmResiliencePolicies();
         });
 
         return builder;

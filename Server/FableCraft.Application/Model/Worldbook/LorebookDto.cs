@@ -1,4 +1,6 @@
-﻿using FableCraft.Infrastructure.Persistence.Entities;
+﻿using System.Text.Json.Serialization;
+
+using FableCraft.Infrastructure.Persistence.Entities;
 
 using FluentValidation;
 
@@ -13,7 +15,8 @@ public class LorebookDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
-
+    
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; set; }
 }
 
@@ -25,6 +28,7 @@ public class CreateLorebookDto
 
     public required string Category { get; init; } = string.Empty;
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; init; }
 }
 
@@ -38,6 +42,7 @@ public class UpdateLorebookDto
 
     public required string Category { get; init; } = string.Empty;
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; init; }
 }
 
@@ -53,6 +58,7 @@ public class LorebookResponseDto
 
     public required string Category { get; init; } = string.Empty;
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; init; }
 }
 

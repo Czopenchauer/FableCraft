@@ -12,13 +12,12 @@ internal sealed class TrackerProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
+    InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var storyTrackerResult = context.NewTracker?.Story != null
-            ? context.NewTracker.Story
-            : await storyTracker.Invoke(context, cancellationToken);
+        var storyTrackerResult = context.NewTracker?.Story ?? await storyTracker.Invoke(context, cancellationToken);
 
         if (string.IsNullOrEmpty(storyTrackerResult.Location) || string.IsNullOrEmpty(storyTrackerResult.Time) || string.IsNullOrEmpty(storyTrackerResult.Weather))
         {
@@ -28,9 +27,8 @@ internal sealed class TrackerProcessor(
         context.NewTracker ??= new Tracker();
         context.NewTracker.Story = storyTrackerResult;
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
-            ? Task.FromResult(
-                (context.NewTracker!.MainCharacter.MainCharacter!, context.NewTracker.MainCharacter.MainCharacterDescription ?? context.MainCharacter.Description))
-            : mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            ? Task.FromResult(context.NewTracker.MainCharacter)
+            : ProcessMainChar(context, storyTrackerResult, cancellationToken);
 
         var alreadyProcessedCharacters = context.CharacterUpdates?
                                              .Select(x => x.Name)
@@ -121,13 +119,7 @@ internal sealed class TrackerProcessor(
                 .ToArray();
         }
 
-        (CharacterTracker mainCharTracker, var mainCharDescription) = await mainCharTrackerTask;
-        context.NewTracker!.MainCharacter = new MainCharacterTracker
-        {
-            MainCharacter = mainCharTracker,
-            MainCharacterDescription = mainCharDescription
-        };
-
+        context.NewTracker!.MainCharacter = await mainCharTrackerTask;
         if (characterUpdateTask != null)
         {
             await UnpackCharacterUpdates(context, characterUpdateTask);
@@ -141,5 +133,21 @@ internal sealed class TrackerProcessor(
         {
             context.CharacterUpdates.Add(await task);
         }
+    }
+
+    private async Task<MainCharacterTracker> ProcessMainChar(GenerationContext context, StoryTracker storyTrackerResult, CancellationToken cancellationToken)
+    {
+        if (context.SceneContext.Length == 0)
+        {
+            return await initMainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+        }
+        var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+
+        var newTracker = new MainCharacterTracker
+        {
+            MainCharacter = context.LatestTracker()!.MainCharacter!.MainCharacter.PatchWith(mainCharacterDeltaTrackerOutput.TrackerChanges!.ExtensionData!),
+            MainCharacterDescription = mainCharacterDeltaTrackerOutput.Description
+        };
+        return newTracker;
     }
 }

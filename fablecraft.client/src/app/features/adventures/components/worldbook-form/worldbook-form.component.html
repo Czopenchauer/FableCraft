@@ -202,6 +202,26 @@
                     </div>
                   </div>
 
+                  <!-- Content Type Field -->
+                  <div class="form-group">
+                    <label [for]="'lorebook-' + i + '-contentType'" class="form-label">
+                      Content Type
+                      <span class="required">*</span>
+                    </label>
+                    <select
+                      [id]="'lorebook-' + i + '-contentType'"
+                      formControlName="contentType"
+                      class="form-input"
+                      [class.error]="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched"
+                    >
+                      <option value="txt">Text</option>
+                      <option value="json">JSON</option>
+                    </select>
+                    <div *ngIf="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched" class="field-error">
+                      <span *ngIf="lorebookCtrl.get('contentType')?.errors?.['required']">Content type is required</span>
+                    </div>
+                  </div>
+
                   <!-- Content Field -->
                   <div class="form-group">
                     <label [for]="'lorebook-' + i + '-content'" class="form-label">

@@ -42,6 +42,10 @@ internal sealed class StoryTrackerAgent(
                              {PromptSections.ExistingCharacters(context.Characters)}
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
+                             
+                             {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
+                             
+                             {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
@@ -59,9 +63,6 @@ internal sealed class StoryTrackerAgent(
         else
         {
             requestPrompt = $"""
-                             {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
-
-                             {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
 
                              {(!isFirstScene ? PromptSections.PreviousStoryTrackers(context.SceneContext!) : "")}
 

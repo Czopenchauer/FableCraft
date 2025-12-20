@@ -13,7 +13,6 @@ public sealed class CharacterRelationship : IEntity
     /// The character who holds this view of the relationship.
     /// </summary>
     public Guid CharacterId { get; set; }
-    
 
     /// <summary>
     /// The name of the character this relationship is about.
@@ -24,10 +23,10 @@ public sealed class CharacterRelationship : IEntity
     /// The scene where this relationship state was recorded.
     /// </summary>
     public Guid SceneId { get; set; }
-    
+
     public Scene Scene { get; set; } = null!;
 
-    public required StoryTracker StoryTracker { get; set; }
+    public required StoryTracker? StoryTracker { get; set; }
 
     /// <summary>
     /// The sequence number when this relationship was created/updated.

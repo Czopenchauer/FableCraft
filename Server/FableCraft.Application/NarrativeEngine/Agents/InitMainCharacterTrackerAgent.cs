@@ -16,15 +16,15 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class MainCharacterTrackerAgent(
+internal sealed class InitMainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override AgentName GetAgentName() => AgentName.MainCharacterTrackerAgent;
+    protected override AgentName GetAgentName() => AgentName.InitMainCharacterTrackerAgent;
 
-    public async Task<MainCharacterDeltaTrackerOutput> Invoke(
+    public async Task<MainCharacterTracker> Invoke(
         GenerationContext context,
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
@@ -38,15 +38,7 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
-
                              {PromptSections.StoryTracker(storyTrackerResult, true)}
-
-                             {PromptSections.NewItems(context.NewItems)}
-
-                             {PromptSections.MainCharacter(context)}
-
-                             {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
@@ -63,7 +55,7 @@ internal sealed class MainCharacterTrackerAgent(
         {
             requestPrompt = $"""
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
-                             
+
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
 
@@ -73,7 +65,7 @@ internal sealed class MainCharacterTrackerAgent(
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<MainCharacterDeltaTrackerOutput>("tracker");
+        var outputParser = CreateOutputParser();
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var datasets = new List<string>
@@ -89,9 +81,29 @@ internal sealed class MainCharacterTrackerAgent(
             chatHistory,
             outputParser,
             promptExecutionSettings,
-            nameof(MainCharacterTrackerAgent),
+            nameof(InitMainCharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
+    }
+
+    private static Func<string, MainCharacterTracker>
+        CreateOutputParser()
+    {
+        return response =>
+        {
+            var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "main_character_tracker");
+            var description = ResponseParser.ExtractText(response, "character_description");
+            if (string.IsNullOrEmpty(description))
+            {
+                throw new InvalidCastException("Failed to parse character description from response due to empty description.");
+            }
+
+            return new MainCharacterTracker()
+            {
+                MainCharacter = tracker,
+                MainCharacterDescription = description
+            };
+        };
     }
 
     private async Task<string> BuildInstruction(GenerationContext context)
@@ -103,7 +115,9 @@ internal sealed class MainCharacterTrackerAgent(
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
-            (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
+            (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            ("{{world_setting}}", context.WorldSettings)!,
+            ("{{character_definition}}", context.MainCharacter.Description)!);
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

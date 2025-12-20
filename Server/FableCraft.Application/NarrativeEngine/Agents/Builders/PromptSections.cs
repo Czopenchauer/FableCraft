@@ -177,18 +177,18 @@ internal static class PromptSections
         var formatted = string.Join("\n\n",
             characters.Select(c =>
             {
-                if (extended.Any(x => x.Name == c.Name))
-                {
-                    return $"""
-                            <character>
-                            **Name**: {c.Name}
-                            {c.Description}
-
-                            Current state of the character:
-                            {c.CharacterState}
-                            </character>
-                            """;
-                }
+//                 if (extended.Any(x => x.Name == c.Name))
+//                 {
+//                     return $"""
+//                             <character>
+//                             **Name**: {c.Name}
+//                             {c.Description}
+//
+//                             Current state of the character:
+//                             {c.CharacterState}
+//                             </character>
+//                             """;
+//                 }
 
                 return $"""
                         <character>

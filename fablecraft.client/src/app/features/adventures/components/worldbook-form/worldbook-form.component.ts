@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { WorldbookService } from '../../services/worldbook.service';
-import { WorldbookDto, WorldbookUpdateDto, WorldbookResponseDto, UpdateLorebookDto, CreateLorebookDto } from '../../models/worldbook.model';
+import { WorldbookDto, WorldbookUpdateDto, WorldbookResponseDto, UpdateLorebookDto, CreateLorebookDto, ContentType } from '../../models/worldbook.model';
 
 @Component({
   selector: 'app-worldbook-form',
@@ -61,7 +61,8 @@ export class WorldbookFormComponent implements OnInit {
       id: [lorebook?.id || null],
       title: [lorebook?.title || '', [Validators.required, Validators.maxLength(200)]],
       content: [lorebook?.content || '', [Validators.required, Validators.minLength(10)]],
-      category: [lorebook?.category || '', [Validators.required, Validators.maxLength(100)]]
+      category: [lorebook?.category || '', [Validators.required, Validators.maxLength(100)]],
+      contentType: [lorebook?.contentType || 'txt', Validators.required]
     });
   }
 
@@ -240,7 +241,8 @@ export class WorldbookFormComponent implements OnInit {
       const lorebookGroup = this.createLorebookGroup({
         title: item.title,
         content: item.content,
-        category: item.category
+        category: item.category,
+        contentType: item.contentType || 'txt'
       });
       this.lorebooks.push(lorebookGroup);
 
@@ -322,7 +324,8 @@ export class WorldbookFormComponent implements OnInit {
           id: lb.id || undefined,  // Include id for existing, omit for new
           title: lb.title,
           content: lb.content,
-          category: lb.category
+          category: lb.category,
+          contentType: lb.contentType
         } as UpdateLorebookDto))
       };
 
@@ -344,7 +347,8 @@ export class WorldbookFormComponent implements OnInit {
         lorebooks: formValue.lorebooks.map((lb: any) => ({
           title: lb.title,
           content: lb.content,
-          category: lb.category
+          category: lb.category,
+          contentType: lb.contentType
         } as CreateLorebookDto))
       };
 

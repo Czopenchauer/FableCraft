@@ -21,10 +21,13 @@ export interface LorebookDto {
   category: string;
 }
 
+export type ContentType = 'json' | 'txt';
+
 export interface CreateLorebookDto {
   title: string;
   content: string;
   category: string;
+  contentType: ContentType;
 }
 
 export interface UpdateLorebookDto {
@@ -32,6 +35,7 @@ export interface UpdateLorebookDto {
   title: string;
   content: string;
   category: string;
+  contentType: ContentType;
 }
 
 export interface LorebookResponseDto {
@@ -40,4 +44,5 @@ export interface LorebookResponseDto {
   title: string;
   content: string;
   category: string;
+  contentType: ContentType;
 }

@@ -39,7 +39,7 @@ internal sealed class CharacterStatePlugin
         return $"""
                 {_context.Name}'s view of {targetCharacterName}:
                 {relationship.Data}
-                (Last updated: at {relationship.StoryTracker.Time} in {relationship.StoryTracker.Location})
+                (Last updated: at {relationship.StoryTracker?.Time ?? string.Empty} in {relationship.StoryTracker?.Location ?? string.Empty})
                 """;
     }
 }

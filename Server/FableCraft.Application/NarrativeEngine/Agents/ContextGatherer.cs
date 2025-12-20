@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Serialization;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
@@ -96,12 +97,35 @@ internal sealed class ContextGatherer(
                 [RagClientExtensions.GetWorldDatasetName(context.AdventureId), RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)],
                 queries.Queries,
                 cancellationToken: cancellationToken);
+
             context.ContextGathered = new ContextBase
             {
-                ContextBases = searchResults.Select(x => new SearchResult
+                ContextBases = searchResults.Select(x =>
                 {
-                    Query = x.Query,
-                    Response = string.Join("\n\n", x.Response.Results)
+                    var response = new StringBuilder();
+                    foreach (SearchResultItem searchResultItem in x.Response.Results)
+                    {
+                        if (searchResultItem.DatasetName == RagClientExtensions.GetWorldDatasetName(context.AdventureId))
+                        {
+                            response.AppendLine($"""
+                                                 World Knowledge:
+                                                 {string.Join("\n", searchResultItem.Text)}
+                                                 """);
+                        }
+                        else
+                        {
+                            response.AppendLine($"""
+                                                 {context.MainCharacter.Name} Knowledge:
+                                                 {string.Join("\n", searchResultItem.Text)}
+                                                 """);
+                        }
+                    }
+
+                    return new SearchResult
+                    {
+                        Query = x.Query,
+                        Response = response.ToString()
+                    };
                 }).ToArray(),
                 RelevantCharacters = context.Characters
                     .Where(x => queries.CharactersToFetch.Contains(x.CharacterState.CharacterIdentity.FullName))

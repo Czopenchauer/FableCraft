@@ -21,7 +21,7 @@ public sealed class SceneGeneratedEvent : IMessage
 
 internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGeneratedEvent>
 {
-    private const int MinScenesToCommit = 2;
+    private const int MinScenesToCommit = 1;
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly IRagChunkService _ragChunkService;

@@ -159,7 +159,7 @@ async def cognify_dataset(request: CognifyRequest):
     try:
         for adventure_id in request.adventure_ids:
             logger.info("Running cognify for dataset %s (temporal=%s)", adventure_id, request.temporal)
-            result = await cognee.cognify(datasets=[adventure_id], temporal=request.temporal)
+            result = await cognee.cognify(datasets=[adventure_id], temporal_cognify=request.temporal)
             logger.info("Cognify result for %s: %s", adventure_id, result)
             path = os.environ.get('VISUALISATION_PATH', './visualization')
             await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
