@@ -173,9 +173,18 @@ internal class GameService : IGameService
                 {
                     adventure.SceneGenerationStatus = ProcessingStatus.Pending;
                     adventure.Scenes.Clear();
+                    var scene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, string.Empty, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
-
                     await transaction.CommitAsync(cancellationToken);
+                    return new GameScene
+                    {
+                        GenerationOutput = SceneGenerationOutput.CreateFromScene(scene),
+                        CanRegenerate = true,
+                        SceneId = scene.Id,
+                        EnrichmentStatus = EnrichmentStatus.Enriched,
+                        PreviousScene = null,
+                        NextScene = null
+                    };
                 }
                 catch
                 {
@@ -183,17 +192,6 @@ internal class GameService : IGameService
                     throw;
                 }
             });
-
-            var scene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, string.Empty, cancellationToken);
-            return new GameScene
-            {
-                GenerationOutput = SceneGenerationOutput.CreateFromScene(scene),
-                CanRegenerate = true,
-                SceneId = scene.Id,
-                EnrichmentStatus = EnrichmentStatus.Enriched,
-                PreviousScene = null,
-                NextScene = null
-            };
         }
 
         Scene lastScene = scenes.Last();

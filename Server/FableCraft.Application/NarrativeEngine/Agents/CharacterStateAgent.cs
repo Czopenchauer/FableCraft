@@ -44,17 +44,14 @@ internal sealed class CharacterStateAgent(
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 
-                             {PromptSections.RecentScenesForCharacter(
-                                 generationContext.SceneContext ?? [],
-                                 generationContext.MainCharacter.Name,
-                                 context.Name)}
+                             {PromptSections.RecentScenesForCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.CurrentScene(generationContext.NewScene?.Scene)}
+                             {PromptSections.CurrentScene(generationContext)}
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 

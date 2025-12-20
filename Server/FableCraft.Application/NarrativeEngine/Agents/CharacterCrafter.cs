@@ -54,7 +54,7 @@ internal sealed class CharacterCrafter : BaseAgent
                              """;
         chatHistory.AddUserMessage(promptContext);
         var creationRequestPrompt = $"""
-                                     {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                                     {PromptSections.CurrentScene(context)}
 
                                      Here is the character creation request for you to process:
                                      {PromptSections.CharacterCreationContext(request)}
@@ -87,14 +87,15 @@ internal sealed class CharacterCrafter : BaseAgent
             Description = result.description,
             CharacterTracker = result.tracker,
             Name = result.characterStats.CharacterIdentity.FullName!,
-            CharacterMemories = new List<CharacterMemory>(),
-            Relationships = result.relationships.Select(r => new CharacterRelationship
+            CharacterMemories = new List<MemoryContext>(),
+            Relationships = result.relationships.Select(r => new CharacterRelationshipContext
             {
                 Data = r.ExtensionData.ToJsonString(),
                 TargetCharacterName = r.Name,
-                StoryTracker = null
+                StoryTracker = null,
+                SequenceNumber = 0
             }).ToList(),
-            SceneRewrites = new List<CharacterSceneRewrite>()
+            SceneRewrites = new List<CharacterSceneContext>()
         };
     }
 

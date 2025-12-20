@@ -47,7 +47,7 @@ internal sealed class LocationCrafter(
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
-                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                             {PromptSections.CurrentScene(context)}
 
                              Create new location based on the following request:
                              {PromptSections.LocationRequest(request)}

@@ -66,10 +66,10 @@ internal sealed class CharacterPlugin : BaseAgent
             .Select(s => $"""
                           SCENE NUMBER: {s.SequenceNumber}
                           <scene_tracker>
-                          TIME: {s.StoryTracker.Time}
-                          Location: {s.StoryTracker.Weather}
-                          Weather: {s.StoryTracker.Location}
-                          Characters on scene: {string.Join(", ", s.StoryTracker.CharactersPresent)}
+                          TIME: {s.StoryTracker?.Time}
+                          Location: {s.StoryTracker?.Weather}
+                          Weather: {s.StoryTracker?.Location}
+                          Characters on scene: {string.Join(", ", s.StoryTracker?.CharactersPresent ?? [])}
                           </scene_tracker>
 
                           {s.Content}
@@ -119,7 +119,7 @@ internal sealed class CharacterPlugin : BaseAgent
         }
 
         var memoriesText = string.Join("\n",
-            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.Summary} [{m.Data}]"));
+            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.MemoryContent} [{m.Data}]"));
 
         return $"""
                 <character_memories>

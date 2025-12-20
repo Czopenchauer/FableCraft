@@ -47,7 +47,7 @@ internal sealed class LoreCrafter(
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
-                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                             {PromptSections.CurrentScene(context)}
 
                              Create new lore based on the following request:
                              {PromptSections.LoreCreationContext(request)}

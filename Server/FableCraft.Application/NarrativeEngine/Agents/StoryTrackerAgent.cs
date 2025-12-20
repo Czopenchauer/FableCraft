@@ -67,7 +67,7 @@ internal sealed class StoryTrackerAgent(
                              {(!isFirstScene ? PromptSections.PreviousStoryTrackers(context.SceneContext!) : "")}
 
                              THIS IS CURRENT SCENE! Update the story tracker based on the scene content and previous trackers.
-                             {PromptSections.CurrentScene(context.NewScene!.Scene)}
+                             {PromptSections.CurrentScene(context)}
                              """;
         }
 

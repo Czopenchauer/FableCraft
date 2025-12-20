@@ -2,7 +2,7 @@
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-internal sealed class MainCharacterDeltaTrackerOutput
+internal sealed class CharacterDeltaTrackerOutput
 {
     [JsonPropertyName("time_update")]
     public TimeUpdate TimeUpdate { get; set; } = null!;

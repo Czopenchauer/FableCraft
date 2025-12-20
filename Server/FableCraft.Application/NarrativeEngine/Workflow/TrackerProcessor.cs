@@ -47,13 +47,7 @@ internal sealed class TrackerProcessor(
                         return context.CharacterUpdates!.First(x => x.Name == character.Name);
                     }
 
-                    var reflectionTask = characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-                    var trackerTask = characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-
-                    await Task.WhenAll(reflectionTask, trackerTask);
-
-                    var reflectionOutput = await reflectionTask;
-                    (CharacterTracker charTracker, var description) = await trackerTask;
+                    var reflectionOutput = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
                     var characterState = character.CharacterState;
                     if (reflectionOutput.ExtensionData?.Count == 0)
@@ -62,7 +56,7 @@ internal sealed class TrackerProcessor(
                         characterState = characterState.PatchWith(reflectionOutput.ExtensionData);
                     }
 
-                    var characterRelationships = new List<CharacterRelationship>();
+                    var characterRelationships = new List<CharacterRelationshipContext>();
                     foreach (CharacterRelationshipOutput reflectionOutputRelationshipUpdate in reflectionOutput.RelationshipUpdates)
                     {
                         if (reflectionOutputRelationshipUpdate.ExtensionData?.Count == 0)
@@ -73,12 +67,12 @@ internal sealed class TrackerProcessor(
                         var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Name);
                         if (relationship == null)
                         {
-                            characterRelationships.Add(new CharacterRelationship
+                            characterRelationships.Add(new CharacterRelationshipContext
                             {
                                 TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData.ToJsonString(),
+                                StoryTracker = storyTrackerResult,
                                 SequenceNumber = 0,
-                                StoryTracker = storyTrackerResult
                             });
                         }
                         else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
@@ -93,28 +87,74 @@ internal sealed class TrackerProcessor(
                     {
                         CharacterId = character.CharacterId,
                         CharacterState = characterState,
-                        CharacterTracker = charTracker,
+                        CharacterTracker = character.CharacterTracker,
                         Name = character.Name,
-                        Description = description,
-                        CharacterMemories = reflectionOutput.Memory!.Select(x => new CharacterMemory
+                        Description = character.Description,
+                        CharacterMemories = reflectionOutput.Memory!.Select(x => new MemoryContext
                         {
-                            Summary = x.Summary,
                             Salience = x.Salience,
                             Data = x.ExtensionData.ToJsonString(),
-                            StoryTracker = storyTrackerResult
+                            MemoryContent = x.Summary,
+                            StoryTracker = storyTrackerResult,
                         }).ToList(),
                         Relationships = characterRelationships,
                         SceneRewrites =
                         [
-                            new CharacterSceneRewrite
+                            new CharacterSceneContext
                             {
                                 Content = reflectionOutput.SceneRewrite,
                                 StoryTracker = storyTrackerResult,
+                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)?.SequenceNumber + 1 ?? 0,
                             }
                         ]
                     };
 
+                    var trackerDelta = await characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    if (trackerDelta.TrackerChanges?.ExtensionData != null)
+                    {
+                        characterContext.CharacterTracker = character.CharacterTracker.PatchWith(trackerDelta.TrackerChanges.ExtensionData);
+                    }
+
                     return characterContext;
+                })
+                .ToArray();
+        }
+
+        Task<CharacterContext>[]? sceneRewriteForNewChar = null;
+        if (context.NewCharacters?.Length > 0)
+        {
+            sceneRewriteForNewChar = context.NewCharacters
+                .Select(async character =>
+                {
+                    if (character.SceneRewrites.Count > 0)
+                    {
+                        return character;
+                    }
+
+                    var reflection = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    character.SceneRewrites =
+                    [
+                        new CharacterSceneContext
+                        {
+                            Content = reflection.SceneRewrite,
+                            StoryTracker = storyTrackerResult,
+                            SequenceNumber = 0
+                        }
+                    ];
+                    character.CharacterMemories = reflection.Memory!.Select(x => new MemoryContext()
+                    {
+                        Salience = x.Salience,
+                        Data = x.ExtensionData.ToJsonString(),
+                        StoryTracker = storyTrackerResult,
+                        MemoryContent = x.Summary
+                    }).ToList();
+
+                    if (reflection.ExtensionData != null)
+                    {
+                        character.CharacterState = character.CharacterState.PatchWith(reflection.ExtensionData);
+                    }
+
+                    return character;
                 })
                 .ToArray();
         }
@@ -123,6 +163,11 @@ internal sealed class TrackerProcessor(
         if (characterUpdateTask != null)
         {
             await UnpackCharacterUpdates(context, characterUpdateTask);
+        }
+
+        if (sceneRewriteForNewChar != null)
+        {
+            await Task.WhenAll(sceneRewriteForNewChar);
         }
     }
 
@@ -141,6 +186,7 @@ internal sealed class TrackerProcessor(
         {
             return await initMainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
         }
+
         var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
 
         var newTracker = new MainCharacterTracker

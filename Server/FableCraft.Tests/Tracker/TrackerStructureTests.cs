@@ -110,7 +110,7 @@ public class TrackerStructureTests
     public async Task MainCharacter_ShouldDeserializeAllFields()
     {
         // Act
-        var structure = DeserializeStructure(TestTracker.InputJson);
+        var structure = DeserializeStructure(TestTrackerV2.Tracker);
 
         // Assert
         await Assert.That(structure.MainCharacter).IsNotNull();

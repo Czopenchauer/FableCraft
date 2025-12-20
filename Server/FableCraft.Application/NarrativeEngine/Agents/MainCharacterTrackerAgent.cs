@@ -24,7 +24,7 @@ internal sealed class MainCharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.MainCharacterTrackerAgent;
 
-    public async Task<MainCharacterDeltaTrackerOutput> Invoke(
+    public async Task<CharacterDeltaTrackerOutput> Invoke(
         GenerationContext context,
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
@@ -73,7 +73,7 @@ internal sealed class MainCharacterTrackerAgent(
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<MainCharacterDeltaTrackerOutput>("tracker");
+        var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var datasets = new List<string>

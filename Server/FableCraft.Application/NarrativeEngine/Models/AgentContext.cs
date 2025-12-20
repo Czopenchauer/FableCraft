@@ -104,11 +104,42 @@ internal sealed class CharacterContext
 
     public required CharacterTracker? CharacterTracker { get; set; }
 
-    public required List<CharacterMemory> CharacterMemories { get; set; } = new();
+    public required List<MemoryContext> CharacterMemories { get; set; } = new();
 
-    public required List<CharacterRelationship> Relationships { get; set; } = new();
+    public required List<CharacterRelationshipContext> Relationships { get; set; } = new();
 
-    public required List<CharacterSceneRewrite> SceneRewrites { get; set; } = new();
+    public required List<CharacterSceneContext> SceneRewrites { get; set; } = new();
+}
+
+internal sealed class MemoryContext
+{
+    public required string MemoryContent { get; set; } = null!;
+
+    public required StoryTracker StoryTracker { get; set; }
+
+    public required double Salience { get; set; }
+
+    public required string? Data { get; set; } = null!;
+}
+
+internal sealed class CharacterRelationshipContext
+{
+    public required string TargetCharacterName { get; set; } = null!;
+
+    public required string Data { get; set; } = null!;
+
+    public required int SequenceNumber { get; set; }
+
+    public required StoryTracker? StoryTracker { get; set; }
+}
+
+internal sealed class CharacterSceneContext
+{
+    public required string Content { get; set; } = null!;
+
+    public required int SequenceNumber { get; set; }
+
+    public required StoryTracker? StoryTracker { get; set; }
 }
 
 internal sealed class SceneContext

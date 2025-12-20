@@ -26,7 +26,7 @@ internal sealed class CharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
-    public async Task<(CharacterTracker, string)> Invoke(
+    public async Task<CharacterDeltaTrackerOutput> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
         StoryTracker storyTrackerResult,
@@ -46,21 +46,18 @@ internal sealed class CharacterTrackerAgent(
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 
-                             {PromptSections.RecentScenesForCharacter(
-                                 generationContext.SceneContext ?? [],
-                                 generationContext.MainCharacter.Name,
-                                 context.Name)}
+                             {PromptSections.RecentScenesForCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.CurrentScene(generationContext.NewScene?.Scene)}
+                             {PromptSections.CurrentScene(generationContext)}
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonTextParser<CharacterTracker>("character_tracker", "character_description", true);
+        var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var datasets = new List<string>

@@ -56,6 +56,8 @@ internal sealed class InitMainCharacterTrackerAgent(
             requestPrompt = $"""
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
+                             {PromptSections.LastScenes(context.SceneContext ?? [], 2)}
+                             
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
 

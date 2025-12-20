@@ -4,8 +4,9 @@ using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
-using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
+
+using Serilog;
 
 namespace FableCraft.Infrastructure.Clients;
 
@@ -95,11 +96,13 @@ internal class RagClient : IRagBuilder, IRagSearch
 {
     private readonly HttpClient _httpClient;
     private readonly IMessageDispatcher _messageDispatcher;
+    private readonly ILogger _logger;
 
-    public RagClient(HttpClient httpClient, IMessageDispatcher messageDispatcher)
+    public RagClient(HttpClient httpClient, IMessageDispatcher messageDispatcher, ILogger logger)
     {
         _httpClient = httpClient;
         _messageDispatcher = messageDispatcher;
+        _logger = logger;
     }
 
     public async Task<Dictionary<string, Dictionary<string, string>>> AddDataAsync(List<string> content, List<string> datasets, CancellationToken cancellationToken = default)
@@ -189,18 +192,32 @@ internal class RagClient : IRagBuilder, IRagSearch
         var type = searchType ?? SearchType.GraphCompletion;
         var request = queries.Select(async query =>
         {
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search",
-                new SearchRequest
-                {
-                    Datasets = datasets,
-                    Query = query,
-                    SearchType = type
-                },
-                cancellationToken);
+            try
+            {
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search",
+                    new SearchRequest
+                    {
+                        Datasets = datasets,
+                        Query = query,
+                        SearchType = type
+                    },
+                    cancellationToken);
 
-            response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken);
-            return (query, result ?? new SearchResponse { Results = new List<SearchResultItem>() });
+                response.EnsureSuccessStatusCode();
+                var result = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken);
+                return (query, result ?? new SearchResponse { Results = new List<SearchResultItem>() });
+            }
+            catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                _logger.Information("RAG search for datasets '{datasets}' returned Not Found.", string.Join(",", datasets));
+                return (query, new SearchResponse { Results = new List<SearchResultItem>
+                {
+                    new()
+                    {
+                        Text = "Knowledge graph does not contain any data yet. It might be because it's newly introduced character to the story.",
+                    }
+                } });
+            }
         }).ToArray();
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();

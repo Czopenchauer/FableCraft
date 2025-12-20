@@ -59,6 +59,11 @@ internal static class PromptSections
 
     public static string LastScenes(SceneContext[] sceneContext, int count)
     {
+        if (sceneContext.Length == 0)
+        {
+            return string.Empty;
+        }
+
         var scenes = sceneContext
             .OrderByDescending(x => x.SequenceNumber);
 
@@ -108,14 +113,14 @@ internal static class PromptSections
                """;
     }
 
-    public static string CurrentScene(string? content)
+    public static string CurrentScene(GenerationContext context)
     {
-        return string.IsNullOrEmpty(content)
+        return string.IsNullOrEmpty(context.NewScene?.Scene)
             ? string.Empty
             : $"""
-               Here's the current narrative scene:
+               Here's the current narrative scene written from {context.MainCharacter.Name}'s perspective:
                <current_scene>
-               {content}
+               {context.NewScene.Scene}
                </current_scene>
                """;
     }
@@ -220,20 +225,22 @@ internal static class PromptSections
                 """;
     }
 
-    public static string RecentScenesForCharacter(SceneContext[] sceneContext, string mainCharacterName, string characterName, int count = 3)
+    public static string RecentScenesForCharacter(CharacterContext context, int count = 3)
     {
         var scenes = string.Join("\n\n---\n\n",
-            sceneContext
+            context.SceneRewrites
                 .OrderByDescending(x => x.SequenceNumber)
                 .TakeLast(count)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
-                              {s.SceneContent}
-                              {s.PlayerChoice}
+                              TIME: {s.StoryTracker?.Time}
+                              Location: {s.StoryTracker?.Location}
+
+                              {s.Content}
                               """));
 
         return $"""
-                CRITICAL! These scenes are written from the perspective of the main character {mainCharacterName}. Before updating the tracker, rewrite these scenes from the perspective of the character {characterName}. Make sure to include ONLY their thoughts, feelings, knowledge, and reactions to the events happening in each scene.
+                Recent scenes involving the character {context.Name} from their perspective:
                 <recent_scenes>
                 {scenes}
                 </recent_scenes>

@@ -7,6 +7,7 @@ import cognee
 import uvicorn
 from cognee.api.v1.exceptions import DocumentNotFoundError
 from cognee.context_global_variables import set_session_user_context_variable
+from cognee.modules.data.exceptions import DatasetNotFoundError
 from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
 from dotenv import load_dotenv, set_key
@@ -232,7 +233,11 @@ async def search(request: SearchRequest, response_model=SearchResponse):
                     ))
 
         return SearchResponse(results=all_results)
-
+    except DatasetNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dataset not found: {str(e)}"
+        )
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during search: {str(e)}")
         raise HTTPException(

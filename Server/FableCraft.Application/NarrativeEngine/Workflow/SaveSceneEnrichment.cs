@@ -20,7 +20,6 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             .Include(x => x.Lorebooks)
             .SingleAsync(x => x.Id == context.NewSceneId && x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
 
-
         scene.Metadata.Tracker = context.NewTracker!;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
 
@@ -73,7 +72,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
 
             dbContext.Scenes.Update(scene);
 
-            await UpsertCharacters(context, cancellationToken, dbContext);
+            await UpsertCharacters(context, scene, cancellationToken, dbContext);
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -87,7 +86,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             cancellationToken);
     }
 
-    private async static Task UpsertCharacters(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
+    private async static Task UpsertCharacters(GenerationContext context, Scene scene, CancellationToken cancellationToken, ApplicationDbContext dbContext)
     {
         if (context.CharacterUpdates?.Count > 0)
         {
@@ -101,45 +100,109 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                 var update = context.CharacterUpdates!.Single(x => x.Name == character.Name);
                 character.CharacterStates.Add(new CharacterState
                 {
-                    Description =  update.Description,
+                    Description = update.Description,
                     CharacterStats = update.CharacterState,
                     Tracker = update.CharacterTracker!,
                     SequenceNumber = character.Version + 1,
-                    SceneId = context.NewSceneId!.Value
+                    Scene = scene
                 });
                 character.Version += 1;
-                character.CharacterMemories.AddRange(update.CharacterMemories);
-                character.CharacterRelationships.AddRange(update.Relationships);
-                character.CharacterSceneRewrites.AddRange(update.SceneRewrites);
+                var memories = update.CharacterMemories.Select(x => new CharacterMemory
+                {
+                    StoryTracker = x.StoryTracker,
+                    Scene = scene,
+                    Summary = x.MemoryContent,
+                    Data = x.Data,
+                    Salience = x.Salience,
+                });
+                
+                var relationships = update.Relationships.Select(x => new CharacterRelationship
+                {
+                    TargetCharacterName = x.TargetCharacterName,
+                    Data = x.Data,
+                    SequenceNumber = x.SequenceNumber,
+                    Scene = scene,
+                    StoryTracker = x.StoryTracker,
+                });
+                var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
+                {
+                    Content = x.Content,
+                    SequenceNumber = x.SequenceNumber,
+                    Scene = scene,
+                    StoryTracker = x.StoryTracker!
+                });
+                character.CharacterMemories.AddRange(memories);
+                character.CharacterRelationships.AddRange(relationships);
+                character.CharacterSceneRewrites.AddRange(sceneRewrites);
                 dbContext.Characters.Update(character);
             }
         }
 
         if (context.NewCharacters?.Length > 0)
         {
-            var newCharacterEntities = context.NewCharacters?.Select(x => new Character
-                                       {
-                                           AdventureId = context.AdventureId,
-                                           Name = x.Name,
-                                           CharacterStates =
-                                           [
-                                               new()
-                                               {
-                                                   Description = x.Description,
-                                                   CharacterStats = x.CharacterState,
-                                                   Tracker = x.CharacterTracker!,
-                                                   SequenceNumber = 0,
-                                                   SceneId = context.NewSceneId!.Value,
-                                               }
-                                           ],
-                                           Version = 0,
-                                           CharacterMemories = x.CharacterMemories,
-                                           CharacterRelationships = x.Relationships,
-                                           CharacterSceneRewrites = x.SceneRewrites,
-                                       }).ToList()
-                                       ?? new List<Character>();
+            var characters = await dbContext
+                .Characters
+                .Where(x => x.AdventureId == context.AdventureId && context.NewCharacters.Select(y => y.Name).Contains(x.Name))
+                .ToListAsync(cancellationToken: cancellationToken);
 
-            dbContext.Characters.AddRange(newCharacterEntities);
+            foreach (CharacterContext contextNewCharacter in context.NewCharacters)
+            {
+                var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
+                {
+                    StoryTracker = x.StoryTracker,
+                    Scene = scene,
+                    Summary = x.MemoryContent,
+                    Data = x.Data,
+                    Salience = x.Salience,
+                }).ToList();
+                
+                var relationships = contextNewCharacter.Relationships.Select(x => new CharacterRelationship
+                {
+                    TargetCharacterName = x.TargetCharacterName,
+                    Data = x.Data,
+                    SequenceNumber = x.SequenceNumber,
+                    Scene = scene,
+                    StoryTracker = x.StoryTracker,
+                }).ToList();
+                var sceneRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
+                {
+                    Content = x.Content,
+                    SequenceNumber = x.SequenceNumber,
+                    Scene = scene,
+                    StoryTracker = x.StoryTracker!
+                }).ToList();
+                var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
+                if (existingChar != null)
+                {
+                    existingChar.CharacterMemories = memories;
+                    existingChar.CharacterRelationships = relationships;
+                    existingChar.CharacterSceneRewrites = sceneRewrites;
+                }
+                else
+                {
+                    var newChar = new Character
+                    {
+                        AdventureId = context.AdventureId,
+                        Name = contextNewCharacter.Name,
+                        CharacterStates =
+                        [
+                            new()
+                            {
+                                Description = contextNewCharacter.Description,
+                                CharacterStats = contextNewCharacter.CharacterState,
+                                Tracker = contextNewCharacter.CharacterTracker!,
+                                SequenceNumber = 0,
+                                Scene = scene
+                            }
+                        ],
+                        Version = 0,
+                        CharacterMemories = memories,
+                        CharacterRelationships = relationships,
+                        CharacterSceneRewrites = sceneRewrites,
+                    };
+                    dbContext.Characters.Add(newChar);
+                }
+            }
         }
     }
 }

@@ -47,7 +47,7 @@ internal sealed class ItemCrafter(
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
-                             {PromptSections.CurrentScene(context.NewScene?.Scene)}
+                             {PromptSections.CurrentScene(context)}
 
                              Create new item based on the following request:
                              {PromptSections.ItemRequest(request)}
