@@ -67,6 +67,7 @@ internal class AdventureCreationService : IAdventureCreationService
         if (adventureDto.WorldbookId != null)
         {
             lorebookEntries = await _dbContext.Lorebooks
+                .Where(x => x.WorldbookId == adventureDto.WorldbookId)
                 .Select(entry => new LorebookEntry
                 {
                     Description = entry.Title,

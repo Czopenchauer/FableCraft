@@ -49,8 +49,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
   ) {
   }
 
-  get characterGroup(): FormGroup {
-    return this.adventureForm.get('character') as FormGroup;
+  get mainCharacterGroup(): FormGroup {
+    return this.adventureForm.get('mainCharacter') as FormGroup;
   }
 
   ngOnInit(): void {
@@ -85,9 +85,9 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       referenceTime: formValue.referenceTime,
       authorNotes: formValue.authorNotes,
       worldSettings: formValue.worldSettings || '',
-      character: {
-        name: formValue.character.name,
-        description: formValue.character.description
+      mainCharacter: {
+        name: formValue.mainCharacter.name,
+        description: formValue.mainCharacter.description
       },
       worldbookId: formValue.worldbookId || null,
       trackerDefinitionId: formValue.trackerDefinitionId,
@@ -141,7 +141,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       referenceTime: ['', Validators.required],
       authorNotes: ['', Validators.required],
       worldSettings: [''],
-      character: this.fb.group({
+      mainCharacter: this.fb.group({
         name: ['', [Validators.required, Validators.minLength(2)]],
         description: ['', Validators.required]
       }),

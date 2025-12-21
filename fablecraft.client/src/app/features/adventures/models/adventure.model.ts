@@ -31,7 +31,7 @@ export interface AdventureDto {
   referenceTime: string;
   authorNotes: string;
   worldSettings: string;
-  character: CharacterDto;
+  mainCharacter: CharacterDto;
   worldbookId?: string | null;
   trackerDefinitionId: string;
   promptPath: string;

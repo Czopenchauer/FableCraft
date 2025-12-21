@@ -519,4 +519,526 @@ public class JsonExtensionsTests
     }
 
     #endregion
+
+    #region Array Item Replacement Tests
+
+    private sealed class CharacterWithSkills
+    {
+        [JsonPropertyName("Name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("Skills")]
+        public List<Skill>? Skills { get; set; }
+
+        [JsonExtensionData]
+        public IDictionary<string, object>? ExtensionData { get; set; }
+    }
+
+    private sealed class Skill
+    {
+        [JsonPropertyName("SkillName")]
+        public string? SkillName { get; set; }
+
+        [JsonPropertyName("Category")]
+        public string? Category { get; set; }
+
+        [JsonPropertyName("Proficiency")]
+        public string? Proficiency { get; set; }
+
+        [JsonPropertyName("XP")]
+        public SkillXP? XP { get; set; }
+
+        [JsonPropertyName("ChallengeFloor")]
+        public string? ChallengeFloor { get; set; }
+
+        [JsonPropertyName("Development")]
+        public string? Development { get; set; }
+
+        [JsonPropertyName("RecentGains")]
+        public string? RecentGains { get; set; }
+    }
+
+    private sealed class SkillXP
+    {
+        [JsonPropertyName("Current")]
+        public string? Current { get; set; }
+
+        [JsonPropertyName("NextThreshold")]
+        public string? NextThreshold { get; set; }
+
+        [JsonPropertyName("ToNext")]
+        public string? ToNext { get; set; }
+    }
+
+    private static CharacterWithSkills CreateCharacterWithSkills() => new()
+    {
+        Name = "Test Character",
+        Skills =
+        [
+            new Skill
+            {
+                SkillName = "Consciousness Analysis",
+                Category = "Transcendent",
+                Proficiency = "Transcendent",
+                XP = new SkillXP
+                {
+                    Current = "Beyond measurement",
+                    NextThreshold = "MAX",
+                    ToNext = "N/A"
+                },
+                ChallengeFloor = "Transcendent",
+                Development = "Always existed",
+                RecentGains = "Constant"
+            },
+            new Skill
+            {
+                SkillName = "Reality Manipulation",
+                Category = "Transcendent",
+                Proficiency = "Transcendent",
+                XP = new SkillXP
+                {
+                    Current = "Beyond measurement",
+                    NextThreshold = "MAX",
+                    ToNext = "N/A"
+                },
+                ChallengeFloor = "Transcendent",
+                Development = "Always existed",
+                RecentGains = "Constant"
+            }
+        ]
+    };
+
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_ReplacesSingleItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updatedSkill = new Skill
+        {
+            SkillName = "Consciousness Analysis",
+            Category = "Transcendent",
+            Proficiency = "Transcendent",
+            XP = new SkillXP
+            {
+                Current = "Beyond measurement",
+                NextThreshold = "MAX",
+                ToNext = "N/A"
+            },
+            ChallengeFloor = "Transcendent",
+            Development = "Always existed, constantly evolving. Current focus: Analyzing Lua's 'surrender as completion' paradigm.",
+            RecentGains = "05:05: +25 XP - Initial observation | 05:07: +50 XP - Analysis of surrender philosophy"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Consciousness Analysis]"] = updatedSkill
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - The updated skill should have new values
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).Contains("constantly evolving");
+        await Assert.That(consciousnessSkill.RecentGains).Contains("+25 XP");
+        await Assert.That(consciousnessSkill.RecentGains).Contains("+50 XP");
+
+        // Assert - Other skills should remain unchanged
+        var realitySkill = result.Skills!.Single(s => s.SkillName == "Reality Manipulation");
+        await Assert.That(realitySkill.Development).IsEqualTo("Always existed");
+        await Assert.That(realitySkill.RecentGains).IsEqualTo("Constant");
+
+        // Assert - Array length should remain the same
+        await Assert.That(result.Skills!.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_PreservesOtherArrayItems()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updatedSkill = new Skill
+        {
+            SkillName = "Reality Manipulation",
+            Category = "Transcendent",
+            Proficiency = "Master",
+            XP = new SkillXP
+            {
+                Current = "10000",
+                NextThreshold = "15000",
+                ToNext = "5000"
+            },
+            ChallengeFloor = "Expert",
+            Development = "Rapid growth phase",
+            RecentGains = "10:00: +100 XP - Combat practice"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Reality Manipulation]"] = updatedSkill
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Updated skill changed
+        var realitySkill = result.Skills!.Single(s => s.SkillName == "Reality Manipulation");
+        await Assert.That(realitySkill.Proficiency).IsEqualTo("Master");
+        await Assert.That(realitySkill.Development).IsEqualTo("Rapid growth phase");
+
+        // Assert - Other skill unchanged
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).IsEqualTo("Always existed");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_WithNestedPath_UpdatesNestedProperty()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Consciousness Analysis].Development"] = "Updated development text"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only the Development property should be updated
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).IsEqualTo("Updated development text");
+        await Assert.That(consciousnessSkill.RecentGains).IsEqualTo("Constant");
+        await Assert.That(consciousnessSkill.Category).IsEqualTo("Transcendent");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_WithDeepNestedPath_UpdatesDeepNestedProperty()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Reality Manipulation].XP.Current"] = "15000"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only the XP.Current should be updated
+        var realitySkill = result.Skills!.Single(s => s.SkillName == "Reality Manipulation");
+        await Assert.That(realitySkill.XP!.Current).IsEqualTo("15000");
+        await Assert.That(realitySkill.XP!.NextThreshold).IsEqualTo("MAX");
+        await Assert.That(realitySkill.XP!.ToNext).IsEqualTo("N/A");
+    }
+
+    [Test]
+    public async Task PatchWith_MultipleArrayItemUpdates_AppliesAll()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Consciousness Analysis].Development"] = "New consciousness development",
+            ["Skills[Reality Manipulation].Development"] = "New reality development"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Both skills updated
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).IsEqualTo("New consciousness development");
+
+        var realitySkill = result.Skills!.Single(s => s.SkillName == "Reality Manipulation");
+        await Assert.That(realitySkill.Development).IsEqualTo("New reality development");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemNotFound_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Nonexistent Skill]"] = new Skill { SkillName = "Nonexistent Skill" }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Task.FromResult(original.PatchWith(updates)));
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_PreservesCharacterName()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updatedSkill = new Skill
+        {
+            SkillName = "Consciousness Analysis",
+            Category = "Transcendent",
+            Proficiency = "Transcendent",
+            XP = new SkillXP
+            {
+                Current = "Beyond measurement",
+                NextThreshold = "MAX",
+                ToNext = "N/A"
+            },
+            ChallengeFloor = "Transcendent",
+            Development = "Updated development",
+            RecentGains = "Updated gains"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Consciousness Analysis]"] = updatedSkill
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Character name preserved
+        await Assert.That(result.Name).IsEqualTo("Test Character");
+    }
+
+    #endregion
+
+    #region Nested Path with Array Access Tests
+
+    private sealed class CharacterWithMagic
+    {
+        [JsonPropertyName("Name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("MagicAndAbilities")]
+        public MagicAndAbilities? MagicAndAbilities { get; set; }
+
+        [JsonExtensionData]
+        public IDictionary<string, object>? ExtensionData { get; set; }
+    }
+
+    private sealed class MagicAndAbilities
+    {
+        [JsonPropertyName("ManaPool")]
+        public string? ManaPool { get; set; }
+
+        [JsonPropertyName("InstinctiveAbilities")]
+        public List<Ability>? InstinctiveAbilities { get; set; }
+
+        [JsonPropertyName("LearnedAbilities")]
+        public List<Ability>? LearnedAbilities { get; set; }
+    }
+
+    private sealed class Ability
+    {
+        [JsonPropertyName("AbilityName")]
+        public string? AbilityName { get; set; }
+
+        [JsonPropertyName("Type")]
+        public string? Type { get; set; }
+
+        [JsonPropertyName("Power")]
+        public int Power { get; set; }
+
+        [JsonPropertyName("CooldownSeconds")]
+        public int CooldownSeconds { get; set; }
+
+        [JsonPropertyName("Description")]
+        public string? Description { get; set; }
+    }
+
+    private static CharacterWithMagic CreateCharacterWithMagic() => new()
+    {
+        Name = "Dragon Character",
+        MagicAndAbilities = new MagicAndAbilities
+        {
+            ManaPool = "1000/1000",
+            InstinctiveAbilities =
+            [
+                new Ability
+                {
+                    AbilityName = "Fire Breath",
+                    Type = "Fire",
+                    Power = 150,
+                    CooldownSeconds = 30,
+                    Description = "Breathes a cone of fire"
+                },
+                new Ability
+                {
+                    AbilityName = "Tail Swipe",
+                    Type = "Physical",
+                    Power = 80,
+                    CooldownSeconds = 5,
+                    Description = "Sweeps tail in an arc"
+                }
+            ],
+            LearnedAbilities =
+            [
+                new Ability
+                {
+                    AbilityName = "Ice Storm",
+                    Type = "Ice",
+                    Power = 200,
+                    CooldownSeconds = 60,
+                    Description = "Creates a devastating ice storm"
+                }
+            ]
+        }
+    };
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_ReplacesItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updatedAbility = new Ability
+        {
+            AbilityName = "Fire Breath",
+            Type = "Fire",
+            Power = 200,
+            CooldownSeconds = 25,
+            Description = "Breathes an enhanced cone of scorching fire"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.InstinctiveAbilities[Fire Breath]"] = updatedAbility
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Fire Breath should be updated
+        var fireBreath = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(200);
+        await Assert.That(fireBreath.CooldownSeconds).IsEqualTo(25);
+        await Assert.That(fireBreath.Description).Contains("enhanced");
+
+        // Assert - Other abilities unchanged
+        var tailSwipe = result.MagicAndAbilities.InstinctiveAbilities.Single(a => a.AbilityName == "Tail Swipe");
+        await Assert.That(tailSwipe.Power).IsEqualTo(80);
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_AndPropertyPath_UpdatesProperty()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"] = 250
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only Power should be updated
+        var fireBreath = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(250);
+        await Assert.That(fireBreath.CooldownSeconds).IsEqualTo(30);
+        await Assert.That(fireBreath.Description).IsEqualTo("Breathes a cone of fire");
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_DifferentArrays_UpdatesCorrectArray()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.LearnedAbilities[Ice Storm].Power"] = 300
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Ice Storm in LearnedAbilities should be updated
+        var iceStorm = result.MagicAndAbilities!.LearnedAbilities!.Single(a => a.AbilityName == "Ice Storm");
+        await Assert.That(iceStorm.Power).IsEqualTo(300);
+
+        // Assert - InstinctiveAbilities should remain unchanged
+        var fireBreath = result.MagicAndAbilities.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(150);
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_PreservesSiblingProperties()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.InstinctiveAbilities[Tail Swipe].Description"] = "A powerful tail sweep"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - ManaPool preserved
+        await Assert.That(result.MagicAndAbilities!.ManaPool).IsEqualTo("1000/1000");
+
+        // Assert - Character name preserved
+        await Assert.That(result.Name).IsEqualTo("Dragon Character");
+
+        // Assert - Other ability preserved
+        var fireBreath = result.MagicAndAbilities.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Description).IsEqualTo("Breathes a cone of fire");
+    }
+
+    [Test]
+    public async Task PatchWith_MultipleNestedPathsWithArrayAccess_AppliesAll()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"] = 180,
+            ["MagicAndAbilities.InstinctiveAbilities[Tail Swipe].Power"] = 100,
+            ["MagicAndAbilities.LearnedAbilities[Ice Storm].CooldownSeconds"] = 45,
+            ["MagicAndAbilities.ManaPool"] = "1500/1500"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - All updates applied
+        var fireBreath = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(180);
+
+        var tailSwipe = result.MagicAndAbilities.InstinctiveAbilities.Single(a => a.AbilityName == "Tail Swipe");
+        await Assert.That(tailSwipe.Power).IsEqualTo(100);
+
+        var iceStorm = result.MagicAndAbilities.LearnedAbilities!.Single(a => a.AbilityName == "Ice Storm");
+        await Assert.That(iceStorm.CooldownSeconds).IsEqualTo(45);
+
+        await Assert.That(result.MagicAndAbilities.ManaPool).IsEqualTo("1500/1500");
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_ItemNotFound_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.InstinctiveAbilities[Lightning Bolt]"] = new Ability { AbilityName = "Lightning Bolt" }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Task.FromResult(original.PatchWith(updates)));
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithArrayAccess_ArrayNotFound_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            ["MagicAndAbilities.UltimateAbilities[Super Attack]"] = new Ability { AbilityName = "Super Attack" }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Task.FromResult(original.PatchWith(updates)));
+    }
+
+    #endregion
 }

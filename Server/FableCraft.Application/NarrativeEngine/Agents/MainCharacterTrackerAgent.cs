@@ -19,8 +19,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class MainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.MainCharacterTrackerAgent;
 
@@ -76,13 +75,13 @@ internal sealed class MainCharacterTrackerAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            RagClientExtensions.GetWorldDatasetName(context.AdventureId),
-            RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        // var datasets = new List<string>
+        // {
+        //     RagClientExtensions.GetWorldDatasetName(context.AdventureId),
+        //     RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)
+        // };
+        // var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
+        // kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         return await agentKernel.SendRequestAsync(

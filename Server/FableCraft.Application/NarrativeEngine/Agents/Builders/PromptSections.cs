@@ -32,8 +32,13 @@ internal static class PromptSections
         return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
     }
 
-    public static string StoryTracker(StoryTracker tracker, bool ignoreNull = false)
+    public static string StoryTracker(StoryTracker? tracker, bool ignoreNull = false)
     {
+        if (tracker == null)
+        {
+            return string.Empty;
+        }
+
         return $"""
                 <story_tracker>
                 {tracker.ToJsonString(GetJsonOptions(ignoreNull))}

@@ -50,10 +50,14 @@ internal sealed class TrackerProcessor(
                     var reflectionOutput = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
 
                     var characterState = character.CharacterState;
-                    if (reflectionOutput.ExtensionData?.Count == 0)
+
+                    if (reflectionOutput.ExtensionData?.Count > 0)
+                    {
+                        characterState = characterState.PatchWith(reflectionOutput.ExtensionData);
+                    }
+                    else
                     {
                         logger.Warning("Character reflection output for character {CharacterName} has no update for character state.", character.Name);
-                        characterState = characterState.PatchWith(reflectionOutput.ExtensionData);
                     }
 
                     var characterRelationships = new List<CharacterRelationshipContext>();

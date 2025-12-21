@@ -74,9 +74,10 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.EntityId))
                 .ToListAsync(cancellationToken);
 
+            var ids = scenesToCommit.SelectMany(y => y.CharacterSceneRewrites.Select(z => z.Id)).ToList();
             var existingRewriteChunks = await _dbContext.Chunks
                 .AsNoTracking()
-                .Where(x => scenesToCommit.SelectMany(y => y.CharacterSceneRewrites.Select(z => z.Id)).Contains(x.EntityId))
+                .Where(x => ids.Contains(x.EntityId))
                 .ToListAsync(cancellationToken);
             var characters = await _dbContext.Characters
                 .Where(x => x.AdventureId == message.AdventureId)
@@ -241,6 +242,18 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 await _ragChunkService.CognifyDatasetsAsync(
                     [RagClientExtensions.GetWorldDatasetName(message.AdventureId)],
                     cancellationToken: cancellationToken);
+                await _ragChunkService.CognifyDatasetsAsync(
+                    [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)],
+                    true,
+                    cancellationToken: cancellationToken);
+                
+                foreach (Character character in characters)
+                {
+                    await _ragChunkService.CognifyDatasetsAsync(
+                        [RagClientExtensions.GetCharacterDatasetName(message.AdventureId, character.Id)],
+                        true,
+                        cancellationToken: cancellationToken);
+                }
 
                 foreach (Scene scene in scenesToCommit)
                 {

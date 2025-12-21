@@ -39,6 +39,8 @@ internal sealed class InitMainCharacterTrackerAgent(
 
         var contextPrompt = $"""
                              {PromptSections.StoryTracker(storyTrackerResult, true)}
+
+                             {PromptSections.MainCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
@@ -57,7 +59,7 @@ internal sealed class InitMainCharacterTrackerAgent(
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
                              {PromptSections.LastScenes(context.SceneContext ?? [], 2)}
-                             
+
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
 

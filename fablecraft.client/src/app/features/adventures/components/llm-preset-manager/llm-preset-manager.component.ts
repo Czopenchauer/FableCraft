@@ -64,7 +64,7 @@ export class LlmPresetManagerComponent implements OnInit {
       baseUrl: ['', [Validators.maxLength(500)]],
       apiKey: ['', [Validators.required, Validators.maxLength(500)]],
       maxTokens: [2000, [Validators.required, Validators.min(1)]],
-      temperature: [0.7, [Validators.min(0), Validators.max(2)]],
+      temperature: [1, [Validators.min(0), Validators.max(2)]],
       topP: [1.0, [Validators.min(0), Validators.max(1)]],
       topK: [50, [Validators.min(1), Validators.max(100)]],
       frequencyPenalty: [0, [Validators.min(-2), Validators.max(2)]],
@@ -127,7 +127,7 @@ export class LlmPresetManagerComponent implements OnInit {
       baseUrl: '',
       apiKey: '',
       maxTokens: 2000,
-      temperature: 0.7,
+      temperature: 1,
       topP: 1.0,
       topK: 50,
       frequencyPenalty: 0,
@@ -145,7 +145,25 @@ export class LlmPresetManagerComponent implements OnInit {
       baseUrl: preset.baseUrl || '',
       apiKey: preset.apiKey,
       maxTokens: preset.maxTokens,
-      temperature: preset.temperature ?? 0.7,
+      temperature: preset.temperature ?? 1,
+      topP: preset.topP ?? 1.0,
+      topK: preset.topK ?? 50,
+      frequencyPenalty: preset.frequencyPenalty ?? 0,
+      presencePenalty: preset.presencePenalty ?? 0
+    });
+    this.showForm = true;
+  }
+
+  copyPreset(preset: LlmPresetResponseDto): void {
+    this.editingPreset = null; // This is a new preset, not editing
+    this.presetForm.patchValue({
+      name: `${preset.name} (Copy)`,
+      provider: preset.provider,
+      model: preset.model,
+      baseUrl: preset.baseUrl || '',
+      apiKey: preset.apiKey,
+      maxTokens: preset.maxTokens,
+      temperature: preset.temperature ?? 1,
       topP: preset.topP ?? 1.0,
       topK: preset.topK ?? 50,
       frequencyPenalty: preset.frequencyPenalty ?? 0,

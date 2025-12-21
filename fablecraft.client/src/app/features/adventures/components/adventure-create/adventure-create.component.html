@@ -116,7 +116,7 @@
       </div>
 
       <!-- Character Section -->
-      <div class="form-section" formGroupName="character">
+      <div class="form-section" formGroupName="mainCharacter">
         <div class="section-header">
           <h2 class="section-title">Character</h2>
           <p class="section-subtitle">Create your protagonist</p>
@@ -125,30 +125,30 @@
         <div class="form-group">
           <label class="form-label" for="characterName">Character Name *</label>
           <input
-            [class.input-error]="isFieldInvalid('name', characterGroup)"
+            [class.input-error]="isFieldInvalid('name', mainCharacterGroup)"
             class="form-input"
             formControlName="name"
             id="characterName"
             placeholder="Your character's name"
             type="text"
           />
-          <span *ngIf="isFieldInvalid('name', characterGroup)" class="error-text">
-            {{ getFieldError('name', characterGroup) }}
+          <span *ngIf="isFieldInvalid('name', mainCharacterGroup)" class="error-text">
+            {{ getFieldError('name', mainCharacterGroup) }}
           </span>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="characterDescription">Character Description *</label>
           <textarea
-            [class.input-error]="isFieldInvalid('description', characterGroup)"
+            [class.input-error]="isFieldInvalid('description', mainCharacterGroup)"
             class="form-textarea"
             formControlName="description"
             id="characterDescription"
             placeholder="Physical appearance, personality, skills, motivations, background..."
             rows="3"
           ></textarea>
-          <span *ngIf="isFieldInvalid('description', characterGroup)" class="error-text">
-            {{ getFieldError('description', characterGroup) }}
+          <span *ngIf="isFieldInvalid('description', mainCharacterGroup)" class="error-text">
+            {{ getFieldError('description', mainCharacterGroup) }}
           </span>
         </div>
       </div>

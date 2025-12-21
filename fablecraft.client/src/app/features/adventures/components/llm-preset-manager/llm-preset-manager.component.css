@@ -518,6 +518,17 @@
   transform: translateY(-2px);
 }
 
+.btn-copy:hover {
+  background: var(--status-info);
+  border-color: var(--status-info);
+  color: white;
+}
+
+[data-theme="modern-dark"] .btn-copy:hover {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
 .btn-edit:hover {
   background: var(--color-primary);
   border-color: var(--color-primary);
