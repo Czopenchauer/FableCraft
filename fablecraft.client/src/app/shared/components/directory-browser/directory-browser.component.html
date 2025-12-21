@@ -1,0 +1,94 @@
+<div class="directory-browser">
+  <!-- Current selection display / trigger -->
+  <div
+    (click)="toggleDropdown()"
+    [class.disabled]="disabled"
+    class="browser-trigger"
+  >
+    <div class="selected-path">
+      <svg class="folder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+      </svg>
+      <span class="path-text" [title]="currentPath">{{ currentPath || 'Select directory...' }}</span>
+    </div>
+    <svg class="chevron-icon" [class.open]="isOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+    </svg>
+  </div>
+
+  <!-- Dropdown panel -->
+  <div *ngIf="isOpen" class="browser-dropdown">
+    <!-- Breadcrumb navigation -->
+    <div *ngIf="listing" class="breadcrumb">
+      <button
+        (click)="navigateUp()"
+        [disabled]="!listing.parentPath"
+        class="breadcrumb-up"
+        title="Go up one level"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </button>
+      <div class="breadcrumb-path">
+        <span *ngFor="let part of getPathParts(); let last = last" class="breadcrumb-part">
+          <button (click)="navigateToPath(part.path)" class="breadcrumb-link">{{ part.name }}</button>
+          <span *ngIf="!last" class="breadcrumb-separator">/</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="browser-loading">
+      <div class="spinner-small"></div>
+      <span>Loading...</span>
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="errorMessage && !isLoading" class="browser-error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Directory list -->
+    <div *ngIf="!isLoading && listing" class="directory-list">
+      <!-- Select current directory button -->
+      <button
+        (click)="selectCurrentPath()"
+        class="select-current-btn"
+        title="Select this directory"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        Select current directory
+      </button>
+
+      <!-- Subdirectories -->
+      <div *ngIf="listing.directories.length === 0" class="empty-message">
+        No subdirectories
+      </div>
+
+      <div
+        *ngFor="let dir of listing.directories"
+        class="directory-item"
+      >
+        <button (click)="navigateTo(dir)" class="directory-navigate" title="Open {{ dir.name }}">
+          <svg class="folder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          <span class="directory-name">{{ dir.name }}</span>
+        </button>
+        <button (click)="selectDirectory(dir)" class="directory-select" title="Select {{ dir.name }}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop to close dropdown -->
+  <div *ngIf="isOpen" (click)="closeDropdown()" class="browser-backdrop"></div>
+</div>

@@ -461,6 +461,66 @@
               </div>
 
             </div>
+
+            <!-- Character Emulation Box -->
+            <div class="emulation-section">
+              <button
+                (click)="toggleEmulationBox()"
+                class="emulation-toggle-btn"
+                type="button"
+              >
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path *ngIf="!showEmulationBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="showEmulationBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                <span>Character Voice</span>
+              </button>
+
+              <div *ngIf="showEmulationBox" class="emulation-box">
+                <div class="emulation-input-row">
+                  <textarea
+                    (keydown)="onEmulationKeyDown($event)"
+                    [(ngModel)]="emulationInstruction"
+                    [disabled]="isEmulating"
+                    class="emulation-input"
+                    placeholder="Describe what you want your character to say or think..."
+                    rows="2"
+                  ></textarea>
+                  <button
+                    (click)="onEmulateMainCharacter()"
+                    [disabled]="!emulationInstruction.trim() || isEmulating"
+                    class="emulation-submit-btn"
+                    title="Generate character voice"
+                    type="button"
+                  >
+                    <svg *ngIf="!isEmulating" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                      <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                    </svg>
+                    <svg *ngIf="isEmulating" [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                      <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <div *ngIf="emulationResponse" class="emulation-response">
+                  <div class="emulation-response-header">
+                    <span class="emulation-response-label">Character Voice:</span>
+                    <button
+                      (click)="clearEmulationResponse()"
+                      class="emulation-clear-btn"
+                      title="Clear response"
+                      type="button"
+                    >
+                      <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                        <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="emulation-response-text">{{ emulationResponse }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

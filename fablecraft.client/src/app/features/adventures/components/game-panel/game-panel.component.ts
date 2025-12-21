@@ -3,6 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
+import {CharacterService} from '../../services/character.service';
 import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 
@@ -46,15 +47,24 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     { id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers' }
   ];
 
+  // Character emulation state
+  private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
+  showEmulationBox = false;
+  emulationInstruction = '';
+  emulationResponse = '';
+  isEmulating = false;
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private adventureService: AdventureService,
+    private characterService: CharacterService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService
   ) {
+    this.loadEmulationVisibility();
   }
 
   ngOnInit(): void {
@@ -582,5 +592,68 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   onSettingsSaved(): void {
     // Optionally reload data or show feedback
     this.closeSettingsModal();
+  }
+
+  /**
+   * Load emulation box visibility from localStorage
+   */
+  private loadEmulationVisibility(): void {
+    const stored = localStorage.getItem(this.EMULATION_VISIBLE_KEY);
+    this.showEmulationBox = stored === 'true';
+  }
+
+  /**
+   * Toggle emulation box visibility
+   */
+  toggleEmulationBox(): void {
+    this.showEmulationBox = !this.showEmulationBox;
+    localStorage.setItem(this.EMULATION_VISIBLE_KEY, String(this.showEmulationBox));
+  }
+
+  /**
+   * Submit emulation instruction
+   */
+  onEmulateMainCharacter(): void {
+    if (!this.adventureId || !this.emulationInstruction.trim() || this.isEmulating) return;
+
+    this.isEmulating = true;
+    this.emulationResponse = '';
+
+    this.characterService.emulateMainCharacter(this.adventureId, this.emulationInstruction.trim())
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isEmulating = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.emulationResponse = response.text;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error emulating character:', err);
+          this.toastService.error('Failed to emulate character. Please try again.');
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Handle keydown in emulation instruction textarea
+   */
+  onEmulationKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.onEmulateMainCharacter();
+    }
+  }
+
+  /**
+   * Clear emulation response
+   */
+  clearEmulationResponse(): void {
+    this.emulationResponse = '';
   }
 }
