@@ -88,8 +88,8 @@ internal class AdventureCreationService : IAdventureCreationService
             AdventureStartTime = adventureDto.ReferenceTime,
             MainCharacter = new MainCharacter
             {
-                Name = adventureDto.Character.Name,
-                Description = adventureDto.Character.Description
+                Name = adventureDto.MainCharacter.Name,
+                Description = adventureDto.MainCharacter.Description
             },
             Lorebook = lorebookEntries,
             TrackerStructure = tracker.Structure,

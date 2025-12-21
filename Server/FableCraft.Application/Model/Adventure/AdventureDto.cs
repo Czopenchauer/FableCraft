@@ -23,7 +23,7 @@ public class AdventureDto
 
     public string? WorldSettings { get; init; }
 
-    public required CharacterDto Character { get; init; } = null!;
+    public required MainCharacterDto MainCharacter { get; init; } = null!;
 
     public Guid? WorldbookId { get; init; }
 
@@ -44,8 +44,8 @@ public class AdventureDtoValidator : AbstractValidator<AdventureDto>
             .NotEmpty().WithMessage("Adventure name is required")
             .MaximumLength(200).WithMessage("Adventure name must not exceed 200 characters");
 
-        RuleFor(x => x.Character)
-            .NotNull().WithMessage("Character is required")
+        RuleFor(x => x.MainCharacter)
+            .NotNull().WithMessage("MainCharacter is required")
             .SetValidator(new CharacterDtoValidator());
 
         RuleFor(x => x.AgentLlmPresets)

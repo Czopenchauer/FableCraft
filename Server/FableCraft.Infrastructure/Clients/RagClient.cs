@@ -88,7 +88,7 @@ public record SearchResult(string Query, SearchResponse Response);
 
 public interface IRagSearch
 {
-    Task<SearchResult[]> SearchAsync(CallerContext context, List<string> datasets, string[] query, SearchType? searchType = null,
+    Task<SearchResult[]> SearchAsync(CallerContext context, IEnumerable<string> datasets, string[] query, SearchType? searchType = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -186,7 +186,7 @@ internal class RagClient : IRagBuilder, IRagSearch
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<SearchResult[]> SearchAsync(CallerContext context, List<string> datasets, string[] queries, SearchType? searchType = null,
+    public async Task<SearchResult[]> SearchAsync(CallerContext context, IEnumerable<string> datasets, string[] queries, SearchType? searchType = null,
         CancellationToken cancellationToken = default)
     {
         var type = searchType ?? SearchType.GraphCompletion;
@@ -197,7 +197,7 @@ internal class RagClient : IRagBuilder, IRagSearch
                 HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search",
                     new SearchRequest
                     {
-                        Datasets = datasets,
+                        Datasets = datasets.ToList(),
                         Query = query,
                         SearchType = type
                     },

@@ -6,7 +6,7 @@ internal class MockRagSearch : IRagSearch
 {
     public Task<SearchResult[]> SearchAsync(
         CallerContext context,
-        List<string> datasets,
+        IEnumerable<string> datasets,
         string[] query,
         SearchType? searchType = null,
         CancellationToken cancellationToken = default)
