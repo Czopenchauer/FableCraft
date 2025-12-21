@@ -65,7 +65,7 @@ internal static class PromptSections
         }
 
         var scenes = sceneContext
-            .OrderByDescending(x => x.SequenceNumber);
+            .OrderBy(x => x.SequenceNumber);
 
         var formatted = string.Join("\n",
             scenes
@@ -89,6 +89,7 @@ internal static class PromptSections
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
                 .TakeLast(count)
+                .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
                               {s.SceneContent}
@@ -148,7 +149,6 @@ internal static class PromptSections
     public static string MainCharacter(GenerationContext context)
     {
         return $"""
-                The main protagonist of the story. All scenes are written from their perspective:
                 <main_character>
                 Name: {context.MainCharacter.Name}
                 {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
@@ -231,6 +231,7 @@ internal static class PromptSections
             context.SceneRewrites
                 .OrderByDescending(x => x.SequenceNumber)
                 .TakeLast(count)
+                .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
                               TIME: {s.StoryTracker?.Time}

@@ -17,6 +17,10 @@ public class CharacterRelationshipConfiguration : IEntityTypeConfiguration<Chara
         builder.Property(x => x.StoryTracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+        
+        builder.Property(x => x.Data).HasConversion<string>(
+            x => JsonSerializer.Serialize(x, options),
+            x => JsonSerializer.Deserialize<IDictionary<string, object>>(x, options)!);
 
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterRelationships)

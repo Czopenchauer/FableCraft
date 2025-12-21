@@ -62,7 +62,9 @@ internal sealed class CharacterPlugin : BaseAgent
     {
         var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
-            .TakeLast(20)
+            .Skip(1)
+            .Take(20)
+            .OrderBy(x => x.SequenceNumber)
             .Select(s => $"""
                           SCENE NUMBER: {s.SequenceNumber}
                           <scene_tracker>
@@ -79,7 +81,7 @@ internal sealed class CharacterPlugin : BaseAgent
 
         var memoriesSection = BuildMemoriesSection(context);
 
-        var relationshipsSection = BuildRelationshipsSection(context, generationContext);
+        var relationshipsSection = BuildRelationshipsSection(context);
 
         return $"""
                 <character_description>
@@ -119,7 +121,7 @@ internal sealed class CharacterPlugin : BaseAgent
         }
 
         var memoriesText = string.Join("\n",
-            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.MemoryContent} [{m.Data}]"));
+            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.MemoryContent} [{m.Data.ToJsonString()}]"));
 
         return $"""
                 <character_memories>
@@ -129,12 +131,12 @@ internal sealed class CharacterPlugin : BaseAgent
                 """;
     }
 
-    private string BuildRelationshipsSection(CharacterContext context, GenerationContext generationContext)
+    private string BuildRelationshipsSection(CharacterContext context)
     {
         var relationshipsText = string.Join("\n\n",
             context.Relationships.Select(r => $"""
                                                **{r.TargetCharacterName}**:
-                                               {generationContext.Characters.Single(x => x.Name == r.TargetCharacterName).Description}
+                                               {context.Relationships.Single(x => x.TargetCharacterName == r.TargetCharacterName).Data.ToJsonString()}
                                                """));
 
         return $"""

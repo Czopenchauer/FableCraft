@@ -727,7 +727,6 @@ internal sealed class SceneGenerationOrchestrator(
             .ToListAsync(cancellationToken);
 
         return existingCharacters
-            .Where(x => x.CharacterStates.Single().SceneId != sceneId)
             .Select(x => new CharacterContext
             {
                 Description = x.CharacterStates.Single()
@@ -747,7 +746,6 @@ internal sealed class SceneGenerationOrchestrator(
                 }).ToList(),
                 // Group by target and take second-latest relationship per target (skip the most recent)
                 Relationships = x.CharacterRelationships
-                    .Where(r => r.SequenceNumber > 0)
                     .GroupBy(r => r.TargetCharacterName)
                     .Select(g => g.OrderByDescending(r => r.SequenceNumber).Skip(1).FirstOrDefault())
                     .Where(r => r != null)

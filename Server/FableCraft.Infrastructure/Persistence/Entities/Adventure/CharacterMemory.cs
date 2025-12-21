@@ -36,5 +36,5 @@ public sealed class CharacterMemory : IEntity
     /// <summary>
     /// JSON string containing additional memory data (entities, emotional_tone, etc.)
     /// </summary>
-    public string? Data { get; set; }
+    public IDictionary<string, object>? Data { get; set; }
 }

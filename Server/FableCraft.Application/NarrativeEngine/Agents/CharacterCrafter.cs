@@ -90,7 +90,7 @@ internal sealed class CharacterCrafter : BaseAgent
             CharacterMemories = new List<MemoryContext>(),
             Relationships = result.relationships.Select(r => new CharacterRelationshipContext
             {
-                Data = r.ExtensionData.ToJsonString(),
+                Data = r.ExtensionData,
                 TargetCharacterName = r.Name,
                 StoryTracker = null,
                 SequenceNumber = 0

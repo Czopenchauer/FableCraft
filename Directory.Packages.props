@@ -5,13 +5,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.AppHost.Sdk" Version="13.0.0" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.1.0" />
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.0.2" />
-    <PackageVersion Include="Aspire.Hosting.Python" Version="13.0.2" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Python" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.1.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
@@ -24,7 +24,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
-    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.0" />
+    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.1" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
@@ -39,13 +39,13 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageVersion Include="System.IO.Hashing" Version="10.0.1" />
-    <PackageVersion Include="TUnit" Version="1.5.53" />
+    <PackageVersion Include="TUnit" Version="1.5.80" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="Polly" Version="8.6.5" />
     <PackageVersion Include="Polly.RateLimiting" Version="8.6.5" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.9.0" />
   </ItemGroup>
 </Project>

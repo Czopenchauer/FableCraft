@@ -119,14 +119,14 @@ internal sealed class MemoryContext
 
     public required double Salience { get; set; }
 
-    public required string? Data { get; set; } = null!;
+    public required IDictionary<string, object>? Data { get; set; } = null!;
 }
 
 internal sealed class CharacterRelationshipContext
 {
     public required string TargetCharacterName { get; set; } = null!;
 
-    public required string Data { get; set; } = null!;
+    public required IDictionary<string, object> Data { get; set; } = null!;
 
     public required int SequenceNumber { get; set; }
 

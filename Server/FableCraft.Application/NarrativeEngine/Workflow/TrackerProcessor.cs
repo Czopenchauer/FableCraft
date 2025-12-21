@@ -70,16 +70,22 @@ internal sealed class TrackerProcessor(
                             characterRelationships.Add(new CharacterRelationshipContext
                             {
                                 TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
-                                Data = reflectionOutputRelationshipUpdate.ExtensionData.ToJsonString(),
+                                Data = reflectionOutputRelationshipUpdate.ExtensionData!,
                                 StoryTracker = storyTrackerResult,
                                 SequenceNumber = 0,
                             });
                         }
                         else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
                         {
-                            var updatedRelationship = relationship.PatchWith(reflectionOutputRelationshipUpdate.ExtensionData);
-                            updatedRelationship.SequenceNumber = relationship.SequenceNumber + 1;
-                            characterRelationships.Add(updatedRelationship);
+                            var updatedRelationship = relationship.Data.PatchWith(reflectionOutputRelationshipUpdate.ExtensionData);
+                            var newRelationship = new CharacterRelationshipContext
+                            {
+                                TargetCharacterName = relationship.TargetCharacterName,
+                                Data = updatedRelationship,
+                                StoryTracker = storyTrackerResult,
+                                SequenceNumber = relationship.SequenceNumber + 1,
+                            };
+                            characterRelationships.Add(newRelationship);
                         }
                     }
 
@@ -93,7 +99,7 @@ internal sealed class TrackerProcessor(
                         CharacterMemories = reflectionOutput.Memory!.Select(x => new MemoryContext
                         {
                             Salience = x.Salience,
-                            Data = x.ExtensionData.ToJsonString(),
+                            Data = x.ExtensionData!,
                             MemoryContent = x.Summary,
                             StoryTracker = storyTrackerResult,
                         }).ToList(),
@@ -144,7 +150,7 @@ internal sealed class TrackerProcessor(
                     character.CharacterMemories = reflection.Memory!.Select(x => new MemoryContext()
                     {
                         Salience = x.Salience,
-                        Data = x.ExtensionData.ToJsonString(),
+                        Data = x.ExtensionData!,
                         StoryTracker = storyTrackerResult,
                         MemoryContent = x.Summary
                     }).ToList();

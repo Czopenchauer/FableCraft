@@ -37,5 +37,5 @@ public sealed class CharacterRelationship : IEntity
     /// <summary>
     /// JSON string containing the full relationship data (feelings, trust level, history, etc.)
     /// </summary>
-    public required string Data { get; set; }
+    public required IDictionary<string, object> Data { get; set; }
 }

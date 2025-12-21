@@ -122,11 +122,13 @@ internal sealed class AgentKernel : IAgentKernel
                                              replyInnerContent?.Usage.InputTokenCount,
                                              replyInnerContent?.Usage.OutputTokenCount,
                                              replyInnerContent?.Usage.TotalTokenCount);
+                                         
+                                         var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
                                          await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
                                              {
                                                  AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
                                                  CallerName = operationName,
-                                                 RequestContent = chatHistory.ToJsonString(),
+                                                 RequestContent = requestContent,
                                                  ResponseContent = result.Content ?? string.Empty,
                                                  InputToken = replyInnerContent?.Usage.InputTokenCount,
                                                  OutputToken = replyInnerContent?.Usage.OutputTokenCount,

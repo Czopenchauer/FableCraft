@@ -215,11 +215,8 @@ internal sealed class RagChunkService : IRagChunkService
         bool temporal = false,
         CancellationToken cancellationToken = default)
     {
-        foreach (var dataset in datasets.Distinct())
-        {
-            await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                    await _ragBuilder.CognifyAsync([dataset], temporal, ct),
-                cancellationToken);
-        }
+        await _httpResiliencePipeline.ExecuteAsync(async ct =>
+                await _ragBuilder.CognifyAsync(datasets.ToList(), temporal, ct),
+            cancellationToken);
     }
 }

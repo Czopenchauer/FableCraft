@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 using static FableCraft.Infrastructure.Clients.RagClientExtensions;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
@@ -30,7 +32,8 @@ internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IRagSearch ragSearch,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterReflectionAgent;
 
@@ -47,7 +50,26 @@ internal sealed class CharacterReflectionAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
+        var relationshipsText = string.Join("\n\n",
+            context.Relationships.Select(r => $"""
+                                               **{r.TargetCharacterName}**:
+                                               {context.Relationships.Single(x => x.TargetCharacterName == r.TargetCharacterName).Data.ToJsonString()}
+                                               """));
+
+        var relationship = $"""
+                            <character_relationships>
+                            The character's has relationship with these characters:
+                            {relationshipsText}
+                            </character_relationships>
+                            """;
         var contextPrompt = $"""
+                             Always use exact names for characters!
+                             {PromptSections.ExistingCharacters(generationContext.Characters)}
+
+                             {relationship}
+
+                             {PromptSections.MainCharacter(generationContext)}
+
                              {PromptSections.WorldSettings(generationContext.WorldSettings)}
 
                              {PromptSections.StoryTracker(storyTrackerResult, true)}
@@ -76,6 +98,8 @@ internal sealed class CharacterReflectionAgent(
         };
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var relationShipPlugin = new CharacterStatePlugin(context, logger);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

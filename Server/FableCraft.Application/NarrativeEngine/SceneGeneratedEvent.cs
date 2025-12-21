@@ -53,6 +53,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             .Include(x => x.Lorebooks)
             .Include(x => x.CharacterActions)
             .Include(x => x.CharacterStates)
+            .Include(x => x.CharacterSceneRewrites)
             .Where(x => x.AdventureId == message.AdventureId && x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
             .ToListAsync(cancellationToken);
 
@@ -73,6 +74,13 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.EntityId))
                 .ToListAsync(cancellationToken);
 
+            var existingRewriteChunks = await _dbContext.Chunks
+                .AsNoTracking()
+                .Where(x => scenesToCommit.SelectMany(y => y.CharacterSceneRewrites.Select(z => z.Id)).Contains(x.EntityId))
+                .ToListAsync(cancellationToken);
+            var characters = await _dbContext.Characters
+                .Where(x => x.AdventureId == message.AdventureId)
+                .ToListAsync(cancellationToken);
             foreach (Scene scene in scenesToCommit.OrderBy(x => x.SequenceNumber))
             {
                 var existingLorebookChunks = await _dbContext.Chunks
@@ -132,6 +140,44 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         sceneContent,
                         [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
                 }
+
+                scene.CharacterSceneRewrites
+                    .ForEach(x =>
+                    {
+                        var content = $"""
+                                       Character: {characters.Single(y => y.Id == x.CharacterId).Name}
+                                       Time: {x.StoryTracker.Time}
+                                       Location: {x.StoryTracker.Location}
+                                       Weather: {x.StoryTracker.Weather}
+                                       Characters on scene: {string.Join(", ", x.StoryTracker.CharactersPresent)}
+
+                                       {x.Content}
+                                       """;
+
+                        var contentHash = _ragChunkService.ComputeHash(content);
+                        Chunk? rewriteChunk = existingRewriteChunks.FirstOrDefault(z => z.EntityId == x.Id && z.ContentHash == contentHash);
+
+                        if (rewriteChunk == null)
+                        {
+                            Chunk chunk = _ragChunkService.CreateChunk(
+                                scene.Id,
+                                message.AdventureId,
+                                content,
+                                ContentType.txt);
+
+                            fileToCommit.Add(new FileToWrite(
+                                chunk,
+                                content,
+                                [RagClientExtensions.GetCharacterDatasetName(message.AdventureId, x.CharacterId)]));
+                        }
+                        else
+                        {
+                            fileToCommit.Add(new FileToWrite(
+                                rewriteChunk,
+                                content,
+                                [RagClientExtensions.GetCharacterDatasetName(message.AdventureId, x.CharacterId)]));
+                        }
+                    });
             }
 
             var characterStatesOnScenes = scenesToCommit
@@ -177,10 +223,12 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             existingMainCharacterChunk.Path = mainCharacterPath;
             existingMainCharacterChunk.ContentHash = mainCharacterHash;
 
+            var mainMcDescroptionDatasets = characters.Select(x => RagClientExtensions.GetCharacterDatasetName(message.AdventureId, x.Id)).ToList();
+            mainMcDescroptionDatasets.Add(RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId));
             fileToCommit.Add(new FileToWrite(
                 existingMainCharacterChunk,
                 characterContent,
-                [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
+                mainMcDescroptionDatasets.ToArray()));
 
             IExecutionStrategy strategy = _dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>

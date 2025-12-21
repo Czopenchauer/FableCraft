@@ -30,7 +30,9 @@ var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:Ma
 var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "36";
 var huggingFaceTokenizer = builder.Configuration["FableCraft:GraphRag:HuggingFaceTokenizer"] ?? "";
 
+#pragma warning disable CS0618 // Type or member is obsolete
 var cache = builder.AddAzureRedis("fablecraft-redis")
+#pragma warning restore CS0618 // Type or member is obsolete
     .RunAsContainer();
 var graphRagApi = builder
     .AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
