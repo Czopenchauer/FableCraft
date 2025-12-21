@@ -37,13 +37,12 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
-  selectedAgents: Set<string> = new Set(['StoryTracker', 'MainCharacterTracker', 'MainCharacterDevelopment', 'CharacterTracker']);
+  selectedAgents: Set<string> = new Set(['StoryTracker', 'MainCharacterTracker', 'CharacterTracker']);
 
   // Available agents for regeneration
   readonly availableAgents = [
     { id: 'StoryTracker', label: 'Story Tracker', description: 'Time, location, weather, characters present' },
     { id: 'MainCharacterTracker', label: 'Protagonist State', description: 'Main character tracker & description' },
-    { id: 'MainCharacterDevelopment', label: 'Protagonist Development', description: 'Main character growth & changes' },
     { id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers' }
   ];
 
