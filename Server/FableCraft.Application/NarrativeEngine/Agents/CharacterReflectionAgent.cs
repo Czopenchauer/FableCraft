@@ -98,7 +98,7 @@ internal sealed class CharacterReflectionAgent(
         };
         var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var relationShipPlugin = new CharacterStatePlugin(context, logger);
+        var relationShipPlugin = new CharacterRelationshipPlugin(context, logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
         Kernel kernelWithKg = kernel.Build();
 

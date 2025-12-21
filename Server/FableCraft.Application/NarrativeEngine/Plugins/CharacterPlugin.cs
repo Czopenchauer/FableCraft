@@ -168,7 +168,7 @@ internal sealed class CharacterPlugin : BaseAgent
 
         var kgPlugin = new CharacterGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), characterContext, _logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var relationShipPlugin = new CharacterStatePlugin(characterContext, _logger);
+        var relationShipPlugin = new CharacterRelationshipPlugin(characterContext, _logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
 
         Kernel kernelWithKg = kernel.Build();

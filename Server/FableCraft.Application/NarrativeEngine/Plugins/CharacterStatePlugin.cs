@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.SemanticKernel;
 
@@ -10,37 +11,32 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 internal sealed class CharacterStatePlugin
 {
-    private readonly CharacterContext _context;
+    private readonly IEnumerable<CharacterContext> _context;
     private readonly ILogger _logger;
 
-    public CharacterStatePlugin(CharacterContext context, ILogger logger)
+    public CharacterStatePlugin(IEnumerable<CharacterContext> context, ILogger logger)
     {
         _context = context;
         _logger = logger;
     }
 
-    [KernelFunction("get_relationship")]
+    [KernelFunction("get_state")]
     [Description(
-        "Get a character's current view of their relationship with another character. Returns the relationship data including trust, affection, impression, and other details.")]
-    public string GetRelationship(
-        [Description("The name of the other character (the target of the relationship)")]
+        "Get a current character state information - about their physical state and their skills and abilities.")]
+    public string GetState(
+        [Description("The name of the character")]
         string targetCharacterName)
     {
-        _logger.Information("Getting relationship for {CharacterName} -> {TargetCharacterName}",
-            _context.Name, targetCharacterName);
+        _logger.Information("Getting state for {CharacterName}", targetCharacterName);
 
-        var relationship = _context.Relationships.SingleOrDefault(x => string.Compare(x.TargetCharacterName, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
+        var characterContext = _context.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
 
-        if (relationship == null)
+        if (characterContext?.CharacterTracker == null)
         {
-            return $"No relationship found between '{_context.Name}' and '{targetCharacterName}'.";
+            return $"No state found for '{targetCharacterName}'. Available characters: {string.Join(", ", _context.Select(c => c.Name))}";
         }
 
-        return $"""
-                {_context.Name}'s view of {targetCharacterName}:
-                {relationship.Data}
-                (Last updated: at {relationship.StoryTracker?.Time ?? string.Empty} in {relationship.StoryTracker?.Location ?? string.Empty})
-                """;
+        _logger.Information("Returning state for {CharacterName}", targetCharacterName);
+        return characterContext.CharacterTracker.ToJsonString();
     }
 }
-
