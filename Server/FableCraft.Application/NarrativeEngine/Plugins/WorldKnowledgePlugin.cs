@@ -1,0 +1,66 @@
+using System.ComponentModel;
+using System.Text;
+
+using FableCraft.Infrastructure.Clients;
+
+using Microsoft.SemanticKernel;
+
+namespace FableCraft.Application.NarrativeEngine.Plugins;
+
+/// <summary>
+///     Plugin providing world knowledge graph search capabilities.
+///     Use this to search for locations, lore, items, world events, and general setting information.
+/// </summary>
+internal class WorldKnowledgePlugin
+{
+    private readonly CallerContext _callerContext;
+    private readonly IRagSearch _ragSearch;
+    private const int MaxQueries = 10;
+    private int _queryCount;
+
+    public WorldKnowledgePlugin(IRagSearch ragSearch, CallerContext callerContext)
+    {
+        _ragSearch = ragSearch;
+        _callerContext = callerContext;
+    }
+
+    [KernelFunction("search_world_knowledge")]
+    [Description(
+        "Search the world knowledge graph for locations, lore, items, events, and world-building information. Use this to query existing world data like places, historical events, magical systems, and setting details.")]
+    public async Task<string> SearchWorldKnowledgeAsync(
+        [Description("List of queries for world information to retrieve (locations, lore, items, events, etc.)")]
+        string[] query,
+        [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
+        string levelOfDetails)
+    {
+        if (_queryCount >= MaxQueries)
+        {
+            return $"Maximum number of world knowledge queries ({MaxQueries}) reached. You cannot perform more searches!";
+        }
+
+        var datasets = new List<string>
+        {
+            RagClientExtensions.GetWorldDatasetName(_callerContext.AdventureId)
+        };
+
+        var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
+        var results = await _ragSearch.SearchAsync(_callerContext, datasets, queryCombined);
+
+        if (!results.Any() || results.All(r => !r.Response.Results.Any()))
+        {
+            return "World knowledge graph does not contain any data yet.";
+        }
+
+        _queryCount++;
+        var allResults = results.SelectMany(x => x.Response.Results).ToList();
+
+        var response = new StringBuilder();
+        response.AppendLine("World Knowledge:");
+        foreach (var result in allResults)
+        {
+            response.AppendLine($"- {result.Text}");
+        }
+
+        return response.ToString();
+    }
+}

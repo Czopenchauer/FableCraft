@@ -1,15 +1,12 @@
-﻿namespace FableCraft.Application.NarrativeEngine.Models;
+namespace FableCraft.Application.NarrativeEngine.Models;
 
 internal class ContextBase
 {
-    public required SearchResult[] ContextBases { get; set; } = [];
+    public required AnalysisSummary AnalysisSummary { get; set; }
 
-    public CharacterContext[] RelevantCharacters { get; set; } = [];
-}
+    public ContextItem[] WorldContext { get; set; } = [];
 
-internal class SearchResult
-{
-    public required string Query { get; set; }
+    public ContextItem[] NarrativeContext { get; set; } = [];
 
-    public required string Response { get; set; }
+    public DroppedContext[] DroppedContext { get; set; } = [];
 }

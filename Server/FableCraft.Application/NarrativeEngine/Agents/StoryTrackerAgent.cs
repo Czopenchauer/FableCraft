@@ -74,13 +74,11 @@ internal sealed class StoryTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(context.AdventureId),
-            GetMainCharacterDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var mainCharacterPlugin = new MainCharacterNarrativePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<StoryTracker>("story_tracker", true);

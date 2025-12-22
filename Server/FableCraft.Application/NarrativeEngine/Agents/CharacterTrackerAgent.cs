@@ -60,13 +60,11 @@ internal sealed class CharacterTrackerAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(generationContext.AdventureId),
-            GetCharacterDatasetName(generationContext.AdventureId, context.CharacterId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
+        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var characterPlugin = new CharacterNarrativePlugin(ragSearch, callerContext, context.CharacterId);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

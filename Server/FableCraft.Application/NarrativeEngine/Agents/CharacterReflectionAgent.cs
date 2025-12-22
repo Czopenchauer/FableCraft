@@ -20,7 +20,6 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
 /// Character Reflection Agent - runs post-scene for each meaningful character present.
-/// Replaces CharacterStateAgent and adds scene rewriting from character's POV.
 ///
 /// Output:
 /// - scene_rewrite: Full character-POV prose -> stored in KG
@@ -92,12 +91,11 @@ internal sealed class CharacterReflectionAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterReflectionOutput>("character_reflection", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetCharacterDatasetName(generationContext.AdventureId, context.CharacterId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
+        var characterPlugin = new CharacterNarrativePlugin(ragSearch, callerContext, context.CharacterId);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
         var relationShipPlugin = new CharacterRelationshipPlugin(context, logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
         Kernel kernelWithKg = kernel.Build();

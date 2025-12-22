@@ -422,15 +422,69 @@ internal static class PromptSections
                 """;
     }
 
-    public static string Context(ContextBase? context, bool ignoreNull = false)
+    public static string Context(GenerationContext generationContext)
     {
-        if (context == null) return string.Empty;
+        var context = generationContext.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.GatheredContext;
+        if (context == null)
+        {
+            return string.Empty;
+        }
+
+        var worldContext = context.WorldContext.Length > 0
+            ? string.Join("\n", context.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No world context available.";
+
+        var narrativeContext = context.NarrativeContext.Length > 0
+            ? string.Join("\n", context.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No narrative context available.";
 
         return $"""
-                Knowledge extracted from knowledge graph. Do not query the knowledge graph for these facts again.
                 <knowledge_graph_context>
-                {context.ContextBases.ToJsonString(GetJsonOptions(ignoreNull))}
+                **World Knowledge** (locations, lore, items, events):
+                {worldContext}
+
+                **Narrative Knowledge** (main character memories, goals, relationships):
+                {narrativeContext}
                 </knowledge_graph_context>
+                """;
+    }
+
+    /// <summary>
+    /// Gets the gathered context from the previous scene's metadata.
+    /// Used when ContextGatherer runs after scene generation.
+    /// </summary>
+    public static string PreviousSceneGatheredContext(GenerationContext generationContext)
+    {
+        GatheredContext? gatheredContext = generationContext.SceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
+
+        if (gatheredContext == null)
+        {
+            return string.Empty;
+        }
+
+        var worldContext = gatheredContext.WorldContext.Length > 0
+            ? string.Join("\n", gatheredContext.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No world context available.";
+
+        var narrativeContext = gatheredContext.NarrativeContext.Length > 0
+            ? string.Join("\n", gatheredContext.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No narrative context available.";
+
+        return $"""
+                <previous_gathered_context>
+                **Previous Situation**: {gatheredContext.AnalysisSummary.CurrentSituation}
+                **Context Continuity**: {gatheredContext.AnalysisSummary.ContextContinuity}
+                **Key Elements**: {string.Join(", ", gatheredContext.AnalysisSummary.KeyElementsInPlay)}
+                **Focus Areas**: {string.Join(", ", gatheredContext.AnalysisSummary.PrimaryFocusAreas)}
+
+                **World Knowledge**:
+                {worldContext}
+
+                **Narrative Knowledge**:
+                {narrativeContext}
+                </previous_gathered_context>
                 """;
     }
 

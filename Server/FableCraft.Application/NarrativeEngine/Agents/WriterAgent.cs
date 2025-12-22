@@ -60,7 +60,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.ExistingCharacters(context.Characters)}
 
-                             {PromptSections.Context(context.ContextGathered)}
+                             {PromptSections.Context(context)}
 
                              {(hasSceneContext ? PromptSections.CurrentStoryTracker(context.SceneContext) : "")}
 
@@ -90,13 +90,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(context.AdventureId),
-            GetMainCharacterDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var worldPlugin = new WorldKnowledgePlugin(_ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var mainCharacterPlugin = new MainCharacterNarrativePlugin(_ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
         var characterPlugin = new CharacterPlugin(_agentKernel, _logger, DbContextFactory, KernelBuilderFactory, _ragSearch);
         await characterPlugin.Setup(context);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));

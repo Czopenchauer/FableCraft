@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Json.Serialization;
-
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
@@ -16,7 +13,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-using SearchResult = FableCraft.Application.NarrativeEngine.Models.SearchResult;
+using SearchResult = FableCraft.Infrastructure.Clients.SearchResult;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
@@ -42,13 +39,12 @@ internal sealed class ContextGatherer(
         }
 
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var systemPrompt = await GetPromptAsync(context);
-        var hasSceneContext = context.SceneContext.Length > 0;
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
+        var previousContext = GetPreviousContextSummary(context);
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.WorldSettings)}
 
@@ -57,33 +53,35 @@ internal sealed class ContextGatherer(
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
 
                              {PromptSections.CurrentStoryTracker(context.SceneContext)}
-                             
+
                              {LoreGenerated(context)}
 
-                             {(hasSceneContext ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
+                             {previousContext}
+
+                             {(context.SceneContext.Length > 0 ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
+
+                             The latest scene that was just generated:
+                             <latest_scene>
+                             {context.NewScene?.Scene}
+                             </latest_scene>
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        string requestPrompt;
-        if (!hasSceneContext)
-        {
-            var adventure = await dbContext.Adventures
-                .Select(x => new { x.Id, x.FirstSceneGuidance })
-                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+        var requestPrompt = $"""
+                             {PromptSections.PreviousSceneGatheredContext(context)}
 
-            requestPrompt = adventure.FirstSceneGuidance;
-        }
-        else
-        {
-            requestPrompt = PromptSections.LastNarrativeDirections(context.SceneContext);
-        }
+                             Based on the latest scene and narrative direction, analyze the context needs for the NEXT scene:
+                             {PromptSections.SceneDirection(context.NewNarrativeDirection)}
+
+                             {PromptSections.CurrentScene(context)}
+                             """;
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<ContextToFetch>("output");
+        var outputParser = ResponseParser.CreateJsonParser<ContextGathererOutput>("output");
         Kernel kernel = kernelBuilder.Create().Build();
 
-        ContextToFetch queries = await agentKernel.SendRequestAsync(
+        ContextGathererOutput output = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
@@ -94,73 +92,113 @@ internal sealed class ContextGatherer(
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         try
         {
-            var searchResults = await ragSearch.SearchAsync(
-                callerContext,
-                [RagClientExtensions.GetWorldDatasetName(context.AdventureId), RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)],
-                queries.Queries,
-                cancellationToken: cancellationToken);
+            var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);
+            var narrativeContext = new List<ContextItem>(output.CarriedForward.NarrativeContext);
 
-            var baseSearch = searchResults.Select(x =>
+            Task<SearchResult[]> worldQueryTasks = Task.FromResult(Array.Empty<SearchResult>());
+            if (output.WorldQueries.Length > 0)
             {
-                var response = new StringBuilder();
-                foreach (SearchResultItem searchResultItem in x.Response.Results)
+                var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
+                worldQueryTasks = ragSearch.SearchAsync(
+                    callerContext,
+                    [RagClientExtensions.GetWorldDatasetName(context.AdventureId)],
+                    worldQueries,
+                    cancellationToken: cancellationToken);
+            }
+
+            if (output.NarrativeQueries.Length > 0)
+            {
+                var narrativeQueries = output.NarrativeQueries.Select(q => q.Query).ToArray();
+                var narrativeResults = await ragSearch.SearchAsync(
+                    callerContext,
+                    [RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)],
+                    narrativeQueries,
+                    cancellationToken: cancellationToken);
+
+                foreach (var result in narrativeResults)
                 {
-                    if (searchResultItem.DatasetName == RagClientExtensions.GetWorldDatasetName(context.AdventureId))
+                    var content = string.Join("\n", result.Response.Results.Select(r => r.Text));
+                    if (!string.IsNullOrWhiteSpace(content))
                     {
-                        response.AppendLine($"""
-                                             World Knowledge:
-                                             {string.Join("\n", searchResultItem.Text)}
-                                             """);
-                    }
-                    else
-                    {
-                        response.AppendLine($"""
-                                             {context.MainCharacter.Name} Knowledge:
-                                             {string.Join("\n", searchResultItem.Text)}
-                                             """);
+                        narrativeContext.Add(new ContextItem
+                        {
+                            Topic = result.Query,
+                            Content = content
+                        });
                     }
                 }
+            }
 
-                return new SearchResult
-                {
-                    Query = x.Query,
-                    Response = response.ToString()
-                };
-            }).ToList();
-            var previousLore = context.PreviouslyGeneratedLore.Select(x => new SearchResult()
+            var worldResults = await worldQueryTasks;
+            foreach (var result in worldResults)
             {
-                Query = $"{x.Category}: {x.Title!}",
-                Response = x.Content
-            }).ToList();
-            baseSearch.AddRange(previousLore);
+                var content = string.Join("\n", result.Response.Results.Select(r => r.Text));
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    worldContext.Add(new ContextItem
+                    {
+                        Topic = result.Query,
+                        Content = content
+                    });
+                }
+            }
+
             context.ContextGathered = new ContextBase
             {
-                ContextBases = baseSearch.ToArray()
+                AnalysisSummary = output.AnalysisSummary,
+                WorldContext = worldContext.ToArray(),
+                NarrativeContext = narrativeContext.ToArray(),
+                DroppedContext = output.DroppedContext
             };
+
+            logger.Information(
+                "Context gathered for adventure {AdventureId}: {WorldCount} world items, {NarrativeCount} narrative items, continuity: {Continuity}",
+                context.AdventureId,
+                worldContext.Count,
+                narrativeContext.Count,
+                output.AnalysisSummary.ContextContinuity);
         }
         catch (Exception ex)
         {
-            logger.Error(ex, "Error filtering queries for adventure {AdventureId}", context.AdventureId);
+            logger.Error(ex, "Error gathering context for adventure {AdventureId}", context.AdventureId);
         }
     }
 
-    private class ContextToFetch
+    private static string GetPreviousContextSummary(GenerationContext context)
     {
-        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
-        public string[] Queries { get; set; } = [];
+        var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
+        var previousContext = lastScene?.Metadata.GatheredContext;
+        if (previousContext == null)
+        {
+            return string.Empty;
+        }
 
-        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
-        [JsonPropertyName("characters_to_fetch")]
-        public string[] CharactersToFetch { get; set; } = [];
+        var worldTopics = previousContext.WorldContext.Select(c => $"- {c.Topic}: {c.Content}").ToArray();
+        var narrativeTopics = previousContext.NarrativeContext.Select(c => $"- {c.Topic}: {c.Content}").ToArray();
+
+        return $"""
+                <previous_context_gathered>
+                Context from previous scene generation (consider carrying forward relevant items):
+
+                Previous situation: {previousContext.AnalysisSummary.CurrentSituation}
+                Context continuity: {previousContext.AnalysisSummary.ContextContinuity}
+
+                World context:
+                {(worldTopics.Length > 0 ? string.Join("\n", worldTopics) : "None")}
+
+                Narrative context:
+                {(narrativeTopics.Length > 0 ? string.Join("\n", narrativeTopics) : "None")}
+                </previous_context_gathered>
+                """;
     }
 
-    private string LoreGenerated(GenerationContext context)
+    private static string LoreGenerated(GenerationContext context)
     {
-        if(context.PreviouslyGeneratedLore.Length > 0)
+        if (context.PreviouslyGeneratedLore.Length > 0)
         {
             return $"""
-                    Previously generated lore pieces. Don't query for these again!:
-                    {string.Join("\n\n", context.PreviouslyGeneratedLore.Select(x => x.Content))}
+                    Previously generated lore pieces (will be added to world context automatically):
+                    {string.Join("\n", context.PreviouslyGeneratedLore.Select(x => $"- {x.Category}: {x.Title}"))}
                     """;
         }
 

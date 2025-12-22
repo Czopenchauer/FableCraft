@@ -72,13 +72,11 @@ internal sealed class InitMainCharacterTrackerAgent(
         var outputParser = CreateOutputParser();
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            RagClientExtensions.GetWorldDatasetName(context.AdventureId),
-            RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var mainCharacterPlugin = new MainCharacterNarrativePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         return await agentKernel.SendRequestAsync(

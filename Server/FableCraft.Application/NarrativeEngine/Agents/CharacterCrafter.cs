@@ -48,7 +48,7 @@ internal sealed class CharacterCrafter : BaseAgent
         var promptContext = $"""
                              {PromptSections.WorldSettings(context.WorldSettings)}
 
-                             {PromptSections.Context(context.ContextGathered)}
+                             {PromptSections.Context(context)}
 
                              {PromptSections.LastScenes(context.SceneContext, 3)}
                              """;
@@ -61,12 +61,8 @@ internal sealed class CharacterCrafter : BaseAgent
                                      """;
         chatHistory.AddUserMessage(creationRequestPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var worldPlugin = new WorldKnowledgePlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId));
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();

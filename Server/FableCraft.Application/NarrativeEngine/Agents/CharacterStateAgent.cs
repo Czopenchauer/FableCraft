@@ -58,12 +58,8 @@ internal sealed class CharacterStateAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_profile", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetCharacterDatasetName(generationContext.AdventureId, context.CharacterId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var characterPlugin = new CharacterNarrativePlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), context.CharacterId);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

@@ -54,9 +54,9 @@ internal sealed class NarrativeDirectorAgent(
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
 
-                             {PromptSections.ExistingCharacters(context.Characters, context.ContextGathered?.RelevantCharacters)}
+                             {PromptSections.ExistingCharacters(context.Characters)}
 
-                             {PromptSections.Context(context.ContextGathered)}
+                             {PromptSections.Context(context)}
 
                              {PromptSections.CurrentStoryTracker(context.SceneContext)}
 
@@ -89,13 +89,11 @@ internal sealed class NarrativeDirectorAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var datasets = new List<string>
-        {
-            GetWorldDatasetName(context.AdventureId),
-            GetMainCharacterDatasetName(context.AdventureId)
-        };
-        var kgPlugin = new KnowledgeGraphPlugin(ragSearch, new CallerContext(GetType(), context.AdventureId), datasets);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var mainCharacterPlugin = new MainCharacterNarrativePlugin(ragSearch, callerContext);
+        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
         var characterState = new CharacterStatePlugin(context.Characters, logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterState));
         Kernel kernelWithKg = kernel.Build();

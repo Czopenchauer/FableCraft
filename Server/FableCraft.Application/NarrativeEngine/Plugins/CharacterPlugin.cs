@@ -166,7 +166,7 @@ internal sealed class CharacterPlugin : BaseAgent
         (CharacterContext characterContext, ChatHistory chatHistory) = ctx;
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
 
-        var kgPlugin = new CharacterGraphPlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), characterContext, _logger);
+        var kgPlugin = new CharacterNarrativePlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), characterContext.CharacterId);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
         var relationShipPlugin = new CharacterRelationshipPlugin(characterContext, _logger);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));

@@ -23,6 +23,36 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         scene.Metadata.Tracker = context.NewTracker!;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
 
+        // Save gathered context for use in next scene generation
+        if (context.ContextGathered != null)
+        {
+            scene.Metadata.GatheredContext = new GatheredContext
+            {
+                AnalysisSummary = new GatheredContextAnalysis
+                {
+                    CurrentSituation = context.ContextGathered.AnalysisSummary.CurrentSituation,
+                    KeyElementsInPlay = context.ContextGathered.AnalysisSummary.KeyElementsInPlay,
+                    PrimaryFocusAreas = context.ContextGathered.AnalysisSummary.PrimaryFocusAreas,
+                    ContextContinuity = context.ContextGathered.AnalysisSummary.ContextContinuity
+                },
+                WorldContext = context.ContextGathered.WorldContext.Select(x => new GatheredContextItem
+                {
+                    Topic = x.Topic,
+                    Content = x.Content
+                }).ToArray(),
+                NarrativeContext = context.ContextGathered.NarrativeContext.Select(x => new GatheredContextItem
+                {
+                    Topic = x.Topic,
+                    Content = x.Content
+                }).ToArray(),
+                DroppedContext = context.ContextGathered.DroppedContext.Select(x => new GatheredDroppedContext
+                {
+                    Topic = x.Topic,
+                    Reason = x.Reason
+                }).ToArray()
+            };
+        }
+
         var loreEntities = context.NewLore?.Select(x => new LorebookEntry
                            {
                                AdventureId = context.AdventureId,

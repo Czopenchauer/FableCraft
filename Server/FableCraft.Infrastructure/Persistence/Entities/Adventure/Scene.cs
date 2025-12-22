@@ -69,6 +69,60 @@ public sealed class Metadata
     public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
 
     public Tracker? Tracker { get; set; }
+
+    /// <summary>
+    /// Context gathered from RAG after this scene was generated.
+    /// Used as extra context for generating the next scene.
+    /// </summary>
+    public GatheredContext? GatheredContext { get; set; }
+}
+
+/// <summary>
+/// Context gathered from RAG (knowledge graph) to be used in the next scene generation.
+/// </summary>
+public sealed class GatheredContext
+{
+    public required GatheredContextAnalysis AnalysisSummary { get; set; }
+
+    public GatheredContextItem[] WorldContext { get; set; } = [];
+
+    public GatheredContextItem[] NarrativeContext { get; set; } = [];
+
+    public GatheredDroppedContext[] DroppedContext { get; set; } = [];
+}
+
+/// <summary>
+/// Analysis summary of the gathered context.
+/// </summary>
+public sealed class GatheredContextAnalysis
+{
+    public required string CurrentSituation { get; set; }
+
+    public string[] KeyElementsInPlay { get; set; } = [];
+
+    public string[] PrimaryFocusAreas { get; set; } = [];
+
+    public required string ContextContinuity { get; set; }
+}
+
+/// <summary>
+/// A single item of gathered context from the knowledge graph.
+/// </summary>
+public sealed class GatheredContextItem
+{
+    public required string Topic { get; set; }
+
+    public required string Content { get; set; }
+}
+
+/// <summary>
+/// Context that was dropped as no longer relevant.
+/// </summary>
+public sealed class GatheredDroppedContext
+{
+    public required string Topic { get; set; }
+
+    public required string Reason { get; set; }
 }
 
 /// <summary>
