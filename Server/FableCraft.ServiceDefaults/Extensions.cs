@@ -4,12 +4,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging;
 
 using Npgsql;
 
 using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+
+using Serilog;
 
 namespace FableCraft.ServiceDefaults;
 
@@ -52,6 +58,20 @@ public static class Extensions
             // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
+        
+        var seqLogUrl = builder.Configuration["FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT"] 
+                        ?? throw new InvalidOperationException("FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT is not set");
+        builder.Services.AddSerilog(config => config
+            .MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
+            // Aspire dashboard
+            .WriteTo.OpenTelemetry()
+            .WriteTo.Seq(seqLogUrl)
+            .WriteTo.File(
+                path: Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
+                rollingInterval: RollingInterval.Hour));
 
         // Uncomment the following to restrict the allowed schemes for service discovery.
         // builder.Services.Configure<ServiceDiscoveryOptions>(options =>
@@ -99,6 +119,17 @@ public static class Extensions
                     .AddNpgsqlInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddMeter("Microsoft.SemanticKernel*")
+                    .AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
+                        opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    })
+                    // Aspire dashboard exporter
+                    .AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]!);
+                        opt.Protocol = OtlpExportProtocol.Grpc;
+                    })
                     .AddRuntimeInstrumentation();
             })
             .WithTracing(tracing =>
@@ -115,6 +146,18 @@ public static class Extensions
                     .AddSource("Microsoft.SemanticKernel*")
                     .AddSource("LlmCall")
                     .AddNpgsql()
+                    // SEQ trace exporter
+                    .AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
+                        opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    })
+                    // Aspire dashboard exporter
+                    .AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]!);
+                        opt.Protocol = OtlpExportProtocol.Grpc;
+                    })
                     .AddHttpClientInstrumentation();
             });
 
@@ -126,12 +169,29 @@ public static class Extensions
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
-        var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-
-        if (useOtlpExporter)
-        {
-            builder.Services.AddOpenTelemetry().UseOtlpExporter();
-        }
+        // Signal-specific AddOtlpExporter methods and the cross-cutting UseOtlpExporter method being invoked on the same IServiceCollection is not supported.
+        // var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+        //
+        // if (useOtlpExporter)
+        // {
+        //     builder.Services.AddOpenTelemetry().UseOtlpExporter();
+        // }
+        
+        // var seqExporter = builder.Configuration["FABLECRAFT_EXPORTER_SEQ_OTLP_ENDPOINT"];
+        // if (!string.IsNullOrEmpty(seqExporter))
+        // {
+        //     builder.Services.AddLogging(logging => logging.AddOpenTelemetry(openTelemetryLoggerOptions =>  
+        //     {  
+        //         openTelemetryLoggerOptions.IncludeScopes = true;
+        //         openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+        //
+        //         openTelemetryLoggerOptions.AddOtlpExporter(exporter =>
+        //         {
+        //             exporter.Endpoint = new Uri(seqExporter);
+        //             exporter.Protocol = OtlpExportProtocol.HttpProtobuf;
+        //         });
+        //     }));
+        // }
 
         // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
         //if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))

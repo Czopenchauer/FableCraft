@@ -57,6 +57,8 @@ internal sealed class ContextGatherer(
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
 
                              {PromptSections.CurrentStoryTracker(context.SceneContext)}
+                             
+                             {LoreGenerated(context)}
 
                              {(hasSceneContext ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
                              """;
@@ -98,38 +100,42 @@ internal sealed class ContextGatherer(
                 queries.Queries,
                 cancellationToken: cancellationToken);
 
+            var baseSearch = searchResults.Select(x =>
+            {
+                var response = new StringBuilder();
+                foreach (SearchResultItem searchResultItem in x.Response.Results)
+                {
+                    if (searchResultItem.DatasetName == RagClientExtensions.GetWorldDatasetName(context.AdventureId))
+                    {
+                        response.AppendLine($"""
+                                             World Knowledge:
+                                             {string.Join("\n", searchResultItem.Text)}
+                                             """);
+                    }
+                    else
+                    {
+                        response.AppendLine($"""
+                                             {context.MainCharacter.Name} Knowledge:
+                                             {string.Join("\n", searchResultItem.Text)}
+                                             """);
+                    }
+                }
+
+                return new SearchResult
+                {
+                    Query = x.Query,
+                    Response = response.ToString()
+                };
+            }).ToList();
+            var previousLore = context.PreviouslyGeneratedLore.Select(x => new SearchResult()
+            {
+                Query = $"{x.Category}: {x.Title!}",
+                Response = x.Content
+            }).ToList();
+            baseSearch.AddRange(previousLore);
             context.ContextGathered = new ContextBase
             {
-                ContextBases = searchResults.Select(x =>
-                {
-                    var response = new StringBuilder();
-                    foreach (SearchResultItem searchResultItem in x.Response.Results)
-                    {
-                        if (searchResultItem.DatasetName == RagClientExtensions.GetWorldDatasetName(context.AdventureId))
-                        {
-                            response.AppendLine($"""
-                                                 World Knowledge:
-                                                 {string.Join("\n", searchResultItem.Text)}
-                                                 """);
-                        }
-                        else
-                        {
-                            response.AppendLine($"""
-                                                 {context.MainCharacter.Name} Knowledge:
-                                                 {string.Join("\n", searchResultItem.Text)}
-                                                 """);
-                        }
-                    }
-
-                    return new SearchResult
-                    {
-                        Query = x.Query,
-                        Response = response.ToString()
-                    };
-                }).ToArray(),
-                RelevantCharacters = context.Characters
-                    .Where(x => queries.CharactersToFetch.Contains(x.CharacterState.CharacterIdentity.FullName))
-                    .ToArray()
+                ContextBases = baseSearch.ToArray()
             };
         }
         catch (Exception ex)
@@ -146,5 +152,18 @@ internal sealed class ContextGatherer(
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         [JsonPropertyName("characters_to_fetch")]
         public string[] CharactersToFetch { get; set; } = [];
+    }
+
+    private string LoreGenerated(GenerationContext context)
+    {
+        if(context.PreviouslyGeneratedLore.Length > 0)
+        {
+            return $"""
+                    Previously generated lore pieces. Don't query for these again!:
+                    {string.Join("\n\n", context.PreviouslyGeneratedLore.Select(x => x.Content))}
+                    """;
+        }
+
+        return string.Empty;
     }
 }

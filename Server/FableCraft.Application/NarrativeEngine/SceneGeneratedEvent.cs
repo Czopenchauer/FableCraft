@@ -57,11 +57,17 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             .Where(x => x.AdventureId == message.AdventureId && x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
             .ToListAsync(cancellationToken);
 
-        if (scenesToCommit.Count <= MinScenesToCommit)
+        if (scenesToCommit.Count < MinScenesToCommit)
         {
+            _logger.Information("Not enough scenes to commit for adventure {AdventureId}. Current committed scenes count: {ScenesCount}",
+                message.AdventureId,
+                scenesToCommit.Count);
             return;
         }
 
+        _logger.Information("Committing {ScenesCount} scenes for adventure {AdventureId}",
+            scenesToCommit.Count,
+            message.AdventureId);
         var fileToCommit = new List<FileToWrite>();
         try
         {
@@ -244,14 +250,12 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     cancellationToken: cancellationToken);
                 await _ragChunkService.CognifyDatasetsAsync(
                     [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)],
-                    true,
                     cancellationToken: cancellationToken);
                 
                 foreach (Character character in characters)
                 {
                     await _ragChunkService.CognifyDatasetsAsync(
                         [RagClientExtensions.GetCharacterDatasetName(message.AdventureId, character.Id)],
-                        true,
                         cancellationToken: cancellationToken);
                 }
 

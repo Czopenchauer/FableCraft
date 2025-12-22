@@ -187,6 +187,7 @@ internal sealed class SceneGenerationOrchestrator(
         };
         var workflow = new[]
         {
+            processors.First(p => p is ContextGatherer),
             processors.First(p => p is NarrativeDirectorAgent),
             processors.First(p => p is WriterAgent),
             processors.First(p => p is SaveSceneWithoutEnrichment)
@@ -385,7 +386,8 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings,
+                 x.AuthorNotes
             })
             .SingleAsync(cancellationToken);
 
@@ -400,6 +402,15 @@ internal sealed class SceneGenerationOrchestrator(
             .OrderByDescending(x => x.SequenceNumber)
             .Take(NumberOfScenesToInclude)
             .ToListAsync(cancellationToken);
+
+        var createdLore = await dbContext.Scenes
+            .AsSplitQuery()
+            .Where(x => x.AdventureId == adventureId && x.SequenceNumber < scene.SequenceNumber)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(1)
+            .Include(x => x.Lorebooks)
+            .SelectMany(x => x.Lorebooks)
+            .ToArrayAsync(cancellationToken);
 
         // Skip the most recent character state as that's the one being regenerated
         var adventureCharacters = await GetCharactersForRegeneration(adventureId, scene.Id, cancellationToken);
@@ -488,6 +499,7 @@ internal sealed class SceneGenerationOrchestrator(
                 .Select(lb => JsonSerializer.Deserialize<GeneratedItem>(lb.Content)!).ToArray(),
         };
 
+        
         context.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
@@ -496,7 +508,9 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings);
+            adventure.WorldSettings,
+            adventure.AuthorNotes,
+            createdLore);
 
         return context;
     }
@@ -549,7 +563,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings, x.AuthorNotes
             })
             .SingleAsync(cancellationToken);
 
@@ -565,6 +579,14 @@ internal sealed class SceneGenerationOrchestrator(
         var generationProcess = await dbContext.GenerationProcesses.FirstAsync(x => x.AdventureId == adventureId, cancellationToken: cancellationToken);
         var generationContext = generationProcess.GetContextAs<GenerationContext>();
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
+        var createdLore = await dbContext.Scenes
+            .AsSplitQuery()
+            .Where(x => x.AdventureId == adventureId)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(1)
+            .Include(x => x.Lorebooks)
+            .SelectMany(x => x.Lorebooks)
+            .ToArrayAsync(cancellationToken);
         generationContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
@@ -573,7 +595,9 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings);
+            adventure.WorldSettings,
+            adventure.AuthorNotes,
+            createdLore);
         return generationContext;
     }
 
@@ -587,7 +611,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings, x.AuthorNotes
             })
             .SingleAsync(cancellationToken);
 
@@ -622,6 +646,15 @@ internal sealed class SceneGenerationOrchestrator(
         {
             throw new InvalidOperationException("Failed to deserialize generation context from the database.");
         }
+        
+        var createdLore = await dbContext.Scenes
+            .AsSplitQuery()
+            .Where(x => x.AdventureId == adventureId)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(1)
+            .Include(x => x.Lorebooks)
+            .SelectMany(x => x.Lorebooks)
+            .ToArrayAsync(cancellationToken);
 
         context.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
@@ -631,7 +664,9 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings);
+            adventure.WorldSettings,
+            adventure.AuthorNotes,
+            createdLore);
 
         return context;
 

@@ -47,6 +47,7 @@ testem.log
 .env
 cognee_data
 cognee_system
+seq-data
 
 # System files
 .DS_Store

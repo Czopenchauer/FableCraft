@@ -3,6 +3,7 @@ import os
 from typing import Any, List, Optional
 from uuid import UUID
 
+import structlog
 import cognee
 import uvicorn
 from cognee.api.v1.exceptions import DocumentNotFoundError
@@ -13,8 +14,13 @@ from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs._internal.export import BatchLogRecordProcessor
+from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
@@ -24,15 +30,22 @@ observe = get_observe()
 
 ENV_FILE_PATH = os.path.join(os.path.dirname(__file__), ".env")
 
-otlp_exporter = OTLPSpanExporter()
-processor = BatchSpanProcessor(otlp_exporter)
-tracer_provider = TracerProvider()
-tracer_provider.add_span_processor(processor)
-trace.set_tracer_provider(tracer_provider)
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+resource = Resource(attributes={
+    SERVICE_NAME: "GraphRagAPI-Cognee"
+})
+traceProvider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:5341/ingest/otlp/v1/traces"))
+traceProvider.add_span_processor(processor)
+trace.set_tracer_provider(traceProvider)
 tracer = trace.get_tracer(__name__)
+
+logger_provider = LoggerProvider(resource=resource)
+set_logger_provider(logger_provider)
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(endpoint="http://localhost:5341/ingest/otlp/v1/logs")))
+handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+logging.getLogger().addHandler(handler)
+logger = logging.getLogger(__name__)
+cognee.setup_logging()
 
 app = FastAPI(
     title="GraphRAG API (Cognee)",

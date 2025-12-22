@@ -38,6 +38,8 @@
     <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.68.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    <PackageVersion Include="SerilogTracing" Version="2.3.1" />
     <PackageVersion Include="System.IO.Hashing" Version="10.0.1" />
     <PackageVersion Include="TUnit" Version="1.5.80" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />

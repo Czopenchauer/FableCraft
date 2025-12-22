@@ -70,6 +70,8 @@ internal sealed class NarrativeDirectorAgent(
             requestPrompt = $"""
                              {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata.NarrativeTracking)}
 
+                             {GetStyleGuide(context)}
+                             
                              The {context.MainCharacter.Name} action in the last scene was:
                              {PromptSections.PlayerAction(context.PlayerAction)}
 
@@ -109,5 +111,18 @@ internal sealed class NarrativeDirectorAgent(
             cancellationToken);
 
         context.NewNarrativeDirection = narrativeOutput;
+    }
+
+    private static string GetStyleGuide(GenerationContext context)
+    {
+        if (!string.IsNullOrEmpty(context.AuthorNotes))
+        {
+            return $"""
+                    Style Guide for the adventure:
+                    {context.AuthorNotes}
+                   """;
+        }
+
+        return string.Empty;
     }
 }

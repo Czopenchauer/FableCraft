@@ -15,7 +15,7 @@ internal class KnowledgeGraphPlugin
     private readonly CallerContext _callerContext;
     private readonly List<string> _datasets;
     private readonly IRagSearch _ragSearch;
-    private const int MaxQueries = 5;
+    private const int MaxQueries = 10;
     private int _queryCount;
 
     public KnowledgeGraphPlugin(IRagSearch ragSearch, CallerContext callerContext, List<string> datasets)

@@ -21,7 +21,9 @@ internal sealed class GenerationContext
         AdventureAgentLlmPreset[] agentLlmPresets,
         string promptPath,
         string adventureStartTime,
-        string? worldSettings)
+        string? worldSettings,
+        string? authorNotes,
+        LorebookEntry[] previouslyGeneratedLore)
     {
         SceneContext = sceneContext;
         TrackerStructure = trackerStructure;
@@ -31,6 +33,8 @@ internal sealed class GenerationContext
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
         WorldSettings = worldSettings;
+        AuthorNotes = authorNotes;
+        PreviouslyGeneratedLore = previouslyGeneratedLore;
     }
 
     public required Guid AdventureId { get; set; }
@@ -66,6 +70,13 @@ internal sealed class GenerationContext
 
     [JsonIgnore]
     public string? WorldSettings { get; set; }
+
+    [JsonIgnore]
+    public string? AuthorNotes { get; set; }
+
+    // Lore entries that were already generated in previous steps, they weren't yet commited to KG.
+    [JsonIgnore]
+    public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
     public CharacterContext[]? NewCharacters { get; set; }
 

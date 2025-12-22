@@ -25,9 +25,6 @@
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
         <PackageReference Include="Polly" />
         <PackageReference Include="Polly.RateLimiting" />
-        <PackageReference Include="Serilog.AspNetCore" />
-        <PackageReference Include="Serilog.Enrichers.Environment" />
-        <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
         <PackageReference Include="System.IO.Hashing" />
     </ItemGroup>
 

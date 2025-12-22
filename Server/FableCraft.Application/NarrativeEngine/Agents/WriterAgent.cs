@@ -80,6 +80,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
                              {PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters)}
+                             
+                             {GetStyleGuide(context)}
 
                              {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
 
@@ -100,7 +102,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("new_scene");
+        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");
 
         GeneratedScene newScene = await _agentKernel.SendRequestAsync(
             chatHistory,
@@ -111,5 +113,18 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             cancellationToken);
 
         context.NewScene = newScene;
+    }
+    
+    private static string GetStyleGuide(GenerationContext context)
+    {
+        if (!string.IsNullOrEmpty(context.AuthorNotes))
+        {
+            return $"""
+                     Style Guide for the adventure:
+                     {context.AuthorNotes}
+                    """;
+        }
+
+        return string.Empty;
     }
 }

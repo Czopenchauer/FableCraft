@@ -4,7 +4,7 @@ internal class ContextBase
 {
     public required SearchResult[] ContextBases { get; set; } = [];
 
-    public required CharacterContext[] RelevantCharacters { get; set; } = [];
+    public CharacterContext[] RelevantCharacters { get; set; } = [];
 }
 
 internal class SearchResult

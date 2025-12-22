@@ -69,6 +69,8 @@ var server = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
+    .WithEnvironment("FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT", "http://localhost:5341/ingest/otlp/v1/traces")
+    .WithEnvironment("FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT", "http://localhost:5341")
     .WithEnvironment("FABLECRAFT_DATA_STORE", @$"{TryGetSolutionDirectoryInfo().FullName}\data-store")
     .WithEnvironment("FABLECRAFT_LOG_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\logs\")
     .WithEnvironment("DEFAULT_PROMPT_PATH", promptPath)

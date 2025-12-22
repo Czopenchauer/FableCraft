@@ -40,6 +40,7 @@ internal static class PromptSections
         }
 
         return $"""
+                Current Time, Location and general Story information:
                 <story_tracker>
                 {tracker.ToJsonString(GetJsonOptions(ignoreNull))}
                 </story_tracker>

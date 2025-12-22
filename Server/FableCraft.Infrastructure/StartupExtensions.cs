@@ -12,9 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 
-using Serilog;
-using Serilog.Events;
-
 namespace FableCraft.Infrastructure;
 
 public static class StartupExtensions
@@ -24,16 +21,6 @@ public static class StartupExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSerilog(config => config
-            .MinimumLevel.Information()
-            .Enrich.FromLogContext()
-            .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
-            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
-            .WriteTo.OpenTelemetry()
-            .WriteTo.File(
-                path: Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
-                rollingInterval: RollingInterval.Hour));
-
         var channel = Channel.CreateBounded<MessageWithContext>(new BoundedChannelOptions(10_000)
         {
             SingleWriter = false,
