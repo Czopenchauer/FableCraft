@@ -52,7 +52,7 @@ internal sealed class ContextGatherer(
 
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
 
-                             {PromptSections.CurrentStoryTracker(context.SceneContext)}
+                             {PromptSections.CurrentStoryTracker(context)}
 
                              {LoreGenerated(context)}
 
@@ -70,7 +70,6 @@ internal sealed class ContextGatherer(
         var requestPrompt = $"""
                              {PromptSections.PreviousSceneGatheredContext(context)}
 
-                             Based on the latest scene and narrative direction, analyze the context needs for the NEXT scene:
                              {PromptSections.SceneDirection(context.NewNarrativeDirection)}
 
                              {PromptSections.CurrentScene(context)}

@@ -68,7 +68,7 @@ public static class Extensions
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
             // Aspire dashboard
             .WriteTo.OpenTelemetry()
-            .WriteTo.Seq(seqLogUrl)
+            //.WriteTo.Seq(seqLogUrl)
             .WriteTo.File(
                 path: Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
                 rollingInterval: RollingInterval.Hour));
@@ -119,11 +119,11 @@ public static class Extensions
                     .AddNpgsqlInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddMeter("Microsoft.SemanticKernel*")
-                    .AddOtlpExporter(opt =>
-                    {
-                        opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
-                        opt.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    })
+                    // .AddOtlpExporter(opt =>
+                    // {
+                    //     opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
+                    //     opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    // })
                     // Aspire dashboard exporter
                     .AddOtlpExporter(opt =>
                     {
@@ -147,11 +147,11 @@ public static class Extensions
                     .AddSource("LlmCall")
                     .AddNpgsql()
                     // SEQ trace exporter
-                    .AddOtlpExporter(opt =>
-                    {
-                        opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
-                        opt.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    })
+                    // .AddOtlpExporter(opt =>
+                    // {
+                    //     opt.Endpoint = new Uri(builder.Configuration["FABLECRAFT_EXPORTER_SEQ_TRACE_ENDPOINT"]!);
+                    //     opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    // })
                     // Aspire dashboard exporter
                     .AddOtlpExporter(opt =>
                     {

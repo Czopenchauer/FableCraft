@@ -58,11 +58,20 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
 
+                             {PromptSections.NewLore(context.NewLore)}
+                             
+                             {PromptSections.NewLocations(context.NewLocations)}
+                             
+                             {PromptSections.NewItems(context.NewItems)}
+                             
+                             These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
+                             {PromptSections.NewCharacterRequests(context.NewNarrativeDirection?.CreationRequests.Characters)}
+
                              {PromptSections.ExistingCharacters(context.Characters)}
 
                              {PromptSections.Context(context)}
 
-                             {(hasSceneContext ? PromptSections.CurrentStoryTracker(context.SceneContext) : "")}
+                             {PromptSections.CurrentStoryTracker(context)}
 
                              {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
                              """;
@@ -71,15 +80,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         var requestPrompt = $"""
                              Your new instructions:
                              {PromptSections.SceneDirection(context.NewNarrativeDirection!.WriterInstructions)}
-
-                             {PromptSections.NewLore(context.NewLore)}
-
-                             {PromptSections.NewLocations(context.NewLocations)}
-
-                             {PromptSections.NewItems(context.NewItems)}
-
-                             These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
-                             {PromptSections.NewCharacterRequests(context.NewNarrativeDirection.CreationRequests.Characters)}
                              
                              {GetStyleGuide(context)}
 

@@ -319,7 +319,9 @@ internal sealed class SceneGenerationOrchestrator(
         }
 
         scene = await dbContext.Scenes
-            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .Where(s => s.AdventureId == adventureId)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(1)
             .Include(x => x.CharacterStates)
             .Include(x => x.CharacterActions)
             .Include(x => x.Lorebooks)

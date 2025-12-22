@@ -36,7 +36,7 @@ internal sealed class LoreCrafter(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.StoryTracker(context.LatestTracker()?.Story, true)}
+                             {PromptSections.CurrentStoryTracker(context)}
                              
                              {PromptSections.WorldSettings(context.WorldSettings)}
 

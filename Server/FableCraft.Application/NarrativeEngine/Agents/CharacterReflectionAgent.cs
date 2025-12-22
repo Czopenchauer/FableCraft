@@ -71,8 +71,6 @@ internal sealed class CharacterReflectionAgent(
 
                              {PromptSections.WorldSettings(generationContext.WorldSettings)}
 
-                             {PromptSections.StoryTracker(storyTrackerResult, true)}
-
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(context)}
@@ -81,6 +79,8 @@ internal sealed class CharacterReflectionAgent(
 
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
+
+                             {PromptSections.StoryTracker(generationContext, storyTrackerResult)}
 
                              {PromptSections.CurrentScene(generationContext)}
 

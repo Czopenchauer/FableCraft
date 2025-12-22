@@ -40,7 +40,7 @@ internal sealed class CharacterStateAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(generationContext.WorldSettings)}
 
-                             {PromptSections.StoryTracker(storyTrackerResult, true)}
+                             {PromptSections.StoryTracker(generationContext, storyTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 

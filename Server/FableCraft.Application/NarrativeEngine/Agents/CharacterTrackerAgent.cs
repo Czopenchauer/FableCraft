@@ -42,7 +42,7 @@ internal sealed class CharacterTrackerAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(generationContext.WorldSettings)}
 
-                             {PromptSections.StoryTracker(storyTrackerResult)}
+                             {PromptSections.StoryTracker(generationContext, storyTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 

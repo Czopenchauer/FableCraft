@@ -32,32 +32,25 @@ internal static class PromptSections
         return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
     }
 
-    public static string StoryTracker(StoryTracker? tracker, bool ignoreNull = false)
+    public static string StoryTracker(GenerationContext context, StoryTracker storyTracker)
     {
-        if (tracker == null)
-        {
-            return string.Empty;
-        }
-
+        var previousTime = context.LatestTracker()?.Story;
         return $"""
                 Current Time, Location and general Story information:
                 <story_tracker>
-                {tracker.ToJsonString(GetJsonOptions(ignoreNull))}
+                {storyTracker.ToJsonString()}
                 </story_tracker>
+
+                Previous time: {previousTime?.Time}
                 """;
     }
 
-    public static string CurrentStoryTracker(SceneContext[] sceneContext)
+    public static string CurrentStoryTracker(GenerationContext context)
     {
-        Tracker? tracker = sceneContext
-            .Where(x => x.Metadata.Tracker != null)
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.Tracker;
-
-        return tracker != null
+        return context.LatestTracker()?.Story != null
             ? $"""
                <current_story_tracker>
-               {tracker.Story.ToJsonString(GetJsonOptions())}
+               {context.LatestTracker()?.Story.ToJsonString(GetJsonOptions())}
                </current_story_tracker>
                """
             : string.Empty;
@@ -94,6 +87,7 @@ internal static class PromptSections
         var formatted = string.Join("\n\n---\n\n",
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
+                .Skip(1)
                 .TakeLast(count)
                 .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
@@ -290,6 +284,11 @@ internal static class PromptSections
 
     public static string NewCharacterRequests<T>(IEnumerable<T>? requests, bool ignoreNull = false)
     {
+        if (requests == null)
+        {
+            return string.Empty;
+        }
+
         var list = requests?.ToArray() ?? [];
         return $"""
                 <new_characters_requests>
@@ -307,24 +306,6 @@ internal static class PromptSections
                 """;
     }
 
-    public static string ContinuityCheck<T>(T check, bool ignoreNull = false)
-    {
-        return $"""
-                <continuity_check>
-                {check.ToJsonString(GetJsonOptions(ignoreNull))}
-                </continuity_check>
-                """;
-    }
-
-    public static string SceneMetadata<T>(T metadata, bool ignoreNull = false)
-    {
-        return $"""
-                <scene_metadata>
-                {metadata.ToJsonString(GetJsonOptions(ignoreNull))}
-                </scene_metadata>
-                """;
-    }
-
     public static string LastSceneNarrativeDirection<T>(T? direction, bool ignoreNull = false) where T : class
     {
         if (direction == null) return string.Empty;
@@ -333,21 +314,6 @@ internal static class PromptSections
                 <last_scene_narrative_direction>
                 {direction.ToJsonString(GetJsonOptions(ignoreNull))}
                 </last_scene_narrative_direction>
-                """;
-    }
-
-    public static string LastNarrativeDirections(SceneContext[] sceneContext, int count = 1)
-    {
-        var directions = string.Join("\n",
-            sceneContext
-                .OrderByDescending(y => y.SequenceNumber)
-                .Take(count)
-                .Select(z => z.Metadata.NarrativeMetadata.ToJsonString(JsonOptions)));
-
-        return $"""
-                <last_narrative_directions>
-                {directions}
-                </last_narrative_directions>
                 """;
     }
 

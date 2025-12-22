@@ -58,7 +58,7 @@ internal sealed class NarrativeDirectorAgent(
 
                              {PromptSections.Context(context)}
 
-                             {PromptSections.CurrentStoryTracker(context.SceneContext)}
+                             {PromptSections.CurrentStoryTracker(context)}
 
                              {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
                              """;

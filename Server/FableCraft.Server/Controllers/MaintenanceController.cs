@@ -1,4 +1,4 @@
-﻿using FableCraft.Application.NarrativeEngine;
+using FableCraft.Application.NarrativeEngine;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
@@ -8,7 +8,10 @@ namespace FableCraft.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class MaintenanceController(IMessageDispatcher messageDispatcher, ApplicationDbContext dbContext) : ControllerBase
+public sealed class MaintenanceController(
+    IMessageDispatcher messageDispatcher,
+    ApplicationDbContext dbContext,
+    ContextGatheringService contextGatheringService) : ControllerBase
 {
     [HttpPost("resend-scene-generated-messages/{adventureId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -28,5 +31,20 @@ public sealed class MaintenanceController(IMessageDispatcher messageDispatcher, 
         });
 
         return Ok();
+    }
+
+    [HttpPost("gather-context/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GatherContext(Guid adventureId, CancellationToken cancellationToken)
+    {
+        var result = await contextGatheringService.GatherContextForAdventureAsync(adventureId, cancellationToken);
+
+        if (result is null)
+        {
+            return NotFound("No scenes found for this adventure");
+        }
+
+        return Ok(result);
     }
 }
