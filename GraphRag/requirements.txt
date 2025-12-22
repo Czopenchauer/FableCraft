@@ -1,5 +1,6 @@
 ﻿# Cognee - Knowledge Graph RAG Framework
 cognee[all]
+cognee[monitoring]
 
 # FastAPI and server
 uvicorn

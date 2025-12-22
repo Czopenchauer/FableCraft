@@ -187,7 +187,6 @@ internal sealed class SceneGenerationOrchestrator(
         };
         var workflow = new[]
         {
-            processors.First(p => p is ContextGatherer),
             processors.First(p => p is NarrativeDirectorAgent),
             processors.First(p => p is WriterAgent),
             processors.First(p => p is SaveSceneWithoutEnrichment)

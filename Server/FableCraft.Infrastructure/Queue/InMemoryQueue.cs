@@ -60,7 +60,7 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
                                         var handler = scope.ServiceProvider.GetRequiredService(handlerType);
                                         MethodInfo? handleMethod =
                                             handlerType.GetMethod(nameof(IMessageHandler<>.HandleAsync));
-                                        await (Task)handleMethod!.Invoke(handler, [message, CancellationToken.None])!;
+                                        await (Task)handleMethod!.Invoke(handler, [message, stoppingToken])!;
                                     }
                                 }
                                 catch (Exception ex)

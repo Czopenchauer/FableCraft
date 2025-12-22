@@ -22,7 +22,7 @@ internal sealed class CharacterStatePlugin
 
     [KernelFunction("get_state")]
     [Description(
-        "Get a current character state information - about their physical state and their skills and abilities.")]
+        "Get a current character (NOT MAIN CHARACTER) state information - about their physical state and their skills and abilities.")]
     public string GetState(
         [Description("The name of the character")]
         string targetCharacterName)

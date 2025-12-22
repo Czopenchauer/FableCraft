@@ -1,9 +1,10 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace FableCraft.Infrastructure.Persistence;
 
-public static class JsonExtensions
+public static partial class JsonExtensions
 {
     public readonly static JsonSerializerOptions JsonSerializerOptions = new()
     {
@@ -11,6 +12,10 @@ public static class JsonExtensions
         PropertyNameCaseInsensitive = true,
         AllowTrailingCommas = true
     };
+
+    // Matches patterns like "Skills[Consciousness Analysis]" or "Items[Sword]"
+    [GeneratedRegex(@"^(?<property>\w+)\[(?<identifier>.+)\]$")]
+    private static partial Regex ArrayAccessPattern();
 
     public static string ToJsonString<T>(this T obj)
     {
@@ -26,6 +31,8 @@ public static class JsonExtensions
     /// Patches an object with updates specified using dot-notation paths.
     /// Each key is a path like "emotional_landscape.current_state" and the value
     /// is the complete object to replace at that path.
+    /// Supports array item access by identifier e.g.: "Skills[Consciousness Analysis]" or
+    /// "MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"
     /// </summary>
     public static T PatchWith<T>(this T original, IDictionary<string, object> updates)
     {
@@ -51,20 +58,85 @@ public static class JsonExtensions
         JsonNode current = root;
         for (int i = 0; i < pathSegments.Length - 1; i++)
         {
-            current = current[pathSegments[i]]
-                ?? throw new InvalidOperationException($"Path segment '{pathSegments[i]}' not found");
+            current = NavigateToSegment(current, pathSegments[i]);
         }
 
-        var finalProperty = pathSegments[^1];
-        if (current is JsonObject jsonObject)
+        var finalSegment = pathSegments[^1];
+        var arrayMatch = ArrayAccessPattern().Match(finalSegment);
+
+        if (arrayMatch.Success)
+        {
+            // Final segment is array access like "Skills[Consciousness Analysis]"
+            var arrayProperty = arrayMatch.Groups["property"].Value;
+            var identifier = arrayMatch.Groups["identifier"].Value;
+
+            var arrayNode = current[arrayProperty] as JsonArray
+                ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array");
+
+            var (itemIndex, _) = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
+
+            var valueNode = value is null ? null : JsonSerializer.SerializeToNode(value, JsonSerializerOptions);
+            arrayNode[itemIndex] = valueNode;
+        }
+        else if (current is JsonObject jsonObject)
         {
             var valueNode = value is null ? null : JsonSerializer.SerializeToNode(value, JsonSerializerOptions);
-            jsonObject[finalProperty] = valueNode;
+            jsonObject[finalSegment] = valueNode;
         }
         else
         {
             throw new InvalidOperationException(
-                $"Cannot set property '{finalProperty}' on non-object node at path '{string.Join(".", pathSegments[..^1])}'");
+                $"Cannot set property '{finalSegment}' on non-object node at path '{string.Join(".", pathSegments[..^1])}'");
         }
+    }
+
+    private static JsonNode NavigateToSegment(JsonNode current, string segment)
+    {
+        var arrayMatch = ArrayAccessPattern().Match(segment);
+
+        if (arrayMatch.Success)
+        {
+            // Segment is array access like "Skills[Consciousness Analysis]"
+            var arrayProperty = arrayMatch.Groups["property"].Value;
+            var identifier = arrayMatch.Groups["identifier"].Value;
+
+            var arrayNode = current[arrayProperty] as JsonArray
+                ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array or not found");
+
+            var (_, item) = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
+            return item;
+        }
+
+        return current[segment]
+            ?? throw new InvalidOperationException($"Path segment '{segment}' not found");
+    }
+
+    private static (int Index, JsonNode Item) FindArrayItemByIdentifier(JsonArray array, string identifier, string arrayProperty)
+    {
+        for (int i = 0; i < array.Count; i++)
+        {
+            var item = array[i];
+            if (item is JsonObject obj && HasMatchingStringProperty(obj, identifier))
+            {
+                return (i, item);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No item with identifier '{identifier}' found in array '{arrayProperty}'");
+    }
+
+    private static bool HasMatchingStringProperty(JsonObject obj, string identifier)
+    {
+        foreach (var property in obj)
+        {
+            if (property.Value is JsonValue jsonValue &&
+                jsonValue.TryGetValue<string>(out var stringValue) &&
+                stringValue == identifier)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

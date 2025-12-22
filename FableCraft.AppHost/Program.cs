@@ -30,24 +30,14 @@ var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:Ma
 var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "36";
 var huggingFaceTokenizer = builder.Configuration["FableCraft:GraphRag:HuggingFaceTokenizer"] ?? "";
 
-#pragma warning disable CS0618 // Type or member is obsolete
-var cache = builder.AddAzureRedis("fablecraft-redis")
-#pragma warning restore CS0618 // Type or member is obsolete
-    .RunAsContainer();
 var graphRagApi = builder
     .AddPythonApp("graph-rag-api", "../GraphRag", "api.py")
     .WithHttpEndpoint(env: "PORT", port: 8111, name: "graphRagApi")
     .WithExternalHttpEndpoints()
     .WithOtlpExporter()
-    .WithReference(cache)
-    .WithEnvironment(async context =>
-    {
-        EndpointReference redisEndpoint = cache.Resource.GetEndpoint("tcp");
-        context.EnvironmentVariables["CACHE_HOST"] = redisEndpoint.Property(EndpointProperty.Host);
-        context.EnvironmentVariables["CACHE_PORT"] = redisEndpoint.Property(EndpointProperty.Port);
-        context.EnvironmentVariables["CACHE_USERNAME"] = "";
-        context.EnvironmentVariables["CACHE_PASSWORD"] = (await cache.Resource.Password!.GetValueAsync(CancellationToken.None))!;
-    })
+    .WithEnvironment("LANGFUSE_PUBLIC_KEY", "default")
+    .WithEnvironment("LANGFUSE_SECRET_KEY", "default")
+    .WithEnvironment("LLM_ENDPOINT", "http://localhost:3000")
     .WithEnvironment("LITELLM_LOG", "INFO")
     .WithEnvironment("TOKENIZERS_PARALLELISM", "true")
     .WithEnvironment("LLM_API_KEY", graphRagLlmApiKey)
@@ -71,8 +61,7 @@ var graphRagApi = builder
     .WithEnvironment("TELEMETRY_DISABLED", "true")
     .WithEnvironment("VISUALISATION_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\visualization")
     .WithEnvironment("DATA_ROOT_DIRECTORY", @$"{TryGetSolutionDirectoryInfo().FullName}\cognee\data\")
-    .WithEnvironment("SYSTEM_ROOT_DIRECTORY", @$"{TryGetSolutionDirectoryInfo().FullName}\cognee\system\")
-    .WithEnvironment("CACHING", "true");
+    .WithEnvironment("SYSTEM_ROOT_DIRECTORY", @$"{TryGetSolutionDirectoryInfo().FullName}\cognee\system\");
 
 var promptPath = @$"{TryGetSolutionDirectoryInfo().FullName}\Prompts\Default\";
 

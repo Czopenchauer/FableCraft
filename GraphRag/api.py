@@ -8,9 +8,9 @@ import uvicorn
 from cognee.api.v1.exceptions import DocumentNotFoundError
 from cognee.context_global_variables import set_session_user_context_variable
 from cognee.modules.data.exceptions import DatasetNotFoundError
+from cognee.modules.observability.get_observe import get_observe
 from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
-from dotenv import load_dotenv, set_key
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -19,6 +19,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
 from starlette import status
+
+observe = get_observe()
 
 ENV_FILE_PATH = os.path.join(os.path.dirname(__file__), ".env")
 
@@ -153,7 +155,7 @@ async def add_data(data: AddDataRequest):
             detail=f"Add data failed: {str(e)}"
         )
 
-
+@observe(name="cognify", as_type="generation")
 @app.post("/cognify", status_code=status.HTTP_200_OK)
 async def cognify_dataset(request: CognifyRequest):
     """Run cognify processing on multiple datasets"""
@@ -172,7 +174,7 @@ async def cognify_dataset(request: CognifyRequest):
             detail=f"Cognify failed: {str(e)}"
         )
 
-
+@observe(name="memify", as_type="generation")
 @app.post("/memify", status_code=status.HTTP_200_OK)
 async def memify_dataset(request: MemifyRequest):
     """Run memify processing on multiple datasets"""
@@ -208,6 +210,7 @@ async def get_datasets(adventure_id: str):
     return dataset_data
 
 
+@observe(name="search", as_type="generation")
 @app.post("/search")
 async def search(request: SearchRequest, response_model=SearchResponse):
 

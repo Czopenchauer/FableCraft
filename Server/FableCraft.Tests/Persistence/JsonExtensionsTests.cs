@@ -911,7 +911,7 @@ public class JsonExtensionsTests
         await Assert.That(fireBreath.Description).Contains("enhanced");
 
         // Assert - Other abilities unchanged
-        var tailSwipe = result.MagicAndAbilities.InstinctiveAbilities.Single(a => a.AbilityName == "Tail Swipe");
+        var tailSwipe = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Tail Swipe");
         await Assert.That(tailSwipe.Power).IsEqualTo(80);
     }
 
@@ -1001,10 +1001,10 @@ public class JsonExtensionsTests
         var fireBreath = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
         await Assert.That(fireBreath.Power).IsEqualTo(180);
 
-        var tailSwipe = result.MagicAndAbilities.InstinctiveAbilities.Single(a => a.AbilityName == "Tail Swipe");
+        var tailSwipe = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Tail Swipe");
         await Assert.That(tailSwipe.Power).IsEqualTo(100);
 
-        var iceStorm = result.MagicAndAbilities.LearnedAbilities!.Single(a => a.AbilityName == "Ice Storm");
+        var iceStorm = result.MagicAndAbilities!.LearnedAbilities!.Single(a => a.AbilityName == "Ice Storm");
         await Assert.That(iceStorm.CooldownSeconds).IsEqualTo(45);
 
         await Assert.That(result.MagicAndAbilities.ManaPool).IsEqualTo("1500/1500");
