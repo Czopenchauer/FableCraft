@@ -21,7 +21,8 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             NarrativeText = context.NewScene!.Scene,
             Metadata = new Metadata
             {
-                NarrativeMetadata = context.NewNarrativeDirection!
+                NarrativeMetadata = context.NewNarrativeDirection!,
+                CharacterObservations = context.NewScene.CharacterObservations
             },
             AdventureSummary = null,
             CharacterActions = context.NewScene.Choices.Select(x => new MainCharacterAction

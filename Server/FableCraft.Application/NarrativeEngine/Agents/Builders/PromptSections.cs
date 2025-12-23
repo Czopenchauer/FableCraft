@@ -495,4 +495,40 @@ internal static class PromptSections
                 </world_settings>
                 """;
     }
+
+    public static string PreviousCharacterObservations(SceneContext[] sceneContext)
+    {
+        CharacterObservations? observations = sceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.CharacterObservations;
+
+        if (observations == null)
+        {
+            return string.Empty;
+        }
+
+        var potentialProfiles = observations.PotentialProfiles.Length > 0
+            ? string.Join("\n", observations.PotentialProfiles.Select(p => $"""
+                - **{p.Name}** ({p.Role}): {p.Reason}
+                  - Appearance: {p.EstablishedDetails.Appearance}
+                  - Personality: {p.EstablishedDetails.Personality}
+                  - Background: {p.EstablishedDetails.Background}
+                  - Relationship: {p.EstablishedDetails.RelationshipSeed}
+                """))
+            : "No potential profiles identified.";
+
+        var recurringNpcs = observations.RecurringNpcs.Length > 0
+            ? string.Join("\n", observations.RecurringNpcs.Select(n => $"- **{n.Name}**: {n.DetailsToMaintain}"))
+            : "No recurring NPCs to maintain.";
+
+        return $"""
+                <previous_character_observations>
+                **Potential Character Profiles** (candidates for full character creation):
+                {potentialProfiles}
+
+                **Recurring NPCs** (maintain these details for continuity):
+                {recurringNpcs}
+                </previous_character_observations>
+                """;
+    }
 }

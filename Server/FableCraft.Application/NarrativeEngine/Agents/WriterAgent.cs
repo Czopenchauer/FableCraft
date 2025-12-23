@@ -59,11 +59,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
 
                              {PromptSections.NewLore(context.NewLore)}
-                             
+
                              {PromptSections.NewLocations(context.NewLocations)}
-                             
+
                              {PromptSections.NewItems(context.NewItems)}
-                             
+
                              These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
                              {PromptSections.NewCharacterRequests(context.NewNarrativeDirection?.CreationRequests.Characters)}
 
@@ -72,6 +72,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              {PromptSections.Context(context)}
 
                              {PromptSections.CurrentStoryTracker(context)}
+
+                             {PromptSections.PreviousCharacterObservations(context.SceneContext)}
 
                              {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
                              """;

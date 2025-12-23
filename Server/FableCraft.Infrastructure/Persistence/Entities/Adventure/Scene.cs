@@ -75,6 +75,12 @@ public sealed class Metadata
     /// Used as extra context for generating the next scene.
     /// </summary>
     public GatheredContext? GatheredContext { get; set; }
+
+    /// <summary>
+    /// Character observations from the Writer agent.
+    /// Contains potential profiles for new characters and recurring NPCs to maintain continuity.
+    /// </summary>
+    public CharacterObservations? CharacterObservations { get; set; }
 }
 
 /// <summary>
@@ -162,4 +168,56 @@ public sealed class CharacterTracker
 
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+}
+
+/// <summary>
+/// Character observations from scene generation.
+/// Contains potential profiles for new characters and recurring NPCs to maintain continuity.
+/// </summary>
+public class CharacterObservations
+{
+    [JsonPropertyName("potential_profiles")]
+    public PotentialProfile[] PotentialProfiles { get; init; } = [];
+
+    [JsonPropertyName("recurring_npcs")]
+    public RecurringNpc[] RecurringNpcs { get; init; } = [];
+}
+
+public class PotentialProfile
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = null!;
+
+    [JsonPropertyName("role")]
+    public string Role { get; init; } = null!;
+
+    [JsonPropertyName("reason")]
+    public string Reason { get; init; } = null!;
+
+    [JsonPropertyName("established_details")]
+    public EstablishedDetails EstablishedDetails { get; init; } = null!;
+}
+
+public class EstablishedDetails
+{
+    [JsonPropertyName("appearance")]
+    public string Appearance { get; init; } = null!;
+
+    [JsonPropertyName("personality")]
+    public string Personality { get; init; } = null!;
+
+    [JsonPropertyName("background")]
+    public string Background { get; init; } = null!;
+
+    [JsonPropertyName("relationship_seed")]
+    public string RelationshipSeed { get; init; } = null!;
+}
+
+public class RecurringNpc
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = null!;
+
+    [JsonPropertyName("details_to_maintain")]
+    public string DetailsToMaintain { get; init; } = null!;
 }
