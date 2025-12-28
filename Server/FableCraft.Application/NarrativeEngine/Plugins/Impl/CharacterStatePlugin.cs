@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
@@ -7,18 +7,18 @@ using Microsoft.SemanticKernel;
 
 using Serilog;
 
-namespace FableCraft.Application.NarrativeEngine.Plugins;
+namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
-internal sealed class CharacterStatePlugin
+internal sealed class CharacterStatePlugin : PluginBase
 {
-    private readonly IEnumerable<CharacterContext> _context;
     private readonly ILogger _logger;
 
-    public CharacterStatePlugin(IEnumerable<CharacterContext> context, ILogger logger)
+    public CharacterStatePlugin(ILogger logger)
     {
-        _context = context;
         _logger = logger;
     }
+
+    private IEnumerable<CharacterContext> Characters => Context!.Characters;
 
     [KernelFunction("get_state")]
     [Description(
@@ -29,11 +29,11 @@ internal sealed class CharacterStatePlugin
     {
         _logger.Information("Getting state for {CharacterName}", targetCharacterName);
 
-        var characterContext = _context.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
+        var characterContext = Characters.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
 
         if (characterContext?.CharacterTracker == null)
         {
-            return $"No state found for '{targetCharacterName}'. Available characters: {string.Join(", ", _context.Select(c => c.Name))}";
+            return $"No state found for '{targetCharacterName}'. Available characters: {string.Join(", ", Characters.Select(c => c.Name))}";
         }
 
         _logger.Information("Returning state for {CharacterName}", targetCharacterName);

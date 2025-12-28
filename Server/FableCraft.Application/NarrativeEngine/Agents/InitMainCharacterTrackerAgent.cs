@@ -3,6 +3,7 @@ using System.Text.Json;
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -20,7 +21,7 @@ internal sealed class InitMainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.InitMainCharacterTrackerAgent;
 
@@ -73,10 +74,8 @@ internal sealed class InitMainCharacterTrackerAgent(
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
-        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
-        var mainCharacterPlugin = new MainCharacterNarrativePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
         return await agentKernel.SendRequestAsync(

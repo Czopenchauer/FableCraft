@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -13,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -22,16 +21,16 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class CharacterCrafter : BaseAgent
 {
     private readonly IAgentKernel _agentKernel;
-    private readonly IRagSearch _ragSearch;
+    private readonly IPluginFactory _pluginFactory;
 
     public CharacterCrafter(
         IAgentKernel agentKernel,
         IDbContextFactory<ApplicationDbContext> contextFactory,
         KernelBuilderFactory kernelBuilderFactory,
-        IRagSearch ragSearch) : base(contextFactory, kernelBuilderFactory)
+        IPluginFactory pluginFactory) : base(contextFactory, kernelBuilderFactory)
     {
         _agentKernel = agentKernel;
-        _ragSearch = ragSearch;
+        _pluginFactory = pluginFactory;
     }
 
     public async Task<CharacterContext> Invoke(
@@ -61,8 +60,8 @@ internal sealed class CharacterCrafter : BaseAgent
                                      """;
         chatHistory.AddUserMessage(creationRequestPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var worldPlugin = new WorldKnowledgePlugin(_ragSearch, new CallerContext(GetType(), context.AdventureId));
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();

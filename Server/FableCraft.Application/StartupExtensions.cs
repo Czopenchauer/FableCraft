@@ -1,6 +1,8 @@
-﻿using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure;
 
@@ -42,6 +44,17 @@ public static class StartupExtensions
             .AddScoped<CharacterReflectionAgent>()
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>();
+
+        // Plugin factory and plugins
+        services.AddScoped<IPluginFactory, PluginFactory>();
+        services.AddTransient<CharacterAgent>();
+        services.AddTransient<WorldKnowledgePlugin>();
+        services.AddTransient<MainCharacterNarrativePlugin>();
+        services.AddTransient<CharacterNarrativePlugin>();
+        services.AddTransient<CharacterStatePlugin>();
+        services.AddTransient<CharacterRelationshipPlugin>();
+        services.AddTransient<CharacterEmulationPlugin>();
+
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
 

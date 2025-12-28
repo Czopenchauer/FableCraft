@@ -1,6 +1,7 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -9,10 +10,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-
-using Serilog;
-
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -31,8 +28,7 @@ internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch,
-    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterReflectionAgent;
 
@@ -92,12 +88,9 @@ internal sealed class CharacterReflectionAgent(
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
-        var characterPlugin = new CharacterNarrativePlugin(ragSearch, callerContext, context.CharacterId);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
-        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
-        var relationShipPlugin = new CharacterRelationshipPlugin(context, logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
+        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
+        await pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, generationContext, callerContext, context.CharacterId);
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

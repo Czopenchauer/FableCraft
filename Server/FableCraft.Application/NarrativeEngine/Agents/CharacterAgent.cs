@@ -1,8 +1,7 @@
-﻿using System.ComponentModel;
-
-using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -16,26 +15,30 @@ using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
-namespace FableCraft.Application.NarrativeEngine.Plugins;
+namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class CharacterPlugin : BaseAgent
+/// <summary>
+/// Agent that emulates character actions based on personality, motivations, and context.
+/// Manages per-character chat histories and LLM interactions.
+/// </summary>
+internal sealed class CharacterAgent : BaseAgent
 {
     private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
     private readonly IAgentKernel _agentKernel;
     private readonly ILogger _logger;
-    private readonly IRagSearch _ragSearch;
+    private readonly IPluginFactory _pluginFactory;
 
-    public CharacterPlugin(IAgentKernel agentKernel,
+    public CharacterAgent(IAgentKernel agentKernel,
         ILogger logger,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         KernelBuilderFactory kernelBuilderFactory,
-        IRagSearch ragSearch) : base(dbContextFactory, kernelBuilderFactory)
+        IPluginFactory pluginFactory) : base(dbContextFactory, kernelBuilderFactory)
     {
         _agentKernel = agentKernel;
         _logger = logger;
-        _ragSearch = ragSearch;
+        _pluginFactory = pluginFactory;
     }
 
     public async Task Setup(GenerationContext generationContext)
@@ -53,12 +56,12 @@ internal sealed class CharacterPlugin : BaseAgent
                 var systemPrompt = promptTemplate.Replace(PlaceholderNames.CharacterName, context.Name);
                 var chatHistory = new ChatHistory();
                 chatHistory.AddSystemMessage(systemPrompt);
-                chatHistory.AddUserMessage(BuildContextMessage(context, generationContext));
+                chatHistory.AddUserMessage(BuildContextMessage(context));
                 return (context, chatHistory);
             });
     }
 
-    private string BuildContextMessage(CharacterContext context, GenerationContext generationContext)
+    private string BuildContextMessage(CharacterContext context)
     {
         var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
@@ -147,13 +150,8 @@ internal sealed class CharacterPlugin : BaseAgent
                 """;
     }
 
-    [KernelFunction("emulate_character_action")]
-    [Description(
-        "Emulate a character's action based on the character's personality, motivations, and the current situation. Use this to generate character dialogue, actions, reactions, or decisions that are consistent with their established traits and the narrative context.")]
     public async Task<string> EmulateCharacterAction(
-        [Description("The current situation or context in which the character is acting")]
         string situation,
-        [Description("The name of the character whose action is to be emulated. Use exactly the same name as defined in the character context.")]
         string characterName)
     {
         _logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
@@ -166,10 +164,9 @@ internal sealed class CharacterPlugin : BaseAgent
         (CharacterContext characterContext, ChatHistory chatHistory) = ctx;
         Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
 
-        var kgPlugin = new CharacterNarrativePlugin(_ragSearch, new CallerContext(GetType(), _generationContext.AdventureId), characterContext.CharacterId);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(kgPlugin));
-        var relationShipPlugin = new CharacterRelationshipPlugin(characterContext, _logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(relationShipPlugin));
+        var callerContext = new CallerContext(GetType(), _generationContext.AdventureId);
+        await _pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
+        await _pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
 
         Kernel kernelWithKg = kernel.Build();
         var chat = new ChatHistory();
@@ -183,7 +180,7 @@ internal sealed class CharacterPlugin : BaseAgent
         var response = await _agentKernel.SendRequestAsync(chat,
             outputFunc,
             _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
-            $"{nameof(CharacterPlugin)}:{characterName}",
+            $"{nameof(CharacterAgent)}:{characterName}",
             kernelWithKg,
             CancellationToken.None);
         _logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);

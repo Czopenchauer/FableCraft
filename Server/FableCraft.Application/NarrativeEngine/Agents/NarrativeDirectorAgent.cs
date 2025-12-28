@@ -1,6 +1,7 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -13,8 +14,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -23,7 +22,7 @@ internal sealed class NarrativeDirectorAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IAgentKernel agentKernel,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch,
+    IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory), IProcessor
 {
     private const int SceneContextCount = 20;
@@ -90,12 +89,9 @@ internal sealed class NarrativeDirectorAgent(
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
-        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
-        var mainCharacterPlugin = new MainCharacterNarrativePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
-        var characterState = new CharacterStatePlugin(context.Characters, logger);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterState));
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<CharacterStatePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<NarrativeDirectorOutput>("narrative_scene_directive");

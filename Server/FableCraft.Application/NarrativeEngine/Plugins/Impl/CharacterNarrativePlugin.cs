@@ -5,32 +5,22 @@ using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
 
-namespace FableCraft.Application.NarrativeEngine.Plugins;
+namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
 ///     Plugin providing NPC character narrative knowledge graph search capabilities.
 ///     Use this to search for NPC-specific information, memories, relationships, and narrative history.
 ///     This plugin is intended for CharacterReflectionAgent, CharacterTrackerAgent, and CharacterStateAgent only.
 /// </summary>
-internal class CharacterNarrativePlugin
+internal class CharacterNarrativePlugin : CharacterPluginBase
 {
-    private readonly CallerContext _callerContext;
-    private readonly Guid _characterId;
     private readonly IRagSearch _ragSearch;
     private const int MaxQueries = 10;
     private int _queryCount;
 
-    /// <summary>
-    ///     Creates a plugin for searching NPC character narrative data.
-    /// </summary>
-    /// <param name="ragSearch">The RAG search service</param>
-    /// <param name="callerContext">The caller context with adventure information</param>
-    /// <param name="characterId">The character ID to search narrative data for</param>
-    public CharacterNarrativePlugin(IRagSearch ragSearch, CallerContext callerContext, Guid characterId)
+    public CharacterNarrativePlugin(IRagSearch ragSearch)
     {
         _ragSearch = ragSearch;
-        _callerContext = callerContext;
-        _characterId = characterId;
     }
 
     [KernelFunction("search_character_narrative")]
@@ -49,11 +39,11 @@ internal class CharacterNarrativePlugin
 
         var datasets = new List<string>
         {
-            RagClientExtensions.GetCharacterDatasetName(_callerContext.AdventureId, _characterId)
+            RagClientExtensions.GetCharacterDatasetName(CallerContext!.AdventureId, CharacterId)
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
-        var results = await _ragSearch.SearchAsync(_callerContext, datasets, queryCombined);
+        var results = await _ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
 
         if (!results.Any() || results.All(r => !r.Response.Results.Any()))
         {

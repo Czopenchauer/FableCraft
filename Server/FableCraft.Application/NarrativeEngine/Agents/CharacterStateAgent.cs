@@ -1,6 +1,7 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -10,8 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -20,7 +19,7 @@ internal sealed class CharacterStateAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterStateAgent;
 
@@ -58,8 +57,8 @@ internal sealed class CharacterStateAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterStats>("character_profile", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var characterPlugin = new CharacterNarrativePlugin(ragSearch, new CallerContext(GetType(), generationContext.AdventureId), context.CharacterId);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
+        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

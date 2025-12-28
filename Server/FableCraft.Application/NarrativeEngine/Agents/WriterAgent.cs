@@ -1,6 +1,7 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -11,8 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using Serilog;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -20,18 +19,15 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class WriterAgent : BaseAgent, IProcessor
 {
     private readonly IAgentKernel _agentKernel;
-    private readonly ILogger _logger;
-    private readonly IRagSearch _ragSearch;
+    private readonly IPluginFactory _pluginFactory;
 
     public WriterAgent(IAgentKernel agentKernel,
-        ILogger logger,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         KernelBuilderFactory kernelBuilderFactory,
-        IRagSearch ragSearch) : base(dbContextFactory, kernelBuilderFactory)
+        IPluginFactory pluginFactory) : base(dbContextFactory, kernelBuilderFactory)
     {
         _agentKernel = agentKernel;
-        _logger = logger;
-        _ragSearch = ragSearch;
+        _pluginFactory = pluginFactory;
     }
 
     private const int SceneContextCount = 15;
@@ -91,13 +87,9 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
-        var worldPlugin = new WorldKnowledgePlugin(_ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
-        var mainCharacterPlugin = new MainCharacterNarrativePlugin(_ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(mainCharacterPlugin));
-        var characterPlugin = new CharacterPlugin(_agentKernel, _logger, DbContextFactory, KernelBuilderFactory, _ragSearch);
-        await characterPlugin.Setup(context);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
+        await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");

@@ -5,23 +5,21 @@ using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
 
-namespace FableCraft.Application.NarrativeEngine.Plugins;
+namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
 ///     Plugin providing main character (player character) narrative knowledge graph search capabilities.
 ///     Use this to search for main character-specific information, memories, goals, and narrative history.
 /// </summary>
-internal class MainCharacterNarrativePlugin
+internal class MainCharacterNarrativePlugin : PluginBase
 {
-    private readonly CallerContext _callerContext;
     private readonly IRagSearch _ragSearch;
     private const int MaxQueries = 10;
     private int _queryCount;
 
-    public MainCharacterNarrativePlugin(IRagSearch ragSearch, CallerContext callerContext)
+    public MainCharacterNarrativePlugin(IRagSearch ragSearch)
     {
         _ragSearch = ragSearch;
-        _callerContext = callerContext;
     }
 
     [KernelFunction("search_main_character_narrative")]
@@ -40,11 +38,11 @@ internal class MainCharacterNarrativePlugin
 
         var datasets = new List<string>
         {
-            RagClientExtensions.GetMainCharacterDatasetName(_callerContext.AdventureId)
+            RagClientExtensions.GetMainCharacterDatasetName(CallerContext!.AdventureId)
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
-        var results = await _ragSearch.SearchAsync(_callerContext, datasets, queryCombined);
+        var results = await _ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
 
         if (!results.Any() || results.All(r => !r.Response.Results.Any()))
         {

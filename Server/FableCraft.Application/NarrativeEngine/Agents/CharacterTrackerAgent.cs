@@ -3,6 +3,7 @@ using System.Text.Json;
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
@@ -12,8 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -22,7 +21,7 @@ internal sealed class CharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IRagSearch ragSearch) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
@@ -61,10 +60,8 @@ internal sealed class CharacterTrackerAgent(
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
-        var worldPlugin = new WorldKnowledgePlugin(ragSearch, callerContext);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(worldPlugin));
-        var characterPlugin = new CharacterNarrativePlugin(ragSearch, callerContext, context.CharacterId);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(characterPlugin));
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
+        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         Kernel kernelWithKg = kernel.Build();
 
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
