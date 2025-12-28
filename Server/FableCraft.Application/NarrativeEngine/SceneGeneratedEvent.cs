@@ -115,6 +115,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 }
 
                 var sceneContent = $"""
+                                    Scene Sequence Number: {scene.SequenceNumber}
                                     Main character is: {scene.Metadata.Tracker!.MainCharacter!.MainCharacter!.Name}
                                     Time: {scene.Metadata.Tracker.Story!.Time}
                                     Location: {scene.Metadata.Tracker.Story!.Location}
@@ -152,6 +153,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     .ForEach(x =>
                     {
                         var content = $"""
+                                       Scene Sequence Number: {x.SequenceNumber}
                                        Character: {characters.Single(y => y.Id == x.CharacterId).Name}
                                        Time: {x.StoryTracker.Time}
                                        Location: {x.StoryTracker.Location}

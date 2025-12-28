@@ -319,6 +319,7 @@ internal sealed class SceneGenerationOrchestrator(
         }
 
         scene = await dbContext.Scenes
+            .AsNoTracking()
             .Where(s => s.AdventureId == adventureId)
             .OrderByDescending(x => x.SequenceNumber)
             .Take(1)

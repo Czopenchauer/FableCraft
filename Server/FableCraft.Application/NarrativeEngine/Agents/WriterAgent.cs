@@ -13,8 +13,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using static FableCraft.Infrastructure.Clients.RagClientExtensions;
-
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -80,10 +78,10 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
+                             {GetStyleGuide(context)}
+
                              Your new instructions:
                              {PromptSections.SceneDirection(context.NewNarrativeDirection!.WriterInstructions)}
-                             
-                             {GetStyleGuide(context)}
 
                              {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
 
@@ -114,14 +112,16 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         context.NewScene = newScene;
     }
-    
+
     private static string GetStyleGuide(GenerationContext context)
     {
-        if (!string.IsNullOrEmpty(context.AuthorNotes))
+        if (File.Exists(Path.Combine(context.PromptPath, "StoryBible.md")))
         {
+            var content = File.ReadAllText(Path.Combine(context.PromptPath, "StoryBible.md"));
             return $"""
-                     Style Guide for the adventure:
-                     {context.AuthorNotes}
+                     <story_bible>
+                     {content}
+                     </story_bible>
                     """;
         }
 

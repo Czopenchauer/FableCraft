@@ -68,9 +68,9 @@ internal sealed class NarrativeDirectorAgent(
         if (hasSceneContext)
         {
             requestPrompt = $"""
-                             {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata.NarrativeTracking)}
-
                              {GetStyleGuide(context)}
+                             
+                             {PromptSections.LastSceneNarrativeDirection(lastScene?.Metadata.NarrativeMetadata.NarrativeTracking)}
                              
                              The {context.MainCharacter.Name} action in the last scene was:
                              {PromptSections.PlayerAction(context.PlayerAction)}
@@ -113,12 +113,14 @@ internal sealed class NarrativeDirectorAgent(
 
     private static string GetStyleGuide(GenerationContext context)
     {
-        if (!string.IsNullOrEmpty(context.AuthorNotes))
+        if (File.Exists(Path.Combine(context.PromptPath, "StoryBible.md")))
         {
+            var content = File.ReadAllText(Path.Combine(context.PromptPath, "StoryBible.md"));
             return $"""
-                    Style Guide for the adventure:
-                    {context.AuthorNotes}
-                   """;
+                     <story_bible>
+                     {content}
+                     </story_bible>
+                    """;
         }
 
         return string.Empty;
