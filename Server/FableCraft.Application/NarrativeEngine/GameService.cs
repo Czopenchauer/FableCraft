@@ -33,10 +33,6 @@ public class SubmitActionRequest
 
 public class RegenerateEnrichmentRequest
 {
-    public Guid AdventureId { get; init; }
-
-    public Guid SceneId { get; init; }
-
     public List<string> AgentsToRegenerate { get; init; } = new();
 }
 

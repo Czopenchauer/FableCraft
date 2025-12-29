@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
+using Anthropic;
+
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.ServiceDefaults;
 
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
@@ -20,10 +23,38 @@ public interface IKernelBuilder
     PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings();
 }
 
-public static class LlmProviders
+public readonly struct LlmProvider : IEquatable<LlmProvider>
 {
-    public const string OpenAi = "openai";
-    public const string Gemini = "gemini";
+    public readonly static LlmProvider OpenAi = new("openai");
+    public readonly static LlmProvider Gemini = new("gemini");
+    public readonly static LlmProvider Anthropic = new("anthropic");
+
+    public string Value { get; }
+
+    private LlmProvider(string value) => Value = value;
+
+    public static LlmProvider FromString(string value) =>
+        value.ToLowerInvariant() switch
+        {
+            "openai" => OpenAi,
+            "gemini" => Gemini,
+            "anthropic" => Anthropic,
+            _ => OpenAi
+        };
+
+    public override string ToString() => Value;
+
+    public override int GetHashCode() => Value.GetHashCode();
+
+    public override bool Equals(object? obj) => obj is LlmProvider other && Equals(other);
+
+    public bool Equals(LlmProvider other) => Value == other.Value;
+
+    public static bool operator ==(LlmProvider left, LlmProvider right) => left.Equals(right);
+
+    public static bool operator !=(LlmProvider left, LlmProvider right) => !left.Equals(right);
+
+    public static implicit operator string(LlmProvider provider) => provider.Value;
 }
 
 public sealed class KernelBuilderFactory
@@ -37,13 +68,14 @@ public sealed class KernelBuilderFactory
 
     public IKernelBuilder Create(LlmPreset preset)
     {
-        return preset.Provider.ToLowerInvariant() switch
-               {
-                   LlmProviders.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
-                   // ReSharper disable once RedundantSwitchExpressionArms
-                   LlmProviders.OpenAi => new OpenAiKernelBuilder(preset, _loggerFactory),
-                   _ => new OpenAiKernelBuilder(preset, _loggerFactory)
-               };
+        var provider = LlmProvider.FromString(preset.Provider);
+
+        return provider switch
+        {
+            _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
+            _ when provider == LlmProvider.Anthropic => new AnthropicKernelBuilder(preset, _loggerFactory),
+            _ => new OpenAiKernelBuilder(preset, _loggerFactory)
+        };
     }
 }
 
@@ -174,7 +206,12 @@ internal class GeminiKernelBuilder : IKernelBuilder
             Temperature = _preset.Temperature,
             TopP = _preset.TopP,
             TopK = _preset.TopK,
-            SafetySettings = DefaultSafetySettings
+            SafetySettings = DefaultSafetySettings,
+            ThinkingConfig = new GeminiThinkingConfig()
+            {
+                IncludeThoughts =  true,
+                ThinkingBudget = 24000
+            }
         };
     }
 
@@ -187,7 +224,77 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             TopK = _preset.TopK,
             ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
-            SafetySettings = DefaultSafetySettings
+            SafetySettings = DefaultSafetySettings,
+            ThinkingConfig = new GeminiThinkingConfig()
+            {
+                IncludeThoughts =  true,
+                ThinkingBudget = 24000
+            }
+        };
+    }
+}
+
+internal class AnthropicKernelBuilder : IKernelBuilder
+{
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly LlmPreset _preset;
+
+    public AnthropicKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
+    {
+        _loggerFactory = loggerFactory;
+        _preset = preset;
+    }
+
+    public Microsoft.SemanticKernel.IKernelBuilder Create()
+    {
+        var anthropicClient = new AnthropicClient
+        {
+            APIKey = _preset.ApiKey,
+            Timeout = TimeSpan.FromMinutes(10)
+        };
+
+        IChatClient chatClient = anthropicClient
+            .AsIChatClient(_preset.Model)
+            .AsBuilder()
+            .UseFunctionInvocation()
+            .Build();
+
+        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel.CreateBuilder();
+        builder.Services.AddChatClient(chatClient);
+        builder.Services.AddSingleton(_loggerFactory);
+
+        return builder;
+    }
+
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
+    {
+        return new PromptExecutionSettings
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
+            ExtensionData = new Dictionary<string, object>
+            {
+                ["max_tokens"] = _preset.MaxTokens,
+                ["temperature"] = _preset.Temperature ?? 1.0,
+                ["top_p"] = _preset.TopP ?? 1.0
+            }
+        };
+    }
+
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
+    {
+        return new PromptExecutionSettings
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
+            {
+                AllowConcurrentInvocation = true,
+                AllowParallelCalls = true
+            }),
+            ExtensionData = new Dictionary<string, object>
+            {
+                ["max_tokens"] = _preset.MaxTokens,
+                ["temperature"] = _preset.Temperature ?? 1.0,
+                ["top_p"] = _preset.TopP ?? 1.0
+            }
         };
     }
 }
