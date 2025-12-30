@@ -211,6 +211,34 @@ internal static class PromptSections
                 """;
     }
 
+    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters, IEnumerable<CharacterContext>? extendedCharacters = null)
+    {
+        var names = string.Join("\n- ",
+            characters.Select(c => c.Name));
+
+        var profiles = string.Join("\n",
+            characters.Select(c =>
+                $"""
+                 <profile name="{c.Name}">
+                 {c.Description}
+                 </profile>
+                 """
+            ));
+
+        return $"""
+                ## Profiled Characters for Emulation
+
+                The following characters have full profiles. You MUST call `emulate_character_action()` before writing ANY speech, action, or reaction from these characters.
+
+                **EMULATION LIST (call function for these):**{names}
+
+                ---
+
+                <character_profiles>{profiles}
+                                     </character_profiles>
+                """;
+    }
+
     public static string CharacterStateContext(CharacterContext context, bool ignoreNull = true)
     {
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
@@ -336,6 +364,8 @@ internal static class PromptSections
 
     public static string NewLocations<T>(T[]? locations, bool ignoreNull = false)
     {
+        if (locations == null || locations.Length == 0) return string.Empty;
+
         return $"""
                 <new_locations>
                 {(locations ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
@@ -345,6 +375,8 @@ internal static class PromptSections
 
     public static string NewLore<T>(T[]? lore, bool ignoreNull = false)
     {
+        if (lore == null || lore.Length == 0) return string.Empty;
+
         return $"""
                 <new_lore>
                 {(lore ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
@@ -381,6 +413,8 @@ internal static class PromptSections
 
     public static string NewItems(GeneratedItem[]? items, bool ignoreNull = false)
     {
+        if (items == null || items.Length == 0) return string.Empty;
+
         return $"""
                 <new_items>
                 {(items ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
@@ -508,13 +542,14 @@ internal static class PromptSections
         }
 
         var potentialProfiles = observations.PotentialProfiles.Length > 0
-            ? string.Join("\n", observations.PotentialProfiles.Select(p => $"""
-                - **{p.Name}** ({p.Role}): {p.Reason}
-                  - Appearance: {p.EstablishedDetails.Appearance}
-                  - Personality: {p.EstablishedDetails.Personality}
-                  - Background: {p.EstablishedDetails.Background}
-                  - Relationship: {p.EstablishedDetails.RelationshipSeed}
-                """))
+            ? string.Join("\n",
+                observations.PotentialProfiles.Select(p => $"""
+                                                            - **{p.Name}** ({p.Role}): {p.Reason}
+                                                              - Appearance: {p.EstablishedDetails.Appearance}
+                                                              - Personality: {p.EstablishedDetails.Personality}
+                                                              - Background: {p.EstablishedDetails.Background}
+                                                              - Relationship: {p.EstablishedDetails.RelationshipSeed}
+                                                            """))
             : "No potential profiles identified.";
 
         var recurringNpcs = observations.RecurringNpcs.Length > 0

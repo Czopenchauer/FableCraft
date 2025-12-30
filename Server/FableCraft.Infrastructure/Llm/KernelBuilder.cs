@@ -206,12 +206,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             Temperature = _preset.Temperature,
             TopP = _preset.TopP,
             TopK = _preset.TopK,
-            SafetySettings = DefaultSafetySettings,
-            ThinkingConfig = new GeminiThinkingConfig()
-            {
-                IncludeThoughts =  true,
-                ThinkingBudget = 24000
-            }
+            SafetySettings = DefaultSafetySettings
         };
     }
 
@@ -224,12 +219,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             TopK = _preset.TopK,
             ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
-            SafetySettings = DefaultSafetySettings,
-            ThinkingConfig = new GeminiThinkingConfig()
-            {
-                IncludeThoughts =  true,
-                ThinkingBudget = 24000
-            }
+            SafetySettings = DefaultSafetySettings
         };
     }
 }

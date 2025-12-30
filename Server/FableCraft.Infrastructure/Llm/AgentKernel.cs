@@ -116,7 +116,7 @@ internal sealed class AgentKernel : IAgentKernel
                                          var stopwatch = Stopwatch.StartNew();
                                          ChatMessageContent result =
                                              await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                                         _logger.Debug("Generated response: {response}", JsonSerializer.Serialize(result));
+                                         _logger.Information("Generated response: {response}", JsonSerializer.Serialize(result));
                                          var replyInnerContent = result.InnerContent as ChatCompletion;
                                          _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
                                              replyInnerContent?.Usage.InputTokenCount,

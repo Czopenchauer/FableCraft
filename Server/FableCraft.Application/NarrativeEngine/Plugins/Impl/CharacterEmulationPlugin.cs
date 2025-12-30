@@ -31,11 +31,14 @@ internal sealed class CharacterEmulationPlugin : PluginBase
     [Description(
         "Emulate a character's action based on the character's personality, motivations, and the current situation. Use this to generate character dialogue, actions, reactions, or decisions that are consistent with their established traits and the narrative context.")]
     public async Task<string> EmulateCharacterActionAsync(
-        [Description("The current situation or context in which the character is acting")]
-        string situation,
         [Description("The name of the character whose action is to be emulated. Use exactly the same name as defined in the character context.")]
-        string characterName)
+        string characterName,
+        [Description("What just happened requiring response")]
+        string stimulus,
+        [Description("\"What do they do?\" / \"What do they say?\" / \"How do they react?\"")]
+        string query
+    )
     {
-        return await _characterAgent.EmulateCharacterAction(situation, characterName);
+        return await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
     }
 }

@@ -48,6 +48,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.WorldSettings)}
 
+                             {PromptSections.CharacterForEmulation(context.Characters)}
+
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
@@ -60,8 +62,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
                              {PromptSections.NewCharacterRequests(context.NewNarrativeDirection?.CreationRequests.Characters)}
-
-                             {PromptSections.ExistingCharacters(context.Characters)}
 
                              {PromptSections.Context(context)}
 

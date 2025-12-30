@@ -152,6 +152,7 @@ internal sealed class CharacterAgent : BaseAgent
 
     public async Task<string> EmulateCharacterAction(
         string situation,
+        string query,
         string characterName)
     {
         _logger.Information("Emulating action for character {CharacterName} in situation: {Situation}", characterName, situation);
@@ -176,6 +177,7 @@ internal sealed class CharacterAgent : BaseAgent
         }
 
         chat.AddUserMessage(situation);
+        chat.AddUserMessage(query);
         var outputFunc = new Func<string, string>(response => response);
         var response = await _agentKernel.SendRequestAsync(chat,
             outputFunc,
