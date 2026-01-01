@@ -17,7 +17,7 @@ public class SceneConfiguration : IEntityTypeConfiguration<Scene>
         builder.Property(x => x.Metadata).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<Metadata>(x, options)!);
-        builder.HasIndex(x => new { x.AdventureId, x.SequenceNumber });
+        builder.HasIndex(x => new { x.AdventureId, x.SequenceNumber }).IsUnique();
         builder.HasIndex(x => new { x.Id, x.SequenceNumber, x.CommitStatus });
     }
 }
