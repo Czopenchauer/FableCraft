@@ -31,8 +31,30 @@
       <div *ngIf="!isLoading" class="modal-body lore-body">
         <!-- Left Column: Sidebar with Category Groups -->
         <div class="lore-sidebar">
-          <!-- Empty state when no entries -->
-          <div *ngIf="categoryGroups.length === 0" class="empty-state">
+          <!-- World Settings Section -->
+          <div *ngIf="worldSettings" class="category-group world-settings-group">
+            <div (click)="toggleWorldSettings()" class="category-header">
+              <svg [class.expanded]="showWorldSettings" class="chevron-icon" viewBox="0 0 24 24">
+                <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              </svg>
+              <span class="category-name">World Settings</span>
+              <svg class="world-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"/>
+              </svg>
+            </div>
+            <div *ngIf="showWorldSettings" class="category-entries">
+              <div
+                (click)="selectWorldSettings()"
+                [class.selected]="isWorldSettingsSelected"
+                class="entry-item world-settings-item"
+              >
+                <span class="entry-title">View World Settings</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty state when no entries and no world settings -->
+          <div *ngIf="categoryGroups.length === 0 && !worldSettings" class="empty-state">
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="empty-icon" viewBox="0 0 24 24">
               <path [attr.d]="'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="1.5"></path>
             </svg>
@@ -65,11 +87,22 @@
         <!-- Right Column: Entry Details -->
         <div class="lore-detail">
           <!-- Empty state when no entry selected -->
-          <div *ngIf="!selectedEntry" class="no-selection">
+          <div *ngIf="!selectedEntry && !isWorldSettingsSelected" class="no-selection">
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="no-selection-icon" viewBox="0 0 24 24">
               <path [attr.d]="'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="1.5"></path>
             </svg>
             <p>Select a lore entry to view details</p>
+          </div>
+
+          <!-- World Settings Details -->
+          <div *ngIf="isWorldSettingsSelected" class="entry-detail world-settings-detail">
+            <h3 class="detail-title">
+              <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"/>
+              </svg>
+              World Settings
+            </h3>
+            <div class="world-settings-content markdown-content" [innerHTML]="worldSettings | markdown"></div>
           </div>
 
           <!-- Entry details -->
@@ -99,7 +132,7 @@
 
             <div *ngIf="selectedEntry.title && selectedEntry.description" class="entry-description">
               <strong>Description:</strong>
-              <p>{{ selectedEntry.description }}</p>
+              <div class="markdown-content" [innerHTML]="selectedEntry.description | markdown"></div>
             </div>
 
             <!-- Content Section -->

@@ -15,11 +15,13 @@ export class LoreManagementModalComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();
 
   isLoading = false;
+  worldSettings: string | null = null;
   entries: LorebookEntryResponseDto[] = [];
   categoryGroups: LorebookCategoryGroup[] = [];
   selectedEntry: LorebookEntryResponseDto | null = null;
   parsedJsonContent: any = null;
   jsonParseError = false;
+  showWorldSettings = true;
 
   constructor(
     private lorebookEntryService: LorebookEntryService,
@@ -40,9 +42,10 @@ export class LoreManagementModalComponent implements OnChanges {
 
     this.isLoading = true;
 
-    this.lorebookEntryService.getEntriesByAdventure(this.adventureId).subscribe({
-      next: (entries) => {
-        this.entries = entries;
+    this.lorebookEntryService.getAdventureLore(this.adventureId).subscribe({
+      next: (response) => {
+        this.worldSettings = response.worldSettings;
+        this.entries = response.entries;
         this.groupEntriesByCategory();
         this.isLoading = false;
       },
@@ -112,14 +115,30 @@ export class LoreManagementModalComponent implements OnChanges {
   }
 
   private resetState(): void {
+    this.worldSettings = null;
     this.entries = [];
     this.categoryGroups = [];
     this.selectedEntry = null;
     this.parsedJsonContent = null;
     this.jsonParseError = false;
+    this.showWorldSettings = true;
   }
 
   getDisplayTitle(entry: LorebookEntryResponseDto): string {
     return entry.title || entry.description || 'Untitled';
+  }
+
+  toggleWorldSettings(): void {
+    this.showWorldSettings = !this.showWorldSettings;
+  }
+
+  selectWorldSettings(): void {
+    this.selectedEntry = null;
+    this.parsedJsonContent = null;
+    this.jsonParseError = false;
+  }
+
+  get isWorldSettingsSelected(): boolean {
+    return this.selectedEntry === null && this.worldSettings !== null;
   }
 }

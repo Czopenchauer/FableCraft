@@ -25,3 +25,10 @@ public class LorebookEntryResponseDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ContentType ContentType { get; init; }
 }
+
+public class AdventureLoreResponseDto
+{
+    public string? WorldSettings { get; init; }
+
+    public List<LorebookEntryResponseDto> Entries { get; init; } = [];
+}

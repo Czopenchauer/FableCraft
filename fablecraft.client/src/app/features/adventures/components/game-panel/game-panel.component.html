@@ -370,7 +370,7 @@
           <!-- Scene Narrative -->
           <div class="scene-container">
             <div class="scene-narrative">
-              <p class="narrative-text">{{ currentScene.text }}</p>
+              <div class="narrative-text markdown-content" [innerHTML]="currentScene.text | markdown"></div>
             </div>
           </div>
 

@@ -18,19 +18,21 @@ public class LorebookEntryController : ControllerBase
     }
 
     /// <summary>
-    /// Get all lorebook entries for an adventure
+    /// Get all lorebook entries for an adventure including world settings
     /// </summary>
     [HttpGet("adventure/{adventureId:guid}")]
-    [ProducesResponseType(typeof(IEnumerable<LorebookEntryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AdventureLoreResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IEnumerable<LorebookEntryResponseDto>>> GetByAdventure(
+    public async Task<ActionResult<AdventureLoreResponseDto>> GetByAdventure(
         Guid adventureId,
         CancellationToken cancellationToken)
     {
-        bool adventureExists = await _dbContext.Adventures
-            .AnyAsync(a => a.Id == adventureId, cancellationToken);
+        var adventure = await _dbContext.Adventures
+            .Where(a => a.Id == adventureId)
+            .Select(a => new { a.WorldSettings })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!adventureExists)
+        if (adventure == null)
         {
             return NotFound(new { error = "Adventure not found" });
         }
@@ -53,7 +55,11 @@ public class LorebookEntryController : ControllerBase
             })
             .ToListAsync(cancellationToken);
 
-        return Ok(entries);
+        return Ok(new AdventureLoreResponseDto
+        {
+            WorldSettings = adventure.WorldSettings,
+            Entries = entries
+        });
     }
 
     /// <summary>

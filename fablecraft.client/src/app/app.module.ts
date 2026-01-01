@@ -24,6 +24,7 @@ import { MenubarComponent } from './shared/components/menubar/menubar.component'
 import { LlmPresetManagerComponent } from './features/adventures/components/llm-preset-manager/llm-preset-manager.component';
 import { DirectoryBrowserComponent } from './shared/components/directory-browser/directory-browser.component';
 import { LoreManagementModalComponent } from './features/adventures/components/lore-management-modal/lore-management-modal.component';
+import { MarkdownPipe } from './shared/pipes/markdown.pipe';
 
 @NgModule({
   declarations: [
@@ -48,7 +49,8 @@ import { LoreManagementModalComponent } from './features/adventures/components/l
     AppRoutingModule,
     ReactiveFormsModule,
     FormsModule,
-    JsonRendererComponent
+    JsonRendererComponent,
+    MarkdownPipe
   ],
   providers: [provideHttpClient()],
   bootstrap: [AppComponent]

@@ -10,6 +10,11 @@ export interface LorebookEntryResponseDto {
   contentType: 'json' | 'txt';
 }
 
+export interface AdventureLoreResponseDto {
+  worldSettings: string | null;
+  entries: LorebookEntryResponseDto[];
+}
+
 export interface LorebookCategoryGroup {
   category: string;
   entries: LorebookEntryResponseDto[];

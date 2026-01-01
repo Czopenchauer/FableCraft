@@ -637,7 +637,6 @@
   line-height: 1.8;
   color: var(--text-primary);
   margin: 0;
-  white-space: pre-wrap;
   word-wrap: break-word;
   text-align: justify;
 }
@@ -648,6 +647,97 @@
 
 [data-theme="modern-dark"] .narrative-text {
   font-family: var(--font-family-primary);
+}
+
+/* Markdown content in narrative */
+.narrative-text.markdown-content p {
+  margin: 0 0 var(--spacing-md) 0;
+  text-align: justify;
+}
+
+.narrative-text.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.narrative-text.markdown-content h1,
+.narrative-text.markdown-content h2,
+.narrative-text.markdown-content h3,
+.narrative-text.markdown-content h4,
+.narrative-text.markdown-content h5,
+.narrative-text.markdown-content h6 {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family-heading);
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.narrative-text.markdown-content h1:first-child,
+.narrative-text.markdown-content h2:first-child,
+.narrative-text.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+.narrative-text.markdown-content ul,
+.narrative-text.markdown-content ol {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-xl);
+  text-align: left;
+}
+
+.narrative-text.markdown-content li {
+  margin: var(--spacing-xs) 0;
+}
+
+.narrative-text.markdown-content blockquote {
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: left;
+}
+
+.narrative-text.markdown-content em {
+  font-style: italic;
+}
+
+.narrative-text.markdown-content strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.narrative-text.markdown-content code {
+  font-family: var(--font-family-mono, monospace);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+}
+
+.narrative-text.markdown-content pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--spacing-md) 0;
+  text-align: left;
+}
+
+.narrative-text.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.narrative-text.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: var(--spacing-lg) 0;
+}
+
+.narrative-text.markdown-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
 /* Add decorative elements for medieval theme */

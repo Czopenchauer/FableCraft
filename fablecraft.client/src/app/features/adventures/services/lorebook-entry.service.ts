@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {LorebookEntryResponseDto} from '../models/lorebook-entry.model';
+import {AdventureLoreResponseDto, LorebookEntryResponseDto} from '../models/lorebook-entry.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -14,10 +14,10 @@ export class LorebookEntryService {
   }
 
   /**
-   * Get all lorebook entries for an adventure
+   * Get all lorebook entries for an adventure including world settings
    */
-  getEntriesByAdventure(adventureId: string): Observable<LorebookEntryResponseDto[]> {
-    return this.http.get<LorebookEntryResponseDto[]>(`${this.apiUrl}/adventure/${adventureId}`);
+  getAdventureLore(adventureId: string): Observable<AdventureLoreResponseDto> {
+    return this.http.get<AdventureLoreResponseDto>(`${this.apiUrl}/adventure/${adventureId}`);
   }
 
   /**

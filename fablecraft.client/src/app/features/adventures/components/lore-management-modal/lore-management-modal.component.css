@@ -191,6 +191,36 @@
   font-size: var(--font-size-sm);
 }
 
+/* World Settings Group */
+.world-settings-group {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.world-settings-group .category-header {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="modern-dark"] .world-settings-group .category-header {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="medieval-fantasy"] .world-settings-group .category-header {
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.world-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.world-settings-item {
+  font-style: italic;
+}
+
 /* Category Groups */
 .category-group {
   margin-bottom: var(--spacing-sm);
@@ -473,6 +503,115 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+}
+
+/* World Settings Detail */
+.world-settings-detail .detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.title-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+}
+
+.world-settings-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+/* Markdown Content */
+.markdown-content {
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family-heading);
+  color: var(--text-primary);
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+.markdown-content p {
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.markdown-content li {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content code {
+  font-family: var(--font-family-mono, monospace);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.markdown-content pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.markdown-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.markdown-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: var(--spacing-lg) 0;
 }
 
 /* Responsive */
