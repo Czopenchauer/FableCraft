@@ -64,11 +64,12 @@ internal static class PromptSections
         }
 
         var scenes = sceneContext
-            .OrderBy(x => x.SequenceNumber);
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(count);
 
         var formatted = string.Join("\n",
             scenes
-                .Take(count)
+                .OrderBy(x => x.SequenceNumber)
                 .Select(x => $"""
                               SCENE NUMBER: {x.SequenceNumber}
                               {x.SceneContent}
@@ -93,7 +94,6 @@ internal static class PromptSections
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
                               {s.SceneContent}
-                              {s.PlayerChoice}
                               """));
 
         return $"""

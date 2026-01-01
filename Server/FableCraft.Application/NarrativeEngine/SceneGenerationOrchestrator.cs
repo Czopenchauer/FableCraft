@@ -351,15 +351,12 @@ internal sealed class SceneGenerationOrchestrator(
 
         GenerationContext context = await BuildRegenerationContextFromScene(adventureId, scene, cancellationToken);
 
-        // Clear fields for agents that need to be regenerated
         ClearFieldsForAgents(context, agentsToRegenerate);
 
-        // Run ContentGenerator, TrackerProcessor, and ContextGatherer in parallel
         var parallelProcessors = new[]
         {
             processors.First(p => p is ContentGenerator),
-            processors.First(p => p is TrackerProcessor),
-            processors.First(p => p is ContextGatherer)
+            processors.First(p => p is TrackerProcessor)
         };
 
         var stopwatch = Stopwatch.StartNew();
