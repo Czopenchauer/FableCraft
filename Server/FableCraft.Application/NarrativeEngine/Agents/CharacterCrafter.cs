@@ -119,9 +119,11 @@ internal sealed class CharacterCrafter : BaseAgent
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
         var prompt = await GetPromptAsync(context);
+        var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.CharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
-            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
+            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            ("{{progression_system}}", progressionSystem));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

@@ -50,32 +50,6 @@ internal static class ResponseParser
         return response => ExtractJson<T>(response, tag, ignoreNull);
     }
 
-    /// <summary>
-    ///     Creates a parser function that extracts JSON and text from different tags
-    /// </summary>
-    public static Func<string, (T, string)> CreateJsonTextParser<T>(
-        string jsonTag, string textTag,
-        bool ignoreNull = false)
-    {
-        return response => (
-            ExtractJson<T>(response, jsonTag, ignoreNull),
-            ExtractText(response, textTag)
-        );
-    }
-
-    /// <summary>
-    ///     Creates a parser function that deserializes raw JSON response (no XML tag extraction)
-    /// </summary>
-    public static Func<string, T> CreateRawJsonParser<T>(bool ignoreNull = false)
-    {
-        return response =>
-        {
-            JsonSerializerOptions options = PromptSections.GetJsonOptions(ignoreNull);
-            return JsonSerializer.Deserialize<T>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                   ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
-        };
-    }
-
     private static string? ExtractTagContent(string response, string tag)
     {
         Match match = Regex.Match(response, $"<{tag}>(.*?)</{tag}>", RegexOptions.Singleline);

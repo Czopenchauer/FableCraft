@@ -113,12 +113,17 @@ internal sealed class InitMainCharacterTrackerAgent(
         var structure = context.TrackerStructure;
         var trackerPrompt = GetSystemPrompt(structure);
 
+        var storyBible = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "StoryBible.md"));
+        var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
+        
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
             (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
             ("{{world_setting}}", context.WorldSettings)!,
-            ("{{character_definition}}", context.MainCharacter.Description)!);
+            ("{{character_definition}}", context.MainCharacter.Description),
+            ("{{progression_system}}", progressionSystem),
+            ("{{story_bible}}", storyBible)!);
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

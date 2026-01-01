@@ -32,9 +32,11 @@ internal abstract class BaseAgent
             generationContext.PromptPath,
             $"{agentName}.md"
         );
+        var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
-        return await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
+        var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
+        return promp.Replace("{{story_bible}}", storyBible);
     }
 
     private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)

@@ -752,18 +752,43 @@ public class JsonExtensionsTests
     }
 
     [Test]
-    public async Task PatchWith_ArrayItemNotFound_ThrowsInvalidOperationException()
+    public async Task PatchWith_ArrayItemNotFound_AddsNewItem()
     {
         // Arrange
         var original = CreateCharacterWithSkills();
+        var newSkill = new Skill
+        {
+            SkillName = "Teleportation",
+            Category = "Spatial",
+            Proficiency = "Novice",
+            XP = new SkillXP
+            {
+                Current = "100",
+                NextThreshold = "500",
+                ToNext = "400"
+            },
+            ChallengeFloor = "Beginner",
+            Development = "Just learned",
+            RecentGains = "10:00: +100 XP - First attempt"
+        };
         var updates = new Dictionary<string, object>
         {
-            ["Skills[Nonexistent Skill]"] = new Skill { SkillName = "Nonexistent Skill" }
+            ["Skills[Teleportation]"] = newSkill
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Task.FromResult(original.PatchWith(updates)));
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - New skill should be added
+        await Assert.That(result.Skills!.Count).IsEqualTo(3);
+        var addedSkill = result.Skills!.SingleOrDefault(s => s.SkillName == "Teleportation");
+        await Assert.That(addedSkill).IsNotNull();
+        await Assert.That(addedSkill!.Category).IsEqualTo("Spatial");
+        await Assert.That(addedSkill.Proficiency).IsEqualTo("Novice");
+
+        // Assert - Existing skills unchanged
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).IsEqualTo("Always existed");
     }
 
     [Test]
@@ -1011,18 +1036,36 @@ public class JsonExtensionsTests
     }
 
     [Test]
-    public async Task PatchWith_NestedPathWithArrayAccess_ItemNotFound_ThrowsInvalidOperationException()
+    public async Task PatchWith_NestedPathWithArrayAccess_ItemNotFound_AddsNewItem()
     {
         // Arrange
         var original = CreateCharacterWithMagic();
+        var newAbility = new Ability
+        {
+            AbilityName = "Lightning Bolt",
+            Type = "Lightning",
+            Power = 175,
+            CooldownSeconds = 20,
+            Description = "Strikes with a bolt of lightning"
+        };
         var updates = new Dictionary<string, object>
         {
-            ["MagicAndAbilities.InstinctiveAbilities[Lightning Bolt]"] = new Ability { AbilityName = "Lightning Bolt" }
+            ["MagicAndAbilities.InstinctiveAbilities[Lightning Bolt]"] = newAbility
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Task.FromResult(original.PatchWith(updates)));
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - New ability should be added
+        await Assert.That(result.MagicAndAbilities!.InstinctiveAbilities!.Count).IsEqualTo(3);
+        var addedAbility = result.MagicAndAbilities.InstinctiveAbilities.SingleOrDefault(a => a.AbilityName == "Lightning Bolt");
+        await Assert.That(addedAbility).IsNotNull();
+        await Assert.That(addedAbility!.Type).IsEqualTo("Lightning");
+        await Assert.That(addedAbility.Power).IsEqualTo(175);
+
+        // Assert - Existing abilities unchanged
+        var fireBreath = result.MagicAndAbilities.InstinctiveAbilities.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(150);
     }
 
     [Test]
@@ -1038,6 +1081,100 @@ public class JsonExtensionsTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Task.FromResult(original.PatchWith(updates)));
+    }
+
+    [Test]
+    public async Task PatchWith_AddMultipleNewArrayItems_AddsAll()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Telekinesis]"] = new Skill
+            {
+                SkillName = "Telekinesis",
+                Category = "Mental",
+                Proficiency = "Novice"
+            },
+            ["Skills[Pyromancy]"] = new Skill
+            {
+                SkillName = "Pyromancy",
+                Category = "Elemental",
+                Proficiency = "Apprentice"
+            }
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Both new skills should be added
+        await Assert.That(result.Skills!.Count).IsEqualTo(4);
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Telekinesis")).IsTrue();
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Pyromancy")).IsTrue();
+
+        // Assert - Existing skills unchanged
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Consciousness Analysis")).IsTrue();
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Reality Manipulation")).IsTrue();
+    }
+
+    [Test]
+    public async Task PatchWith_MixedUpdateAndAddArrayItems_AppliesBoth()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            // Update existing
+            ["Skills[Consciousness Analysis].Development"] = "Updated development",
+            // Add new
+            ["Skills[Time Manipulation]"] = new Skill
+            {
+                SkillName = "Time Manipulation",
+                Category = "Temporal",
+                Proficiency = "Master"
+            }
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Existing skill updated
+        var consciousnessSkill = result.Skills!.Single(s => s.SkillName == "Consciousness Analysis");
+        await Assert.That(consciousnessSkill.Development).IsEqualTo("Updated development");
+
+        // Assert - New skill added
+        await Assert.That(result.Skills!.Count).IsEqualTo(3);
+        var newSkill = result.Skills!.SingleOrDefault(s => s.SkillName == "Time Manipulation");
+        await Assert.That(newSkill).IsNotNull();
+        await Assert.That(newSkill!.Category).IsEqualTo("Temporal");
+    }
+
+    [Test]
+    public async Task PatchWith_AddNewItemToEmptyArray_AddsItem()
+    {
+        // Arrange
+        var original = new CharacterWithSkills
+        {
+            Name = "Empty Skills Character",
+            Skills = []
+        };
+        var newSkill = new Skill
+        {
+            SkillName = "First Skill",
+            Category = "Basic",
+            Proficiency = "Beginner"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[First Skill]"] = newSkill
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        await Assert.That(result.Skills!.Count).IsEqualTo(1);
+        await Assert.That(result.Skills![0].SkillName).IsEqualTo("First Skill");
     }
 
     #endregion

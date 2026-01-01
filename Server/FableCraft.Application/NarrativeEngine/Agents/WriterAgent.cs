@@ -92,7 +92,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");
+        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("output");
 
         GeneratedScene newScene = await _agentKernel.SendRequestAsync(
             chatHistory,

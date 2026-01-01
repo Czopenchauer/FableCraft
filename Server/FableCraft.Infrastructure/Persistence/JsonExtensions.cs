@@ -66,17 +66,22 @@ public static partial class JsonExtensions
 
         if (arrayMatch.Success)
         {
-            // Final segment is array access like "Skills[Consciousness Analysis]"
             var arrayProperty = arrayMatch.Groups["property"].Value;
             var identifier = arrayMatch.Groups["identifier"].Value;
 
             var arrayNode = current[arrayProperty] as JsonArray
                 ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array");
 
-            var (itemIndex, _) = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
-
             var valueNode = value is null ? null : JsonSerializer.SerializeToNode(value, JsonSerializerOptions);
-            arrayNode[itemIndex] = valueNode;
+
+            if (TryFindArrayItemByIdentifier(arrayNode, identifier, out var itemIndex))
+            {
+                arrayNode[itemIndex] = valueNode;
+            }
+            else
+            {
+                arrayNode.Add(valueNode);
+            }
         }
         else if (current is JsonObject jsonObject)
         {
@@ -96,14 +101,13 @@ public static partial class JsonExtensions
 
         if (arrayMatch.Success)
         {
-            // Segment is array access like "Skills[Consciousness Analysis]"
             var arrayProperty = arrayMatch.Groups["property"].Value;
             var identifier = arrayMatch.Groups["identifier"].Value;
 
             var arrayNode = current[arrayProperty] as JsonArray
                 ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array or not found");
 
-            var (_, item) = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
+            var item = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
             return item;
         }
 
@@ -111,15 +115,27 @@ public static partial class JsonExtensions
             ?? throw new InvalidOperationException($"Path segment '{segment}' not found");
     }
 
-    private static (int Index, JsonNode Item) FindArrayItemByIdentifier(JsonArray array, string identifier, string arrayProperty)
+    private static bool TryFindArrayItemByIdentifier(JsonArray array, string identifier, out int index)
     {
         for (int i = 0; i < array.Count; i++)
         {
             var item = array[i];
             if (item is JsonObject obj && HasMatchingStringProperty(obj, identifier))
             {
-                return (i, item);
+                index = i;
+                return true;
             }
+        }
+
+        index = -1;
+        return false;
+    }
+
+    private static JsonNode FindArrayItemByIdentifier(JsonArray array, string identifier, string arrayProperty)
+    {
+        if (TryFindArrayItemByIdentifier(array, identifier, out var index))
+        {
+            return array[index]!;
         }
 
         throw new InvalidOperationException(
