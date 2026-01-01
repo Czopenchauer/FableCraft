@@ -1,0 +1,135 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Lore Management</h2>
+        <button
+          (click)="onClose()"
+          class="close-button"
+          title="Close"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <svg [attr.fill]="'none'" class="spinner" viewBox="0 0 24 24">
+          <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+          <path
+            [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+            [attr.fill]="'currentColor'"
+            class="opacity-75"></path>
+        </svg>
+        <p>Loading lore entries...</p>
+      </div>
+
+      <!-- Main Content - Two Column Layout -->
+      <div *ngIf="!isLoading" class="modal-body lore-body">
+        <!-- Left Column: Sidebar with Category Groups -->
+        <div class="lore-sidebar">
+          <!-- Empty state when no entries -->
+          <div *ngIf="categoryGroups.length === 0" class="empty-state">
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="empty-icon" viewBox="0 0 24 24">
+              <path [attr.d]="'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="1.5"></path>
+            </svg>
+            <p>No lore entries found for this adventure.</p>
+          </div>
+
+          <!-- Category groups -->
+          <div *ngFor="let group of categoryGroups" class="category-group">
+            <div (click)="toggleCategory(group.category)" class="category-header">
+              <svg [class.expanded]="group.isExpanded" class="chevron-icon" viewBox="0 0 24 24">
+                <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              </svg>
+              <span class="category-name">{{ group.category }}</span>
+              <span class="entry-count">({{ group.entries.length }})</span>
+            </div>
+            <div *ngIf="group.isExpanded" class="category-entries">
+              <div
+                (click)="selectEntry(entry)"
+                *ngFor="let entry of group.entries"
+                [class.selected]="selectedEntry?.id === entry.id"
+                class="entry-item"
+              >
+                <span class="entry-title">{{ getDisplayTitle(entry) }}</span>
+                <span *ngIf="entry.contentType === 'json'" class="entry-badge json-badge">JSON</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Entry Details -->
+        <div class="lore-detail">
+          <!-- Empty state when no entry selected -->
+          <div *ngIf="!selectedEntry" class="no-selection">
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="no-selection-icon" viewBox="0 0 24 24">
+              <path [attr.d]="'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="1.5"></path>
+            </svg>
+            <p>Select a lore entry to view details</p>
+          </div>
+
+          <!-- Entry details -->
+          <div *ngIf="selectedEntry" class="entry-detail">
+            <h3 class="detail-title">{{ getDisplayTitle(selectedEntry) }}</h3>
+
+            <div class="entry-meta">
+              <span class="meta-item">
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path [attr.d]="'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                {{ selectedEntry.category }}
+              </span>
+              <span class="meta-item">
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path [attr.d]="'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                Priority: {{ selectedEntry.priority }}
+              </span>
+              <span *ngIf="selectedEntry.sceneId" class="meta-item scene-specific">
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path [attr.d]="'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                Scene-specific
+              </span>
+            </div>
+
+            <div *ngIf="selectedEntry.title && selectedEntry.description" class="entry-description">
+              <strong>Description:</strong>
+              <p>{{ selectedEntry.description }}</p>
+            </div>
+
+            <!-- Content Section -->
+            <div class="entry-content">
+              <h4>Content</h4>
+
+              <!-- JSON content with collapsible tree -->
+              <div *ngIf="selectedEntry.contentType === 'json' && parsedJsonContent && !jsonParseError" class="json-content">
+                <app-json-renderer [data]="parsedJsonContent"></app-json-renderer>
+              </div>
+
+              <!-- JSON parse error fallback -->
+              <div *ngIf="selectedEntry.contentType === 'json' && jsonParseError" class="json-error">
+                <div class="error-message">
+                  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                    <path [attr.d]="'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  </svg>
+                  <span>Invalid JSON - showing raw content</span>
+                </div>
+                <pre class="text-content">{{ selectedEntry.content }}</pre>
+              </div>
+
+              <!-- Plain text content -->
+              <div *ngIf="selectedEntry.contentType === 'txt'" class="text-content-wrapper">
+                <pre class="text-content">{{ selectedEntry.content }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

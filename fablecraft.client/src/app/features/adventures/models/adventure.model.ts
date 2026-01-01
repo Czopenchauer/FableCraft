@@ -112,6 +112,7 @@ export interface GameSceneApiResponse {
   sceneId: string;
   generationOutput: SceneGenerationOutput | null;
   canRegenerate: boolean;
+  canDelete: boolean;
   enrichmentStatus: EnrichmentStatus;
 }
 

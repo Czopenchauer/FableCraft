@@ -215,6 +215,7 @@ function mapApiResponseToGameScene(response: GameSceneApiResponse): GameScene {
     choices: genOutput?.generatedScene?.choices ?? null,
     selectedChoice: genOutput?.submittedAction ?? null,
     canRegenerate: response.canRegenerate,
+    canDelete: response.canDelete,
     tracker: genOutput?.tracker ?? null,
     narrativeDirectorOutput: genOutput?.narrativeDirectorOutput ?? null,
     enrichmentStatus: response.enrichmentStatus,

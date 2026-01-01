@@ -36,6 +36,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   // Settings modal state
   showSettingsModal = false;
 
+  // Lore modal state
+  showLoreModal = false;
+
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
   selectedAgents: Set<string> = new Set(['StoryTracker', 'MainCharacterTracker', 'CharacterTracker']);
@@ -602,6 +605,20 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   onSettingsSaved(): void {
     // Optionally reload data or show feedback
     this.closeSettingsModal();
+  }
+
+  /**
+   * Open the lore management modal
+   */
+  openLoreModal(): void {
+    this.showLoreModal = true;
+  }
+
+  /**
+   * Close the lore management modal
+   */
+  closeLoreModal(): void {
+    this.showLoreModal = false;
   }
 
   /**

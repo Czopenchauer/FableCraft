@@ -23,6 +23,10 @@ export class AdventureListComponent implements OnInit {
   showSettingsModal = false;
   settingsAdventureId: string | null = null;
 
+  // Lore modal state
+  showLoreModal = false;
+  loreAdventureId: string | null = null;
+
   constructor(
     private adventureService: AdventureService,
     private router: Router
@@ -115,5 +119,16 @@ export class AdventureListComponent implements OnInit {
 
   onSettingsSaved(): void {
     this.closeSettingsModal();
+  }
+
+  openLore(event: Event, adventureId: string): void {
+    event.stopPropagation();
+    this.loreAdventureId = adventureId;
+    this.showLoreModal = true;
+  }
+
+  closeLoreModal(): void {
+    this.showLoreModal = false;
+    this.loreAdventureId = null;
   }
 }
