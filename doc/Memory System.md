@@ -8,6 +8,74 @@ RAG (Retrieval-Augmented Generation) is a system that helps the AI "remember" wh
 
 Think of it as the AI's long-term memory for your story.
 
+## Why Knowledge Graph?
+
+Under the hood, the system uses a **Knowledge Graph** - not just simple vector search.
+
+### Vector Search vs Knowledge Graph
+
+```mermaid
+flowchart LR
+    subgraph Vector["Simple Vector Search"]
+        Q1[Query] --> VS[Find similar text]
+        VS --> R1[Return matching chunks]
+    end
+
+    subgraph Graph["Knowledge Graph Search"]
+        Q2[Query] --> KG[Understand entities and relationships]
+        KG --> TR[Traverse connections]
+        TR --> R2[Return contextual information]
+    end
+```
+
+| Aspect | Simple Vector Search | Knowledge Graph |
+|--------|---------------------|-----------------|
+| **How it works** | Finds text that "looks similar" to your query | Understands entities, relationships, and context |
+| **Relationships** | Cannot understand connections between things | Knows that Character A met Character B at Location X |
+| **Context** | Returns isolated text chunks | Returns information with its connections |
+| **Complex queries** | Struggles with multi-part questions | Can traverse relationships to answer complex questions |
+| **Narrative consistency** | May return contradictory information | Maintains logical connections between story elements |
+
+### Why This Matters for Storytelling
+
+**Example: "What does the merchant know about the hero?"**
+
+With **simple vector search**, the system might:
+- Find text mentioning "merchant" and "hero" separately
+- Return unrelated scenes where each appeared
+- Miss the connection between them
+
+With **knowledge graph**, the system:
+- Finds the merchant as an entity
+- Traces relationships: merchant witnessed Scene 5, hero was present
+- Understands: merchant saw the hero defeat the bandits
+- Returns: "The merchant witnessed the hero's bravery during the bandit attack"
+
+```mermaid
+flowchart LR
+    subgraph KnowledgeGraph["Knowledge Graph Example"]
+        Hero((Hero))
+        Merchant((Merchant))
+        Scene5[Scene 5: Bandit Attack]
+        Tavern[Silver Tankard]
+
+        Hero -->|"defeated bandits in"| Scene5
+        Merchant -->|"witnessed"| Scene5
+        Scene5 -->|"occurred at"| Tavern
+        Merchant -->|"works near"| Tavern
+    end
+```
+
+The knowledge graph captures:
+- **Entities**: Hero, Merchant, Tavern, Bandits
+- **Events**: The bandit attack (Scene 5)
+- **Relationships**: Who was there, what happened, where it occurred
+- **Temporal order**: When events happened in the story sequence
+
+This enables the AI to maintain consistent character knowledge - the merchant will remember seeing the hero, even 20 scenes later.
+
+---
+
 ## System Overview
 
 ```mermaid
