@@ -4,6 +4,7 @@ import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
+import {RagChatService, RagDatasetType, RagChatMessage} from '../../services/rag-chat.service';
 import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 
@@ -53,6 +54,14 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   emulationResponse = '';
   isEmulating = false;
 
+  // RAG Knowledge Chat state
+  private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
+  showRagChatBox = false;
+  ragChatQuery = '';
+  ragChatDataset: RagDatasetType = 'world';
+  ragChatMessages: RagChatMessage[] = [];
+  isRagChatLoading = false;
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -60,10 +69,12 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     private router: Router,
     private adventureService: AdventureService,
     private characterService: CharacterService,
+    private ragChatService: RagChatService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService
   ) {
     this.loadEmulationVisibility();
+    this.loadRagChatVisibility();
   }
 
   ngOnInit(): void {
@@ -654,5 +665,100 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   clearEmulationResponse(): void {
     this.emulationResponse = '';
+  }
+
+  /**
+   * Load RAG chat box visibility from localStorage
+   */
+  private loadRagChatVisibility(): void {
+    const stored = localStorage.getItem(this.RAG_CHAT_VISIBLE_KEY);
+    this.showRagChatBox = stored === 'true';
+  }
+
+  /**
+   * Toggle RAG chat box visibility
+   */
+  toggleRagChatBox(): void {
+    this.showRagChatBox = !this.showRagChatBox;
+    localStorage.setItem(this.RAG_CHAT_VISIBLE_KEY, String(this.showRagChatBox));
+  }
+
+  /**
+   * Set the RAG chat dataset type
+   */
+  setRagChatDataset(dataset: RagDatasetType): void {
+    this.ragChatDataset = dataset;
+  }
+
+  /**
+   * Submit RAG chat query
+   */
+  onRagChatSubmit(): void {
+    if (!this.adventureId || !this.ragChatQuery.trim() || this.isRagChatLoading) return;
+
+    const messageId = Date.now().toString();
+    const message: RagChatMessage = {
+      id: messageId,
+      query: this.ragChatQuery.trim(),
+      datasetType: this.ragChatDataset,
+      isLoading: true
+    };
+
+    this.ragChatMessages.push(message);
+    this.isRagChatLoading = true;
+    const queryText = this.ragChatQuery.trim();
+    this.ragChatQuery = '';
+
+    this.ragChatService.search(this.adventureId, queryText, this.ragChatDataset)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isRagChatLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          const idx = this.ragChatMessages.findIndex(m => m.id === messageId);
+          if (idx !== -1) {
+            this.ragChatMessages[idx] = {
+              ...this.ragChatMessages[idx],
+              response,
+              isLoading: false
+            };
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error in RAG chat:', err);
+          const idx = this.ragChatMessages.findIndex(m => m.id === messageId);
+          if (idx !== -1) {
+            this.ragChatMessages[idx] = {
+              ...this.ragChatMessages[idx],
+              error: 'Failed to get response. Please try again.',
+              isLoading: false
+            };
+          }
+          this.toastService.error('RAG search failed. Please try again.');
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Handle keydown in RAG chat input
+   */
+  onRagChatKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.onRagChatSubmit();
+    }
+  }
+
+  /**
+   * Clear RAG chat messages
+   */
+  clearRagChatMessages(): void {
+    this.ragChatMessages = [];
   }
 }

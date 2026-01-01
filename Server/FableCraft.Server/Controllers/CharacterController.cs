@@ -100,6 +100,47 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
     }
 
     /// <summary>
+    ///     Chat with RAG knowledge graph for a specific dataset type (world or main_character)
+    /// </summary>
+    [HttpPost("rag-chat")]
+    [ProducesResponseType(typeof(RagChatResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RagChatResponse>> RagChat(
+        Guid adventureId,
+        [FromBody] RagChatRequest request,
+        CancellationToken cancellationToken)
+    {
+        var datasetName = request.DatasetType.ToLower() switch
+        {
+            "world" => RagClientExtensions.GetWorldDatasetName(adventureId),
+            "main_character" => RagClientExtensions.GetMainCharacterDatasetName(adventureId),
+            _ => null
+        };
+
+        if (datasetName == null)
+        {
+            return BadRequest(new { error = "Invalid dataset type. Use 'world' or 'main_character'" });
+        }
+
+        var context = new CallerContext(typeof(CharacterController), adventureId);
+        var results = await ragSearch.SearchAsync(
+            context,
+            [datasetName],
+            [request.Query],
+            SearchType.GraphCompletion,
+            cancellationToken);
+
+        var sources = results
+            .SelectMany(x => x.Response.Results)
+            .Select(x => new RagChatSource(x.DatasetName, x.Text))
+            .ToList();
+
+        var answer = string.Join("\n\n", sources.Select(s => s.Text));
+
+        return Ok(new RagChatResponse(answer, sources));
+    }
+
+    /// <summary>
     ///     Emulate the main character to generate text from their perspective
     /// </summary>
     [HttpPost("emulate-main-character")]

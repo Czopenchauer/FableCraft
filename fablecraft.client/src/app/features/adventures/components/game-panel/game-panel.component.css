@@ -2075,3 +2075,357 @@
 [data-theme="medieval-fantasy"] .emulation-response-text {
   font-family: var(--font-family-primary);
 }
+
+/* ========== RAG Knowledge Chat Section ========== */
+
+.rag-chat-section {
+  margin-top: var(--spacing-md);
+}
+
+.rag-chat-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.rag-chat-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.rag-chat-toggle-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="modern-dark"] .rag-chat-toggle-btn {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="modern-dark"] .rag-chat-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-toggle-btn {
+  border-color: var(--border-secondary);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-toggle-btn:hover {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.rag-chat-box {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  animation: fadeIn var(--transition-base);
+}
+
+[data-theme="modern-dark"] .rag-chat-box {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-box {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-accent);
+}
+
+/* Dataset Selector */
+.rag-chat-dataset-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.dataset-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dataset-select {
+  flex: 1;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.dataset-select:hover {
+  border-color: var(--border-primary);
+}
+
+.dataset-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .dataset-select {
+  background-color: rgba(15, 23, 42, 0.6);
+  border-color: rgba(59, 130, 246, 0.3);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2360a5fa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+}
+
+[data-theme="modern-dark"] .dataset-select:hover,
+[data-theme="modern-dark"] .dataset-select:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+[data-theme="modern-dark"] .dataset-select option {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="medieval-fantasy"] .dataset-select {
+  background-color: rgba(45, 24, 16, 0.6);
+  border-color: rgba(184, 134, 11, 0.3);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b8860b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+}
+
+[data-theme="medieval-fantasy"] .dataset-select:hover,
+[data-theme="medieval-fantasy"] .dataset-select:focus {
+  border-color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .dataset-select option {
+  background: #2d1810;
+  color: #f5e6d3;
+}
+
+/* Chat Messages */
+.rag-chat-messages {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rag-chat-message {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .rag-chat-message {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-message {
+  background: rgba(45, 24, 16, 0.5);
+}
+
+.rag-chat-query {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.message-label {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.message-text {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.dataset-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+[data-theme="modern-dark"] .dataset-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .dataset-badge {
+  background: rgba(184, 134, 11, 0.15);
+  color: var(--color-primary);
+}
+
+.rag-chat-response {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.response-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.rag-chat-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.rag-chat-error .error-text {
+  color: var(--status-error);
+  font-size: var(--font-size-sm);
+}
+
+/* Input Row */
+.rag-chat-input-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+}
+
+.rag-chat-input {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 120px;
+}
+
+.rag-chat-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.rag-chat-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .rag-chat-input {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="modern-dark"] .rag-chat-input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-input {
+  background: rgba(45, 24, 16, 0.5);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-input:focus {
+  border-color: var(--color-primary);
+}
+
+.rag-chat-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.rag-chat-submit-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-theme="modern-dark"] .rag-chat-submit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+}
+
+[data-theme="modern-dark"] .rag-chat-submit-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-submit-btn {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--text-inverse);
+  border: 2px solid var(--color-accent);
+}
+
+[data-theme="medieval-fantasy"] .rag-chat-submit-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-glow);
+}
+
+.rag-chat-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rag-chat-clear-btn {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.rag-chat-clear-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}

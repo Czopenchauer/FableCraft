@@ -499,6 +499,97 @@
                 </div>
               </div>
             </div>
+
+            <!-- RAG Knowledge Chat Section -->
+            <div class="rag-chat-section">
+              <button
+                (click)="toggleRagChatBox()"
+                class="rag-chat-toggle-btn"
+                type="button"
+              >
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path *ngIf="!showRagChatBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="showRagChatBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                <span>Knowledge Search</span>
+              </button>
+
+              <div *ngIf="showRagChatBox" class="rag-chat-box">
+                <!-- Dataset Selector -->
+                <div class="rag-chat-dataset-selector">
+                  <label class="dataset-label">Search in:</label>
+                  <select
+                    [(ngModel)]="ragChatDataset"
+                    class="dataset-select"
+                  >
+                    <option value="world">World</option>
+                    <option value="main_character">Main Character</option>
+                  </select>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="rag-chat-messages" *ngIf="ragChatMessages.length > 0">
+                  <div *ngFor="let message of ragChatMessages" class="rag-chat-message">
+                    <div class="rag-chat-query">
+                      <span class="message-label">Q:</span>
+                      <span class="message-text">{{ message.query }}</span>
+                      <span class="dataset-badge">{{ message.datasetType === 'world' ? 'World' : 'Character' }}</span>
+                    </div>
+                    <div class="rag-chat-response" *ngIf="!message.isLoading && message.response">
+                      <span class="message-label">A:</span>
+                      <p class="response-text">{{ message.response.answer }}</p>
+                    </div>
+                    <div class="rag-chat-loading" *ngIf="message.isLoading">
+                      <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+                        <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                        <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                      </svg>
+                      <span>Searching...</span>
+                    </div>
+                    <div class="rag-chat-error" *ngIf="!message.isLoading && message.error">
+                      <span class="error-text">{{ message.error }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Input Row -->
+                <div class="rag-chat-input-row">
+                  <textarea
+                    (keydown)="onRagChatKeyDown($event)"
+                    [(ngModel)]="ragChatQuery"
+                    [disabled]="isRagChatLoading"
+                    class="rag-chat-input"
+                    placeholder="Ask about the world or character..."
+                    rows="2"
+                  ></textarea>
+                  <button
+                    (click)="onRagChatSubmit()"
+                    [disabled]="!ragChatQuery.trim() || isRagChatLoading"
+                    class="rag-chat-submit-btn"
+                    title="Search knowledge"
+                    type="button"
+                  >
+                    <svg *ngIf="!isRagChatLoading" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                      <path [attr.d]="'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                    </svg>
+                    <svg *ngIf="isRagChatLoading" [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                      <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Clear Button -->
+                <button
+                  *ngIf="ragChatMessages.length > 0"
+                  (click)="clearRagChatMessages()"
+                  class="rag-chat-clear-btn"
+                  type="button"
+                >
+                  Clear History
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -33,3 +33,9 @@ public record KnowledgeGraphSearchRequest(
 public record KnowledgeGraphSearchResponse(List<KnowledgeGraphSearchResultItem> Results);
 
 public record KnowledgeGraphSearchResultItem(string Text);
+
+public record RagChatRequest(string Query, string DatasetType);
+
+public record RagChatResponse(string Answer, List<RagChatSource> Sources);
+
+public record RagChatSource(string DatasetName, string Text);
