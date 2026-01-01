@@ -244,6 +244,69 @@
   box-shadow: var(--shadow-glow);
 }
 
+/* Theme Switcher Button */
+.theme-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.theme-switcher-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .theme-switcher-btn:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .theme-switcher-btn:hover {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+}
+
+.theme-switcher-btn .theme-icon {
+  width: 18px;
+  height: 18px;
+  transition: transform var(--transition-base);
+}
+
+[data-theme="modern-dark"] .theme-switcher-btn .theme-icon {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .theme-switcher-btn .theme-icon {
+  color: var(--color-primary);
+}
+
+.theme-switcher-btn:hover .theme-icon {
+  transform: rotate(20deg);
+}
+
+.theme-switcher-btn .theme-label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .theme-switcher-btn .theme-label {
+    display: inline;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 767px) {
   .menubar-container {
@@ -261,6 +324,10 @@
   .dropdown-menu {
     left: auto;
     right: 0;
+  }
+
+  .theme-switcher-btn {
+    padding: var(--spacing-sm);
   }
 }
 

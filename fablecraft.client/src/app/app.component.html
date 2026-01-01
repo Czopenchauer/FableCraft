@@ -5,16 +5,3 @@
 
 <!-- Toast Notifications -->
 <app-toast></app-toast>
-
-<!-- Theme Switcher Button -->
-<button
-  (click)="toggleTheme()"
-  [title]="'Switch to ' + (currentTheme === 'medieval-fantasy' ? 'Modern Dark' : 'Medieval Fantasy') + ' theme'"
-  class="theme-switcher"
->
-  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="theme-icon" viewBox="0 0 24 24">
-    <path [attr.d]="getThemeIcon()" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-          [attr.stroke-width]="2"></path>
-  </svg>
-  <span class="theme-label">{{ getThemeLabel() }}</span>
-</button>
