@@ -55,6 +55,7 @@
 
         <!-- Action buttons -->
         <button
+          *ngIf="currentScene.canDelete"
           (click)="onRegenerateScene()"
           class="btn-action btn-regenerate"
           title="Regenerate this scene"
@@ -68,6 +69,7 @@
           <span>Regenerate</span>
         </button>
         <button
+          *ngIf="currentScene.canDelete"
           (click)="onDeleteLastScene()"
           class="btn-action btn-delete"
           title="Delete this scene"

@@ -21,6 +21,8 @@ public class GameScene
 
     public required bool CanRegenerate { get; init; }
 
+    public required bool CanDelete { get; init; }
+
     public required EnrichmentStatus EnrichmentStatus { get; init; }
 }
 
@@ -103,7 +105,8 @@ internal class GameService : IGameService
                     .Id
                 : null,
             NextScene = null,
-            GenerationOutput = sceneGenerationOutput
+            GenerationOutput = sceneGenerationOutput,
+            CanDelete = lastScene.CommitStatus == CommitStatus.Uncommited
         };
     }
 
@@ -137,7 +140,8 @@ internal class GameService : IGameService
                 ?.Id,
             NextScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)
                 ?.Id,
-            GenerationOutput = sceneGenerationOutput
+            GenerationOutput = sceneGenerationOutput,
+            CanDelete = scene.CommitStatus == CommitStatus.Uncommited
         };
     }
 
@@ -179,7 +183,8 @@ internal class GameService : IGameService
                         SceneId = scene.Id,
                         EnrichmentStatus = EnrichmentStatus.Enriched,
                         PreviousScene = null,
-                        NextScene = null
+                        NextScene = null,
+                        CanDelete = true
                     };
                 }
                 catch
@@ -214,7 +219,8 @@ internal class GameService : IGameService
                 GenerationOutput = SceneGenerationOutput.CreateFromScene(nextScene),
                 EnrichmentStatus = EnrichmentStatus.Enriched,
                 PreviousScene = null,
-                NextScene = null
+                NextScene = null,
+                CanDelete = true
             };
         });
     }
@@ -302,7 +308,8 @@ internal class GameService : IGameService
                 SceneId = nextScene.Id,
                 EnrichmentStatus = EnrichmentStatus.NotEnriched,
                 PreviousScene = currentScene.Id,
-                NextScene = null
+                NextScene = null,
+                CanDelete = true
             };
         }
         catch (Exception ex)

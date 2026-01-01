@@ -1,7 +1,5 @@
 ﻿using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine;
-using FableCraft.Application.NarrativeEngine.Agents;
-using FableCraft.Infrastructure;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,12 +10,10 @@ namespace FableCraft.Server.Controllers;
 public class PlayController : ControllerBase
 {
     private readonly IGameService _gameService;
-    private readonly MainCharacterEmulatorAgent _mainCharacterEmulatorAgent;
 
-    public PlayController(IGameService gameService, MainCharacterEmulatorAgent mainCharacterEmulatorAgent)
+    public PlayController(IGameService gameService)
     {
         _gameService = gameService;
-        _mainCharacterEmulatorAgent = mainCharacterEmulatorAgent;
     }
 
     [HttpGet("current-scene")]
