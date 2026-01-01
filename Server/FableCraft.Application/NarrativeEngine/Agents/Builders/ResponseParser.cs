@@ -50,6 +50,14 @@ internal static class ResponseParser
         return response => ExtractJson<T>(response, tag, ignoreNull);
     }
 
+    /// <summary>
+    ///     Creates a parser function for use with SendRequestAsync that extracts raw text from a tag
+    /// </summary>
+    public static Func<string, string> CreateTextParser(string tag)
+    {
+        return response => ExtractText(response, tag);
+    }
+
     private static string? ExtractTagContent(string response, string tag)
     {
         Match match = Regex.Match(response, $"<{tag}>(.*?)</{tag}>", RegexOptions.Singleline);

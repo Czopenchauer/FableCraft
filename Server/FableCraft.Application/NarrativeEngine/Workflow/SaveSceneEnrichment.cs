@@ -28,13 +28,6 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         {
             scene.Metadata.GatheredContext = new GatheredContext
             {
-                AnalysisSummary = new GatheredContextAnalysis
-                {
-                    CurrentSituation = context.ContextGathered.AnalysisSummary.CurrentSituation,
-                    KeyElementsInPlay = context.ContextGathered.AnalysisSummary.KeyElementsInPlay,
-                    PrimaryFocusAreas = context.ContextGathered.AnalysisSummary.PrimaryFocusAreas,
-                    ContextContinuity = context.ContextGathered.AnalysisSummary.ContextContinuity
-                },
                 WorldContext = context.ContextGathered.WorldContext.Select(x => new GatheredContextItem
                 {
                     Topic = x.Topic,
@@ -45,11 +38,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Topic = x.Topic,
                     Content = x.Content
                 }).ToArray(),
-                DroppedContext = context.ContextGathered.DroppedContext.Select(x => new GatheredDroppedContext
-                {
-                    Topic = x.Topic,
-                    Reason = x.Reason
-                }).ToArray()
+                AdditionalProperties = context.ContextGathered.AdditionalData
             };
         }
 

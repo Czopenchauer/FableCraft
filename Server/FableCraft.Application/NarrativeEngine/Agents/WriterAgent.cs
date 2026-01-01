@@ -54,15 +54,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
 
-                             {PromptSections.NewLore(context.NewLore)}
-
-                             {PromptSections.NewLocations(context.NewLocations)}
-
-                             {PromptSections.NewItems(context.NewItems)}
-
-                             These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
-                             {PromptSections.NewCharacterRequests(context.NewNarrativeDirection?.CreationRequests.Characters)}
-
                              {PromptSections.Context(context)}
 
                              {PromptSections.CurrentStoryTracker(context)}
@@ -73,16 +64,39 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        var requestPrompt = $"""
+        string requestPrompt;
+        if (!hasSceneContext)
+        {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var instruction = await dbContext.Adventures
+                .Select(x => new { x.Id, x.FirstSceneGuidance, x.AuthorNotes })
+                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+            requestPrompt = $"""
                              {GetStyleGuide(context)}
 
-                             Your new instructions:
-                             {PromptSections.SceneDirection(context.NewNarrativeDirection!.WriterInstructions)}
+                             {PromptSections.ResolutionOutput(context.NewResolution)}
 
-                             {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
+                             {PromptSections.InitialInstruction(instruction.FirstSceneGuidance, instruction.AuthorNotes ?? string.Empty)}
 
-                             Generate a detailed scene based on the above direction and context. Make sure to follow the scene direction instructions closely.
+                             Generate a detailed scene based on the above resolution and context.
                              """;
+        }
+        else
+        {
+            requestPrompt = $"""
+                             {GetStyleGuide(context)}
+
+                             {PromptSections.ResolutionOutput(context.NewResolution)}
+
+                             {PromptSections.PlayerAction(context.PlayerAction)}
+
+                             {PromptSections.ActionResolution(context)}
+
+                             Generate a detailed scene based on the above resolution and context.
+                             """;
+        }
+
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -92,7 +106,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("output");
+        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");
 
         GeneratedScene newScene = await _agentKernel.SendRequestAsync(
             chatHistory,

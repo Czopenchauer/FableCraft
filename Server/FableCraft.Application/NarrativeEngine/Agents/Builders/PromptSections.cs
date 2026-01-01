@@ -38,7 +38,9 @@ internal static class PromptSections
         return $"""
                 Current Time, Location and general Story information:
                 <story_tracker>
-                {storyTracker.ToJsonString()}
+                Time: {storyTracker.Time}
+                Location: {storyTracker.Location}
+                Weather: {storyTracker.Weather}
                 </story_tracker>
 
                 Previous time: {previousTime?.Time}
@@ -325,23 +327,23 @@ internal static class PromptSections
                 """;
     }
 
-    public static string SceneDirection<T>(T direction, bool ignoreNull = false)
+    public static string ActionResolution(GenerationContext context)
     {
         return $"""
-                <scene_direction>
-                {direction.ToJsonString(GetJsonOptions(ignoreNull))}
-                </scene_direction>
+                <action_resolution>
+                {context.NewResolution.ToJsonString()}
+                </action_resolution>
                 """;
     }
 
-    public static string LastSceneNarrativeDirection<T>(T? direction, bool ignoreNull = false) where T : class
+    public static string ResolutionOutput(string? resolution)
     {
-        if (direction == null) return string.Empty;
+        if (string.IsNullOrEmpty(resolution)) return string.Empty;
 
         return $"""
-                <last_scene_narrative_direction>
-                {direction.ToJsonString(GetJsonOptions(ignoreNull))}
-                </last_scene_narrative_direction>
+                <resolution_output>
+                {resolution}
+                </resolution_output>
                 """;
     }
 
@@ -370,17 +372,6 @@ internal static class PromptSections
                 <new_locations>
                 {(locations ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
                 </new_locations>
-                """;
-    }
-
-    public static string NewLore<T>(T[]? lore, bool ignoreNull = false)
-    {
-        if (lore == null || lore.Length == 0) return string.Empty;
-
-        return $"""
-                <new_lore>
-                {(lore ?? []).ToJsonString(GetJsonOptions(ignoreNull))}
-                </new_lore>
                 """;
     }
 
@@ -474,16 +465,14 @@ internal static class PromptSections
 
         return $"""
                 <previous_gathered_context>
-                **Previous Situation**: {gatheredContext.AnalysisSummary.CurrentSituation}
-                **Context Continuity**: {gatheredContext.AnalysisSummary.ContextContinuity}
-                **Key Elements**: {string.Join(", ", gatheredContext.AnalysisSummary.KeyElementsInPlay)}
-                **Focus Areas**: {string.Join(", ", gatheredContext.AnalysisSummary.PrimaryFocusAreas)}
-
                 **World Knowledge**:
                 {worldContext}
 
                 **Narrative Knowledge**:
                 {narrativeContext}
+
+                **Additional Data**:
+                {gatheredContext.AdditionalProperties.ToJsonString()}
                 </previous_gathered_context>
                 """;
     }
@@ -532,37 +521,19 @@ internal static class PromptSections
 
     public static string PreviousCharacterObservations(SceneContext[] sceneContext)
     {
-        CharacterObservations? observations = sceneContext
+        var observations = sceneContext
             .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.CharacterObservations;
+            .FirstOrDefault()?.Metadata.WriterObservation;
 
         if (observations == null)
         {
             return string.Empty;
         }
 
-        var potentialProfiles = observations.PotentialProfiles.Length > 0
-            ? string.Join("\n",
-                observations.PotentialProfiles.Select(p => $"""
-                                                            - **{p.Name}** ({p.Role}): {p.Reason}
-                                                              - Appearance: {p.EstablishedDetails.Appearance}
-                                                              - Personality: {p.EstablishedDetails.Personality}
-                                                              - Background: {p.EstablishedDetails.Background}
-                                                              - Relationship: {p.EstablishedDetails.RelationshipSeed}
-                                                            """))
-            : "No potential profiles identified.";
-
-        var recurringNpcs = observations.RecurringNpcs.Length > 0
-            ? string.Join("\n", observations.RecurringNpcs.Select(n => $"- **{n.Name}**: {n.DetailsToMaintain}"))
-            : "No recurring NPCs to maintain.";
-
         return $"""
                 <previous_character_observations>
-                **Potential Character Profiles** (candidates for full character creation):
-                {potentialProfiles}
-
-                **Recurring NPCs** (maintain these details for continuity):
-                {recurringNpcs}
+                Observations from the previous scene generation:
+                {observations.ToJsonString()}
                 </previous_character_observations>
                 """;
     }

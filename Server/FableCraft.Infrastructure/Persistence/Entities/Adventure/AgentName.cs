@@ -3,9 +3,7 @@ namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 public enum AgentName
 {
     WriterAgent,
-    NarrativeDirectorAgent,
     StoryTrackerAgent,
-    CharacterStateAgent,
     CharacterTrackerAgent,
     MainCharacterTrackerAgent,
     CharacterCrafter,
@@ -16,5 +14,6 @@ public enum AgentName
     CharacterPlugin,
     MainCharacterEmulatorAgent,
     InitMainCharacterTrackerAgent,
-    CharacterReflectionAgent
+    CharacterReflectionAgent,
+    ResolutionAgent
 }

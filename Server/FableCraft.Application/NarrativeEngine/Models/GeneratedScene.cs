@@ -12,6 +12,9 @@ public class GeneratedScene
     [JsonPropertyName("choices")]
     public string[] Choices { get; init; } = null!;
 
-    [JsonPropertyName("character_observations")]
-    public CharacterObservations CharacterObservations { get; init; } = null!;
+    [JsonPropertyName("creation_requests")]
+    public CreationRequests? CreationRequests { get; init; }
+    
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

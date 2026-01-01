@@ -1,5 +1,6 @@
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Serilog;
 
@@ -25,7 +26,7 @@ internal class ContentGenerator(
             return;
         }
 
-        var creationRequests = context.NewNarrativeDirection!.CreationRequests;
+        var creationRequests = context.NewScene?.CreationRequests ?? new CreationRequests();
 
         // Start all content generation tasks in parallel
         Task<CharacterContext[]>? characterTask = null;

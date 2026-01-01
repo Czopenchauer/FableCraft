@@ -88,7 +88,7 @@ internal sealed class GenerationContext
 
     public GeneratedItem[]? NewItems { get; set; }
 
-    public NarrativeDirectorOutput? NewNarrativeDirection { get; set; }
+    public string? NewResolution { get; set; }
 
     public ContextBase? ContextGathered { get; set; }
 

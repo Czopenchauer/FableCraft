@@ -30,7 +30,7 @@ public class SceneGenerationOutput
 
     public required GeneratedSceneOutput GeneratedScene { get; init; }
 
-    public required NarrativeDirectorOutput? NarrativeDirectorOutput { get; init; }
+    public required string? ActionResolution { get; init; }
 
     public required TrackerDto? Tracker { get; init; }
 
@@ -47,7 +47,7 @@ public class SceneGenerationOutput
                 Choices = scene.CharacterActions.Select(x => x.ActionDescription)
                     .ToArray()
             },
-            NarrativeDirectorOutput = scene.Metadata.NarrativeMetadata,
+            ActionResolution = scene.Metadata.ResolutionOutput,
             Tracker = scene.EnrichmentStatus == EnrichmentStatus.Enriched
                 ? new TrackerDto
                 {
@@ -187,7 +187,7 @@ internal sealed class SceneGenerationOrchestrator(
         };
         var workflow = new[]
         {
-            processors.First(p => p is NarrativeDirectorAgent),
+            processors.First(p => p is ResolutionAgent),
             processors.First(p => p is WriterAgent),
             processors.First(p => p is SaveSceneWithoutEnrichment)
         };
@@ -447,7 +447,7 @@ internal sealed class SceneGenerationOrchestrator(
             PlayerAction = scene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty,
             GenerationProcessStep = GenerationProcessStep.SceneGenerated,
             NewSceneId = scene.Id,
-            NewNarrativeDirection = scene.Metadata.NarrativeMetadata,
+            NewResolution = scene.Metadata.ResolutionOutput,
             NewScene = new GeneratedScene
             {
                 Scene = scene.NarrativeText,

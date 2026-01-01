@@ -66,7 +66,10 @@ public class Scene : IEntity
 
 public sealed class Metadata
 {
-    public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
+    /// <summary>
+    /// Resolution output from ResolutionAgent (raw JSON string).
+    /// </summary>
+    public string? ResolutionOutput { get; set; }
 
     public Tracker? Tracker { get; set; }
 
@@ -77,10 +80,9 @@ public sealed class Metadata
     public GatheredContext? GatheredContext { get; set; }
 
     /// <summary>
-    /// Character observations from the Writer agent.
-    /// Contains potential profiles for new characters and recurring NPCs to maintain continuity.
+    /// Extra context from writer that will be used in the next scene generation.
     /// </summary>
-    public CharacterObservations? CharacterObservations { get; set; }
+    public Dictionary<string, object>? WriterObservation { get; set; }
 }
 
 /// <summary>
@@ -88,13 +90,12 @@ public sealed class Metadata
 /// </summary>
 public sealed class GatheredContext
 {
-    public required GatheredContextAnalysis AnalysisSummary { get; set; }
-
     public GatheredContextItem[] WorldContext { get; set; } = [];
 
     public GatheredContextItem[] NarrativeContext { get; set; } = [];
 
-    public GatheredDroppedContext[] DroppedContext { get; set; } = [];
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
 
 /// <summary>

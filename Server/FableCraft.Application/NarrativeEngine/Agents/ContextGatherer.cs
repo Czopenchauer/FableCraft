@@ -70,8 +70,6 @@ internal sealed class ContextGatherer(
         var requestPrompt = $"""
                              {PromptSections.PreviousSceneGatheredContext(context)}
 
-                             {PromptSections.SceneDirection(context.NewNarrativeDirection)}
-
                              {PromptSections.CurrentScene(context)}
                              """;
 
@@ -144,18 +142,16 @@ internal sealed class ContextGatherer(
 
             context.ContextGathered = new ContextBase
             {
-                AnalysisSummary = output.AnalysisSummary,
                 WorldContext = worldContext.ToArray(),
                 NarrativeContext = narrativeContext.ToArray(),
-                DroppedContext = output.DroppedContext
+                AdditionalData = output.AdditionalData
             };
 
             logger.Information(
-                "Context gathered for adventure {AdventureId}: {WorldCount} world items, {NarrativeCount} narrative items, continuity: {Continuity}",
+                "Context gathered for adventure {AdventureId}: {WorldCount} world items, {NarrativeCount} narrative items",
                 context.AdventureId,
                 worldContext.Count,
-                narrativeContext.Count,
-                output.AnalysisSummary.ContextContinuity);
+                narrativeContext.Count);
         }
         catch (Exception ex)
         {
@@ -178,15 +174,14 @@ internal sealed class ContextGatherer(
         return $"""
                 <previous_context_gathered>
                 Context from previous scene generation (consider carrying forward relevant items):
-
-                Previous situation: {previousContext.AnalysisSummary.CurrentSituation}
-                Context continuity: {previousContext.AnalysisSummary.ContextContinuity}
-
                 World context:
                 {(worldTopics.Length > 0 ? string.Join("\n", worldTopics) : "None")}
 
                 Narrative context:
                 {(narrativeTopics.Length > 0 ? string.Join("\n", narrativeTopics) : "None")}
+
+                Additional data:
+                {context.ContextGathered?.AdditionalData}
                 </previous_context_gathered>
                 """;
     }

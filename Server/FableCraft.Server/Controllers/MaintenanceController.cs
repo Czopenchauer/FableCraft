@@ -11,7 +11,6 @@ namespace FableCraft.Server.Controllers;
 public sealed class MaintenanceController(
     IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
-    ContextGatheringService contextGatheringService,
     ContentGenerationService contentGenerationService) : ControllerBase
 {
     [HttpPost("resend-scene-generated-messages/{adventureId:guid}")]
@@ -32,21 +31,6 @@ public sealed class MaintenanceController(
         });
 
         return Ok();
-    }
-
-    [HttpPost("gather-context/{adventureId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GatherContext(Guid adventureId, CancellationToken cancellationToken)
-    {
-        var result = await contextGatheringService.GatherContextForAdventureAsync(adventureId, cancellationToken);
-
-        if (result is null)
-        {
-            return NotFound("No scenes found for this adventure");
-        }
-
-        return Ok(result);
     }
 
     [HttpPost("generate-content/{adventureId:guid}")]

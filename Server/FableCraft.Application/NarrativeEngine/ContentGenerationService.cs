@@ -47,12 +47,6 @@ public sealed class ContentGenerationService(
             return null;
         }
 
-        if (lastScene.Metadata.NarrativeMetadata is null)
-        {
-            logger.Warning("Scene {SceneId} has no narrative metadata, cannot generate content", lastScene.Id);
-            return null;
-        }
-
         var context = await BuildContextForContentGeneration(adventureId, lastScene, cancellationToken);
 
         // Clear existing content fields to force regeneration
@@ -141,7 +135,7 @@ public sealed class ContentGenerationService(
             PlayerAction = lastScene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty,
             GenerationProcessStep = GenerationProcessStep.SceneGenerated,
             NewSceneId = lastScene.Id,
-            NewNarrativeDirection = lastScene.Metadata.NarrativeMetadata,
+            NewResolution = lastScene.Metadata.ResolutionOutput,
             NewScene = new GeneratedScene
             {
                 Scene = lastScene.NarrativeText,
