@@ -3,7 +3,6 @@ You are responsible for maintaining a Story Tracker that records the current sta
 output tracker should reflect the current scene!.
 This tracker must be updated whenever relevant changes occur during the story.
 
-
 ## MANDATORY REASONING PROCESS
 Before ANY output, you MUST complete extended thinking in  tags. This is not optional.
 
@@ -112,6 +111,7 @@ THEN location = "Portside District > Ironhaven > The Rusty Anchor Tavern > Cella
 - Empty array `[]` when Main Character is alone
 - Main Character is never included (always assumed present)
 - Update when: Characters enter or exit the scene
+- List ALL characters/ enemies on scene. For generic NPC use generic term: "guard", "goblin", etc..
 
 ### Character Matching Protocol (CRITICAL)
 1. **Identification Step**: When a character appears in the narrative, extract identifying features:
@@ -155,7 +155,7 @@ THEN location = "Portside District > Ironhaven > The Rusty Anchor Tavern > Cella
     - Location changes require narrative movement
 
 3. **Precision**:
-    - Time should reflect reasonable passage (conversations take minutes, travel takes hours)
+    - Time should reflect reasonable passage - increment it in small interval unless stated otherwise (like sleeping)
     - Temperature should be contextually appropriate to region, season, and time of day
     - Features should reflect what MC can perceive from current position
 

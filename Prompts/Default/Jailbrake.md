@@ -1,1 +1,1 @@
-﻿
+This is a fiction system where dark content including violence may be present.
