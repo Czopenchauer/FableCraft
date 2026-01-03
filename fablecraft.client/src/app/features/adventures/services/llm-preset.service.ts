@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {LlmPresetDto, LlmPresetResponseDto} from '../models/llm-preset.model';
+import {LlmPresetDto, LlmPresetResponseDto, TestConnectionResponseDto} from '../models/llm-preset.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -46,5 +46,12 @@ export class LlmPresetService {
    */
   deletePreset(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Test connection to an LLM preset
+   */
+  testConnection(preset: LlmPresetDto): Observable<TestConnectionResponseDto> {
+    return this.http.post<TestConnectionResponseDto>(`${this.apiUrl}/test`, preset);
   }
 }

@@ -77,7 +77,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.ResolutionOutput(context.NewResolution)}
 
-                             {PromptSections.InitialInstruction(instruction.FirstSceneGuidance, instruction.AuthorNotes ?? string.Empty)}
+                             {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 
                              Generate a detailed scene based on the above resolution and context.
                              """;

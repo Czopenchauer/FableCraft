@@ -52,7 +52,7 @@ internal sealed class CharacterTrackerAgent(
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.CurrentScene(generationContext)}
+                             {context.SceneRewrites.Last().Content}
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 

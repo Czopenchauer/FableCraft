@@ -34,7 +34,7 @@ internal sealed class TrackerProcessor(
                                              .Select(x => x.Name)
                                          ?? [];
 
-        Task<CharacterContext>[]? characterUpdateTask = null;
+        Task<CharacterContext?>[] characterUpdateTask = [];
         if (context.Characters.Count != 0)
         {
             characterUpdateTask = context.Characters
@@ -42,9 +42,9 @@ internal sealed class TrackerProcessor(
                 .Select(async character =>
                 {
                     // Skip if this character was already processed in a previous attempt
-                    if (alreadyProcessedCharacters.Contains(character.Name))
+                    if (alreadyProcessedCharacters.Contains(character.Name) || (context.NewCharacters?.Select(x => x.Name) ?? []).Contains(character.Name))
                     {
-                        return context.CharacterUpdates!.First(x => x.Name == character.Name);
+                        return null;
                     }
 
                     var reflectionOutput = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
@@ -181,12 +181,16 @@ internal sealed class TrackerProcessor(
         }
     }
 
-    private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext>[] tasks)
+    private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
     {
         context.CharacterUpdates ??= new List<CharacterContext>();
         foreach (var task in tasks)
         {
-            context.CharacterUpdates.Add(await task);
+            var res = await task;
+            if (res is not null)
+            {
+                context.CharacterUpdates.Add(res);
+            }
         }
     }
 

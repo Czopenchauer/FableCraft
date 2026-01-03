@@ -439,7 +439,7 @@ internal sealed class SceneGenerationOrchestrator(
             .ToArrayAsync(cancellationToken);
 
         // Skip the most recent character state as that's the one being regenerated
-        var adventureCharacters = await GetCharactersForRegeneration(adventureId, scene.Id, cancellationToken);
+        var adventureCharacters = await GetCharactersForRegeneration(adventureId, cancellationToken);
 
         var context = new GenerationContext
         {
@@ -772,7 +772,7 @@ internal sealed class SceneGenerationOrchestrator(
             }).ToList();
     }
 
-    private async Task<List<CharacterContext>> GetCharactersForRegeneration(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
+    private async Task<List<CharacterContext>> GetCharactersForRegeneration(Guid adventureId, CancellationToken cancellationToken)
     {
         // Basically Current STATE - 1. Skip the latest states and take the one before that.
         var existingCharacters = await dbContext

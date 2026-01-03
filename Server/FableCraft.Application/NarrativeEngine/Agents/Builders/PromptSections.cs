@@ -347,18 +347,13 @@ internal static class PromptSections
                 """;
     }
 
-    public static string InitialInstruction(string guidance, string authorNote)
+    public static string InitialInstruction(string guidance)
     {
         return $"""
                 This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup. Here's what the player provided as guidance for the first scene:
                 <initial_instruction>
                 {guidance}
                 </initial_instruction>
-
-                And that's the player note about the style and tone they want for the adventure:
-                <author_note>
-                {authorNote}
-                </author_note>        
 
                 Generate the first narrative direction for the story based on the above information.
                 """;

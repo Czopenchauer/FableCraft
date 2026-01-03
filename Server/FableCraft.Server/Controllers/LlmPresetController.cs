@@ -1,4 +1,5 @@
 using FableCraft.Application.Model;
+using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
@@ -7,6 +8,8 @@ using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace FableCraft.Server.Controllers;
 
@@ -15,10 +18,12 @@ namespace FableCraft.Server.Controllers;
 public class LlmPresetController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly KernelBuilderFactory _kernelBuilderFactory;
 
-    public LlmPresetController(ApplicationDbContext dbContext)
+    public LlmPresetController(ApplicationDbContext dbContext, KernelBuilderFactory kernelBuilderFactory)
     {
         _dbContext = dbContext;
+        _kernelBuilderFactory = kernelBuilderFactory;
     }
 
     /// <summary>
@@ -247,4 +252,69 @@ public class LlmPresetController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Test connection to an LLM preset
+    /// </summary>
+    [HttpPost("test")]
+    [ProducesResponseType(typeof(TestConnectionResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TestConnectionResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TestConnectionResponseDto>> TestConnection(
+        [FromBody] LlmPresetDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var preset = new LlmPreset
+            {
+                Id = Guid.Empty,
+                Name = dto.Name,
+                Provider = dto.Provider,
+                Model = dto.Model,
+                BaseUrl = dto.BaseUrl,
+                ApiKey = dto.ApiKey,
+                MaxTokens = dto.MaxTokens,
+                Temperature = dto.Temperature,
+                TopP = dto.TopP,
+                TopK = dto.TopK,
+                FrequencyPenalty = dto.FrequencyPenalty,
+                PresencePenalty = dto.PresencePenalty,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            Infrastructure.Llm.IKernelBuilder kernelBuilder = _kernelBuilderFactory.Create(preset);
+            Kernel kernel = kernelBuilder.Create().Build();
+
+            var chatService = kernel.GetRequiredService<IChatCompletionService>();
+            var settings = kernelBuilder.GetDefaultPromptExecutionSettings();
+
+            var chatHistory = new ChatHistory();
+            chatHistory.AddUserMessage("Say 'Hello! Connection successful.' and nothing else.");
+
+            var response = await chatService.GetChatMessageContentAsync(
+                chatHistory,
+                settings,
+                cancellationToken: cancellationToken);
+
+            return Ok(new TestConnectionResponseDto
+            {
+                Success = true,
+                Message = response.Content ?? "Connection successful (empty response)"
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new TestConnectionResponseDto
+            {
+                Success = false,
+                Message = $"Connection failed: {ex.Message}"
+            });
+        }
+    }
+}
+
+public record TestConnectionResponseDto
+{
+    public bool Success { get; init; }
+    public required string Message { get; init; }
 }

@@ -39,34 +39,26 @@ internal sealed class InitMainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             
                              {PromptSections.CurrentStoryTracker(context)}
 
                              {PromptSections.MainCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        string requestPrompt;
-        if (isFirstScene)
-        {
-            requestPrompt = $"""
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                             It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
-                             """;
-        }
-        else
-        {
-            requestPrompt = $"""
-                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
+        var instruction = await dbContext.Adventures
+            .Select(x => new { x.Id, x.FirstSceneGuidance, x.AuthorNotes })
+            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+        string requestPrompt = $"""
+                                            {PromptSections.SceneContent(context.NewScene?.Scene)}
+                                            
+                                            {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 
-                             {PromptSections.LastScenes(context.SceneContext ?? [], 2)}
-
-                             New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
-
-                             Update the main_character_tracker based on the new scene.
-                             """;
-        }
+                                            It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
+                                            """;
 
         chatHistory.AddUserMessage(requestPrompt);
 

@@ -36,6 +36,11 @@ export class LlmPresetManagerComponent implements OnInit {
   showDeleteConfirmation = false;
   presetToDelete: PresetWithUsage | null = null;
 
+  // Test connection
+  isTesting = false;
+  testResult: string | null = null;
+  testSuccess: boolean | null = null;
+
   constructor(
     private fb: FormBuilder,
     private llmPresetService: LlmPresetService,
@@ -120,6 +125,7 @@ export class LlmPresetManagerComponent implements OnInit {
 
   openCreateForm(): void {
     this.editingPreset = null;
+    this.resetTestState();
     this.presetForm.reset({
       name: '',
       provider: '',
@@ -138,6 +144,7 @@ export class LlmPresetManagerComponent implements OnInit {
 
   openEditForm(preset: LlmPresetResponseDto): void {
     this.editingPreset = preset;
+    this.resetTestState();
     this.presetForm.patchValue({
       name: preset.name,
       provider: preset.provider,
@@ -156,6 +163,7 @@ export class LlmPresetManagerComponent implements OnInit {
 
   copyPreset(preset: LlmPresetResponseDto): void {
     this.editingPreset = null; // This is a new preset, not editing
+    this.resetTestState();
     this.presetForm.patchValue({
       name: `${preset.name} (Copy)`,
       provider: preset.provider,
@@ -175,7 +183,55 @@ export class LlmPresetManagerComponent implements OnInit {
   cancelForm(): void {
     this.showForm = false;
     this.editingPreset = null;
+    this.resetTestState();
     this.presetForm.reset();
+  }
+
+  resetTestState(): void {
+    this.isTesting = false;
+    this.testResult = null;
+    this.testSuccess = null;
+  }
+
+  testConnection(): void {
+    if (this.presetForm.invalid) {
+      Object.keys(this.presetForm.controls).forEach(key => {
+        this.presetForm.get(key)?.markAsTouched();
+      });
+      return;
+    }
+
+    this.isTesting = true;
+    this.testResult = null;
+    this.testSuccess = null;
+
+    const formValue = this.presetForm.value;
+    const presetDto: LlmPresetDto = {
+      name: formValue.name,
+      provider: formValue.provider,
+      model: formValue.model,
+      baseUrl: formValue.baseUrl || null,
+      apiKey: formValue.apiKey,
+      maxTokens: formValue.maxTokens,
+      temperature: formValue.temperature,
+      topP: formValue.topP,
+      topK: formValue.topK,
+      frequencyPenalty: formValue.frequencyPenalty,
+      presencePenalty: formValue.presencePenalty
+    };
+
+    this.llmPresetService.testConnection(presetDto).subscribe({
+      next: (response) => {
+        this.isTesting = false;
+        this.testSuccess = response.success;
+        this.testResult = response.message;
+      },
+      error: (error) => {
+        this.isTesting = false;
+        this.testSuccess = false;
+        this.testResult = error.error?.message || 'Connection test failed';
+      }
+    });
   }
 
   savePreset(): void {
