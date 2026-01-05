@@ -194,7 +194,7 @@ internal sealed class TrackerProcessor(
         }
     }
 
-    private async Task<MainCharacterTracker> ProcessMainChar(GenerationContext context, StoryTracker storyTrackerResult, CancellationToken cancellationToken)
+    private async Task<MainCharacterState> ProcessMainChar(GenerationContext context, StoryTracker storyTrackerResult, CancellationToken cancellationToken)
     {
         if (context.SceneContext.Length == 0)
         {
@@ -203,7 +203,7 @@ internal sealed class TrackerProcessor(
 
         var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
 
-        var newTracker = new MainCharacterTracker
+        var newTracker = new MainCharacterState
         {
             MainCharacter = context.LatestTracker()!.MainCharacter!.MainCharacter.PatchWith(mainCharacterDeltaTrackerOutput.TrackerChanges!.ExtensionData!),
             MainCharacterDescription = mainCharacterDeltaTrackerOutput.Description

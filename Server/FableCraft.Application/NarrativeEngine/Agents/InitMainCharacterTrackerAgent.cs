@@ -25,7 +25,7 @@ internal sealed class InitMainCharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.InitMainCharacterTrackerAgent;
 
-    public async Task<MainCharacterTracker> Invoke(
+    public async Task<MainCharacterState> Invoke(
         GenerationContext context,
         StoryTracker storyTrackerResult,
         CancellationToken cancellationToken)
@@ -79,19 +79,19 @@ internal sealed class InitMainCharacterTrackerAgent(
             cancellationToken);
     }
 
-    private static Func<string, MainCharacterTracker>
+    private static Func<string, MainCharacterState>
         CreateOutputParser()
     {
         return response =>
         {
-            var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "main_character_tracker");
+            var tracker = ResponseParser.ExtractJson<MainCharacterTracker>(response, "main_character_tracker");
             var description = ResponseParser.ExtractText(response, "character_description");
             if (string.IsNullOrEmpty(description))
             {
                 throw new InvalidCastException("Failed to parse character description from response due to empty description.");
             }
 
-            return new MainCharacterTracker()
+            return new MainCharacterState()
             {
                 MainCharacter = tracker,
                 MainCharacterDescription = description

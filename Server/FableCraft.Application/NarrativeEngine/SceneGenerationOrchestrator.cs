@@ -137,7 +137,7 @@ public class TrackerDto
 
 public class MainCharacterTrackerDto
 {
-    public required CharacterTracker Tracker { get; init; }
+    public required MainCharacterTracker Tracker { get; init; }
 
     public required string Description { get; init; }
 }
