@@ -84,13 +84,15 @@ internal sealed class CharacterCrafter : BaseAgent
             Name = result.characterStats.CharacterIdentity.FullName!,
             CharacterMemories = new List<MemoryContext>(),
             Relationships = result.relationships.Select(r => new CharacterRelationshipContext
-            {
-                Data = r.ExtensionData,
-                TargetCharacterName = r.Name,
-                StoryTracker = null,
-                SequenceNumber = 0
-            }).ToList(),
-            SceneRewrites = new List<CharacterSceneContext>()
+                {
+                    Data = r.ExtensionData,
+                    TargetCharacterName = r.Name,
+                    StoryTracker = null,
+                    SequenceNumber = 0
+                })
+                .ToList(),
+            SceneRewrites = new List<CharacterSceneContext>(),
+            Importance = request.Importance
         };
     }
 

@@ -241,6 +241,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                         CharacterMemories = memories,
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
+                        Importance = default,
                     };
                     dbContext.Characters.Add(newChar);
                 }

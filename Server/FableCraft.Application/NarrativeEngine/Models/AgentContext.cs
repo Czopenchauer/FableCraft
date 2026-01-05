@@ -126,6 +126,8 @@ internal sealed class CharacterContext
 
     public required string Description { get; set; } = null!;
 
+    public required CharacterImportance Importance { get; set; }
+
     public required CharacterStats CharacterState { get; set; } = null!;
 
     public required CharacterTracker? CharacterTracker { get; set; }

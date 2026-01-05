@@ -44,7 +44,7 @@ public class CreationRequests
 public class CharacterRequest
 {
     [JsonPropertyName("importance")]
-    public string Importance { get; set; } = string.Empty; // scene_critical|arc_important|background|cameo
+    public CharacterImportance Importance { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();

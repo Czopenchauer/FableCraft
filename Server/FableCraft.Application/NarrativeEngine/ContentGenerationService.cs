@@ -174,21 +174,26 @@ public sealed class ContentGenerationService(
         return existingCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single().Description,
+                Description = x.CharacterStates.Single()
+                    .Description,
                 Name = x.Name,
-                CharacterState = x.CharacterStates.Single().CharacterStats,
-                CharacterTracker = x.CharacterStates.Single().Tracker,
+                CharacterState = x.CharacterStates.Single()
+                    .CharacterStats,
+                CharacterTracker = x.CharacterStates.Single()
+                    .Tracker,
                 CharacterId = x.Id,
                 CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                {
-                    MemoryContent = y.Summary,
-                    Salience = y.Salience,
-                    Data = y.Data,
-                    SceneTracker = y.SceneTracker
-                }).ToList(),
+                    {
+                        MemoryContent = y.Summary,
+                        Salience = y.Salience,
+                        Data = y.Data,
+                        SceneTracker = y.SceneTracker
+                    })
+                    .ToList(),
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
-                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).First())
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber)
+                        .First())
                     .Select(y => new CharacterRelationshipContext
                     {
                         TargetCharacterName = y!.TargetCharacterName,
@@ -198,11 +203,13 @@ public sealed class ContentGenerationService(
                     })
                     .ToList(),
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
-                {
-                    Content = y.Content,
-                    StoryTracker = y.SceneTracker,
-                    SequenceNumber = y.SequenceNumber
-                }).ToList(),
+                    {
+                        Content = y.Content,
+                        StoryTracker = y.SceneTracker,
+                        SequenceNumber = y.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = x.Importance,
             }).ToList();
     }
 }

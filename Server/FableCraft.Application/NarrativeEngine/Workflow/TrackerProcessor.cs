@@ -124,12 +124,13 @@ internal sealed class TrackerProcessor(
                         Name = character.Name,
                         Description = character.Description,
                         CharacterMemories = reflectionOutput.Memory!.Select(x => new MemoryContext
-                        {
-                            Salience = x.Salience,
-                            Data = x.ExtensionData!,
-                            MemoryContent = x.Summary,
-                            SceneTracker = storyTrackerResult,
-                        }).ToList(),
+                            {
+                                Salience = x.Salience,
+                                Data = x.ExtensionData!,
+                                MemoryContent = x.Summary,
+                                SceneTracker = storyTrackerResult,
+                            })
+                            .ToList(),
                         Relationships = characterRelationships,
                         SceneRewrites =
                         [
@@ -137,9 +138,13 @@ internal sealed class TrackerProcessor(
                             {
                                 Content = reflectionOutput.SceneRewrite,
                                 StoryTracker = storyTrackerResult,
-                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)?.SequenceNumber + 1 ?? 0,
+                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                     ?.SequenceNumber
+                                                 + 1
+                                                 ?? 0,
                             }
-                        ]
+                        ],
+                        Importance = character.Importance
                     };
 
                     var trackerDelta = await characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);

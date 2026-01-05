@@ -467,26 +467,33 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId).Select(x => new MemoryContext
-                {
-                    MemoryContent = x.Summary,
-                    Salience = x.Salience,
-                    Data = x.Data,
-                    SceneTracker = x.SceneTracker
-                }).ToList(),
-                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterRelationshipContext
-                {
-                    TargetCharacterName = x.TargetCharacterName,
-                    Data = x.Data,
-                    StoryTracker = x.StoryTracker,
-                    SequenceNumber = x.SequenceNumber
-                }).ToList(),
-                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterSceneContext
-                {
-                    Content = x.Content,
-                    StoryTracker = x.SceneTracker,
-                    SequenceNumber = x.SequenceNumber
-                }).ToList(),
+                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new MemoryContext
+                    {
+                        MemoryContent = x.Summary,
+                        Salience = x.Salience,
+                        Data = x.Data,
+                        SceneTracker = x.SceneTracker
+                    })
+                    .ToList(),
+                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new CharacterRelationshipContext
+                    {
+                        TargetCharacterName = x.TargetCharacterName,
+                        Data = x.Data,
+                        StoryTracker = x.StoryTracker,
+                        SequenceNumber = x.SequenceNumber
+                    })
+                    .ToList(),
+                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new CharacterSceneContext
+                    {
+                        Content = x.Content,
+                        StoryTracker = x.SceneTracker,
+                        SequenceNumber = x.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = adventureCharacters.Single(ac => ac.CharacterId == cs.CharacterId).Importance
             }).ToList(),
             // Sequence number 0 indicates newly introduced characters in this scene
             NewCharacters = scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
@@ -496,26 +503,33 @@ internal sealed class SceneGenerationOrchestrator(
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId).Select(x => new MemoryContext
-                {
-                    MemoryContent = x.Summary,
-                    Salience = x.Salience,
-                    Data = x.Data,
-                    SceneTracker = x.SceneTracker
-                }).ToList(),
-                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterRelationshipContext
-                {
-                    TargetCharacterName = x.TargetCharacterName,
-                    Data = x.Data,
-                    StoryTracker = x.StoryTracker,
-                    SequenceNumber = x.SequenceNumber
-                }).ToList(),
-                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterSceneContext
-                {
-                    Content = x.Content,
-                    StoryTracker = x.SceneTracker,
-                    SequenceNumber = x.SequenceNumber
-                }).ToList(),
+                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new MemoryContext
+                    {
+                        MemoryContent = x.Summary,
+                        Salience = x.Salience,
+                        Data = x.Data,
+                        SceneTracker = x.SceneTracker
+                    })
+                    .ToList(),
+                Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new CharacterRelationshipContext
+                    {
+                        TargetCharacterName = x.TargetCharacterName,
+                        Data = x.Data,
+                        StoryTracker = x.StoryTracker,
+                        SequenceNumber = x.SequenceNumber
+                    })
+                    .ToList(),
+                SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId)
+                    .Select(x => new CharacterSceneContext
+                    {
+                        Content = x.Content,
+                        StoryTracker = x.SceneTracker,
+                        SequenceNumber = x.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = adventureCharacters.Single(ac => ac.CharacterId == cs.CharacterId).Importance,
             }).ToArray(),
             NewLore = scene.Lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore))
                 .Select(lb => JsonSerializer.Deserialize<GeneratedLore>(lb.Content)!).ToArray(),
@@ -745,16 +759,18 @@ internal sealed class SceneGenerationOrchestrator(
                     .Tracker,
                 CharacterId = x.Id,
                 CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                {
-                    MemoryContent = y.Summary,
-                    Salience = y.Salience,
-                    Data = y.Data,
-                    SceneTracker = y.SceneTracker
-                }).ToList(),
+                    {
+                        MemoryContent = y.Summary,
+                        Salience = y.Salience,
+                        Data = y.Data,
+                        SceneTracker = y.SceneTracker
+                    })
+                    .ToList(),
                 // Group by target and take latest relationship per target character
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
-                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).First())
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber)
+                        .First())
                     .Select(y => new CharacterRelationshipContext
                     {
                         TargetCharacterName = y!.TargetCharacterName,
@@ -764,11 +780,13 @@ internal sealed class SceneGenerationOrchestrator(
                     })
                     .ToList(),
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
-                {
-                    Content = y.Content,
-                    StoryTracker = y.SceneTracker,
-                    SequenceNumber = y.SequenceNumber
-                }).ToList(),
+                    {
+                        Content = y.Content,
+                        StoryTracker = y.SceneTracker,
+                        SequenceNumber = y.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = x.Importance,
             }).ToList();
     }
 
@@ -797,16 +815,19 @@ internal sealed class SceneGenerationOrchestrator(
                     .Tracker,
                 CharacterId = x.Id,
                 CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                {
-                    MemoryContent = y.Summary,
-                    Salience = y.Salience,
-                    Data = y.Data,
-                    SceneTracker = y.SceneTracker
-                }).ToList(),
+                    {
+                        MemoryContent = y.Summary,
+                        Salience = y.Salience,
+                        Data = y.Data,
+                        SceneTracker = y.SceneTracker
+                    })
+                    .ToList(),
                 // Group by target and take second-latest relationship per target (skip the most recent)
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
-                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).Skip(1).FirstOrDefault())
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber)
+                        .Skip(1)
+                        .FirstOrDefault())
                     .Where(r => r != null)
                     .Select(y => new CharacterRelationshipContext
                     {
@@ -817,11 +838,13 @@ internal sealed class SceneGenerationOrchestrator(
                     })
                     .ToList()!,
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext()
-                {
-                    Content = y.Content,
-                    StoryTracker = y.SceneTracker,
-                    SequenceNumber = y.SequenceNumber
-                }).ToList(),
+                    {
+                        Content = y.Content,
+                        StoryTracker = y.SceneTracker,
+                        SequenceNumber = y.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = x.Importance,
             }).ToList();
     }
 }
