@@ -116,6 +116,11 @@ internal sealed class GenerationContext
     /// Chronicler story state to persist in scene metadata.
     /// </summary>
     public ChroniclerStoryState? NewChroniclerState { get; set; }
+
+    /// <summary>
+    /// Simulation plan from SimulationPlannerAgent.
+    /// </summary>
+    public SimulationPlannerOutput? SimulationPlan { get; set; }
 }
 
 internal sealed class CharacterContext
@@ -137,6 +142,11 @@ internal sealed class CharacterContext
     public required List<CharacterRelationshipContext> Relationships { get; set; } = new();
 
     public required List<CharacterSceneContext> SceneRewrites { get; set; } = new();
+
+    /// <summary>
+    /// Simulation-related data: last_simulated, potential_interactions, pending_mc_interaction.
+    /// </summary>
+    public SimulationMetadata? SimulationMetadata { get; set; }
 }
 
 internal sealed class MemoryContext
@@ -153,6 +163,8 @@ internal sealed class MemoryContext
 internal sealed class CharacterRelationshipContext
 {
     public required string TargetCharacterName { get; set; } = null!;
+
+    public required object Dynamic { get; set; }
 
     public required IDictionary<string, object> Data { get; set; } = null!;
 

@@ -100,6 +100,7 @@ internal sealed class TrackerProcessor(
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData!,
                                 StoryTracker = storyTrackerResult,
                                 SequenceNumber = 0,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic!,
                             });
                         }
                         else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
@@ -111,6 +112,7 @@ internal sealed class TrackerProcessor(
                                 Data = updatedRelationship,
                                 StoryTracker = storyTrackerResult,
                                 SequenceNumber = relationship.SequenceNumber + 1,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? relationship.Dynamic,
                             };
                             characterRelationships.Add(newRelationship);
                         }

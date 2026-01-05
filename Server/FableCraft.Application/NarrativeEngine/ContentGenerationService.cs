@@ -199,7 +199,8 @@ public sealed class ContentGenerationService(
                         TargetCharacterName = y!.TargetCharacterName,
                         Data = y.Data,
                         StoryTracker = y.StoryTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        Dynamic = y.Dynamic!
                     })
                     .ToList(),
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
@@ -210,6 +211,7 @@ public sealed class ContentGenerationService(
                     })
                     .ToList(),
                 Importance = x.Importance,
+                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
             }).ToList();
     }
 }

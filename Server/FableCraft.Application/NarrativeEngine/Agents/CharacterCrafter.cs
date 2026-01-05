@@ -88,7 +88,8 @@ internal sealed class CharacterCrafter : BaseAgent
                     Data = r.ExtensionData,
                     TargetCharacterName = r.Name,
                     StoryTracker = null,
-                    SequenceNumber = 0
+                    SequenceNumber = 0,
+                    Dynamic = r.Dynamic
                 })
                 .ToList(),
             SceneRewrites = new List<CharacterSceneContext>(),
@@ -142,7 +143,9 @@ internal sealed class CharacterCrafter : BaseAgent
 
     private class InitialRelationship
     {
-        public string Name { get; set; } = string.Empty;
+        public required string Name { get; set; }
+
+        public required object Dynamic { get; set; }
 
         [JsonExtensionData]
         public Dictionary<string, object> ExtensionData { get; set; } = new();

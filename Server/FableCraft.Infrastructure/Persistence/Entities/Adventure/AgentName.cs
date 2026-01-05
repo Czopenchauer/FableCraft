@@ -16,5 +16,6 @@ public enum AgentName
     InitMainCharacterTrackerAgent,
     CharacterReflectionAgent,
     ResolutionAgent,
-    ChroniclerAgent
+    ChroniclerAgent,
+    SimulationPlannerAgent
 }

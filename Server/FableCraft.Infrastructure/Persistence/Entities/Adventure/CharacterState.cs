@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
@@ -20,12 +19,71 @@ public sealed class CharacterState
     public CharacterStats CharacterStats { get; init; } = null!;
 
     public CharacterTracker Tracker { get; init; } = null!;
+
+    public SimulationMetadata? SimulationMetadata { get; init; }
+}
+
+/// <summary>
+/// Tracks simulation-related data for a character.
+/// </summary>
+public class SimulationMetadata
+{
+    /// <summary>
+    /// In-world timestamp of last simulation (e.g., "14:00 05-06-845").
+    /// </summary>
+    [JsonPropertyName("last_simulated")]
+    public string? LastSimulated { get; set; }
+
+    /// <summary>
+    /// Intended interactions with other characters from previous simulation.
+    /// </summary>
+    [JsonPropertyName("potential_interactions")]
+    public List<PotentialInteraction>? PotentialInteractions { get; set; }
+
+    /// <summary>
+    /// If the character has decided to seek out the MC.
+    /// </summary>
+    [JsonPropertyName("pending_mc_interaction")]
+    public PendingMcInteraction? PendingMcInteraction { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; set; }
+}
+
+/// <summary>
+/// An intended interaction with another character, output from simulation.
+/// </summary>
+public class PotentialInteraction
+{
+    /// <summary>
+    /// Name of the character to interact with.
+    /// </summary>
+    [JsonPropertyName("target_character")]
+    public required string TargetCharacter { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; set; }
+}
+
+/// <summary>
+/// Information about a character's intent to seek out the MC.
+/// </summary>
+public class PendingMcInteraction
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
 public class CharacterStats
 {
     [JsonPropertyName("character_identity")]
     public required CharacterIdentity CharacterIdentity { get; set; }
+
+    [JsonPropertyName("goals_and_motivations")]
+    public object? Goals { get; set; }
+
+    [JsonPropertyName("routine")]
+    public object? Routine { get; set; }
 
     [JsonExtensionData]
     public IDictionary<string, object>? ExtensionData { get; set; }

@@ -482,7 +482,8 @@ internal sealed class SceneGenerationOrchestrator(
                         TargetCharacterName = x.TargetCharacterName,
                         Data = x.Data,
                         StoryTracker = x.StoryTracker,
-                        SequenceNumber = x.SequenceNumber
+                        SequenceNumber = x.SequenceNumber,
+                        Dynamic = x.Dynamic!
                     })
                     .ToList(),
                 SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId)
@@ -518,7 +519,8 @@ internal sealed class SceneGenerationOrchestrator(
                         TargetCharacterName = x.TargetCharacterName,
                         Data = x.Data,
                         StoryTracker = x.StoryTracker,
-                        SequenceNumber = x.SequenceNumber
+                        SequenceNumber = x.SequenceNumber,
+                        Dynamic = x.Dynamic!
                     })
                     .ToList(),
                 SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId)
@@ -776,7 +778,8 @@ internal sealed class SceneGenerationOrchestrator(
                         TargetCharacterName = y!.TargetCharacterName,
                         Data = y.Data,
                         StoryTracker = y.StoryTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        Dynamic = y.Dynamic!
                     })
                     .ToList(),
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
@@ -787,6 +790,7 @@ internal sealed class SceneGenerationOrchestrator(
                     })
                     .ToList(),
                 Importance = x.Importance,
+                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
             }).ToList();
     }
 
@@ -834,7 +838,8 @@ internal sealed class SceneGenerationOrchestrator(
                         TargetCharacterName = y!.TargetCharacterName,
                         Data = y.Data,
                         StoryTracker = y.StoryTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        Dynamic = y.Dynamic!
                     })
                     .ToList()!,
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext()
@@ -845,6 +850,7 @@ internal sealed class SceneGenerationOrchestrator(
                     })
                     .ToList(),
                 Importance = x.Importance,
+                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
             }).ToList();
     }
 }

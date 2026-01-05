@@ -83,6 +83,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             requestPrompt = $"""
                              {PromptSections.ChroniclerGuidance(context.SceneContext)}
 
+                             {GetPendingMcInteractions(context)}
+
                              {PromptSections.ResolutionOutput(context.NewResolution)}
 
                              {PromptSections.PlayerAction(context.PlayerAction)}
@@ -113,5 +115,39 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             cancellationToken);
 
         context.NewScene = newScene;
+    }
+
+    /// <summary>
+    /// Builds a prompt section for pending MC interactions from characters who want to seek the MC.
+    /// Characters with high/immediate urgency should be woven into the upcoming scene.
+    /// </summary>
+    private static string GetPendingMcInteractions(GenerationContext context)
+    {
+        var pendingInteractions = context.Characters
+            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
+            .Select(c => new
+            {
+                Character = c.Name,
+                Data = c.SimulationMetadata!.PendingMcInteraction!.ExtensionData!
+            })
+            .ToList();
+
+        if (pendingInteractions.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var formatted = string.Join("\n\n",
+            pendingInteractions.Select(p => $"""
+                                             **{p.Character}**)
+                                             {p.Data}
+                                             """.Trim()));
+
+        return $"""
+                <pending_mc_interactions>
+                The following characters have decided to seek out the MC. Consider weaving them into the scene based on urgency:
+                {formatted}
+                </pending_mc_interactions>
+                """;
     }
 }
