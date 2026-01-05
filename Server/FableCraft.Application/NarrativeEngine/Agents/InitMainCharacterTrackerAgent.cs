@@ -27,7 +27,7 @@ internal sealed class InitMainCharacterTrackerAgent(
 
     public async Task<MainCharacterState> Invoke(
         GenerationContext context,
-        StoryTracker storyTrackerResult,
+        SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);

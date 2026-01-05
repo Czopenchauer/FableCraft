@@ -42,7 +42,8 @@ public static class StartupExtensions
             .AddScoped<CharacterTrackerAgent>()
             .AddScoped<CharacterReflectionAgent>()
             .AddScoped<LocationCrafter>()
-            .AddScoped<MainCharacterEmulatorAgent>();
+            .AddScoped<MainCharacterEmulatorAgent>()
+            .AddScoped<ChroniclerAgent>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();

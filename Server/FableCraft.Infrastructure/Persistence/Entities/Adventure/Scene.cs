@@ -83,6 +83,16 @@ public sealed class Metadata
     /// Extra context from writer that will be used in the next scene generation.
     /// </summary>
     public Dictionary<string, object>? WriterObservation { get; set; }
+
+    /// <summary>
+    /// Chronicler story state (dramatic questions, promises, threads, stakes, windows, world momentum).
+    /// </summary>
+    public ChroniclerStoryState? ChroniclerState { get; set; }
+
+    /// <summary>
+    /// Writer guidance from the Chronicler for the next scene (stored as JSON string).
+    /// </summary>
+    public string? WriterGuidance { get; set; }
 }
 
 /// <summary>
@@ -113,12 +123,12 @@ public sealed class GatheredContextItem
 /// </summary>
 public sealed class Tracker
 {
-    public StoryTracker? Story { get; set; }
+    public SceneTracker? Scene { get; set; }
 
     public MainCharacterState? MainCharacter { get; set; }
 }
 
-public sealed class StoryTracker
+public sealed class SceneTracker
 {
     public required string Time { get; init; }
 

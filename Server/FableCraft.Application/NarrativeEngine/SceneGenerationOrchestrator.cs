@@ -51,7 +51,7 @@ public class SceneGenerationOutput
             Tracker = scene.EnrichmentStatus == EnrichmentStatus.Enriched
                 ? new TrackerDto
                 {
-                    Story = scene.Metadata.Tracker!.Story!,
+                    Scene = scene.Metadata.Tracker!.Scene!,
                     MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
@@ -94,7 +94,7 @@ public class SceneEnrichmentOutput
             SceneId = scene.Id,
             Tracker = new TrackerDto
             {
-                Story = scene.Metadata.Tracker!.Story!,
+                Scene = scene.Metadata.Tracker!.Scene!,
                 MainCharacter = new MainCharacterTrackerDto
                 {
                     Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
@@ -128,7 +128,7 @@ public class LoreDto
 
 public class TrackerDto
 {
-    public required StoryTracker Story { get; init; }
+    public required SceneTracker Scene { get; init; }
 
     public required MainCharacterTrackerDto MainCharacter { get; init; }
 
@@ -456,7 +456,7 @@ internal sealed class SceneGenerationOrchestrator(
             NewTracker = scene.Metadata.Tracker != null
                 ? new Tracker
                 {
-                    Story = scene.Metadata.Tracker.Story,
+                    Scene = scene.Metadata.Tracker.Scene,
                     MainCharacter = scene.Metadata.Tracker.MainCharacter
                 }
                 : null,
@@ -472,7 +472,7 @@ internal sealed class SceneGenerationOrchestrator(
                     MemoryContent = x.Summary,
                     Salience = x.Salience,
                     Data = x.Data,
-                    StoryTracker = x.StoryTracker
+                    SceneTracker = x.SceneTracker
                 }).ToList(),
                 Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterRelationshipContext
                 {
@@ -484,7 +484,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterSceneContext
                 {
                     Content = x.Content,
-                    StoryTracker = x.StoryTracker,
+                    StoryTracker = x.SceneTracker,
                     SequenceNumber = x.SequenceNumber
                 }).ToList(),
             }).ToList(),
@@ -501,7 +501,7 @@ internal sealed class SceneGenerationOrchestrator(
                     MemoryContent = x.Summary,
                     Salience = x.Salience,
                     Data = x.Data,
-                    StoryTracker = x.StoryTracker
+                    SceneTracker = x.SceneTracker
                 }).ToList(),
                 Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterRelationshipContext
                 {
@@ -513,7 +513,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = scene.CharacterSceneRewrites.Where(x => x.CharacterId == cs.CharacterId).Select(x => new CharacterSceneContext
                 {
                     Content = x.Content,
-                    StoryTracker = x.StoryTracker,
+                    StoryTracker = x.SceneTracker,
                     SequenceNumber = x.SequenceNumber
                 }).ToList(),
             }).ToArray(),
@@ -560,7 +560,7 @@ internal sealed class SceneGenerationOrchestrator(
                     break;
 
                 case nameof(EnrichmentAgent.StoryTracker):
-                    context.NewTracker?.Story = null;
+                    context.NewTracker?.Scene = null;
                     break;
                 case nameof(EnrichmentAgent.MainCharacterTracker):
                     if (context.NewTracker?.MainCharacter != null)
@@ -749,7 +749,7 @@ internal sealed class SceneGenerationOrchestrator(
                     MemoryContent = y.Summary,
                     Salience = y.Salience,
                     Data = y.Data,
-                    StoryTracker = y.StoryTracker
+                    SceneTracker = y.SceneTracker
                 }).ToList(),
                 // Group by target and take latest relationship per target character
                 Relationships = x.CharacterRelationships
@@ -766,7 +766,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
                 {
                     Content = y.Content,
-                    StoryTracker = y.StoryTracker,
+                    StoryTracker = y.SceneTracker,
                     SequenceNumber = y.SequenceNumber
                 }).ToList(),
             }).ToList();
@@ -801,7 +801,7 @@ internal sealed class SceneGenerationOrchestrator(
                     MemoryContent = y.Summary,
                     Salience = y.Salience,
                     Data = y.Data,
-                    StoryTracker = y.StoryTracker
+                    SceneTracker = y.SceneTracker
                 }).ToList(),
                 // Group by target and take second-latest relationship per target (skip the most recent)
                 Relationships = x.CharacterRelationships
@@ -819,7 +819,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext()
                 {
                     Content = y.Content,
-                    StoryTracker = y.StoryTracker,
+                    StoryTracker = y.SceneTracker,
                     SequenceNumber = y.SequenceNumber
                 }).ToList(),
             }).ToList();

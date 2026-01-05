@@ -23,7 +23,7 @@ internal sealed class MainCharacterTrackerAgent(
 
     public async Task<CharacterDeltaTrackerOutput> Invoke(
         GenerationContext context,
-        StoryTracker storyTrackerResult,
+        SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
@@ -37,7 +37,7 @@ internal sealed class MainCharacterTrackerAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.WorldSettings)}
 
-                             {PromptSections.StoryTracker(context, storyTrackerResult)}
+                             {PromptSections.StoryTracker(context, sceneTrackerResult)}
 
                              {PromptSections.NewItems(context.NewItems)}
 

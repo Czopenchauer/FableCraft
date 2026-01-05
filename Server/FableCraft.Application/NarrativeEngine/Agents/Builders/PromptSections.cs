@@ -32,15 +32,15 @@ internal static class PromptSections
         return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
     }
 
-    public static string StoryTracker(GenerationContext context, StoryTracker storyTracker)
+    public static string StoryTracker(GenerationContext context, SceneTracker sceneTracker)
     {
-        var previousTime = context.LatestTracker()?.Story;
+        var previousTime = context.LatestTracker()?.Scene;
         return $"""
-                Current Time, Location and general Story information:
+                Current Time, Location and general Scene information:
                 <story_tracker>
-                Time: {storyTracker.Time}
-                Location: {storyTracker.Location}
-                Weather: {storyTracker.Weather}
+                Time: {sceneTracker.Time}
+                Location: {sceneTracker.Location}
+                Weather: {sceneTracker.Weather}
                 </story_tracker>
 
                 Previous time: {previousTime?.Time}
@@ -49,10 +49,10 @@ internal static class PromptSections
 
     public static string CurrentStoryTracker(GenerationContext context)
     {
-        return context.LatestTracker()?.Story != null
+        return context.LatestTracker()?.Scene != null
             ? $"""
                <current_story_tracker>
-               {context.LatestTracker()?.Story.ToJsonString(GetJsonOptions())}
+               {context.LatestTracker()?.Scene.ToJsonString(GetJsonOptions())}
                </current_story_tracker>
                """
             : string.Empty;
@@ -73,7 +73,9 @@ internal static class PromptSections
             scenes
                 .OrderBy(x => x.SequenceNumber)
                 .Select(x => $"""
-                              SCENE NUMBER: {x.SequenceNumber}
+                              Time: {x.Metadata.Tracker!.Scene!.Time}
+                              Location: {x.Metadata.Tracker.Scene.Location}
+                              Weather: {x.Metadata.Tracker.Scene.Weather}
                               {x.SceneContent}
                               {x.PlayerChoice}
                               """));
@@ -178,32 +180,16 @@ internal static class PromptSections
                 """;
     }
 
-    public static string ExistingCharacters(IEnumerable<CharacterContext> characters, IEnumerable<CharacterContext>? extendedCharacters = null)
+    public static string ExistingCharacters(IEnumerable<CharacterContext> characters)
     {
-        var extended = extendedCharacters?.ToList() ?? [];
         var formatted = string.Join("\n\n",
-            characters.Select(c =>
-            {
-//                 if (extended.Any(x => x.Name == c.Name))
-//                 {
-//                     return $"""
-//                             <character>
-//                             **Name**: {c.Name}
-//                             {c.Description}
-//
-//                             Current state of the character:
-//                             {c.CharacterState}
-//                             </character>
-//                             """;
-//                 }
-
-                return $"""
-                        <character>
-                        Name: {c.Name}
-                        {c.Description}
-                        </character>
-                        """;
-            }));
+            characters.Select(c => $"""
+                                    <character>
+                                    Name: {c.Name}
+                                    Location: {c.CharacterTracker?.Location}
+                                    {c.Description}
+                                    </character>
+                                    """));
 
         return $"""
                 List of existing characters in the story:
@@ -213,7 +199,7 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters, IEnumerable<CharacterContext>? extendedCharacters = null)
+    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters)
     {
         var names = string.Join("\n- ",
             characters.Select(c => c.Name));
@@ -479,7 +465,7 @@ internal static class PromptSections
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
                 .Take(count)
-                .Select(s => s.Metadata.Tracker?.Story.ToJsonString(options)));
+                .Select(s => s.Metadata.Tracker?.Scene.ToJsonString(options)));
 
         return $"""
                 Here are the story trackers from previous scene. Update their information based on the current scene:
@@ -530,6 +516,29 @@ internal static class PromptSections
                 Observations from the previous scene generation:
                 {observations.ToJsonString()}
                 </previous_character_observations>
+                """;
+    }
+
+    /// <summary>
+    /// Formats writer guidance from the Chronicler agent for the Writer agent.
+    /// Retrieves the guidance from the previous scene's metadata.
+    /// </summary>
+    public static string ChroniclerGuidance(SceneContext[] sceneContext)
+    {
+        var writerGuidance = sceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.WriterGuidance;
+
+        if (string.IsNullOrEmpty(writerGuidance))
+        {
+            return string.Empty;
+        }
+
+        return $"""
+                <chronicler_guidance>
+                The Chronicler has analyzed the story's narrative fabric and provides the following guidance for this scene:
+                {writerGuidance}
+                </chronicler_guidance>
                 """;
     }
 }

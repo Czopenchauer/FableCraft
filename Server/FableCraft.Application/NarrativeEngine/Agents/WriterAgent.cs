@@ -46,8 +46,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
-
                              {PromptSections.CharacterForEmulation(context.Characters)}
 
                              {PromptSections.MainCharacter(context)}
@@ -73,8 +71,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                 .Select(x => new { x.Id, x.FirstSceneGuidance, x.AuthorNotes })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
             requestPrompt = $"""
-                             {GetStyleGuide(context)}
-
                              {PromptSections.ResolutionOutput(context.NewResolution)}
 
                              {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
@@ -85,7 +81,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         else
         {
             requestPrompt = $"""
-                             {GetStyleGuide(context)}
+                             {PromptSections.ChroniclerGuidance(context.SceneContext)}
 
                              {PromptSections.ResolutionOutput(context.NewResolution)}
 
@@ -117,20 +113,5 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             cancellationToken);
 
         context.NewScene = newScene;
-    }
-
-    private static string GetStyleGuide(GenerationContext context)
-    {
-        if (File.Exists(Path.Combine(context.PromptPath, "StoryBible.md")))
-        {
-            var content = File.ReadAllText(Path.Combine(context.PromptPath, "StoryBible.md"));
-            return $"""
-                     <story_bible>
-                     {content}
-                     </story_bible>
-                    """;
-        }
-
-        return string.Empty;
     }
 }

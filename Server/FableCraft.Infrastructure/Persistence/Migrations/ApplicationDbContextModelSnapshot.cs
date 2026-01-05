@@ -144,7 +144,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("StoryTracker")
+                    b.Property<string>("SceneTracker")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -182,7 +182,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
-                    b.Property<string>("StoryTracker")
+                    b.Property<string>("SceneTracker")
                         .HasColumnType("text");
 
                     b.Property<string>("TargetCharacterName")
@@ -217,7 +217,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
-                    b.Property<string>("StoryTracker")
+                    b.Property<string>("SceneTracker")
                         .IsRequired()
                         .HasColumnType("text");
 

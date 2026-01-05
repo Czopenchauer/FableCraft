@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
@@ -13,11 +15,13 @@ internal sealed class TrackerProcessor(
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
+    ChroniclerAgent chroniclerAgent,
+    LoreCrafter loreCrafter,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var storyTrackerResult = context.NewTracker?.Story ?? await storyTracker.Invoke(context, cancellationToken);
+        var storyTrackerResult = context.NewTracker?.Scene ?? await storyTracker.Invoke(context, cancellationToken);
 
         if (string.IsNullOrEmpty(storyTrackerResult.Location) || string.IsNullOrEmpty(storyTrackerResult.Time) || string.IsNullOrEmpty(storyTrackerResult.Weather))
         {
@@ -25,7 +29,26 @@ internal sealed class TrackerProcessor(
         }
 
         context.NewTracker ??= new Tracker();
-        context.NewTracker.Story = storyTrackerResult;
+        context.NewTracker.Scene = storyTrackerResult;
+
+        var chroniclerTask = chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken).ContinueWith(async output =>
+        {
+            var chroniclerOutput = output.Result;
+            logger.Information("Chronicler requested {Count} lore entries", chroniclerOutput.LoreRequests.Length);
+
+            context.WriterGuidance = chroniclerOutput.WriterGuidance;
+            context.NewWorldEvents = chroniclerOutput.WorldEvents;
+            context.NewChroniclerState = chroniclerOutput.StoryState;
+
+            var loreResults = await Task.WhenAll(
+                chroniclerOutput.LoreRequests.Select(req =>
+                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
+
+            context.NewLore = (context.NewLore ?? []).Concat(loreResults).ToArray();
+            logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
+        },
+        cancellationToken);
+
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
             : ProcessMainChar(context, storyTrackerResult, cancellationToken);
@@ -105,7 +128,7 @@ internal sealed class TrackerProcessor(
                             Salience = x.Salience,
                             Data = x.ExtensionData!,
                             MemoryContent = x.Summary,
-                            StoryTracker = storyTrackerResult,
+                            SceneTracker = storyTrackerResult,
                         }).ToList(),
                         Relationships = characterRelationships,
                         SceneRewrites =
@@ -155,7 +178,7 @@ internal sealed class TrackerProcessor(
                     {
                         Salience = x.Salience,
                         Data = x.ExtensionData!,
-                        StoryTracker = storyTrackerResult,
+                        SceneTracker = storyTrackerResult,
                         MemoryContent = x.Summary
                     }).ToList();
 
@@ -179,6 +202,13 @@ internal sealed class TrackerProcessor(
         {
             await Task.WhenAll(sceneRewriteForNewChar);
         }
+
+        await chroniclerTask;
+    }
+
+    private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req)
+    {
+        return JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
     }
 
     private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
@@ -194,14 +224,14 @@ internal sealed class TrackerProcessor(
         }
     }
 
-    private async Task<MainCharacterState> ProcessMainChar(GenerationContext context, StoryTracker storyTrackerResult, CancellationToken cancellationToken)
+    private async Task<MainCharacterState> ProcessMainChar(GenerationContext context, SceneTracker sceneTrackerResult, CancellationToken cancellationToken)
     {
         if (context.SceneContext.Length == 0)
         {
-            return await initMainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            return await initMainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
         }
 
-        var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+        var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
 
         var newTracker = new MainCharacterState
         {

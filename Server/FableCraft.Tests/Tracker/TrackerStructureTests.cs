@@ -41,7 +41,7 @@ public class TrackerStructureTests
         }
     }
 
-    #region Story Tests
+    #region Scene Tests
 
     [Test]
     public async Task Story_ShouldDeserializeAllFields()

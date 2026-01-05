@@ -1,0 +1,50 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Tracker Preview</h2>
+        <button class="btn-close" (click)="onClose()" [disabled]="isLoading" title="Close">
+          &times;
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <div *ngIf="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <span>Loading preview...</span>
+        </div>
+
+        <div *ngIf="!isLoading && visualizationData" class="preview-renderer">
+          <app-json-renderer [data]="visualizationData"></app-json-renderer>
+        </div>
+
+        <div *ngIf="!isLoading && !visualizationData" class="empty-state">
+          <p>No preview data available.</p>
+          <p class="hint">Click "Refresh" to generate a preview of your tracker structure.</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button
+          class="btn btn-primary"
+          (click)="onRefresh()"
+          [disabled]="isLoading">
+          <span *ngIf="!isLoading">Refresh</span>
+          <span *ngIf="isLoading" class="loading-content">
+            <span class="spinner-small"></span>
+            <span>Loading...</span>
+          </span>
+        </button>
+        <button
+          class="btn btn-secondary"
+          (click)="onClose()"
+          [disabled]="isLoading">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

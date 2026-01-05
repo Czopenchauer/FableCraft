@@ -13,7 +13,7 @@ public record CharacterDto(
 
 public record CharacterMemoryDto(
     string MemoryContent,
-    StoryTracker StoryTracker,
+    SceneTracker SceneTracker,
     double Salience,
     IDictionary<string, object>? Data);
 
@@ -21,7 +21,7 @@ public record CharacterRelationshipDto(
     string TargetCharacterName,
     IDictionary<string, object> Data,
     int SequenceNumber,
-    StoryTracker? StoryTracker);
+    SceneTracker? StoryTracker);
 
 public record EmulateMainCharacterRequest(string Instruction);
 

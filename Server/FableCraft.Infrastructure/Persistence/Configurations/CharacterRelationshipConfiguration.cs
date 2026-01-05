@@ -16,7 +16,7 @@ public class CharacterRelationshipConfiguration : IEntityTypeConfiguration<Chara
         builder.HasIndex(x => new { x.CharacterId, x.TargetCharacterName, x.SequenceNumber });
         builder.Property(x => x.StoryTracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
-            x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+            x => JsonSerializer.Deserialize<SceneTracker>(x, options)!);
         
         builder.Property(x => x.Data).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),

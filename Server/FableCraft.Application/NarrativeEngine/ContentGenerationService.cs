@@ -184,7 +184,7 @@ public sealed class ContentGenerationService(
                     MemoryContent = y.Summary,
                     Salience = y.Salience,
                     Data = y.Data,
-                    StoryTracker = y.StoryTracker
+                    SceneTracker = y.SceneTracker
                 }).ToList(),
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
@@ -200,7 +200,7 @@ public sealed class ContentGenerationService(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
                 {
                     Content = y.Content,
-                    StoryTracker = y.StoryTracker,
+                    StoryTracker = y.SceneTracker,
                     SequenceNumber = y.SequenceNumber
                 }).ToList(),
             }).ToList();

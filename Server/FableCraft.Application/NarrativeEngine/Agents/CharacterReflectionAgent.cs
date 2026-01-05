@@ -35,7 +35,7 @@ internal sealed class CharacterReflectionAgent(
     public async Task<CharacterReflectionOutput> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
-        StoryTracker storyTrackerResult,
+        SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
@@ -76,7 +76,7 @@ internal sealed class CharacterReflectionAgent(
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.StoryTracker(generationContext, storyTrackerResult)}
+                             {PromptSections.StoryTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.CurrentScene(generationContext)}
 

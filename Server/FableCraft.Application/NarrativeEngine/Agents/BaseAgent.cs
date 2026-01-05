@@ -36,7 +36,7 @@ internal abstract class BaseAgent
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
         var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
-        return promp.Replace("{{story_bible}}", storyBible);
+        return promp.Replace(PlaceholderNames.StoryBible, storyBible).Replace(PlaceholderNames.WorldSetting, generationContext.WorldSettings);
     }
 
     private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)

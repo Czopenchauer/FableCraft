@@ -101,6 +101,21 @@ internal sealed class GenerationContext
     public GenerationProcessStep GenerationProcessStep { get; set; }
 
     public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
+
+    /// <summary>
+    /// Writer guidance from ChroniclerAgent for the next scene.
+    /// </summary>
+    public WriterGuidance? WriterGuidance { get; set; }
+
+    /// <summary>
+    /// World events emitted by ChroniclerAgent. Saved as LorebookEntries.
+    /// </summary>
+    public WorldEvent[]? NewWorldEvents { get; set; }
+
+    /// <summary>
+    /// Chronicler story state to persist in scene metadata.
+    /// </summary>
+    public ChroniclerStoryState? NewChroniclerState { get; set; }
 }
 
 internal sealed class CharacterContext
@@ -126,7 +141,7 @@ internal sealed class MemoryContext
 {
     public required string MemoryContent { get; set; } = null!;
 
-    public required StoryTracker StoryTracker { get; set; }
+    public required SceneTracker SceneTracker { get; set; }
 
     public required double Salience { get; set; }
 
@@ -141,7 +156,7 @@ internal sealed class CharacterRelationshipContext
 
     public required int SequenceNumber { get; set; }
 
-    public required StoryTracker? StoryTracker { get; set; }
+    public required SceneTracker? StoryTracker { get; set; }
 }
 
 internal sealed class CharacterSceneContext
@@ -150,7 +165,7 @@ internal sealed class CharacterSceneContext
 
     public required int SequenceNumber { get; set; }
 
-    public required StoryTracker? StoryTracker { get; set; }
+    public required SceneTracker? StoryTracker { get; set; }
 }
 
 internal sealed class SceneContext

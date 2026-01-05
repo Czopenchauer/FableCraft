@@ -23,6 +23,16 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         scene.Metadata.Tracker = context.NewTracker!;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
 
+        if (context.NewChroniclerState != null)
+        {
+            scene.Metadata.ChroniclerState = context.NewChroniclerState;
+        }
+
+        if (context.WriterGuidance != null)
+        {
+            scene.Metadata.WriterGuidance = context.WriterGuidance.ToJsonString();
+        }
+
         // Save gathered context for use in next scene generation
         if (context.ContextGathered != null)
         {
@@ -75,8 +85,21 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                             }).ToList()
                             ?? new List<LorebookEntry>();
 
+        var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
+        {
+            AdventureId = context.AdventureId,
+            Title = $"Event at {x.Where}",
+            Description = $"[{x.When}] {x.Where}",
+            Category = nameof(LorebookCategory.WorldEvent),
+            Content = $"""
+                      {x.When}: {x.Where}\n\n{x.Event}
+                      """,
+            ContentType = ContentType.txt
+        }).ToList() ?? new List<LorebookEntry>();
+
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
+        loreEntities.AddRange(worldEventEntities);
         scene.Lorebooks = loreEntities;
 
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
@@ -128,7 +151,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                 character.Version += 1;
                 var memories = update.CharacterMemories.Select(x => new CharacterMemory
                 {
-                    StoryTracker = x.StoryTracker,
+                    SceneTracker = x.SceneTracker,
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
@@ -148,7 +171,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker!
+                    SceneTracker = x.StoryTracker!
                 });
                 character.CharacterMemories.AddRange(memories);
                 character.CharacterRelationships.AddRange(relationships);
@@ -168,7 +191,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             {
                 var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
                 {
-                    StoryTracker = x.StoryTracker,
+                    SceneTracker = x.SceneTracker,
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
@@ -188,7 +211,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker!
+                    SceneTracker = x.StoryTracker!
                 }).ToList();
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)
