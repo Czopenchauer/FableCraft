@@ -87,13 +87,14 @@ internal sealed class CharacterCrafter : BaseAgent
                 {
                     Data = r.ExtensionData,
                     TargetCharacterName = r.Name,
-                    StoryTracker = null,
+                    UpdateTime = null,
                     SequenceNumber = 0,
                     Dynamic = r.Dynamic
                 })
                 .ToList(),
             SceneRewrites = new List<CharacterSceneContext>(),
-            Importance = request.Importance
+            Importance = request.Importance,
+            SimulationMetadata = null
         };
     }
 

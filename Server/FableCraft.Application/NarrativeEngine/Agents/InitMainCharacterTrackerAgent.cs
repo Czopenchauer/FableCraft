@@ -50,7 +50,7 @@ internal sealed class InitMainCharacterTrackerAgent(
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var instruction = await dbContext.Adventures
-            .Select(x => new { x.Id, x.FirstSceneGuidance, x.AuthorNotes })
+            .Select(x => new { x.Id, x.FirstSceneGuidance })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
         string requestPrompt = $"""
                                             {PromptSections.SceneContent(context.NewScene?.Scene)}

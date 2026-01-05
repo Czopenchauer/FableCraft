@@ -21,7 +21,7 @@ public record CharacterRelationshipDto(
     string TargetCharacterName,
     IDictionary<string, object> Data,
     int SequenceNumber,
-    SceneTracker? StoryTracker);
+    string? UpdateTime);
 
 public record EmulateMainCharacterRequest(string Instruction);
 

@@ -32,22 +32,19 @@ public class SimulationMetadata
     /// In-world timestamp of last simulation (e.g., "14:00 05-06-845").
     /// </summary>
     [JsonPropertyName("last_simulated")]
-    public string? LastSimulated { get; set; }
+    public required string? LastSimulated { get; set; }
 
     /// <summary>
     /// Intended interactions with other characters from previous simulation.
     /// </summary>
     [JsonPropertyName("potential_interactions")]
-    public List<PotentialInteraction>? PotentialInteractions { get; set; }
+    public required List<PotentialInteraction>? PotentialInteractions { get; set; }
 
     /// <summary>
     /// If the character has decided to seek out the MC.
     /// </summary>
     [JsonPropertyName("pending_mc_interaction")]
-    public PendingMcInteraction? PendingMcInteraction { get; set; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
+    public required PendingMcInteraction? PendingMcInteraction { get; set; }
 }
 
 /// <summary>
@@ -80,10 +77,10 @@ public class CharacterStats
     public required CharacterIdentity CharacterIdentity { get; set; }
 
     [JsonPropertyName("goals_and_motivations")]
-    public object? Goals { get; set; }
+    public required object? Goals { get; set; }
 
     [JsonPropertyName("routine")]
-    public object? Routine { get; set; }
+    public required object? Routine { get; set; }
 
     [JsonExtensionData]
     public IDictionary<string, object>? ExtensionData { get; set; }

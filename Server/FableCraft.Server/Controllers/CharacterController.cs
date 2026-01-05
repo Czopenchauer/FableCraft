@@ -42,7 +42,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
                     r.TargetCharacterName,
                     r.Data,
                     r.SequenceNumber,
-                    r.StoryTracker
+                    r.UpdateTime
                 )).ToList()
             ))
             .ToArrayAsync(cancellationToken);

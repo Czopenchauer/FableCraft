@@ -22,7 +22,7 @@ internal sealed class SimulationPlannerInput
     /// <summary>
     /// Active world events that may affect character behavior.
     /// </summary>
-    public WorldEvent[]? WorldEvents { get; init; }
+    public object? WorldEvents { get; init; }
 
     /// <summary>
     /// Characters who have flagged intent to seek the MC.
@@ -83,7 +83,6 @@ internal sealed class PendingMcInteractionEntry
     public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
-
 /// <summary>
 /// Output from the SimulationPlanner agent.
 /// </summary>
@@ -117,7 +116,7 @@ internal sealed class SimulationPlannerOutput
     /// arc_important characters to simulate alone.
     /// </summary>
     [JsonPropertyName("standalone")]
-    public List<StandaloneSimulation>? Standalone { get; init; }
+    public List<StandaloneSimulation>? Standalone { get; set; }
 
     /// <summary>
     /// arc_important characters who don't need simulation (present_in_scene or recently_simulated).
@@ -140,6 +139,9 @@ internal sealed class SimulationPlannerOutput
 /// </summary>
 internal sealed class SimulationPeriod
 {
+    [JsonPropertyName("to")]
+    public required string To { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }

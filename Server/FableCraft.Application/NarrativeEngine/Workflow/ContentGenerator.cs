@@ -17,10 +17,7 @@ internal class ContentGenerator(
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         // Skip if already fully processed
-        if (context.NewCharacters != null &&
-            context.NewLore != null &&
-            context.NewLocations != null &&
-            context.NewItems != null)
+        if (context.NewCharacters != null && context.NewLore != null && context.NewLocations != null && context.NewItems != null)
         {
             logger.Information("Content already generated, skipping");
             return;
@@ -46,7 +43,7 @@ internal class ContentGenerator(
 
         if (context.NewLore != null)
         {
-            logger.Information("Lore already created, skipping ({Count})", context.NewLore.Length);
+            logger.Information("Lore already created, skipping ({Count})", context.NewLore.Count);
         }
         else
         {
@@ -83,8 +80,13 @@ internal class ContentGenerator(
 
         if (loreTask != null)
         {
-            context.NewLore = await loreTask;
-            logger.Information("Created {Count} new lore", context.NewLore.Length);
+            var lore = await loreTask;
+            foreach (GeneratedLore generatedLore in lore)
+            {
+                context.NewLore!.Enqueue(generatedLore);
+            }
+
+            logger.Information("Created {Count} new lore", context.NewLore!.Count);
         }
 
         if (locationTask != null)

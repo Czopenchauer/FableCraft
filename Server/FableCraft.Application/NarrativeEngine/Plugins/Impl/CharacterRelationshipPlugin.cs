@@ -50,8 +50,7 @@ internal sealed class CharacterRelationshipPlugin : CharacterPluginBase
         return $"""
                 {_characterContext.Name}'s view of {targetCharacterName}:
                 {relationship.Data}
-                (Last updated: at {relationship.StoryTracker?.Time ?? string.Empty} in {relationship.StoryTracker?.Location ?? string.Empty})
+                (Last updated: at {relationship.UpdateTime ?? string.Empty})
                 """;
     }
 }
-

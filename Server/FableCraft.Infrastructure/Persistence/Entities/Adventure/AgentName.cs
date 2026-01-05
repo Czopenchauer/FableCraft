@@ -17,5 +17,6 @@ public enum AgentName
     CharacterReflectionAgent,
     ResolutionAgent,
     ChroniclerAgent,
-    SimulationPlannerAgent
+    SimulationPlannerAgent,
+    StandaloneSimulationAgent
 }

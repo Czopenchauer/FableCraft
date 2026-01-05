@@ -86,16 +86,17 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                             ?? new List<LorebookEntry>();
 
         var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
-        {
-            AdventureId = context.AdventureId,
-            Title = $"Event at {x.Where}",
-            Description = $"[{x.When}] {x.Where}",
-            Category = nameof(LorebookCategory.WorldEvent),
-            Content = $"""
-                      {x.When}: {x.Where}\n\n{x.Event}
-                      """,
-            ContentType = ContentType.txt
-        }).ToList() ?? new List<LorebookEntry>();
+                                 {
+                                     AdventureId = context.AdventureId,
+                                     Title = $"Event at {x.Where}",
+                                     Description = $"[{x.When}] {x.Where}",
+                                     Category = nameof(LorebookCategory.WorldEvent),
+                                     Content = $"""
+                                                {x.When}: {x.Where}\n\n{x.Event}
+                                                """,
+                                     ContentType = ContentType.txt
+                                 }).ToList()
+                                 ?? new List<LorebookEntry>();
 
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
@@ -157,14 +158,14 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Data = x.Data,
                     Salience = x.Salience,
                 });
-                
+
                 var relationships = update.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker,
+                    UpdateTime = x.UpdateTime,
                 });
                 var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {
@@ -197,14 +198,14 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Data = x.Data,
                     Salience = x.Salience,
                 }).ToList();
-                
+
                 var relationships = contextNewCharacter.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker,
+                    UpdateTime = x.UpdateTime
                 }).ToList();
                 var sceneRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {

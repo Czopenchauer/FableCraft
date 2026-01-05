@@ -27,7 +27,7 @@ public static class StartupExtensions
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
-            .AddScoped<IProcessor, TrackerProcessor>()
+            .AddScoped<IProcessor, CharacterTrackersProcessor>()
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
@@ -44,7 +44,10 @@ public static class StartupExtensions
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>()
             .AddScoped<ChroniclerAgent>()
-            .AddScoped<SimulationPlannerAgent>();
+            .AddScoped<SimulationPlannerAgent>()
+            .AddScoped<StandaloneSimulationAgent>()
+            .AddScoped<IProcessor, SceneTrackerProcessor>()
+            .AddScoped<IProcessor, SimulationOrchestrator>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();

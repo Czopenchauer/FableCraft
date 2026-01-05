@@ -83,7 +83,6 @@ internal class AdventureCreationService : IAdventureCreationService
             CreatedAt = now,
             FirstSceneGuidance = adventureDto.FirstSceneDescription,
             LastPlayedAt = null,
-            AuthorNotes = adventureDto.AuthorNotes,
             WorldSettings = adventureDto.WorldSettings,
             AdventureStartTime = adventureDto.ReferenceTime,
             MainCharacter = new MainCharacter

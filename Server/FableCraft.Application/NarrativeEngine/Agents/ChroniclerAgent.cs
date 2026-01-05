@@ -52,6 +52,7 @@ internal sealed class ChroniclerAgent(
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<ChroniclerOutput>("chronicler", true);

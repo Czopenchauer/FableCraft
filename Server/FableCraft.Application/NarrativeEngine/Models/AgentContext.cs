@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -22,7 +23,6 @@ internal sealed class GenerationContext
         string promptPath,
         string adventureStartTime,
         string? worldSettings,
-        string? authorNotes,
         LorebookEntry[] previouslyGeneratedLore)
     {
         SceneContext = sceneContext;
@@ -33,7 +33,6 @@ internal sealed class GenerationContext
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
         WorldSettings = worldSettings;
-        AuthorNotes = authorNotes;
         PreviouslyGeneratedLore = previouslyGeneratedLore;
     }
 
@@ -71,20 +70,17 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public string? WorldSettings { get; set; }
 
-    [JsonIgnore]
-    public string? AuthorNotes { get; set; }
-
     // Lore entries that were already generated in previous steps, they weren't yet commited to KG.
     [JsonIgnore]
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
     public CharacterContext[]? NewCharacters { get; set; }
 
-    public List<CharacterContext>? CharacterUpdates { get; set; }
+    public ConcurrentQueue<CharacterContext> CharacterUpdates { get; set; } = new();
 
     public LocationGenerationResult[]? NewLocations { get; set; }
 
-    public GeneratedLore[]? NewLore { get; set; }
+    public ConcurrentQueue<GeneratedLore> NewLore { get; set; } = [];
 
     public GeneratedItem[]? NewItems { get; set; }
 
@@ -108,9 +104,9 @@ internal sealed class GenerationContext
     public WriterGuidance? WriterGuidance { get; set; }
 
     /// <summary>
-    /// World events emitted by ChroniclerAgent. Saved as LorebookEntries.
+    /// World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
     /// </summary>
-    public WorldEvent[]? NewWorldEvents { get; set; }
+    public ConcurrentQueue<WorldEvent> NewWorldEvents { get; set; } = new();
 
     /// <summary>
     /// Chronicler story state to persist in scene metadata.
@@ -146,7 +142,7 @@ internal sealed class CharacterContext
     /// <summary>
     /// Simulation-related data: last_simulated, potential_interactions, pending_mc_interaction.
     /// </summary>
-    public SimulationMetadata? SimulationMetadata { get; set; }
+    public required SimulationMetadata? SimulationMetadata { get; set; }
 }
 
 internal sealed class MemoryContext
@@ -170,7 +166,7 @@ internal sealed class CharacterRelationshipContext
 
     public required int SequenceNumber { get; set; }
 
-    public required SceneTracker? StoryTracker { get; set; }
+    public required string? UpdateTime { get; set; }
 }
 
 internal sealed class CharacterSceneContext

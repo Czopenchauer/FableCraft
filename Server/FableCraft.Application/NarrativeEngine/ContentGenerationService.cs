@@ -52,14 +52,18 @@ public sealed class ContentGenerationService(
         // Clear existing content fields to force regeneration
         context.NewCharacters = null;
         context.NewLocations = null;
-        context.NewLore = null;
         context.NewItems = null;
 
         var processors = serviceProvider.GetServices<IProcessor>();
+
+        var sceneTrackerProcessor = processors.First(p => p is SceneTrackerProcessor);
+        await sceneTrackerProcessor.Invoke(context, cancellationToken);
+
         var contentGenerator = processors.First(p => p is ContentGenerator);
-        await contentGenerator.Invoke(context, cancellationToken);
-        var trackerProcessor = processors.First(p => p is TrackerProcessor);
-        await trackerProcessor.Invoke(context, cancellationToken);
+        var characterTrackersProcessor = processors.First(p => p is CharacterTrackersProcessor);
+        await Task.WhenAll(
+            contentGenerator.Invoke(context, cancellationToken),
+            characterTrackersProcessor.Invoke(context, cancellationToken));
 
         // Save the generated content and character updates to the database
         var saveProcessor = processors.First(p => p is SaveSceneEnrichment);
@@ -71,7 +75,7 @@ public sealed class ContentGenerationService(
             lastScene.Id,
             context.NewCharacters?.Length ?? 0,
             context.NewLocations?.Length ?? 0,
-            context.NewLore?.Length ?? 0,
+            context.NewLore?.Count ?? 0,
             context.NewItems?.Length ?? 0);
 
         return new ContentGenerationResult
@@ -80,7 +84,7 @@ public sealed class ContentGenerationService(
             SequenceNumber = lastScene.SequenceNumber,
             NewCharactersCount = context.NewCharacters?.Length ?? 0,
             NewLocationsCount = context.NewLocations?.Length ?? 0,
-            NewLoreCount = context.NewLore?.Length ?? 0,
+            NewLoreCount = context.NewLore?.Count ?? 0,
             NewItemsCount = context.NewItems?.Length ?? 0,
             NewCharacterNames = context.NewCharacters?.Select(c => c.Name).ToArray() ?? [],
             NewLocationNames = context.NewLocations?.Select(l => l.Title).ToArray() ?? [],
@@ -105,8 +109,7 @@ public sealed class ContentGenerationService(
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
                 x.AdventureStartTime,
-                x.WorldSettings,
-                x.AuthorNotes
+                x.WorldSettings
             })
             .SingleAsync(cancellationToken);
 
@@ -153,7 +156,6 @@ public sealed class ContentGenerationService(
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             adventure.WorldSettings,
-            adventure.AuthorNotes,
             createdLore);
 
         return context;
@@ -198,7 +200,7 @@ public sealed class ContentGenerationService(
                     {
                         TargetCharacterName = y!.TargetCharacterName,
                         Data = y.Data,
-                        StoryTracker = y.StoryTracker,
+                        UpdateTime = y.UpdateTime,
                         SequenceNumber = y.SequenceNumber,
                         Dynamic = y.Dynamic!
                     })

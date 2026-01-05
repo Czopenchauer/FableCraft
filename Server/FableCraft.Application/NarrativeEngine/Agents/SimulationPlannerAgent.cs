@@ -29,6 +29,11 @@ internal sealed class SimulationPlannerAgent(
         SceneTracker sceneTracker,
         CancellationToken cancellationToken)
     {
+        if (context.SimulationPlan != null)
+        {
+            return context.SimulationPlan;
+        }
+
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
@@ -58,12 +63,14 @@ internal sealed class SimulationPlannerAgent(
     {
         var roster = BuildCharacterRoster(context);
         var pendingMcInteractions = ExtractPendingMcInteractions(context);
-
+        var previousState = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.ChroniclerState;
         return new SimulationPlannerInput
         {
             StoryTracker = sceneTracker,
             CharacterRoster = roster,
-            WorldEvents = context.NewWorldEvents,
+            WorldEvents = previousState?.StoryState.WorldMomentum,
             PendingMcInteractions = pendingMcInteractions,
             NarrativeDirection = context.WriterGuidance
         };
@@ -73,6 +80,7 @@ internal sealed class SimulationPlannerAgent(
     {
         return context.Characters
             .Where(c => c.Importance == CharacterImportance.ArcImportance || c.Importance == CharacterImportance.Significant)
+            .Where(c => !context.NewTracker!.Scene!.CharactersPresent.Contains(c.Name))
             .Select(c => new CharacterRosterEntry
             {
                 Name = c.Name,
@@ -140,7 +148,7 @@ internal sealed class SimulationPlannerAgent(
              """
         };
 
-        if (input.WorldEvents is { Length: > 0 })
+        if (input.WorldEvents is not null)
         {
             sections.Add($"""
                           ### World Events
@@ -214,9 +222,9 @@ internal sealed class SimulationPlannerAgent(
             }));
     }
 
-    private static string FormatWorldEvents(WorldEvent[] events)
+    private static string FormatWorldEvents(object events)
     {
-        return string.Join("\n", events.Select(e => $"- {e.ToJsonString()}"));
+        return string.Join("\n", events.ToJsonString());
     }
 
     private static string FormatPendingMcInteractions(List<PendingMcInteractionEntry> interactions)

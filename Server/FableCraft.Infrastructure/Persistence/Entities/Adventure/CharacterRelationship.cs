@@ -26,7 +26,7 @@ public sealed class CharacterRelationship : IEntity
 
     public Scene Scene { get; set; } = null!;
 
-    public required SceneTracker? StoryTracker { get; set; }
+    public required string? UpdateTime { get; set; }
 
     /// <summary>
     /// The sequence number when this relationship was created/updated.

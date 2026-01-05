@@ -9,8 +9,11 @@ using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class TrackerProcessor(
-    StoryTrackerAgent storyTracker,
+/// <summary>
+/// Processor responsible for character tracking: main character tracker, character reflection,
+/// character tracker updates, and chronicler. Depends on SceneTrackerProcessor having run first.
+/// </summary>
+internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
@@ -21,15 +24,11 @@ internal sealed class TrackerProcessor(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var storyTrackerResult = context.NewTracker?.Scene ?? await storyTracker.Invoke(context, cancellationToken);
-
-        if (string.IsNullOrEmpty(storyTrackerResult.Location) || string.IsNullOrEmpty(storyTrackerResult.Time) || string.IsNullOrEmpty(storyTrackerResult.Weather))
-        {
-            throw new InvalidOperationException();
-        }
-
-        context.NewTracker ??= new Tracker();
-        context.NewTracker.Scene = storyTrackerResult;
+        // SceneTrackerProcessor must have run first
+        var storyTrackerResult = context.NewTracker?.Scene
+            ?? throw new InvalidOperationException(
+                "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. " +
+                "Ensure SceneTrackerProcessor runs before this processor.");
 
         var chroniclerTask = chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken).ContinueWith(async output =>
         {
@@ -37,14 +36,22 @@ internal sealed class TrackerProcessor(
             logger.Information("Chronicler requested {Count} lore entries", chroniclerOutput.LoreRequests.Length);
 
             context.WriterGuidance = chroniclerOutput.WriterGuidance;
-            context.NewWorldEvents = chroniclerOutput.WorldEvents;
+            foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+            {
+                context.NewWorldEvents.Enqueue(chroniclerOutputWorldEvent);
+            }
+
             context.NewChroniclerState = chroniclerOutput.StoryState;
 
             var loreResults = await Task.WhenAll(
                 chroniclerOutput.LoreRequests.Select(req =>
                     loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
 
-            context.NewLore = (context.NewLore ?? []).Concat(loreResults).ToArray();
+            foreach (GeneratedLore generatedLore in loreResults)
+            {
+                context.NewLore.Enqueue(generatedLore);
+            }
+
             logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
         },
         cancellationToken);
@@ -98,7 +105,7 @@ internal sealed class TrackerProcessor(
                             {
                                 TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData!,
-                                StoryTracker = storyTrackerResult,
+                                UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = 0,
                                 Dynamic = reflectionOutputRelationshipUpdate.Dynamic!,
                             });
@@ -110,7 +117,7 @@ internal sealed class TrackerProcessor(
                             {
                                 TargetCharacterName = relationship.TargetCharacterName,
                                 Data = updatedRelationship,
-                                StoryTracker = storyTrackerResult,
+                                UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = relationship.SequenceNumber + 1,
                                 Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? relationship.Dynamic,
                             };
@@ -146,7 +153,8 @@ internal sealed class TrackerProcessor(
                                                  ?? 0,
                             }
                         ],
-                        Importance = character.Importance
+                        Importance = character.Importance,
+                        SimulationMetadata = null
                     };
 
                     var trackerDelta = await characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
@@ -220,13 +228,12 @@ internal sealed class TrackerProcessor(
 
     private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
     {
-        context.CharacterUpdates ??= new List<CharacterContext>();
         foreach (var task in tasks)
         {
             var res = await task;
             if (res is not null)
             {
-                context.CharacterUpdates.Add(res);
+                context.CharacterUpdates.Enqueue(res);
             }
         }
     }
