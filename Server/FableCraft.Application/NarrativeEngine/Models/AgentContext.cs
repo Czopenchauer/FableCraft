@@ -117,6 +117,12 @@ internal sealed class GenerationContext
     /// Simulation plan from SimulationPlannerAgent.
     /// </summary>
     public SimulationPlannerOutput? SimulationPlan { get; set; }
+
+    /// <summary>
+    /// CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
+    /// Collected by OffscreenInferenceProcessor after processing events.
+    /// </summary>
+    public ConcurrentQueue<Guid> CharacterEventsToConsume { get; set; } = new();
 }
 
 internal sealed class CharacterContext

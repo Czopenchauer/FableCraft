@@ -77,6 +77,13 @@ internal sealed class StandaloneSimulationOutput
     [JsonPropertyName("world_events_emitted")]
     public List<WorldEventEmitted>? WorldEventsEmitted { get; init; }
 
+    /// <summary>
+    /// Events logged when this character interacted with significant (profiled) NPCs.
+    /// These feed OffscreenInference for the affected characters.
+    /// </summary>
+    [JsonPropertyName("character_events")]
+    public List<SimulationCharacterEvent>? CharacterEvents { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }
@@ -148,4 +155,38 @@ internal sealed class WorldEventEmitted
 
     [JsonPropertyName("event")]
     public required string Event { get; init; }
+}
+
+/// <summary>
+/// An event logged when an arc_important character interacts with a significant character.
+/// These feed OffscreenInference for the affected significant character.
+/// </summary>
+internal sealed class SimulationCharacterEvent
+{
+    /// <summary>
+    /// Name of the significant character who was affected.
+    /// </summary>
+    [JsonPropertyName("character")]
+    public required string Character { get; init; }
+
+    /// <summary>
+    /// In-world time when the event occurred.
+    /// </summary>
+    [JsonPropertyName("time")]
+    public required string Time { get; init; }
+
+    /// <summary>
+    /// What happened from the target character's perspective.
+    /// </summary>
+    [JsonPropertyName("event")]
+    public required string Event { get; init; }
+
+    /// <summary>
+    /// The simulating character's interpretation of how this affected the target.
+    /// </summary>
+    [JsonPropertyName("my_read")]
+    public required string MyRead { get; init; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; set; }
 }

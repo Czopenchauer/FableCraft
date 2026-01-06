@@ -18,5 +18,7 @@ public enum AgentName
     ResolutionAgent,
     ChroniclerAgent,
     SimulationPlannerAgent,
-    StandaloneSimulationAgent
+    StandaloneSimulationAgent,
+    OffscreenInferenceAgent,
+    IntentCheckAgent
 }

@@ -46,8 +46,11 @@ public static class StartupExtensions
             .AddScoped<ChroniclerAgent>()
             .AddScoped<SimulationPlannerAgent>()
             .AddScoped<StandaloneSimulationAgent>()
+            .AddScoped<OffscreenInferenceAgent>()
+            .AddScoped<IntentCheckAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
-            .AddScoped<IProcessor, SimulationOrchestrator>();
+            .AddScoped<IProcessor, SimulationOrchestrator>()
+            .AddScoped<IProcessor, OffscreenInferenceProcessor>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();
@@ -58,6 +61,7 @@ public static class StartupExtensions
         services.AddTransient<CharacterStatePlugin>();
         services.AddTransient<CharacterRelationshipPlugin>();
         services.AddTransient<CharacterEmulationPlugin>();
+        services.AddTransient<IntentCheckPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();

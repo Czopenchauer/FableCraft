@@ -48,6 +48,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<CharacterSceneRewrite> CharacterSceneRewrites { get; set; }
 
+    public DbSet<CharacterEvent> CharacterEvents { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

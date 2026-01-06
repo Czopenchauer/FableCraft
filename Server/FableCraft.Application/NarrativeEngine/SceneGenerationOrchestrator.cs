@@ -316,6 +316,23 @@ internal sealed class SceneGenerationOrchestrator(
                 throw;
             }
 
+            // Run OffscreenInference for significant characters (after parallel, before save)
+            stopwatch.Restart();
+            try
+            {
+                var offscreenProcessor = processors.First(p => p is OffscreenInferenceProcessor);
+                await offscreenProcessor.Invoke(context, cancellationToken);
+                logger.Information("[Enrichment] OffscreenInferenceProcessor took {ElapsedMilliseconds} ms",
+                    stopwatch.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex,
+                    "Error during OffscreenInferenceProcessor for adventure {AdventureId}",
+                    adventureId);
+                // Continue to save - inference failures shouldn't block scene enrichment
+            }
+
             stopwatch.Restart();
             try
             {

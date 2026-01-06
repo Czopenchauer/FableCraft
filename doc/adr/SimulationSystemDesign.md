@@ -62,27 +62,27 @@ The system maintains strict knowledge boundaries through three separate knowledg
 
 Hard cap: **~8 arc_important characters maximum**
 
-This isn't arbitrary—it's a narrative principle. Stories have limited bandwidth for characters with agency. Most work with 4-6:
+This isn't arbitrary-it's a narrative principle. Stories have limited bandwidth for characters with agency. Most work with 4-6:
 - 1-2 antagonists
 - 1-2 love interests / close allies
 - 1-2 wildcards (mentor, rival, complex ally)
 
 | Category | Count | Agency | Profile | KG & Memories | Off-Screen | Examples |
 |----------|-------|--------|---------|---------------|------------|----------|
-| **arc_important** | 4-8 | Active—drives story | Full | Yes | Full simulation | Antagonist with scheme, love interest pursuing MC, ally with own agenda |
-| **significant** | 10-20 | Passive—consistent when encountered | Full | Yes | Offscreen inference | Recurring quest-giver, faction representative, established merchants |
-| **background** | Unlimited | None—functional roles | Partial | No | Nothing | Guards, bartenders, crowd members |
+| **arc_important** | 4-8 | Active-drives story | Full | Yes | Full simulation | Antagonist with scheme, love interest pursuing MC, ally with own agenda |
+| **significant** | 10-20 | Passive-consistent when encountered | Full | Yes | Offscreen inference | Recurring quest-giver, faction representative, established merchants |
+| **background** | Unlimited | None-functional roles | Partial | No | Nothing | Guards, bartenders, crowd members |
 
-**Key insight:** arc_important and significant have identical data (full profile, own KG, memories). The only difference is off-screen processing. This makes promotion/demotion trivial—just flip a flag.
+**Key insight:** arc_important and significant have identical data (full profile, own KG, memories). The only difference is off-screen processing. This makes promotion/demotion trivial-just flip a flag.
 
 ### When to Promote/Demote
 
-**Promote significant → arc_important when:**
+**Promote significant â†’ arc_important when:**
 - Character's independent decisions start affecting the story
 - Character develops goals that involve seeking or opposing MC
 - Writer flags via `importance_flags.upgrade_requests`
 
-**Demote arc_important → significant when:**
+**Demote arc_important â†’ significant when:**
 - Character's arc resolves (antagonist defeated, romance settled)
 - Character exits the active story area long-term
 - Need to make room for newly important character (hard cap)
@@ -110,7 +110,7 @@ This isn't arbitrary—it's a narrative principle. Stories have limited bandwidt
         "character": "Old Marcus",
         "current": "arc_important",
         "requested": "significant",
-        "reason": "Arc resolved—made peace with MC, retiring from active scheming"
+        "reason": "Arc resolved-made peace with MC, retiring from active scheming"
       }
     ]
   }
@@ -128,15 +128,15 @@ This isn't arbitrary—it's a narrative principle. Stories have limited bandwidt
 **When it runs:** After scene, when `current_time - last_simulated > threshold` (default: 6 in-world hours)
 
 **What it produces:**
-- **Scenes** — First-person narrative memories from character's POV
-- **Memories** — Indexed for retrieval (summary, salience, entities, tags)
-- **State updates** — Emotional state, goal progress, arc progression
-- **Tracker updates** — Physical state (fatigue, needs, etc.)
-- **Relationship updates** — Changes in how they view others
-- **Events affecting others** — Logged to significant characters they interacted with
-- **pending_mc_interaction** — If they decide to seek the MC
-- **potential_interactions** — Intended interactions with other profiled characters (feeds next SimulationPlanner)
-- **world_events_emitted** — Facts about the world others could discover (goes to World KG)
+- **Scenes** - First-person narrative memories from character's POV
+- **Memories** - Indexed for retrieval (summary, salience, entities, tags)
+- **State updates** - Emotional state, goal progress, arc progression
+- **Tracker updates** - Physical state (fatigue, needs, etc.)
+- **Relationship updates** - Changes in how they view others
+- **character_events** — Logged events affecting significant characters they interacted with (feeds OffscreenInference)
+- **pending_mc_interaction** - If they decide to seek the MC
+- **potential_interactions** - Intended interactions with other profiled characters (feeds next SimulationPlanner)
+- **world_events_emitted** - Facts about the world others could discover (goes to World KG)
 
 ### world_events_emitted
 
@@ -154,7 +154,7 @@ When a character's actions create facts about the shared world:
 }
 ```
 
-This goes to the World KG—shared knowledge anyone could discover.
+This goes to the World KG-shared knowledge anyone could discover.
 
 ### potential_interactions
 
@@ -177,12 +177,12 @@ When a standalone simulation results in the character wanting to interact with a
 This feeds into the next SimulationPlanner cycle. If Tam is also queued for simulation, they get grouped into a cohort.
 
 **Modes:**
-- **Standalone** — Character simulated alone, interactions with non-arc characters summarized
-- **Cohort** — 2-4 arc_important characters simulated together when goals explicitly intersect
+- **Standalone** - Character simulated alone, interactions with non-arc characters summarized
+- **Cohort** - 2-4 arc_important characters simulated together when goals explicitly intersect
 
 ### Offscreen Inference (significant characters)
 
-**What it is:** Lightweight state derivation. Not simulation—no scenes generated, no narrative content.
+**What it is:** Lightweight state derivation. Not simulation-no scenes generated, no narrative content.
 
 **When it runs:** On-demand, when character is about to appear in a scene
 
@@ -194,9 +194,9 @@ This feeds into the next SimulationPlanner cycle. If Tam is also queued for simu
 - World events
 
 **What it produces:**
-- **Current situation** — Location, activity, readiness for interaction
-- **State snapshot** — Emotional state, physical state
-- **Inference summary** — Brief explanation of what they've been doing (not narrative, just reasoning)
+- **Current situation** - Location, activity, readiness for interaction
+- **State snapshot** - Emotional state, physical state
+- **Inference summary** - Brief explanation of what they've been doing (not narrative, just reasoning)
 
 **Key insight:** Doesn't replay time. Answers: "Given who they are and what happened to them, where are they now?"
 
@@ -218,19 +218,20 @@ This feeds into the next SimulationPlanner cycle. If Tam is also queued for simu
 
 ---
 
-## Events Log
+## Events Log (character_events)
 
-When an arc_important character's simulation involves a significant character, we log the event:
+When an arc_important character's simulation involves a significant character, the simulating character logs the event to `character_events`:
 
 ```json
 {
   "character": "Tam",
   "time": "14:00 05-06-845",
-  "event": "Kira came for backdated manifest, tense negotiation about payment",
-  "source": "Kira's simulation",
-  "implications": "Tam is annoyed, owes Kira less now, might be more cautious"
+  "event": "Came for backdated manifest, tense negotiation about payment",
+  "my_read": "He's annoyed but took the deal. Owes me less now. Might be more cautious about future dealings."
 }
 ```
+
+**Note:** The event is written from the simulating character's perspective. `my_read` captures their interpretation—which may be wrong.
 
 When MC later encounters Tam, OffscreenInference consumes this log to derive his current state.
 
@@ -256,10 +257,10 @@ When an arc_important character decides during simulation to seek the MC:
 ```
 
 **Writer consumes this as:**
-- **immediate** — Interrupt current scene
-- **high** — Weave into scene transition or next scene opening
-- **medium** — Find appropriate moment in next few scenes
-- **low** — Background thread, address when natural
+- **immediate** - Interrupt current scene
+- **high** - Weave into scene transition or next scene opening
+- **medium** - Find appropriate moment in next few scenes
+- **low** - Background thread, address when natural
 
 The NPC initiated. The world moved. Writer controls pacing.
 
@@ -272,31 +273,31 @@ The Chronicler is a narrative awareness agent that tracks the story's fabric and
 ### What It Tracks
 
 **MC's Story:**
-- **Dramatic questions** — What the story is asking ("Will she escape?" "Will they discover his secret?")
-- **Promises** — Chekhov's guns, setups waiting for payoff
-- **Active threads** — Plotlines in motion, their momentum, when last touched
-- **Stakes** — What's at risk, failure conditions, deadlines
-- **Windows** — Time-limited opportunities
+- **Dramatic questions** - What the story is asking ("Will she escape?" "Will they discover his secret?")
+- **Promises** - Chekhov's guns, setups waiting for payoff
+- **Active threads** - Plotlines in motion, their momentum, when last touched
+- **Stakes** - What's at risk, failure conditions, deadlines
+- **Windows** - Time-limited opportunities
 
 **World's Story:**
-- **World momentum** — Events progressing independently of MC (rituals, wars, blights, political movements)
+- **World momentum** - Events progressing independently of MC (rituals, wars, blights, political movements)
 
 ### What It Produces
 
-**writer_guidance** — Narrative-aware guidance for the Writer:
-- `weave_in` — Threads worth touching (suggestive)
-- `manifesting_now` — Consequences happening NOW (mandatory)
-- `opportunities_present` — Windows open/closing
-- `tonal_direction` — Where the emotional arc is heading
-- `promises_ready` — Setups ready for payoff
-- `dont_forget` — Things that could slip
-- `world_momentum_notes` — Background events that might surface
+**writer_guidance** - Narrative-aware guidance for the Writer:
+- `weave_in` - Threads worth touching (suggestive)
+- `manifesting_now` - Consequences happening NOW (mandatory)
+- `opportunities_present` - Windows open/closing
+- `tonal_direction` - Where the emotional arc is heading
+- `promises_ready` - Setups ready for payoff
+- `dont_forget` - Things that could slip
+- `world_momentum_notes` - Background events that might surface
 
-**story_state** — The complete narrative fabric (persisted between scenes)
+**story_state** - The complete narrative fabric (persisted between scenes)
 
-**world_events** — Events to emit to World KG (MC actions noticed, momentum advancements)
+**world_events** - Events to emit to World KG (MC actions noticed, momentum advancements)
 
-**lore_requests** — When momentum items need substance
+**lore_requests** - When momentum items need substance
 
 ### When It Runs
 
@@ -304,15 +305,15 @@ After each scene, **in parallel** with other post-scene processing. Receives:
 - Current scene narrative (just ended)
 - Current time and previous time (for momentum advancement)
 - Previous story_state (its own output from last cycle)
-- **Previous** simulation's world_events_emitted (off by one—see System Flow)
+- **Previous** simulation's world_events_emitted (off by one-see System Flow)
 
 ### How It Advances World Momentum
 
 Based on elapsed in-world time:
-- **Hours timeline** — Advances every 6+ hours
-- **Days timeline** — Advances each day boundary
-- **Weeks timeline** — Advances on major time skips
-- **Ongoing** — Gradual continuous evolution
+- **Hours timeline** - Advances every 6+ hours
+- **Days timeline** - Advances each day boundary
+- **Weeks timeline** - Advances on major time skips
+- **Ongoing** - Gradual continuous evolution
 
 When momentum advances significantly, Chronicler emits a world_event describing the development.
 
@@ -411,7 +412,7 @@ flowchart LR
         char_memories[Character Memories]
         writer_guid[writer_guidance]
         story_state[story_state]
-        world_ev[world_events → KG]
+        world_ev[world_events â†’ KG]
         pending[pending_mc_interactions]
         sim_events[world_events_emitted]
     end
@@ -444,7 +445,7 @@ This is a consequence of parallel execution:
 **Why this matters:**
 - Character actions don't instantly affect world momentum
 - There's a one-scene delay before NPC-driven events influence Chronicler's awareness
-- This is acceptable—narrative consequences don't need frame-perfect timing
+- This is acceptable-narrative consequences don't need frame-perfect timing
 
 **What Chronicler receives each cycle:**
 - Current scene (just ended)
@@ -488,7 +489,7 @@ SimulationPlanner outputs which significant characters likely need OffscreenInfe
 ```mermaid
 flowchart TD
     subgraph SimPlannerOutput["SimulationPlanner Outputs"]
-        ArcSim[arc_important → Simulation]
+        ArcSim[arc_important â†’ Simulation]
         SigList[significant_for_inference<br/>list of characters]
     end
     
@@ -509,9 +510,9 @@ flowchart TD
     end
 ```
 
-**ContextGatherer** remains unchanged — it queries KG for world knowledge and narrative history relevant to the upcoming scene. It does NOT predict which characters will appear.
+**ContextGatherer** remains unchanged - it queries KG for world knowledge and narrative history relevant to the upcoming scene. It does NOT predict which characters will appear.
 
-**SimulationPlanner** outputs `significant_for_inference` — a list of significant characters likely to appear based on:
+**SimulationPlanner** outputs `significant_for_inference` - a list of significant characters likely to appear based on:
 - MC's current location and trajectory
 - Active threads involving significant characters
 - Recent narrative direction
@@ -574,7 +575,7 @@ Simulation runs when:
 
 **If any arc_important character is simulated, ALL arc_important characters are simulated.**
 
-This keeps them synchronized—all living in the same time. No character gets "ahead" or "behind."
+This keeps them synchronized-all living in the same time. No character gets "ahead" or "behind."
 
 ### Simulation Period (Dynamic)
 
@@ -676,15 +677,14 @@ If no pairing scores 3+, character goes standalone.
 
 **Note:** `potential_interactions` comes from previous standalone simulation output. Empty array if none pending.
 
-### Events Log Entry
+### Events Log Entry (character_events)
 
 ```json
 {
   "character": "Tam",
   "time": "14:00 05-06-845",
-  "event": "Kira came for backdated manifest, tense negotiation about payment",
-  "source": "Kira's simulation",
-  "implications": "Annoyed, wary, owes Kira less now"
+  "event": "Came for backdated manifest, tense negotiation about payment",
+  "my_read": "He's annoyed but took the deal. Owes me less now."
 }
 ```
 
@@ -775,7 +775,7 @@ Efficiency. Rapid scene sequences (combat, conversations) don't need NPC catch-u
 
 ### Why events log instead of simulating significant characters?
 
-Cost. Full simulation is expensive. Significant characters don't need narrative generation—they need consistent state. Logging events + inference achieves consistency without the overhead.
+Cost. Full simulation is expensive. Significant characters don't need narrative generation-they need consistent state. Logging events + inference achieves consistency without the overhead.
 
 ### Why hard cap on arc_important?
 
@@ -787,7 +787,7 @@ Cost and complexity. Moderator overhead is significant. Most characters, even im
 
 ### Why Chronicler separate from SceneTracker?
 
-Different concerns. SceneTracker is mechanical—where, when, who's present. Chronicler is artistic—narrative fabric, story promises, world momentum. Separation keeps each focused.
+Different concerns. SceneTracker is mechanical-where, when, who's present. Chronicler is artistic-narrative fabric, story promises, world momentum. Separation keeps each focused.
 
 ### Why does Chronicler emit world events?
 

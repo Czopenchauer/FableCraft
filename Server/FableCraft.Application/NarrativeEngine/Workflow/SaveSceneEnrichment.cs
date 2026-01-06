@@ -117,6 +117,9 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
 
             await UpsertCharacters(context, scene, cancellationToken, dbContext);
 
+            // Mark CharacterEvents as consumed (deferred from OffscreenInferenceProcessor)
+            await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
+
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         });
@@ -248,5 +251,25 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                 }
             }
         }
+    }
+
+    private async static Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
+    {
+        if (context.CharacterEventsToConsume.IsEmpty)
+        {
+            return;
+        }
+
+        var eventIds = context.CharacterEventsToConsume.ToList();
+        if (eventIds.Count == 0)
+        {
+            return;
+        }
+
+        await dbContext.CharacterEvents
+            .Where(e => eventIds.Contains(e.Id))
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(e => e.Consumed, true),
+                cancellationToken);
     }
 }

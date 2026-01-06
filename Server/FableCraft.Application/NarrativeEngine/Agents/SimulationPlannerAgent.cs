@@ -104,9 +104,13 @@ internal sealed class SimulationPlannerAgent(
         }
 
         var notes = c.Relationships
-            .Select(r => r.Dynamic);
+            .Select(r =>
+                $"""
+                 Target name: {r.TargetCharacterName}
+                 {r.Dynamic}
+                 """);
 
-        return string.Join("; ", notes);
+        return string.Join("\n\n", notes);
     }
 
     private List<PendingMcInteractionEntry>? ExtractPendingMcInteractions(GenerationContext context)
@@ -209,13 +213,7 @@ internal sealed class SimulationPlannerAgent(
 
                 if (c.PotentialInteractions is { Count: > 0 })
                 {
-                    var interactions = string.Join("; ",
-                        c.PotentialInteractions.Select(p =>
-                        {
-                            var intent = p.ExtensionData?.TryGetValue("intent", out var i) == true ? i?.ToString() : "interact";
-                            return $"intends to {intent} with {p.TargetCharacter}";
-                        }));
-                    lines.Add($"Pending interactions: {interactions}");
+                    lines.Add($"Pending interactions: \n{c.PotentialInteractions.ToJsonString()}");
                 }
 
                 return string.Join("\n", lines);
