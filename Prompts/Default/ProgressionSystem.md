@@ -78,9 +78,9 @@ Describe how maximum pool scales with character power level.
 **Regeneration Rates:**
 | Activity State | Regeneration |
 |----------------|--------------|
-| Resting | X% per hour |
-| Active | Y% per hour |
-| Focused recovery | Z% per hour |
+| Resting | 20% per hour |
+| Active | 10% per hour |
+| Focused recovery | 40% per hour |
 
 **Exhaustion Effects:**
 | Resource Remaining | Effect |

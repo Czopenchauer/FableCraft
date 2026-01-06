@@ -23,11 +23,6 @@ internal sealed class StandaloneSimulationInput
     /// World events that may affect the character.
     /// </summary>
     public object? WorldEvents { get; init; }
-
-    /// <summary>
-    /// Names of other profiled characters (for potential_interactions flagging).
-    /// </summary>
-    public string[]? ProfiledCharacterNames { get; init; }
 }
 
 /// <summary>
@@ -58,12 +53,6 @@ internal sealed class StandaloneSimulationOutput
     /// </summary>
     [JsonPropertyName("tracker_updates")]
     public Dictionary<string, object>? TrackerUpdates { get; init; }
-
-    /// <summary>
-    /// Intended interactions with other profiled characters (to be resolved in future simulations).
-    /// </summary>
-    [JsonPropertyName("potential_interactions")]
-    public List<PotentialInteraction>? PotentialInteractions { get; init; }
 
     /// <summary>
     /// If the character decides to seek out the protagonist.

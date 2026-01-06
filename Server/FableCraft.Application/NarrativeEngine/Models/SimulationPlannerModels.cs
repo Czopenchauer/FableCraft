@@ -64,9 +64,6 @@ internal sealed class CharacterRosterEntry
     [JsonPropertyName("routine_summary")]
     public string? RoutineSummary { get; init; }
 
-    [JsonPropertyName("potential_interactions")]
-    public List<PotentialInteraction>? PotentialInteractions { get; init; }
-
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }

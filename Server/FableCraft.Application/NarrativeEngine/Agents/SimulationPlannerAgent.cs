@@ -90,27 +90,9 @@ internal sealed class SimulationPlannerAgent(
                 GoalsSummary = c.CharacterState.Goals.ToJsonString(),
                 KeyRelationships = c.Relationships?.Select(r => r.TargetCharacterName).ToArray(),
                 RelationshipNotes = BuildRelationshipNotes(c),
-                RoutineSummary = c.CharacterState.Routine.ToJsonString(),
-                PotentialInteractions = c.SimulationMetadata?.PotentialInteractions
+                RoutineSummary = c.CharacterState.Routine.ToJsonString()
             })
             .ToList();
-    }
-
-    private static string? BuildRelationshipNotes(CharacterContext c)
-    {
-        if (c.Relationships.Count == 0)
-        {
-            return null;
-        }
-
-        var notes = c.Relationships
-            .Select(r =>
-                $"""
-                 Target name: {r.TargetCharacterName}
-                 {r.Dynamic}
-                 """);
-
-        return string.Join("\n\n", notes);
     }
 
     private List<PendingMcInteractionEntry>? ExtractPendingMcInteractions(GenerationContext context)
@@ -129,6 +111,23 @@ internal sealed class SimulationPlannerAgent(
             .ToList();
 
         return entries.Count > 0 ? entries : null;
+    }
+
+    private static string? BuildRelationshipNotes(CharacterContext c)
+    {
+        if (c.Relationships.Count == 0)
+        {
+            return null;
+        }
+
+        var notes = c.Relationships
+            .Select(r =>
+                $"""
+                 Target name: {r.TargetCharacterName}
+                 {r.Dynamic}
+                 """);
+
+        return string.Join("\n\n", notes);
     }
 
     private string BuildContextPrompt(SimulationPlannerInput input)
@@ -210,11 +209,6 @@ internal sealed class SimulationPlannerAgent(
 
                 if (!string.IsNullOrEmpty(c.RelationshipNotes))
                     lines.Add($"Relationship notes: {c.RelationshipNotes}");
-
-                if (c.PotentialInteractions is { Count: > 0 })
-                {
-                    lines.Add($"Pending interactions: \n{c.PotentialInteractions.ToJsonString()}");
-                }
 
                 return string.Join("\n", lines);
             }));

@@ -85,7 +85,6 @@ internal sealed class StandaloneSimulationAgent(
         prompt = prompt.Replace("{{relationships}}", FormatRelationships(input.Character));
         prompt = prompt.Replace("{{time_period}}", input.TimePeriod);
         prompt = prompt.Replace("{{world_events}}", FormatWorldEvents(input.WorldEvents));
-        prompt = prompt.Replace("{{profiled_characters}}", FormatProfiledCharacters(input.ProfiledCharacterNames, input.Character.Name));
 
         return prompt;
     }

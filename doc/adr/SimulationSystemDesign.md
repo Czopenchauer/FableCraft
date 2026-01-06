@@ -21,7 +21,7 @@ The system maintains strict knowledge boundaries through three separate knowledg
 - Scene rewrites (their subjective experience of MC scenes)
 - Simulation narratives (their off-screen experiences)
 - What they know, have witnessed, have concluded
-- Fed by: CharacterReflection, Simulation outputs
+- Fed by: CharacterReflection, Simulation outputs, OffscreenInference outputs
 
 ### Boundary Rules
 
@@ -32,6 +32,10 @@ The system maintains strict knowledge boundaries through three separate knowledg
 **Characters CAN access:**
 - World KG (public/discoverable facts)
 - Their own KG (their memories)
+
+**During simulation, characters can query:**
+- World KG — to inform decisions with world facts
+- Their own KG — to recall their experiences and what they've learned
 
 **When characters emit to World KG:**
 - Action has visible consequences (fire, destruction, death)
@@ -62,27 +66,27 @@ The system maintains strict knowledge boundaries through three separate knowledg
 
 Hard cap: **~8 arc_important characters maximum**
 
-This isn't arbitrary-it's a narrative principle. Stories have limited bandwidth for characters with agency. Most work with 4-6:
+This isn't arbitrary—it's a narrative principle. Stories have limited bandwidth for characters with agency. Most work with 4-6:
 - 1-2 antagonists
 - 1-2 love interests / close allies
 - 1-2 wildcards (mentor, rival, complex ally)
 
 | Category | Count | Agency | Profile | KG & Memories | Off-Screen | Examples |
 |----------|-------|--------|---------|---------------|------------|----------|
-| **arc_important** | 4-8 | Active-drives story | Full | Yes | Full simulation | Antagonist with scheme, love interest pursuing MC, ally with own agenda |
-| **significant** | 10-20 | Passive-consistent when encountered | Full | Yes | Offscreen inference | Recurring quest-giver, faction representative, established merchants |
-| **background** | Unlimited | None-functional roles | Partial | No | Nothing | Guards, bartenders, crowd members |
+| **arc_important** | 4-8 | Active—drives story | Full | Yes | Full simulation | Antagonist with scheme, love interest pursuing MC, ally with own agenda |
+| **significant** | 10-20 | Passive—consistent when encountered | Full | Yes | Offscreen inference | Recurring quest-giver, faction representative, established merchants |
+| **background** | Unlimited | None—functional roles | Partial | No | Nothing | Guards, bartenders, crowd members |
 
-**Key insight:** arc_important and significant have identical data (full profile, own KG, memories). The only difference is off-screen processing. This makes promotion/demotion trivial-just flip a flag.
+**Key insight:** arc_important and significant have identical data (full profile, own KG, memories). The only difference is off-screen processing. This makes promotion/demotion trivial—just flip a flag.
 
 ### When to Promote/Demote
 
-**Promote significant â†’ arc_important when:**
+**Promote significant → arc_important when:**
 - Character's independent decisions start affecting the story
 - Character develops goals that involve seeking or opposing MC
 - Writer flags via `importance_flags.upgrade_requests`
 
-**Demote arc_important â†’ significant when:**
+**Demote arc_important → significant when:**
 - Character's arc resolves (antagonist defeated, romance settled)
 - Character exits the active story area long-term
 - Need to make room for newly important character (hard cap)
@@ -110,7 +114,7 @@ This isn't arbitrary-it's a narrative principle. Stories have limited bandwidth 
         "character": "Old Marcus",
         "current": "arc_important",
         "requested": "significant",
-        "reason": "Arc resolved-made peace with MC, retiring from active scheming"
+        "reason": "Arc resolved—made peace with MC, retiring from active scheming"
       }
     ]
   }
@@ -128,15 +132,14 @@ This isn't arbitrary-it's a narrative principle. Stories have limited bandwidth 
 **When it runs:** After scene, when `current_time - last_simulated > threshold` (default: 6 in-world hours)
 
 **What it produces:**
-- **Scenes** - First-person narrative memories from character's POV
-- **Memories** - Indexed for retrieval (summary, salience, entities, tags)
-- **State updates** - Emotional state, goal progress, arc progression
-- **Tracker updates** - Physical state (fatigue, needs, etc.)
-- **Relationship updates** - Changes in how they view others
+- **Scenes** — First-person narrative memories from character's POV
+- **Memories** — Indexed for retrieval (summary, salience, entities, tags)
+- **State updates** — Emotional state, goal progress, arc progression
+- **Tracker updates** — Physical state (fatigue, needs, etc.)
+- **Relationship updates** — Changes in how they view others
 - **character_events** — Logged events affecting significant characters they interacted with (feeds OffscreenInference)
-- **pending_mc_interaction** - If they decide to seek the MC
-- **potential_interactions** - Intended interactions with other profiled characters (feeds next SimulationPlanner)
-- **world_events_emitted** - Facts about the world others could discover (goes to World KG)
+- **pending_mc_interaction** — If they decide to seek the MC
+- **world_events_emitted** — Facts about the world others could discover (goes to World KG)
 
 ### world_events_emitted
 
@@ -154,37 +157,18 @@ When a character's actions create facts about the shared world:
 }
 ```
 
-This goes to the World KG-shared knowledge anyone could discover.
+This goes to the World KG—shared knowledge anyone could discover.
 
-### potential_interactions
+### Simulation Modes
 
-When a standalone simulation results in the character wanting to interact with another profiled character:
-
-```json
-{
-  "potential_interactions": [
-    {
-      "character": "Tam",
-      "intent": "Negotiate payment terms for the manifest job",
-      "timing": "Tomorrow morning",
-      "location": "His office at the docks",
-      "urgency": "medium"
-    }
-  ]
-}
-```
-
-This feeds into the next SimulationPlanner cycle. If Tam is also queued for simulation, they get grouped into a cohort.
-
-**Modes:**
-- **Standalone** - Character simulated alone, interactions with non-arc characters summarized
-- **Cohort** - 2-4 arc_important characters simulated together when goals explicitly intersect
+- **Standalone** — Character simulated alone, interactions with significant/background NPCs summarized in their narrative
+- **Cohort** — 2-4 arc_important characters simulated together when IntentCheck determines they want to interact
 
 ### Offscreen Inference (significant characters)
 
-**What it is:** Lightweight state derivation. Not simulation-no scenes generated, no narrative content.
+**What it is:** Lightweight simulation that produces brief narrative memories without the full simulation overhead.
 
-**When it runs:** On-demand, when character is about to appear in a scene
+**When it runs:** On-demand, when a significant character is about to appear in a scene
 
 **Inputs:**
 - Character profile and routine
@@ -194,11 +178,12 @@ This feeds into the next SimulationPlanner cycle. If Tam is also queued for simu
 - World events
 
 **What it produces:**
-- **Current situation** - Location, activity, readiness for interaction
-- **State snapshot** - Emotional state, physical state
-- **Inference summary** - Brief explanation of what they've been doing (not narrative, just reasoning)
+- **Scenes** — 1-2 brief first-person narratives (1-3 paragraphs each) covering the elapsed time
+- **Memories** — Indexed for retrieval (salience capped at 6—inference doesn't produce high-salience memories)
+- **Current situation** — Location, activity, readiness for interaction
+- **State updates** — Emotional state, physical state changes
 
-**Key insight:** Doesn't replay time. Answers: "Given who they are and what happened to them, where are they now?"
+**Key insight:** Lighter than full simulation but still produces actual memories. The character remembers their off-screen time, just with less detail than arc_important characters.
 
 ### Partial Profile (background characters)
 
@@ -233,7 +218,7 @@ When an arc_important character's simulation involves a significant character, t
 
 **Note:** The event is written from the simulating character's perspective. `my_read` captures their interpretation—which may be wrong.
 
-When MC later encounters Tam, OffscreenInference consumes this log to derive his current state.
+When MC later encounters Tam, OffscreenInference consumes this log to derive his current state and produce his memories of the event.
 
 **Cleanup:** Events are deleted after consumption by OffscreenInference. No accumulation.
 
@@ -257,10 +242,10 @@ When an arc_important character decides during simulation to seek the MC:
 ```
 
 **Writer consumes this as:**
-- **immediate** - Interrupt current scene
-- **high** - Weave into scene transition or next scene opening
-- **medium** - Find appropriate moment in next few scenes
-- **low** - Background thread, address when natural
+- **immediate** — Interrupt current scene
+- **high** — Weave into scene transition or next scene opening
+- **medium** — Find appropriate moment in next few scenes
+- **low** — Background thread, address when natural
 
 The NPC initiated. The world moved. Writer controls pacing.
 
@@ -273,31 +258,31 @@ The Chronicler is a narrative awareness agent that tracks the story's fabric and
 ### What It Tracks
 
 **MC's Story:**
-- **Dramatic questions** - What the story is asking ("Will she escape?" "Will they discover his secret?")
-- **Promises** - Chekhov's guns, setups waiting for payoff
-- **Active threads** - Plotlines in motion, their momentum, when last touched
-- **Stakes** - What's at risk, failure conditions, deadlines
-- **Windows** - Time-limited opportunities
+- **Dramatic questions** — What the story is asking ("Will she escape?" "Will they discover his secret?")
+- **Promises** — Chekhov's guns, setups waiting for payoff
+- **Active threads** — Plotlines in motion, their momentum, when last touched
+- **Stakes** — What's at risk, failure conditions, deadlines
+- **Windows** — Time-limited opportunities
 
 **World's Story:**
-- **World momentum** - Events progressing independently of MC (rituals, wars, blights, political movements)
+- **World momentum** — Events progressing independently of MC (rituals, wars, blights, political movements)
 
 ### What It Produces
 
-**writer_guidance** - Narrative-aware guidance for the Writer:
-- `weave_in` - Threads worth touching (suggestive)
-- `manifesting_now` - Consequences happening NOW (mandatory)
-- `opportunities_present` - Windows open/closing
-- `tonal_direction` - Where the emotional arc is heading
-- `promises_ready` - Setups ready for payoff
-- `dont_forget` - Things that could slip
-- `world_momentum_notes` - Background events that might surface
+**writer_guidance** — Narrative-aware guidance for the Writer:
+- `weave_in` — Threads worth touching (suggestive)
+- `manifesting_now` — Consequences happening NOW (mandatory)
+- `opportunities_present` — Windows open/closing
+- `tonal_direction` — Where the emotional arc is heading
+- `promises_ready` — Setups ready for payoff
+- `dont_forget` — Things that could slip
+- `world_momentum_notes` — Background events that might surface
 
-**story_state** - The complete narrative fabric (persisted between scenes)
+**story_state** — The complete narrative fabric (persisted between scenes)
 
-**world_events** - Events to emit to World KG (MC actions noticed, momentum advancements)
+**world_events** — Events to emit to World KG (MC actions noticed, momentum advancements)
 
-**lore_requests** - When momentum items need substance
+**lore_requests** — When momentum items need substance
 
 ### When It Runs
 
@@ -305,15 +290,15 @@ After each scene, **in parallel** with other post-scene processing. Receives:
 - Current scene narrative (just ended)
 - Current time and previous time (for momentum advancement)
 - Previous story_state (its own output from last cycle)
-- **Previous** simulation's world_events_emitted (off by one-see System Flow)
+- **Previous** simulation's world_events_emitted (off by one—see System Flow)
 
 ### How It Advances World Momentum
 
 Based on elapsed in-world time:
-- **Hours timeline** - Advances every 6+ hours
-- **Days timeline** - Advances each day boundary
-- **Weeks timeline** - Advances on major time skips
-- **Ongoing** - Gradual continuous evolution
+- **Hours timeline** — Advances every 6+ hours
+- **Days timeline** — Advances each day boundary
+- **Weeks timeline** — Advances on major time skips
+- **Ongoing** — Gradual continuous evolution
 
 When momentum advances significantly, Chronicler emits a world_event describing the development.
 
@@ -372,7 +357,7 @@ flowchart TD
         CT[CharacterTracker]
         CR[CharacterReflection]
         CH[Chronicler]
-        SIM[Simulation +<br/>SimulationPlanner]
+        SIM[SimulationPlanner<br/>+ IntentCheck<br/>+ Simulation]
     end
     
     subgraph PreScene["PRE-SCENE (Sequential)"]
@@ -403,7 +388,7 @@ flowchart LR
         CT[CharacterTracker<br/>updates MC state]
         CR[CharacterReflection<br/>for NPCs in scene]
         CH[Chronicler<br/>story state + guidance]
-        SIM[Simulation<br/>arc_important chars]
+        SIM[Simulation Pipeline<br/>IntentCheck → Simulate]
     end
     
     subgraph Outputs
@@ -412,7 +397,7 @@ flowchart LR
         char_memories[Character Memories]
         writer_guid[writer_guidance]
         story_state[story_state]
-        world_ev[world_events â†’ KG]
+        world_ev[world_events → KG]
         pending[pending_mc_interactions]
         sim_events[world_events_emitted]
     end
@@ -445,7 +430,7 @@ This is a consequence of parallel execution:
 **Why this matters:**
 - Character actions don't instantly affect world momentum
 - There's a one-scene delay before NPC-driven events influence Chronicler's awareness
-- This is acceptable-narrative consequences don't need frame-perfect timing
+- This is acceptable—narrative consequences don't need frame-perfect timing
 
 **What Chronicler receives each cycle:**
 - Current scene (just ended)
@@ -453,7 +438,7 @@ This is a consequence of parallel execution:
 - Previous simulation's world_events_emitted (off by one)
 - Time elapsed (for momentum advancement)
 
-### Simulation Decision
+### Simulation Decision Flow
 
 ```mermaid
 flowchart TD
@@ -461,26 +446,55 @@ flowchart TD
     Q -->|YES| Plan[SimulationPlanner]
     Q -->|NO| Skip[No simulation this cycle]
     
-    Plan --> ArcPlan[Plan arc_important:<br/>cohorts vs standalone]
+    Plan --> Score[Score all pairs<br/>for cohort potential]
+    Score --> Uncertain{Any borderline<br/>pairs?}
+    
+    Uncertain -->|YES| IC[IntentCheck<br/>query characters]
+    Uncertain -->|NO| Form[Form groups]
+    IC --> Form
+    
+    Form --> Check{Any cohorts<br/>formed?}
+    Check -->|YES| Cohort[SimulationModerator<br/>orchestrates group]
+    Check -->|NO| Standalone[StandaloneSim<br/>each character alone]
+    
     Plan --> SigPlan[Identify significant<br/>likely to appear]
-    
-    ArcPlan --> Check{Cohort needed?}
-    Check -->|potential_interactions<br/>pending| Cohort[SimulationModerator<br/>orchestrates group]
-    Check -->|No intersections| Standalone[StandaloneSim<br/>each character alone]
-    
     SigPlan --> SigOut[significant_for_inference<br/>list output]
     
     Cohort --> Out[Simulation Outputs]
     Standalone --> Out
     
-    Out --> |scenes, memories| CharKG[(Character KG)]
-    Out --> |state updates| Profile[(Character Profile)]
-    Out --> |events affecting<br/>significant chars| EventsLog[(Events Log)]
-    Out --> |pending_mc_interactions| Writer
-    Out --> |world_events_emitted| NextChronicler[Next Chronicler Cycle]
+    Out -->|scenes, memories| CharKG[(Character KG)]
+    Out -->|state updates| Profile[(Character Profile)]
+    Out -->|events affecting<br/>significant chars| EventsLog[(Events Log)]
+    Out -->|pending_mc_interactions| Writer
+    Out -->|world_events_emitted| NextChronicler[Next Chronicler Cycle]
     
-    SigOut --> |before next scene| OI[OffscreenInference]
+    SigOut -->|before next scene| OI[OffscreenInference]
 ```
+
+### IntentCheck Integration
+
+IntentCheck runs **before** simulation to determine who should be cohorted.
+
+**The flow:**
+1. SimulationPlanner scores all arc_important pairs
+2. For borderline cases (score = 3) or chains, IntentCheck queries characters
+3. Characters who confirm wanting to interact get cohorted
+4. Simulation runs with cohorts determined upfront
+5. Character state updates (memories, goals, emotional state)
+6. Next cycle, IntentCheck runs again—character naturally expresses any new desires based on their updated state
+
+**When to use IntentCheck:**
+- Borderline scores (exactly 3)
+- Chain detection (A→B and B→C, need to confirm B's intent toward C)
+- Post-scene state shifts that might change character priorities
+
+**When NOT to use IntentCheck:**
+- Clear high scores (4+) from goals/location
+- Clear low scores (0-2) with no relationship
+- Obvious standalone cases
+
+**Key insight:** No need for a `potential_interactions` output field. The character's updated state (memories, goals, emotional landscape) IS the communication mechanism. When IntentCheck asks "who are you seeking?" next cycle, the character naturally expresses desires that emerged during simulation.
 
 ### Context Gathering
 
@@ -489,13 +503,13 @@ SimulationPlanner outputs which significant characters likely need OffscreenInfe
 ```mermaid
 flowchart TD
     subgraph SimPlannerOutput["SimulationPlanner Outputs"]
-        ArcSim[arc_important â†’ Simulation]
+        ArcSim[arc_important → Simulation]
         SigList[significant_for_inference<br/>list of characters]
     end
     
     subgraph Inference["OffscreenInference"]
         SigList --> OI[Run inference<br/>for each listed character]
-        OI --> SigReady[Significant chars ready]
+        OI --> SigReady[Significant chars ready<br/>with scenes + state]
     end
     
     subgraph KGQueries["ContextGatherer (separate)"]
@@ -510,9 +524,9 @@ flowchart TD
     end
 ```
 
-**ContextGatherer** remains unchanged - it queries KG for world knowledge and narrative history relevant to the upcoming scene. It does NOT predict which characters will appear.
+**ContextGatherer** remains unchanged—it queries KG for world knowledge and narrative history relevant to the upcoming scene. It does NOT predict which characters will appear.
 
-**SimulationPlanner** outputs `significant_for_inference` - a list of significant characters likely to appear based on:
+**SimulationPlanner** outputs `significant_for_inference`—a list of significant characters likely to appear based on:
 - MC's current location and trajectory
 - Active threads involving significant characters
 - Recent narrative direction
@@ -557,7 +571,7 @@ flowchart LR
 | Tier | Profile | During Scene | Off-Screen |
 |------|---------|--------------|------------|
 | **arc_important** | Full | CharacterPlugin emulation | Full simulation |
-| **significant** | Full | CharacterPlugin emulation | OffscreenInference |
+| **significant** | Full | CharacterPlugin emulation | OffscreenInference (produces scenes) |
 | **background** | Partial | Writer writes directly using profile | Nothing |
 | **new background** | None | Writer uses GEARS framework | Nothing |
 
@@ -575,7 +589,9 @@ Simulation runs when:
 
 **If any arc_important character is simulated, ALL arc_important characters are simulated.**
 
-This keeps them synchronized-all living in the same time. No character gets "ahead" or "behind."
+This keeps them synchronized—all living in the same time. No character gets "ahead" or "behind."
+
+**Why this matters:** If Character H at time T wants to contact Character A, but A is already at time T+6h, we'd have a causal paradox. The all-or-nothing rule prevents temporal violations.
 
 ### Simulation Period (Dynamic)
 
@@ -600,29 +616,64 @@ If MC has 10 scenes over 30 minutes of in-game time, no simulation runs. Simulat
 
 **Cohorts are rare.** Most arc_important characters are doing their own thing.
 
-**Form cohort when:**
-- Character A's explicit current goal involves Character B
-- OR Character A has a `potential_interaction` targeting Character B (from previous standalone simulation)
-- AND both are arc_important
-- AND both are queued for simulation
+### Scoring System
 
-**Maximum cohort size:** 4 (larger becomes unwieldy)
-
-**Scoring heuristics for grouping:**
+SimulationPlanner scores all pairs of arc_important characters queued for simulation:
 
 | Factor | Score |
 |--------|-------|
-| potential_interaction from previous sim | +4 (automatic cohort) |
 | Same specific location | +3 |
-| Same general area | +1 |
-| Strong relationship (positive or negative) | +2 |
 | One's goals explicitly involve the other | +3 |
+| Strong relationship (positive or negative) | +2 |
+| Same general area | +1 |
 | Same faction with active shared business | +1 |
 | Routine overlap | +1 |
 
 **Threshold:** Pairs scoring 3+ should be in same cohort.
 
-If no pairing scores 3+, character goes standalone.
+### IntentCheck for Uncertainty
+
+When scores are borderline (exactly 3) or when chain formation is detected, SimulationPlanner calls IntentCheck to query the characters directly:
+
+```json
+{
+  "seeking": [
+    {
+      "character": "Tam",
+      "intent": "settle payment dispute",
+      "urgency": "medium",
+      "timing": "today if possible",
+      "if_unavailable": "leave message, try again tomorrow"
+    }
+  ],
+  "avoiding": [],
+  "self_focused": "scouting new safehouse locations"
+}
+```
+
+**Resolution table:**
+
+| A's Intent | B's Intent | Result |
+|------------|------------|--------|
+| Seeking B | Seeking A | Cohort (mutual) |
+| Seeking B | Self-focused | Cohort (A finds B) |
+| Seeking B | Avoiding A | Cohort (evasion is interaction) |
+| Self-focused | Self-focused | Standalone both |
+| Avoiding B | Avoiding A | Standalone both |
+
+### Chain Formation
+
+If A→B scores high and B→C scores high, IntentCheck confirms whether B actually intends to seek C (or if B's goals just happen to involve C's location).
+
+### Maximum Cohort Size
+
+**Maximum:** 4 characters per cohort
+
+If scoring produces a cluster of 5+:
+1. Identify the strongest connections
+2. Split into multiple cohorts of 2-4
+3. Prefer keeping mutual seekers together
+4. Characters with weaker connections go standalone
 
 ---
 
@@ -631,11 +682,12 @@ If no pairing scores 3+, character goes standalone.
 | Agent | Purpose | When | Input | Output |
 |-------|---------|------|-------|--------|
 | **Chronicler** | Track story fabric, world momentum, guide writer | After scene | Scene, time, previous story_state, previous simulation events | writer_guidance, story_state, world_events, lore_requests |
-| **SimulationPlanner** | Decide who simulates and who needs inference | After scene (if time threshold met) | Character roster, story state, MC trajectory | Cohorts, standalone list, skip list, significant_for_inference |
+| **SimulationPlanner** | Decide who simulates and who needs inference | After scene (if time threshold met) | Character roster, story state, MC trajectory | Cohorts, standalone list, significant_for_inference |
+| **IntentCheck** | Query character intentions for cohort decisions | During planning (borderline cases) | Character profile, state, roster context | seeking, avoiding, self_focused |
 | **SimulationModerator** | Orchestrate cohort simulation | During cohort sim | Cohort members, time period | Pass-through character outputs, timeline |
-| **CharacterSimulation** | Live as character in group | During cohort sim | Profile, state, queries from Moderator | Scenes, memories, state updates, pending_mc_interaction |
-| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, time period | Scenes, memories, state updates, pending_mc_interaction |
-| **OffscreenInference** | Derive current state | Before scene (for characters in significant_for_inference) | Profile, routine, events log, time | Current situation, state snapshot |
+| **CharacterSimulation** | Live as character in group | During cohort sim | Profile, state, KG access, queries from Moderator | Scenes, memories, state updates, relationship updates, character_events, pending_mc_interaction, world_events_emitted |
+| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, KG access, time period | Scenes, memories, state updates, relationship updates, character_events, pending_mc_interaction, world_events_emitted |
+| **OffscreenInference** | Derive state and produce brief memories | Before scene (for significant_for_inference) | Profile, routine, events log, time | Scenes (brief), memories, current situation, state updates |
 | **ContextGatherer** | Query KG for world/narrative context | Before scene | Recent scenes, narrative direction, previous results | World context, narrative history |
 | **PartialProfileCrafter** | Create lightweight profile | When background char needs consistency | Character request, context | Partial profile (voice, appearance, behavior) |
 | **CharacterPlugin** | Respond as character in scene | During scene generation | Profile, state, stimulus | Character response (internal, action, speech, attention) |
@@ -662,20 +714,9 @@ If no pairing scores 3+, character goes standalone.
     "Tam": "Business partner, owes him money, trust is transactional",
     "Protagonist": "Uncertain ally, helped me once, watching carefully"
   },
-  "routine_summary": "Mornings at docks, afternoons meeting contacts, evenings at Rusty Anchor",
-  "potential_interactions": [
-    {
-      "character": "Tam",
-      "intent": "Settle payment dispute",
-      "timing": "Tomorrow morning",
-      "location": "Docks office",
-      "urgency": "medium"
-    }
-  ]
+  "routine_summary": "Mornings at docks, afternoons meeting contacts, evenings at Rusty Anchor"
 }
 ```
-
-**Note:** `potential_interactions` comes from previous standalone simulation output. Empty array if none pending.
 
 ### Events Log Entry (character_events)
 
@@ -700,6 +741,31 @@ If no pairing scores 3+, character goes standalone.
   "emotional_state": "Anxious, conflicted",
   "what_i_want": "MC escapes, owes me",
   "what_i_know": "Raid tomorrow morning, 6 guards, they know MC's inn"
+}
+```
+
+### IntentCheck Output
+
+```json
+{
+  "character": "Kira",
+  "seeking": [
+    {
+      "character": "Tam",
+      "intent": "Settle the payment dispute before it festers",
+      "urgency": "medium",
+      "timing": "Today, at his office",
+      "if_unavailable": "Leave word, try again tomorrow"
+    }
+  ],
+  "avoiding": [
+    {
+      "character": "Marcus",
+      "reason": "He's been asking questions about my routes",
+      "if_encountered": "Keep it brief, reveal nothing"
+    }
+  ],
+  "self_focused": "Scouting Pier 7 for new safehouse options"
 }
 ```
 
@@ -775,7 +841,7 @@ Efficiency. Rapid scene sequences (combat, conversations) don't need NPC catch-u
 
 ### Why events log instead of simulating significant characters?
 
-Cost. Full simulation is expensive. Significant characters don't need narrative generation-they need consistent state. Logging events + inference achieves consistency without the overhead.
+Cost. Full simulation is expensive. Significant characters don't need full narrative generation—they need consistent state and brief memories. OffscreenInference achieves this without the overhead.
 
 ### Why hard cap on arc_important?
 
@@ -783,11 +849,17 @@ Narrative discipline + compute budget. More than 8 characters with full simulati
 
 ### Why cohorts are rare?
 
-Cost and complexity. Moderator overhead is significant. Most characters, even important ones, are on separate tracks. Cohort only when goals explicitly intersect.
+Cost and complexity. Moderator overhead is significant. Most characters, even important ones, are on separate tracks. Cohort only when IntentCheck confirms they actually want to interact.
+
+### Why IntentCheck instead of potential_interactions?
+
+Character state IS the communication mechanism. When a character realizes during simulation "I need to talk to Marcus," that realization updates their memories, goals, and emotional state. Next cycle, IntentCheck asks them "who are you seeking?"—and they naturally answer based on their updated state.
+
+No need for a separate `potential_interactions` output field. Simpler architecture, no state to persist between cycles, and the character's authentic voice (via IntentCheck) determines cohort formation rather than a structured flag.
 
 ### Why Chronicler separate from SceneTracker?
 
-Different concerns. SceneTracker is mechanical-where, when, who's present. Chronicler is artistic-narrative fabric, story promises, world momentum. Separation keeps each focused.
+Different concerns. SceneTracker is mechanical—where, when, who's present. Chronicler is artistic—narrative fabric, story promises, world momentum. Separation keeps each focused.
 
 ### Why does Chronicler emit world events?
 
@@ -796,3 +868,11 @@ Two sources of world events: character simulations (things NPCs do) and Chronicl
 ### Why writer_guidance instead of direct story control?
 
 Writer has creative authority. Chronicler observes and advises. `manifesting_now` is mandatory (consequences must happen), but Writer controls how. Everything else is suggestion.
+
+### Why does OffscreenInference produce scenes now?
+
+Consistency. When significant characters are encountered, they should have memories of their recent time—even if brief. This prevents the awkwardness of "I have no idea what I've been doing" when asked. The scenes are lightweight (1-3 paragraphs, salience capped at 6) but real.
+
+### Why do simulated characters have KG access?
+
+Characters need to recall things. "Where did I stash that document?" requires querying their own KG. "What's the political situation in the eastern district?" requires querying World KG. Without KG access, characters would be limited to what's in their immediate context window, leading to amnesia and world-ignorance.

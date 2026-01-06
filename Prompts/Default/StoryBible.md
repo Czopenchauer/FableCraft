@@ -8,9 +8,9 @@ This document defines the narrative direction, tone, and creative guidelines for
 
 **Primary Genre**: Dark Fantasy Cultivation
 
-**Secondary Elements**:
+**Secondary Elements**: 
 - Survival — carving out your place in the world
-- Romance — relationships and connections
+- Erotica/Romance — lovers, sexual encounters as part of life
 - Slice of Life — building a life during the 70% downtime
 - Political Intrigue — sect dynamics, power structures, faction play
 - Coming of Age/Growth — striving for power, finding yourself
@@ -21,10 +21,10 @@ This document defines the narrative direction, tone, and creative guidelines for
 - Grounded ────◆────────── Mythic
 - Cynical ────◆────────── Idealistic
 
-**Touchstone Works**:
+**Touchstone Works**: 
 "This story feels like **Mushoku Tensei meets Berserk**"
 
-- Mushoku's slow character growth, detailed worldbuilding, and consequences that stick
+- Mushoku's slow character growth, integrated sexuality, detailed worldbuilding, and consequences that stick
 - Berserk's unflinching brutality, the sense that the world will crush you if you're weak, and hope found in connections despite darkness
 
 ---
@@ -36,6 +36,7 @@ No safety nets. Bad decisions kill. The world doesn't care about your story.
 
 **What's On The Table**:
 - Slavery
+- Rape
 - Losing all equipment
 - Public humiliation
 - Permanent maiming
@@ -155,7 +156,7 @@ Thoughts surface naturally, not constant internal monologue. MC reflects but isn
 5. Olfactory — smell for atmosphere and grounding
 
 **Physicality**: **Unflinching**
-Pain is pain. Exhaustion is exhaustion. Hunger gnaws. The body is present in the prose, not abstracted away.
+Pain is pain. Exhaustion is exhaustion. Hunger gnaws. Arousal is real. The body is present in the prose, not abstracted away.
 
 ---
 
@@ -211,6 +212,8 @@ Everyone has reasons. Good people do bad things. Bad people have understandable 
 |----------|-------|-------|
 | Violence | Unflinching | |
 | Gore/Body Horror | Unflinching | |
+| Sexuality | Unflinching | Integrated into world, not gratuitous |
+| Sexual Violence | Unflinching | Treated with weight, not glossed |
 | Slavery/Dehumanization | Unflinching | |
 | Torture | Unflinching | |
 | Psychological Horror | Unflinching | |
@@ -240,13 +243,31 @@ Everyone has reasons. Good people do bad things. Bad people have understandable 
 
 3. **Sect politics are complex** — factions, alliances, debts, grudges, all playing out
 
-4. **The body is a cultivation tool** — body refinement, physical transformation are all part of the system
+4. **Sexual openness is normalized** — exhibitionists, varied kinks, and open desires exist without the narrative treating them as shocking or unusual
+
+5. **Characters have sexual agency** — people pursue what they want; attraction and desire are natural parts of life in this world
+
+6. **Variety of characters with varied appetites** — from prudish to exhibitionist, vanilla to extreme, all exist and are valid
+
+7. **Sexual encounters have consequences** — relationships form, jealousies arise, reputations shift, power dynamics matter in bed too
+
+8. **The body is a cultivation tool** — dual cultivation, body refinement, physical transformation are all part of the system
 
 **SUBVERT:**
 
-1. **Connections are built through interaction and choice** — MC doesn't accidentally attract everyone
+1. **No passive harem magnetism** — MC doesn't accidentally attract everyone; connections are built through interaction and choice
 
-2. **Not everyone likes the MC** — relationships are specific, not universal protagonist-gravity
+2. **Sexual content serves narrative** — encounters reveal character, shift relationships, have stakes; not just fanservice
+
+3. **Power ≠ sexual availability** — strong characters aren't automatically interested in MC; they have their own desires and standards
+
+4. **Consent exists even in a brutal world** — or its absence is treated with appropriate weight, not glossed over as "how things are"
+
+5. **Not everyone wants the MC** — attraction is specific, not universal protagonist-gravity
+
+6. **Perverted ≠ comedic relief** — exhibitionists and kinksters are real characters with depth, goals, and inner lives; not just jokes
+
+7. **Sexual trauma has real consequences** — it's not forgotten next scene; it shapes characters going forward
 
 ---
 
@@ -274,6 +295,7 @@ Every gain costs something. Nothing is given.
 - ✓ Can lose allies permanently
 - ✓ Can be captured/imprisoned
 - ✓ Can be enslaved
+- ✓ Can be violated
 - ✓ Can be permanently maimed
 - ✓ Can die
 
@@ -337,5 +359,6 @@ Dark fantasy cultivation story with gritty tone about surviving and building a l
 **This Story IS**:
 - A struggle to carve out a life in an indifferent world
 - Brutal but not hopeless — connections and moments of peace exist
+- Sexually open without being gratuitous
 - Slow burn with earned victories and real losses
 - One person's journey in a world full of other people living their own lives

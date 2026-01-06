@@ -123,6 +123,25 @@ internal sealed class GenerationContext
     /// Collected by OffscreenInferenceProcessor after processing events.
     /// </summary>
     public ConcurrentQueue<Guid> CharacterEventsToConsume { get; set; } = new();
+
+    /// <summary>
+    /// New CharacterEvents to save in SaveEnrichmentStep.
+    /// Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
+    /// </summary>
+    public ConcurrentQueue<CharacterEventToSave> NewCharacterEvents { get; set; } = new();
+}
+
+/// <summary>
+/// Data for a CharacterEvent to be saved.
+/// </summary>
+internal sealed class CharacterEventToSave
+{
+    public required Guid AdventureId { get; init; }
+    public required string TargetCharacterName { get; init; }
+    public required string SourceCharacterName { get; init; }
+    public required string Time { get; init; }
+    public required string Event { get; init; }
+    public required string SourceRead { get; init; }
 }
 
 internal sealed class CharacterContext
@@ -145,9 +164,6 @@ internal sealed class CharacterContext
 
     public required List<CharacterSceneContext> SceneRewrites { get; set; } = new();
 
-    /// <summary>
-    /// Simulation-related data: last_simulated, potential_interactions, pending_mc_interaction.
-    /// </summary>
     public required SimulationMetadata? SimulationMetadata { get; set; }
 }
 

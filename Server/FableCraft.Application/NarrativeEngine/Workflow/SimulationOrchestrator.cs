@@ -5,8 +5,6 @@ using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
-using Microsoft.EntityFrameworkCore;
-
 using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
@@ -19,7 +17,6 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 internal sealed class SimulationOrchestrator(
     SimulationPlannerAgent plannerAgent,
     StandaloneSimulationAgent standaloneAgent,
-    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -80,10 +77,6 @@ internal sealed class SimulationOrchestrator(
         SimulationPlannerOutput plan,
         CancellationToken cancellationToken)
     {
-        var profiledCharacterNames = context.Characters
-            .Where(c => c.Importance == CharacterImportance.ArcImportance || c.Importance == CharacterImportance.Significant)
-            .Select(c => c.Name)
-            .ToArray();
         var previousState = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
@@ -105,8 +98,7 @@ internal sealed class SimulationOrchestrator(
                 {
                     Character = character,
                     TimePeriod = plan.SimulationPeriod.ToJsonString(),
-                    WorldEvents = previousState?.StoryState.WorldMomentum,
-                    ProfiledCharacterNames = profiledCharacterNames
+                    WorldEvents = previousState?.StoryState.WorldMomentum
                 };
 
                 try
@@ -180,7 +172,6 @@ internal sealed class SimulationOrchestrator(
                         SimulationMetadata = new SimulationMetadata
                         {
                             LastSimulated = context.NewTracker!.Scene!.Time,
-                            PotentialInteractions = result.PotentialInteractions,
                             PendingMcInteraction = result.PendingMcInteraction
                         }
                     };
@@ -195,7 +186,6 @@ internal sealed class SimulationOrchestrator(
             .ToArray();
 
         var results = await Task.WhenAll(simulationTasks);
-        var characterEventsToSave = new List<CharacterEvent>();
 
         foreach (var result in results)
         {
@@ -214,26 +204,19 @@ internal sealed class SimulationOrchestrator(
 
             if (result.CharacterEvents is { Count: > 0 })
             {
-                characterEventsToSave.AddRange(result.CharacterEvents.Select(ce => new CharacterEvent
+                foreach (var ce in result.CharacterEvents)
                 {
-                    Id = Guid.NewGuid(),
-                    AdventureId = context.AdventureId,
-                    TargetCharacterName = ce.Character,
-                    SourceCharacterName = result.Name,
-                    Time = ce.Time,
-                    Event = ce.Event,
-                    SourceRead = ce.MyRead,
-                    Consumed = false
-                }));
+                    context.NewCharacterEvents.Enqueue(new CharacterEventToSave
+                    {
+                        AdventureId = context.AdventureId,
+                        TargetCharacterName = ce.Character,
+                        SourceCharacterName = result.Name,
+                        Time = ce.Time,
+                        Event = ce.Event,
+                        SourceRead = ce.MyRead
+                    });
+                }
             }
-        }
-
-        if (characterEventsToSave.Count > 0)
-        {
-            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            await dbContext.CharacterEvents.AddRangeAsync(characterEventsToSave, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            logger.Information("Saved {Count} character events from simulation", characterEventsToSave.Count);
         }
     }
 }

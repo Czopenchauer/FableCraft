@@ -35,31 +35,10 @@ public class SimulationMetadata
     public required string? LastSimulated { get; set; }
 
     /// <summary>
-    /// Intended interactions with other characters from previous simulation.
-    /// </summary>
-    [JsonPropertyName("potential_interactions")]
-    public required List<PotentialInteraction>? PotentialInteractions { get; set; }
-
-    /// <summary>
     /// If the character has decided to seek out the MC.
     /// </summary>
     [JsonPropertyName("pending_mc_interaction")]
     public required PendingMcInteraction? PendingMcInteraction { get; set; }
-}
-
-/// <summary>
-/// An intended interaction with another character, output from simulation.
-/// </summary>
-public class PotentialInteraction
-{
-    /// <summary>
-    /// Name of the character to interact with.
-    /// </summary>
-    [JsonPropertyName("target_character")]
-    public required string TargetCharacter { get; set; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
 /// <summary>

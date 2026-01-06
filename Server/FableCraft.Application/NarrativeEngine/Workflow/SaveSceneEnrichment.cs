@@ -120,6 +120,9 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             // Mark CharacterEvents as consumed (deferred from OffscreenInferenceProcessor)
             await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
 
+            // Save new CharacterEvents (deferred from SimulationOrchestrator)
+            await SaveNewCharacterEvents(context, dbContext);
+
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         });
@@ -271,5 +274,33 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(e => e.Consumed, true),
                 cancellationToken);
+    }
+
+    private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
+    {
+        if (context.NewCharacterEvents.IsEmpty)
+        {
+            return;
+        }
+
+        var eventsToSave = context.NewCharacterEvents.ToList();
+        if (eventsToSave.Count == 0)
+        {
+            return;
+        }
+
+        var entities = eventsToSave.Select(e => new CharacterEvent
+        {
+            Id = Guid.NewGuid(),
+            AdventureId = e.AdventureId,
+            TargetCharacterName = e.TargetCharacterName,
+            SourceCharacterName = e.SourceCharacterName,
+            Time = e.Time,
+            Event = e.Event,
+            SourceRead = e.SourceRead,
+            Consumed = false
+        });
+
+        await dbContext.CharacterEvents.AddRangeAsync(entities);
     }
 }
