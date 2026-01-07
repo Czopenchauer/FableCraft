@@ -1,3 +1,5 @@
+using System.Text;
+
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -10,6 +12,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+
+using Serilog;
 
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
@@ -24,7 +28,8 @@ internal sealed class SimulationPlannerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.SimulationPlannerAgent;
 
@@ -49,7 +54,6 @@ internal sealed class SimulationPlannerAgent(
         var contextPrompt = BuildContextPrompt(input);
         chatHistory.AddUserMessage(contextPrompt);
 
-        // Create kernel with IntentCheck plugin for dynamic character intent queries
         Microsoft.SemanticKernel.IKernelBuilder kernelBuilderSk = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
         await pluginFactory.AddPluginAsync<IntentCheckPlugin>(kernelBuilderSk, context, callerContext);
@@ -58,13 +62,35 @@ internal sealed class SimulationPlannerAgent(
         var outputParser = ResponseParser.CreateJsonParser<SimulationPlannerOutput>("simulation_plan", ignoreNull: true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
-        return await agentKernel.SendRequestAsync(
+        var plan = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             nameof(SimulationPlannerAgent),
             kernel,
             cancellationToken);
+
+        var validationError = ValidateCohortIndependence(plan);
+        if (validationError != null)
+        {
+            logger.Warning("Simulation plan validation failed: {ValidationError}", validationError);
+            chatHistory.AddUserMessage(validationError);
+            plan = await agentKernel.SendRequestAsync(
+                chatHistory,
+                outputParser,
+                promptExecutionSettings,
+                nameof(SimulationPlannerAgent),
+                kernel,
+                cancellationToken);
+            validationError = ValidateCohortIndependence(plan);
+            if (validationError != null)
+            {
+                logger.Error("Simulation plan validation failed again: {ValidationError}", validationError);
+                throw new InvalidOperationException("Simulation plan validation failed after retry: " + validationError);
+            }
+        }
+
+        return plan;
     }
 
     private SimulationPlannerInput BuildInput(GenerationContext context, SceneTracker sceneTracker)
@@ -235,5 +261,59 @@ internal sealed class SimulationPlannerAgent(
                      **{p.Character}**
                      {p.ExtensionData}
                      """.Trim()));
+    }
+
+
+    /// <summary>
+    /// Validates that cohorts are independent groups with no character overlaps.
+    /// Characters should only appear in one cohort - if they overlap, parallel execution
+    /// could cause race conditions or inconsistent state.
+    /// </summary>
+    private string? ValidateCohortIndependence(SimulationPlannerOutput plan)
+    {
+        if (plan.Cohorts is not { Count: > 1 })
+        {
+            return null;
+        }
+
+        var characterCohortMap = new Dictionary<string, List<int>>();
+
+        for (var i = 0; i < plan.Cohorts.Count; i++)
+        {
+            var cohort = plan.Cohorts[i];
+            foreach (var character in cohort.Characters)
+            {
+                if (!characterCohortMap.TryGetValue(character, out var cohortIndices))
+                {
+                    cohortIndices = [];
+                    characterCohortMap[character] = cohortIndices;
+                }
+
+                cohortIndices.Add(i);
+            }
+        }
+
+        var overlappingCharacters = characterCohortMap
+            .Where(kvp => kvp.Value.Count > 1)
+            .ToList();
+
+        if (overlappingCharacters.Count > 0)
+        {
+            var error = new StringBuilder();
+            foreach (var (character, cohortIndices) in overlappingCharacters)
+            {
+                var cohortDescriptions = cohortIndices
+                    .Select(i => $"Cohort {i}: [{string.Join(", ", plan.Cohorts[i].Characters)}]");
+
+                var res = $"""
+                           Character {character} appears in multiple cohorts!
+                           """;
+                error.AppendJoin(res, cohortDescriptions);
+            }
+
+            return error.ToString();
+        }
+
+        return null;
     }
 }

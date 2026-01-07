@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -226,13 +225,18 @@ internal sealed class SimulationOrchestrator(
         SimulationPlannerOutput plan,
         CancellationToken cancellationToken)
     {
+        if ((plan.Cohorts?.Count ?? 0) == 0)
+        {
+            return;
+        }
+
         var previousState = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
 
         var charactersInScene = context.NewTracker?.Scene?.CharactersPresent ?? [];
 
-        foreach (var cohort in plan.Cohorts!)
+        var cohortTasks = plan.Cohorts!.Select(async cohort =>
         {
             // Filter out characters who were present in the scene
             var validCharacters = cohort.Characters
@@ -245,7 +249,7 @@ internal sealed class SimulationOrchestrator(
                     "Cohort simulation requires at least 2 characters, but only {Count} valid after filtering. Skipping cohort: {Characters}",
                     validCharacters.Count,
                     string.Join(", ", cohort.Characters));
-                continue;
+                return;
             }
 
             logger.Information("Running cohort simulation for: {Characters}", string.Join(", ", validCharacters));
@@ -302,7 +306,9 @@ internal sealed class SimulationOrchestrator(
                 logger.Error(ex, "Cohort simulation failed for characters: {Characters}", string.Join(", ", validCharacters));
                 throw;
             }
-        }
+        }).ToArray();
+
+        await Task.WhenAll(cohortTasks);
     }
 
     /// <summary>
