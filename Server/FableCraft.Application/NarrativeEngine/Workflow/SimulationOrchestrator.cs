@@ -164,14 +164,16 @@ internal sealed class SimulationOrchestrator(
                         SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
                             {
                                 Content = x.Narrative,
-                                SequenceNumber = character.SceneRewrites.Max(s => s.SequenceNumber) + 1,
+                                SequenceNumber = character.SceneRewrites.Count > 0
+                                    ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
+                                    : 1,
                                 StoryTracker = x.StoryTracker
                             })
                             .ToList(),
                         Importance = character.Importance,
                         SimulationMetadata = new SimulationMetadata
                         {
-                            LastSimulated = context.NewTracker!.Scene!.Time,
+                            LastSimulated = plan.SimulationPeriod!.To,
                             PendingMcInteraction = result.PendingMcInteraction
                         }
                     };
@@ -256,7 +258,7 @@ internal sealed class SimulationOrchestrator(
 
             var significantCharacters = context.Characters
                 .Where(c => c.Importance == CharacterImportance.Significant && !validCharacters.Contains(c.Name))
-                .Select(c => c.Name)
+                .Select(c => $"{c.Name} - {c.Description ?? "No description available"}")
                 .ToArray();
 
             var input = new CohortSimulationInput

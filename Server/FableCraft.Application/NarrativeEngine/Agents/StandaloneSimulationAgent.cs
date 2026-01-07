@@ -111,14 +111,14 @@ internal sealed class StandaloneSimulationAgent(
         var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
         var characterName = input.Character.Name;
 
-        var arcImportantNames = context.Characters
+        var arcImportantCharacters = context.Characters
             .Where(c => c.Importance == CharacterImportance.ArcImportance && c.Name != characterName)
             .Select(c => c.Name)
             .ToArray();
 
-        var significantNames = context.Characters
-            .Where(c => c.Importance == CharacterImportance.Significant)
-            .Select(c => c.Name)
+        var significantCharacters = context.Characters
+            .Where(c => c.Importance == CharacterImportance.Significant && c.Name != characterName)
+            .Select(c => $"{c.Name} - {c.Description ?? "No description available"}")
             .ToArray();
 
         return $"""
@@ -139,11 +139,11 @@ internal sealed class StandaloneSimulationAgent(
             </world_events>
 
             <available_npcs>
-            **Arc-important characters** (cannot interact!):
-            {FormatProfiledCharacters(arcImportantNames, characterName)}
+            **Arc-important characters** (cannot interact):
+            {FormatCharacterList(arcImportantCharacters)}
 
             **Significant characters** (can interact with, log interactions to character_events):
-            {FormatProfiledCharacters(significantNames, characterName)}
+            {FormatCharacterList(significantCharacters)}
             </available_npcs>
 
             <last_scenes>
@@ -194,15 +194,14 @@ internal sealed class StandaloneSimulationAgent(
         return worldEvents.ToJsonString();
     }
 
-    private static string FormatProfiledCharacters(string[]? names, string excludeName)
+    private static string FormatCharacterList(string[]? characters)
     {
-        if (names == null || names.Length == 0)
+        if (characters == null || characters.Length == 0)
         {
             return "None";
         }
 
-        var filtered = names.Where(n => n != excludeName).ToArray();
-        return filtered.Length > 0 ? string.Join(", ", filtered) : "None";
+        return string.Join("\n", characters);
     }
 
     private static string BuildSceneHistoryContent(CharacterContext character)
