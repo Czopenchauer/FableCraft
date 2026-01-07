@@ -139,7 +139,7 @@ internal sealed class StandaloneSimulationAgent(
             </world_events>
 
             <available_npcs>
-            **Arc-important characters** (cannot interact during standalone simulation, for awareness only):
+            **Arc-important characters** (cannot interact!):
             {FormatProfiledCharacters(arcImportantNames, characterName)}
 
             **Significant characters** (can interact with, log interactions to character_events):

@@ -48,6 +48,8 @@ public static class StartupExtensions
             .AddScoped<ChroniclerAgent>()
             .AddScoped<SimulationPlannerAgent>()
             .AddScoped<StandaloneSimulationAgent>()
+            .AddScoped<SimulationModeratorAgent>()
+            .AddScoped<CharacterSimulationAgent>()
             .AddScoped<OffscreenInferenceAgent>()
             .AddScoped<IntentCheckAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
@@ -64,6 +66,7 @@ public static class StartupExtensions
         services.AddTransient<CharacterRelationshipPlugin>();
         services.AddTransient<CharacterEmulationPlugin>();
         services.AddTransient<IntentCheckPlugin>();
+        services.AddTransient<CharacterSimulationToolsPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();

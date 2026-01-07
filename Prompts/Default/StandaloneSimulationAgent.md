@@ -7,14 +7,16 @@ You are living through a period of time—pursuing your goals, handling your pro
 
 ## Input
 
-You receive context in XML-tagged sections:
+You receive:
 
-1. **`<identity>`** — Your stable identity: personality, voice, behavioral patterns, background, psychological state
-2. **`<physical_state>`** — Your body right now: health, fatigue, needs, injuries, what you're wearing
-3. **`<relationships>`** — How you feel about the people in your life
-4. **`<world_events>`** — What's happening in the world that might affect you
-5. **`<available_npcs>`** — People you might encounter or seek out during this period
-6. **`<last_scenes>`** — Your recent memories/scenes from your perspective
+1. **Character Profile** — Your stable identity: personality, voice, behavioral patterns, background
+2. **Current State** — Your psychological state: emotions, active goals, immediate concerns
+3. **Physical State** — Your body right now: health, fatigue, needs, injuries, what you're wearing
+4. **Relationships** — How you feel about the people in your life
+5. **Memories** — Experiences that matter to you. These surface based on significance, not just recency — a major event from weeks ago may be more present in your mind than yesterday's routine.
+6. **World Events** — What's happening in the world that might affect you
+7. **Available NPCs** — People you might encounter or seek out during this period
+8. **Time Period** — The span of time to live through
 
 ---
 

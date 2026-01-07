@@ -40,10 +40,8 @@ internal sealed class OffscreenInferenceProcessor(
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        // Get character names that need inference
         var characterNames = significantForInference.Select(s => s.Character).ToList();
 
-        // Query all unconsumed events for these characters
         var eventsByCharacter = await dbContext.CharacterEvents
             .Where(e => e.AdventureId == context.AdventureId
                         && characterNames.Contains(e.TargetCharacterName)
@@ -64,7 +62,6 @@ internal sealed class OffscreenInferenceProcessor(
                 continue;
             }
 
-            // Get events for this character
             var events = eventsByCharacter.GetValueOrDefault(character.Name, []);
             var eventDtos = events.Select(e => new CharacterEventDto
             {
@@ -74,7 +71,6 @@ internal sealed class OffscreenInferenceProcessor(
                 SourceRead = e.SourceRead
             }).ToList();
 
-            // Calculate time elapsed (from last simulation or last known state update)
             var lastSimulated = character.SimulationMetadata?.LastSimulated;
             var timeElapsed = CalculateTimeElapsed(lastSimulated, currentSceneTracker.Time);
 
@@ -101,14 +97,6 @@ internal sealed class OffscreenInferenceProcessor(
                     result.CurrentSituation.Location,
                     result.CurrentSituation.Activity);
 
-                // Include location in tracker updates if not already present
-                var trackerUpdates = result.TrackerUpdates ?? new Dictionary<string, object>();
-                if (!trackerUpdates.ContainsKey("Location"))
-                {
-                    trackerUpdates["Location"] = result.CurrentSituation.Location;
-                }
-
-                // Convert scenes to memories and scene rewrites
                 var memories = new List<MemoryContext>();
                 var sceneRewrites = new List<CharacterSceneContext>();
 
@@ -144,7 +132,6 @@ internal sealed class OffscreenInferenceProcessor(
                         memories.Count, sceneRewrites.Count, character.Name);
                 }
 
-                // Create updated character context with patched state
                 var updatedCharacter = new CharacterContext
                 {
                     CharacterId = character.CharacterId,
@@ -152,16 +139,15 @@ internal sealed class OffscreenInferenceProcessor(
                     Description = character.Description,
                     Importance = character.Importance,
                     CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? new Dictionary<string, object>()),
-                    CharacterTracker = character.CharacterTracker.PatchWith(trackerUpdates),
+                    CharacterTracker = character.CharacterTracker.PatchWith(result.TrackerUpdates ?? new Dictionary<string, object>()),
                     CharacterMemories = memories,
-                    Relationships = [], // No relationship changes from inference
+                    Relationships = [],
                     SceneRewrites = sceneRewrites,
-                    SimulationMetadata = character.SimulationMetadata // Keep existing metadata
+                    SimulationMetadata = character.SimulationMetadata
                 };
 
                 context.CharacterUpdates.Enqueue(updatedCharacter);
 
-                // Queue events for consumption in SaveEnrichmentStep
                 foreach (var evt in events)
                 {
                     context.CharacterEventsToConsume.Enqueue(evt.Id);
