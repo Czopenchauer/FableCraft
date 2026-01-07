@@ -120,9 +120,9 @@ All values must fit the world setting:
 
 ### 5. Content Calibration
 Physical descriptions and certain tracker fields should match the Story Bible's content calibration:
-- **Explicit worlds**: Full anatomical detail, sexual characteristics described
-- **Moderate worlds**: Suggestive but not graphic
-- **Reserved worlds**: Clinical or implied only
+- **Detailed worlds**: Full physical detail where narratively relevant
+- **Moderate worlds**: Standard descriptive detail
+- **Reserved worlds**: Minimal physical description
 
 ---
 

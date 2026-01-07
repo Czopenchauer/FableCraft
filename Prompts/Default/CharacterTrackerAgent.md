@@ -174,7 +174,6 @@ Key relationships to maintain:
 ### Physical Consistency
 | If This... | Then This... |
 |------------|--------------|
-| High arousal | Body fields should show physical signs |
 | Pain present | Mental state may show distress |
 | Gagged/restrained | Voice/movement should note impairment |
 | Significant time passed | Needs increase appropriately |

@@ -19,12 +19,11 @@ Before ANY output, complete structured reasoning in`<think>` tags. This is not o
 **Step 2: CurrentState Assessment**
 For each category, identify changes:
 - Vitals (health, fatigue, mental)
-- Needs (arousal, hunger, thirst, urges)
-- Conditions (internal pressure, active effects)
+- Needs (hunger, thirst)
+- Conditions (active effects)
 - Resources (mana, stamina, focus)
-- Appearance (hair, face, makeup, scent, voice)
+- Appearance (hair, face, scent, voice)
 - Body (all anatomical fields)
-- Reproduction (cycle, pregnancy, orgasm state)
 - Situation (position, senses, freedom)
 - Equipment (all worn/applied items)
 - Economy (if relevant)
@@ -35,7 +34,6 @@ For each category, identify changes:
 - Traits: Any acquisition/modification triggers?
 - Abilities: Any used or learned?
 - Permanent Marks: Any new modifications?
-- Sexual/Reproductive History: Any updates?
 
 **Step 4: Calculations**
 For any numerical changes, show math:
@@ -45,7 +43,7 @@ For any numerical changes, show math:
 
 **Step 5: Consistency Validation**
 Verify internal coherence:
-- Related fields align (arousal↔wetness, gagged↔voice)
+- Related fields align (gagged↔voice)
 - Time progressions correct
 - Trait effects applied where relevant
 - No contradictions between fields
@@ -206,9 +204,7 @@ Final XP = Base (15-25) × Challenge Multiplier × (1 + Σ Bonus Multipliers)
 | | Need | Increase Rate | Accelerated By | |
 |------|---------------|----------------|
 | | Hunger | +1 per 3 hours | High activity | |
-| | Thirst | +1 per 2 hours | Exertion, crying, fluid loss, heat | |
-| | Bladder | +1 per hour | Fluid intake | |
-| | Bowel | +1 per 4 hours | Eating | |
+| | Thirst | +1 per 2 hours | Exertion, heat | |
 
 | | Body Change | Timeline | |
 |-------------|----------|
@@ -218,36 +214,15 @@ Final XP = Base (15-25) × Challenge Multiplier × (1 + Σ Bonus Multipliers)
 
 ---
 
-### Fertility Cycle Reference
-
-| | Stage | Duration | Conception Risk | Symptoms | |
-|-------|----------|-----------------|----------|
-| | Menstrual 🩸 | 5 days | 0% Safe | Bleeding, possible cramping | |
-| | Follicular 🌱 | 7 days | 15% Low | Building to ovulation | |
-| | Ovulating 🌺 | 3 days | 85% HIGH | Clear mucus, heightened libido, mittelschmerz | |
-| | Luteal 🌙 | 13 days | 30% Moderate | Post-ovulation, PMS possible toward end | |
-
----
-
 ## FIELD FORMAT QUICK REFERENCE
 
 ### Critical Format Fields
 
-**Arousal**:`X/10 (Level) - specific physiological details`
-- Must include: genital response, nipple state, flushing, breathing
-- Example:`6/10 (Aroused) - clit swelling, labia flushed, noticeably wet, nipples hard, light chest flush`
-
-**Needs (Hunger/Thirst/Urges)**:`X/10 (Status) - context and symptoms`
+**Needs (Hunger/Thirst)**:`X/10 (Status) - context and symptoms`
 - Example:`5/10 (Hungry) - 12 hours since meal, stomach growling, thinking about food`
-
-**Urges**:`Bladder: X/10 (status) | Bowel: Y/10 (status)`
-- Example:`Bladder: 7/10 (Urgent) | Bowel: 2/10 (Minimal)`
 
 **Resources**:`Current / Maximum - context`
 - Example:`67 / 100 - spent 15 on Fireball, regenerating at rest`
-
-**Fertility Cycle**:`Stage Emoji (Day X) - Risk% description`
-- Example:`Ovulating 🌺 (Day 2) - PEAK FERTILITY 85%, clear mucus, heightened arousal`
 
 **Proficiency Progress**:`Current / Required (context)`
 - Example:`523 / 900 (Competent, approaching Proficient)`
@@ -260,19 +235,15 @@ Final XP = Base (15-25) × Challenge Multiplier × (1 + Σ Bonus Multipliers)
 
 | | If This... | Then This Must... | |
 |------------|-------------------|
-| | Arousal ≥7 | Secretions show significant wetness | |
-| | Arousal ≥9 | Full physiological response (throbbing, dripping, trembling) | |
 | | Pain present | Mental may show distress; tears possible | |
 | | Gagged | Voice notes impairment; SensoryState.Speech blocked | |
 | | Blindfolded | SensoryState.Vision impaired | |
-| | Any restraints | BondageGear field populated | |
+| | Any restraints | Restraints field populated | |
 | | Clothing removed | StateOfDress updated; note where clothing went | |
 | | Time passed | Needs increase; Resources regenerate | |
 | | Mana <25% | ManaExhaustionEffects shows active effect | |
 | | Stamina hits 0 | +2 Fatigue; note technique unavailability | |
 | | Skill used meaningfully | XP calculated and awarded | |
-| | Inserted objects | Insertions field populated; possibly InternalPressure | |
-| | Cum deposited internally | InternalPressure updated with volume and location | |
 
 ---
 
@@ -360,7 +331,6 @@ This prompt is your complete reference. The tracker depends on your precision.
 | | Resource capacity tables | Agent knows maximums by skill level | |
 | | Regeneration rate table | Consistent time-based recovery | |
 | | Depletion effects table | Apply penalties at correct thresholds | |
-| | Fertility cycle table | Accurate reproduction tracking | |
 | | Time-based changes table | Correct need progression | |
 | | Field format quick reference | Condensed format guidance without per-field verbosity | |
 | | Consistency rules table | Quick-check for related field alignment | |

@@ -236,11 +236,7 @@ For physical state that changed, use dot-notation keys:
   "tracker_updates": {
     "State.Fatigue.Level": 3,
     "State.Needs.Hunger": 2,
-    "State.Mental": "Alert and focused, routine day",
-    "State.Arousal": {
-      "Level": 1,
-      "Description": "Baseline, nothing notable"
-    }
+    "State.Mental": "Alert and focused, routine day"
   }
 }
 ```
@@ -252,7 +248,6 @@ For physical state that changed, use dot-notation keys:
 | Fatigue level | `State.Fatigue.Level` |
 | Hunger | `State.Needs.Hunger` |
 | Mental state | `State.Mental` |
-| Arousal | `State.Arousal` |
 | Health | `State.Health` |
 | Current location | `Situation` |
 

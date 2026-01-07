@@ -175,7 +175,6 @@ Key relationships to maintain:
 ### Physical Consistency
 | If This... | Then This... |
 |------------|--------------|
-| High arousal in State | Body should show physical signs |
 | Pain present in State | Mental may show distress, voice may be strained |
 | Gagged (in Accessories) | Voice should note impairment |
 | Significant time passed | Needs increase in State field |

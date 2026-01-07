@@ -22,7 +22,7 @@ Your current psychological state—emotions, active goals, immediate concerns.
 ### Physical State
 {{character_tracker}}
 
-Your current physical condition: health, fatigue, arousal, needs, injuries, what you're wearing, any ongoing effects.
+Your current physical condition: health, fatigue, needs, injuries, what you're wearing, any ongoing effects.
 
 ### Your Relationships
 {{relationships}}
@@ -108,7 +108,6 @@ Think through:
    - High fatigue → Rest takes priority or degrades everything else
    - Hunger/thirst → Address it or acknowledge how it affects plans
    - Injury → Limited activity? Seek healing?
-   - High arousal → Seek relief? Distraction factor?
    
 3. **Goal review** — What am I working toward? What's the concrete next step? Can I make progress during this period?
 
@@ -521,11 +520,7 @@ For physical state that changed, same dot-notation approach:
 ```json
 {
   "State.Fatigue.Level": 4,
-  "State.Needs.Hunger": 2,
-  "State.Arousal": {
-    "Level": 2,
-    "Description": "Baseline after morning release"
-  }
+  "State.Needs.Hunger": 2
 }
 ```
 
