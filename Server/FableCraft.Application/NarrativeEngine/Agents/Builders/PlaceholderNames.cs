@@ -37,12 +37,22 @@ internal static class PlaceholderNames
     public const string MainCharacterTrackerOutput = "{{main_character_tracker_output}}";
 
     /// <summary>
-    /// Story tracker schema/format definition.
+    /// Scene tracker schema/format definition.
     /// </summary>
     public const string StoryTrackerStructure = "{{story_tracker_structure}}";
 
     /// <summary>
-    /// Story tracker output template.
+    /// Scene tracker output template.
     /// </summary>
     public const string StoryTrackerOutput = "{{story_tracker_output}}";
+
+    /// <summary>
+    /// World setting configuration for chronicler context.
+    /// </summary>
+    public const string WorldSetting = "{{world_setting}}";
+
+    /// <summary>
+    /// Scene bible with tone, themes, and content calibration.
+    /// </summary>
+    public const string StoryBible = "{{story_bible}}";
 }

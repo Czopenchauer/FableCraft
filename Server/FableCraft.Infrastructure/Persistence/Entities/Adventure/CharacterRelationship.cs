@@ -26,13 +26,18 @@ public sealed class CharacterRelationship : IEntity
 
     public Scene Scene { get; set; } = null!;
 
-    public required StoryTracker? StoryTracker { get; set; }
+    public required string? UpdateTime { get; set; }
 
     /// <summary>
     /// The sequence number when this relationship was created/updated.
     /// Used for querying the latest relationship at a specific state.
     /// </summary>
     public int SequenceNumber { get; set; }
+
+    /// <summary>
+    /// 2-4 sentences: How they feel about this person and why. The emotional reality of the relationship. Include warmth, tension, history, unresolved feelings - whatever is true.
+    /// </summary>
+    public string? Dynamic { get; set; }
 
     /// <summary>
     /// JSON string containing the full relationship data (feelings, trust level, history, etc.)

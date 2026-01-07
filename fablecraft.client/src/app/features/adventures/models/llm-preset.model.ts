@@ -28,3 +28,8 @@ export interface LlmPresetResponseDto {
   createdAt: string;
   updatedAt?: string | null;
 }
+
+export interface TestConnectionResponseDto {
+  success: boolean;
+  message: string;
+}

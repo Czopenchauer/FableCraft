@@ -25,9 +25,9 @@ internal sealed class InitMainCharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.InitMainCharacterTrackerAgent;
 
-    public async Task<MainCharacterTracker> Invoke(
+    public async Task<MainCharacterState> Invoke(
         GenerationContext context,
-        StoryTracker storyTrackerResult,
+        SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
@@ -39,34 +39,26 @@ internal sealed class InitMainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             
                              {PromptSections.CurrentStoryTracker(context)}
 
                              {PromptSections.MainCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        string requestPrompt;
-        if (isFirstScene)
-        {
-            requestPrompt = $"""
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                             It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
-                             """;
-        }
-        else
-        {
-            requestPrompt = $"""
-                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
+        var instruction = await dbContext.Adventures
+            .Select(x => new { x.Id, x.FirstSceneGuidance })
+            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+        string requestPrompt = $"""
+                                            {PromptSections.SceneContent(context.NewScene?.Scene)}
+                                            
+                                            {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 
-                             {PromptSections.LastScenes(context.SceneContext ?? [], 2)}
-
-                             New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
-
-                             Update the main_character_tracker based on the new scene.
-                             """;
-        }
+                                            It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
+                                            """;
 
         chatHistory.AddUserMessage(requestPrompt);
 
@@ -87,19 +79,19 @@ internal sealed class InitMainCharacterTrackerAgent(
             cancellationToken);
     }
 
-    private static Func<string, MainCharacterTracker>
+    private static Func<string, MainCharacterState>
         CreateOutputParser()
     {
         return response =>
         {
-            var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "main_character_tracker");
+            var tracker = ResponseParser.ExtractJson<MainCharacterTracker>(response, "main_character_tracker");
             var description = ResponseParser.ExtractText(response, "character_description");
             if (string.IsNullOrEmpty(description))
             {
                 throw new InvalidCastException("Failed to parse character description from response due to empty description.");
             }
 
-            return new MainCharacterTracker()
+            return new MainCharacterState()
             {
                 MainCharacter = tracker,
                 MainCharacterDescription = description
@@ -113,12 +105,17 @@ internal sealed class InitMainCharacterTrackerAgent(
         var structure = context.TrackerStructure;
         var trackerPrompt = GetSystemPrompt(structure);
 
+        var storyBible = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "StoryBible.md"));
+        var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
+        
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
             (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
             ("{{world_setting}}", context.WorldSettings)!,
-            ("{{character_definition}}", context.MainCharacter.Description)!);
+            ("{{character_definition}}", context.MainCharacter.Description),
+            ("{{progression_system}}", progressionSystem),
+            ("{{story_bible}}", storyBible)!);
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)

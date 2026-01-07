@@ -7,9 +7,14 @@ using FableCraft.Infrastructure.Queue;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext> dbContextFactory, IMessageDispatcher messageDispatcher) : IProcessor
+internal sealed class SaveSceneEnrichment(
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IMessageDispatcher messageDispatcher,
+    ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -23,18 +28,21 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         scene.Metadata.Tracker = context.NewTracker!;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
 
+        if (context.NewChroniclerState != null)
+        {
+            scene.Metadata.ChroniclerState = context.NewChroniclerState;
+        }
+
+        if (context.WriterGuidance != null)
+        {
+            scene.Metadata.WriterGuidance = context.WriterGuidance.ToJsonString();
+        }
+
         // Save gathered context for use in next scene generation
         if (context.ContextGathered != null)
         {
             scene.Metadata.GatheredContext = new GatheredContext
             {
-                AnalysisSummary = new GatheredContextAnalysis
-                {
-                    CurrentSituation = context.ContextGathered.AnalysisSummary.CurrentSituation,
-                    KeyElementsInPlay = context.ContextGathered.AnalysisSummary.KeyElementsInPlay,
-                    PrimaryFocusAreas = context.ContextGathered.AnalysisSummary.PrimaryFocusAreas,
-                    ContextContinuity = context.ContextGathered.AnalysisSummary.ContextContinuity
-                },
                 WorldContext = context.ContextGathered.WorldContext.Select(x => new GatheredContextItem
                 {
                     Topic = x.Topic,
@@ -45,11 +53,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                     Topic = x.Topic,
                     Content = x.Content
                 }).ToArray(),
-                DroppedContext = context.ContextGathered.DroppedContext.Select(x => new GatheredDroppedContext
-                {
-                    Topic = x.Topic,
-                    Reason = x.Reason
-                }).ToArray()
+                AdditionalProperties = context.ContextGathered.AdditionalData
             };
         }
 
@@ -86,8 +90,34 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                             }).ToList()
                             ?? new List<LorebookEntry>();
 
+        var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
+                                 {
+                                     AdventureId = context.AdventureId,
+                                     Title = $"Event at {x.Where}",
+                                     Description = $"[{x.When}] {x.Where}",
+                                     Category = nameof(LorebookCategory.WorldEvent),
+                                     Content = $"""
+                                                {x.When}: {x.Where}\n\n{x.Event}
+                                                """,
+                                     ContentType = ContentType.txt
+                                 }).ToList()
+                                 ?? new List<LorebookEntry>();
+
+        var backgroundCharacterEntities = context.NewBackgroundCharacters?.Select(x => new LorebookEntry
+                                          {
+                                              AdventureId = context.AdventureId,
+                                              Title = x.Name,
+                                              Description = x.Description,
+                                              Category = nameof(LorebookCategory.BackgroundCharacter),
+                                              Content = x.ToJsonString(),
+                                              ContentType = ContentType.json
+                                          }).ToList()
+                                          ?? new List<LorebookEntry>();
+
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
+        loreEntities.AddRange(worldEventEntities);
+        loreEntities.AddRange(backgroundCharacterEntities);
         scene.Lorebooks = loreEntities;
 
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
@@ -103,6 +133,12 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             dbContext.Scenes.Update(scene);
 
             await UpsertCharacters(context, scene, cancellationToken, dbContext);
+
+            await ProcessImportanceFlags(context, dbContext, logger, cancellationToken);
+
+            await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
+
+            await SaveNewCharacterEvents(context, dbContext);
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -139,27 +175,27 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                 character.Version += 1;
                 var memories = update.CharacterMemories.Select(x => new CharacterMemory
                 {
-                    StoryTracker = x.StoryTracker,
+                    SceneTracker = x.SceneTracker,
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
                     Salience = x.Salience,
                 });
-                
+
                 var relationships = update.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker,
+                    UpdateTime = x.UpdateTime,
                 });
                 var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker!
+                    SceneTracker = x.StoryTracker!
                 });
                 character.CharacterMemories.AddRange(memories);
                 character.CharacterRelationships.AddRange(relationships);
@@ -179,27 +215,27 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
             {
                 var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
                 {
-                    StoryTracker = x.StoryTracker,
+                    SceneTracker = x.SceneTracker,
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
                     Salience = x.Salience,
                 }).ToList();
-                
+
                 var relationships = contextNewCharacter.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker,
+                    UpdateTime = x.UpdateTime
                 }).ToList();
                 var sceneRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    StoryTracker = x.StoryTracker!
+                    SceneTracker = x.StoryTracker!
                 }).ToList();
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)
@@ -229,10 +265,128 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                         CharacterMemories = memories,
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
+                        Importance = contextNewCharacter.Importance,
                     };
                     dbContext.Characters.Add(newChar);
                 }
             }
         }
+    }
+
+    private async static Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
+    {
+        if (context.CharacterEventsToConsume.IsEmpty)
+        {
+            return;
+        }
+
+        var eventIds = context.CharacterEventsToConsume.ToList();
+        if (eventIds.Count == 0)
+        {
+            return;
+        }
+
+        await dbContext.CharacterEvents
+            .Where(e => eventIds.Contains(e.Id))
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(e => e.Consumed, true),
+                cancellationToken);
+    }
+
+    private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
+    {
+        if (context.NewCharacterEvents.IsEmpty)
+        {
+            return;
+        }
+
+        var eventsToSave = context.NewCharacterEvents.ToList();
+        if (eventsToSave.Count == 0)
+        {
+            return;
+        }
+
+        var entities = eventsToSave.Select(e => new CharacterEvent
+        {
+            Id = Guid.NewGuid(),
+            AdventureId = e.AdventureId,
+            TargetCharacterName = e.TargetCharacterName,
+            SourceCharacterName = e.SourceCharacterName,
+            Time = e.Time,
+            Event = e.Event,
+            SourceRead = e.SourceRead,
+            Consumed = false
+        });
+
+        await dbContext.CharacterEvents.AddRangeAsync(entities);
+    }
+
+    private async static Task ProcessImportanceFlags(
+        GenerationContext context,
+        ApplicationDbContext dbContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var importanceFlags = context.NewScene?.ImportanceFlags;
+        if (importanceFlags == null)
+        {
+            return;
+        }
+
+        var allRequests = importanceFlags.UpgradeRequests
+            .Concat(importanceFlags.DowngradeRequests)
+            .ToList();
+
+        if (allRequests.Count == 0)
+        {
+            return;
+        }
+
+        var validRequests = allRequests.Where(IsValidTransition).ToList();
+        var invalidRequests = allRequests.Except(validRequests).ToList();
+
+        foreach (var invalid in invalidRequests)
+        {
+            logger.Warning(
+                "Invalid importance transition requested for {Character}: {From} -> {To}. " +
+                "Only arc_important <-> significant transitions are supported.",
+                invalid.Character, invalid.From, invalid.To);
+        }
+
+        if (validRequests.Count == 0)
+        {
+            return;
+        }
+
+        var characterNames = validRequests.Select(r => r.Character).ToList();
+        var characters = await dbContext.Characters
+            .Where(x => x.AdventureId == context.AdventureId && characterNames.Contains(x.Name))
+            .ToListAsync(cancellationToken);
+
+        foreach (var request in validRequests)
+        {
+            var character = characters.SingleOrDefault(c => c.Name == request.Character);
+            if (character == null)
+            {
+                logger.Warning(
+                    "Character {Character} not found for importance transition",
+                    request.Character);
+                continue;
+            }
+
+            var newImportance = CharacterImportanceConverter.FromString(request.To);
+
+            logger.Information(
+                "Updating importance for {Character}: {From} -> {To}. Reason: {Reason}",
+                request.Character, request.From, request.To, request.Reason);
+
+            character.Importance = newImportance;
+        }
+    }
+
+    private static bool IsValidTransition(ImportanceChangeRequest request)
+    {
+        return (request.From == "arc_important" && request.To == "significant") ||
+               (request.From == "significant" && request.To == "arc_important");
     }
 }

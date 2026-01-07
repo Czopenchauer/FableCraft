@@ -13,6 +13,9 @@
         <button class="btn-import" (click)="fileInput.click()">
           Import from JSON
         </button>
+        <button class="btn-preview" (click)="openPreviewModal()">
+          Preview
+        </button>
       </div>
     </div>
   </div>
@@ -22,7 +25,7 @@
   <div *ngIf="error" class="error-message">{{ error }}</div>
 
   <div *ngIf="!isLoading && structure" class="builder-container">
-    <!-- LEFT: Form Section -->
+    <!-- Form Section -->
     <div class="form-section">
       <div class="form-content">
         <!-- Name Section -->
@@ -36,209 +39,131 @@
           />
         </div>
 
-        <!-- Story Section -->
-        <div class="structure-section">
-          <h3 class="section-title">Story Fields</h3>
-          <div class="fields-container">
-            <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex" class="field-card"
-                 [class.framework-field]="isFrameworkField('story', field.name)">
-              <div class="field-header">
-                <span class="field-name">
-                  <span *ngIf="isFrameworkField('story', field.name)" class="lock-icon">🔒</span>
-                  {{ field.name }}
-                </span>
-                <button
-                  *ngIf="!isFrameworkField('story', field.name)"
-                  class="btn-remove"
-                  (click)="removeField('story', i)"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <app-field-editor
-                [field]="field"
-                [isFrameworkField]="isFrameworkField('story', field.name)"
-                [nestingLevel]="0">
-              </app-field-editor>
-            </div>
-
-            <button class="btn-add-field" (click)="addCustomField('story')">+ Add Field</button>
-          </div>
+        <!-- Tab Navigation -->
+        <div class="tabs-header">
+          <button
+            class="tab-button"
+            [class.active]="activeTab === 'story'"
+            (click)="switchTab('story')">
+            Story Tracker
+          </button>
+          <button
+            class="tab-button"
+            [class.active]="activeTab === 'mainCharacter'"
+            (click)="switchTab('mainCharacter')">
+            Main Character
+          </button>
+          <button
+            class="tab-button"
+            [class.active]="activeTab === 'characters'"
+            (click)="switchTab('characters')">
+            Characters
+          </button>
         </div>
 
-        <!-- CharactersPresent Section -->
-        <div class="structure-section">
-          <h3 class="section-title">Characters Present</h3>
-          <div class="field-card framework-field">
-            <div class="field-header">
-              <span class="field-name">
-                <span class="lock-icon">🔒</span>
-                {{ structure.charactersPresent.name }}
-              </span>
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- Story Tab -->
+          <div *ngIf="activeTab === 'story'" class="tab-panel">
+            <div class="section-description">
+              Define the story context fields including time, location, weather, and characters present in the scene.
             </div>
-
-            <div class="field-body">
-              <div class="field-row">
-                <label>Prompt</label>
-                <textarea
-                  [(ngModel)]="structure.charactersPresent.prompt"
-                  class="field-textarea"
-                  rows="2"
-                ></textarea>
-              </div>
-
-              <div class="field-row">
-                <label>Examples</label>
-                <div class="example-values">
-                  <div *ngFor="let example of structure.charactersPresent.exampleValues; let j = index; trackBy: trackByIndex" class="example-value-row">
-                    <input
-                      type="text"
-                      [(ngModel)]="structure.charactersPresent.exampleValues![j]"
-                      class="field-input"
-                    />
-                    <button class="btn-remove-small" (click)="removeExampleValue(structure.charactersPresent, j)">×</button>
-                  </div>
-                  <button class="btn-add-small" (click)="addExampleValue(structure.charactersPresent)">+ Example</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- MainCharacter Section -->
-        <div class="structure-section">
-          <h3 class="section-title">Main Character</h3>
-          <div class="fields-container">
-            <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex" class="field-card"
-                 [class.framework-field]="isFrameworkField('mainCharacter', field.name)">
-              <div class="field-header">
-                <span class="field-name">
-                  <span *ngIf="isFrameworkField('mainCharacter', field.name)" class="lock-icon">🔒</span>
-                  {{ field.name }}
-                </span>
-                <button
-                  *ngIf="!isFrameworkField('mainCharacter', field.name)"
-                  class="btn-remove"
-                  (click)="removeField('mainCharacter', i)"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <app-field-editor
-                [field]="field"
-                [isFrameworkField]="isFrameworkField('mainCharacter', field.name)"
-                [nestingLevel]="0">
-              </app-field-editor>
-            </div>
-
-            <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Field</button>
-          </div>
-        </div>
-
-        <!-- Characters Section -->
-        <div class="structure-section">
-          <h3 class="section-title">Characters</h3>
-          <div class="fields-container">
-            <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex" class="field-card"
-                 [class.framework-field]="isFrameworkField('characters', field.name)">
-              <div class="field-header">
-                <span class="field-name">
-                  <span *ngIf="isFrameworkField('characters', field.name)" class="lock-icon">🔒</span>
-                  {{ field.name }}
-                </span>
-                <button
-                  *ngIf="!isFrameworkField('characters', field.name)"
-                  class="btn-remove"
-                  (click)="removeField('characters', i)"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <app-field-editor
-                [field]="field"
-                [isFrameworkField]="isFrameworkField('characters', field.name)"
-                [nestingLevel]="0">
-              </app-field-editor>
-            </div>
-
-            <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Field</button>
-          </div>
-        </div>
-
-        <!-- Optional Sections -->
-        <div class="structure-section">
-          <h3 class="section-title">Optional</h3>
-
-          <div class="optional-section">
-            <div class="optional-header">
-              <span>Character Development</span>
-              <button
-                *ngIf="!structure.characterDevelopment"
-                class="btn-enable"
-                (click)="enableCharacterDevelopment()"
-              >
-                Enable
-              </button>
-              <button
-                *ngIf="structure.characterDevelopment"
-                class="btn-disable"
-                (click)="disableCharacterDevelopment()"
-              >
-                Disable
-              </button>
-            </div>
-
-            <div *ngIf="structure.characterDevelopment" class="fields-container">
-              <div *ngFor="let field of structure.characterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
+            <div class="fields-container">
+              <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex" class="field-card"
+                   [class.framework-field]="isFrameworkField('story', field.name)">
                 <div class="field-header">
-                  <span class="field-name">{{ field.name }}</span>
-                  <button class="btn-remove" (click)="removeField('characterDevelopment', i)">×</button>
+                  <span class="field-name">
+                    <span *ngIf="isFrameworkField('story', field.name)" class="lock-icon">🔒</span>
+                    {{ field.name }}
+                  </span>
+                  <button
+                    *ngIf="!isFrameworkField('story', field.name)"
+                    class="btn-remove"
+                    (click)="removeField('story', i)"
+                  >
+                    Remove
+                  </button>
                 </div>
+
                 <app-field-editor
                   [field]="field"
-                  [isFrameworkField]="false"
+                  [isFrameworkField]="isFrameworkField('story', field.name)"
                   [nestingLevel]="0">
                 </app-field-editor>
               </div>
-              <button class="btn-add-field" (click)="addCustomField('characterDevelopment')">+ Add Field</button>
+
+              <button class="btn-add-field" (click)="addCustomField('story')">+ Add Field</button>
             </div>
           </div>
 
-          <div class="optional-section">
-            <div class="optional-header">
-              <span>Main Char Development</span>
-              <button
-                *ngIf="!structure.mainCharacterDevelopment"
-                class="btn-enable"
-                (click)="enableMainCharacterDevelopment()"
-              >
-                Enable
-              </button>
-              <button
-                *ngIf="structure.mainCharacterDevelopment"
-                class="btn-disable"
-                (click)="disableMainCharacterDevelopment()"
-              >
-                Disable
+          <!-- Main Character Tab -->
+          <div *ngIf="activeTab === 'mainCharacter'" class="tab-panel">
+            <div class="section-description">
+              Define the main character's attributes and stats that will be tracked throughout the adventure.
+            </div>
+            <div class="tab-actions">
+              <button class="btn-copy" (click)="copyMainCharacterToCharacters()">
+                Copy to Characters Tab
               </button>
             </div>
-
-            <div *ngIf="structure.mainCharacterDevelopment" class="fields-container">
-              <div *ngFor="let field of structure.mainCharacterDevelopment; let i = index; trackBy: trackByIndex" class="field-card">
+            <div class="fields-container">
+              <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex" class="field-card"
+                   [class.framework-field]="isFrameworkField('mainCharacter', field.name)">
                 <div class="field-header">
-                  <span class="field-name">{{ field.name }}</span>
-                  <button class="btn-remove" (click)="removeField('mainCharacterDevelopment', i)">×</button>
+                  <span class="field-name">
+                    <span *ngIf="isFrameworkField('mainCharacter', field.name)" class="lock-icon">🔒</span>
+                    {{ field.name }}
+                  </span>
+                  <button
+                    *ngIf="!isFrameworkField('mainCharacter', field.name)"
+                    class="btn-remove"
+                    (click)="removeField('mainCharacter', i)"
+                  >
+                    Remove
+                  </button>
                 </div>
+
                 <app-field-editor
                   [field]="field"
-                  [isFrameworkField]="false"
+                  [isFrameworkField]="isFrameworkField('mainCharacter', field.name)"
                   [nestingLevel]="0">
                 </app-field-editor>
               </div>
-              <button class="btn-add-field" (click)="addCustomField('mainCharacterDevelopment')">+ Add Field</button>
+
+              <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Field</button>
+            </div>
+          </div>
+
+          <!-- Characters Tab -->
+          <div *ngIf="activeTab === 'characters'" class="tab-panel">
+            <div class="section-description">
+              Define the template for NPC characters that will appear in the adventure.
+            </div>
+            <div class="fields-container">
+              <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex" class="field-card"
+                   [class.framework-field]="isFrameworkField('characters', field.name)">
+                <div class="field-header">
+                  <span class="field-name">
+                    <span *ngIf="isFrameworkField('characters', field.name)" class="lock-icon">🔒</span>
+                    {{ field.name }}
+                  </span>
+                  <button
+                    *ngIf="!isFrameworkField('characters', field.name)"
+                    class="btn-remove"
+                    (click)="removeField('characters', i)"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <app-field-editor
+                  [field]="field"
+                  [isFrameworkField]="isFrameworkField('characters', field.name)"
+                  [nestingLevel]="0">
+                </app-field-editor>
+              </div>
+
+              <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Field</button>
             </div>
           </div>
         </div>
@@ -253,29 +178,14 @@
         </div>
       </div>
     </div>
-
-    <!-- RIGHT: Live Preview Section -->
-    <div class="preview-section">
-      <div class="preview-header">
-        <h3>Preview</h3>
-        <button
-          class="btn-refresh-preview"
-          (click)="onRefreshPreview()"
-          [disabled]="isLoadingVisualization"
-          title="Refresh preview"
-        >
-          <span *ngIf="!isLoadingVisualization">Refresh</span>
-          <span *ngIf="isLoadingVisualization">Updating...</span>
-        </button>
-      </div>
-      <div class="preview-content">
-        <div *ngIf="visualizationData" class="preview-renderer">
-          <app-json-renderer [data]="visualizationData"></app-json-renderer>
-        </div>
-        <div *ngIf="!visualizationData && !isLoadingVisualization" class="preview-empty">
-          Click "Refresh" to preview how your tracker will look in the game
-        </div>
-      </div>
-    </div>
   </div>
+
+  <!-- Preview Modal -->
+  <app-tracker-preview-modal
+    [isOpen]="isPreviewModalOpen"
+    [visualizationData]="visualizationData"
+    [isLoading]="isLoadingVisualization"
+    (close)="closePreviewModal()"
+    (refresh)="onRefreshPreview()">
+  </app-tracker-preview-modal>
 </div>

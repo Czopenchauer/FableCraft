@@ -5,18 +5,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TrackerDefinitionService } from '../../services/tracker-definition.service';
 import {
   TrackerDefinitionDto,
-  TrackerDefinitionResponseDto,
   TrackerStructure,
   FieldDefinition,
   FieldType
 } from '../../models/tracker-definition.model';
-import { JsonRendererComponent } from '../json-renderer/json-renderer.component';
 import { FieldEditorComponent } from '../field-editor/field-editor.component';
+import { TrackerPreviewModalComponent } from './tracker-preview-modal/tracker-preview-modal.component';
 
 @Component({
   selector: 'app-tracker-definition-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, JsonRendererComponent, FieldEditorComponent],
+  imports: [CommonModule, FormsModule, FieldEditorComponent, TrackerPreviewModalComponent],
   templateUrl: './tracker-definition-builder.component.html',
   styleUrls: ['./tracker-definition-builder.component.css']
 })
@@ -29,16 +28,19 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   isSaving = false;
   error: string | null = null;
 
-  // Live preview
+  // Tab state
+  activeTab: 'story' | 'mainCharacter' | 'characters' = 'story';
+
+  // Preview modal state
+  isPreviewModalOpen = false;
   visualizationData: any = null;
   isLoadingVisualization = false;
 
   // Framework field names that are locked
   private readonly frameworkFields = {
-    story: ['Time', 'Weather', 'Location'],
+    story: ['Time', 'Weather', 'Location', 'CharactersPresent'],
     mainCharacter: ['Name'],
-    characters: ['Name'],
-    charactersPresent: 'CharactersPresent'
+    characters: ['Name']
   };
 
   FieldType = FieldType;
@@ -93,6 +95,21 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     });
   }
 
+  // Tab navigation
+  switchTab(tab: 'story' | 'mainCharacter' | 'characters'): void {
+    this.activeTab = tab;
+  }
+
+  // Preview modal methods
+  openPreviewModal(): void {
+    this.isPreviewModalOpen = true;
+    this.onRefreshPreview();
+  }
+
+  closePreviewModal(): void {
+    this.isPreviewModalOpen = false;
+  }
+
   onRefreshPreview(): void {
     if (!this.structure) return;
 
@@ -109,6 +126,22 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     });
   }
 
+  // Copy main character fields to characters
+  copyMainCharacterToCharacters(): void {
+    if (!this.structure) return;
+
+    // Deep clone mainCharacter fields to characters
+    // Keep the existing Name field, add all other fields from mainCharacter
+    const nameField = this.structure.characters.find(f => f.name === 'Name');
+    const mainCharFieldsCopy = this.structure.mainCharacter
+      .filter(f => f.name !== 'Name')
+      .map(f => JSON.parse(JSON.stringify(f)));
+
+    this.structure.characters = nameField
+      ? [nameField, ...mainCharFieldsCopy]
+      : mainCharFieldsCopy;
+  }
+
   isFrameworkField(section: string, fieldName: string): boolean {
     switch (section) {
       case 'story':
@@ -117,8 +150,6 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
         return this.frameworkFields.mainCharacter.includes(fieldName);
       case 'characters':
         return this.frameworkFields.characters.includes(fieldName);
-      case 'charactersPresent':
-        return fieldName === this.frameworkFields.charactersPresent;
       default:
         return false;
     }
@@ -190,30 +221,6 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   removeNestedField(field: FieldDefinition, index: number): void {
     if (field.nestedFields) {
       field.nestedFields.splice(index, 1);
-    }
-  }
-
-  enableCharacterDevelopment(): void {
-    if (this.structure && !this.structure.characterDevelopment) {
-      this.structure.characterDevelopment = [];
-    }
-  }
-
-  disableCharacterDevelopment(): void {
-    if (this.structure) {
-      this.structure.characterDevelopment = undefined;
-    }
-  }
-
-  enableMainCharacterDevelopment(): void {
-    if (this.structure && !this.structure.mainCharacterDevelopment) {
-      this.structure.mainCharacterDevelopment = [];
-    }
-  }
-
-  disableMainCharacterDevelopment(): void {
-    if (this.structure) {
-      this.structure.mainCharacterDevelopment = undefined;
     }
   }
 
@@ -316,11 +323,6 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   }
 
   private normalizeTrackerStructure(data: any): TrackerStructure {
-    // Helper function to convert PascalCase to camelCase
-    const toCamelCase = (str: string): string => {
-      return str.charAt(0).toLowerCase() + str.slice(1);
-    };
-
     // Helper function to normalize a field definition
     const normalizeField = (field: any): FieldDefinition => {
       const normalized: any = {};
@@ -351,17 +353,20 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     // Normalize the structure
     const normalized: any = {};
 
-    // Story section
+    // Story section (CharactersPresent is now inside this array)
     const storyData = data.Story || data.story;
     normalized.story = Array.isArray(storyData)
       ? storyData.map((f: any) => normalizeField(f))
       : [];
 
-    // CharactersPresent section (single field, not array)
+    // If there's a separate charactersPresent field (legacy format), add it to story
     const charsPresentData = data.CharactersPresent || data.charactersPresent;
-    normalized.charactersPresent = charsPresentData
-      ? normalizeField(charsPresentData)
-      : { name: 'CharactersPresent', type: FieldType.Array, prompt: '' };
+    if (charsPresentData && !normalized.story.some((f: FieldDefinition) => f.name === 'CharactersPresent')) {
+      const charsPresentField = typeof charsPresentData === 'object' && !Array.isArray(charsPresentData)
+        ? normalizeField(charsPresentData)
+        : { name: 'CharactersPresent', type: FieldType.Array, prompt: 'List of all characters present in the scene.', defaultValue: ['No Characters'] };
+      normalized.story.push(charsPresentField);
+    }
 
     // MainCharacter section
     const mainCharData = data.MainCharacter || data.mainCharacter;
@@ -375,17 +380,6 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
       ? charsData.map((f: any) => normalizeField(f))
       : [];
 
-    // Optional sections
-    const charDevData = data.CharacterDevelopment || data.characterDevelopment;
-    if (charDevData && Array.isArray(charDevData)) {
-      normalized.characterDevelopment = charDevData.map((f: any) => normalizeField(f));
-    }
-
-    const mainCharDevData = data.MainCharacterDevelopment || data.mainCharacterDevelopment;
-    if (mainCharDevData && Array.isArray(mainCharDevData)) {
-      normalized.mainCharacterDevelopment = mainCharDevData.map((f: any) => normalizeField(f));
-    }
-
     return normalized as TrackerStructure;
   }
 
@@ -396,8 +390,7 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     }
 
     // Check for required sections
-    if (!Array.isArray(data.story) || !Array.isArray(data.mainCharacter) ||
-        !Array.isArray(data.characters) || !data.charactersPresent) {
+    if (!Array.isArray(data.story) || !Array.isArray(data.mainCharacter) || !Array.isArray(data.characters)) {
       return false;
     }
 
@@ -417,9 +410,7 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
       charFieldNames.includes(name)
     );
 
-    const hasCharactersPresent = data.charactersPresent.name === this.frameworkFields.charactersPresent;
-
-    return hasStoryFramework && hasMainCharFramework && hasCharFramework && hasCharactersPresent;
+    return hasStoryFramework && hasMainCharFramework && hasCharFramework;
   }
 
   onDelete(): void {

@@ -52,7 +52,7 @@ public class TrackerDefinitionController : ControllerBase
     {
         var dictionary = new Dictionary<string, object>();
         var story = ConvertFieldsToDict(structure.Story);
-        dictionary.Add(nameof(Tracker.Story), story);
+        dictionary.Add(nameof(Tracker.Scene), story);
 
         var mainCharStats = ConvertFieldsToDict(structure.MainCharacter);
         dictionary.Add(nameof(Tracker.MainCharacter), mainCharStats);

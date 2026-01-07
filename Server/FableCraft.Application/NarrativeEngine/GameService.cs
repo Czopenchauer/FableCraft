@@ -343,7 +343,7 @@ internal class GameService : IGameService
                 SceneId = scene.Id,
                 Tracker = new TrackerDto
                 {
-                    Story = scene.Metadata.Tracker!.Story!,
+                    Scene = scene.Metadata.Tracker!.Scene!,
                     MainCharacter = new MainCharacterTrackerDto
                     {
                         Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,

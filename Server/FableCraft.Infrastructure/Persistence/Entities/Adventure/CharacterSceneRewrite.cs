@@ -26,7 +26,7 @@ public sealed class CharacterSceneRewrite : IEntity
     /// </summary>
     public int SequenceNumber { get; set; }
 
-    public required StoryTracker StoryTracker { get; set; }
+    public required SceneTracker SceneTracker { get; set; }
 
     /// <summary>
     /// Full prose rewrite of the scene from the character's perspective.

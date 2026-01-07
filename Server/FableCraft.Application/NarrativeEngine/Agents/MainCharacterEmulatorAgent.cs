@@ -147,7 +147,7 @@ public sealed class MainCharacterEmulatorAgent(
     private static string BuildContextPrompt(
         string characterName,
         string characterDescription,
-        MainCharacterTracker? tracker,
+        MainCharacterState? tracker,
         List<Scene> recentScenes,
         string? worldSettings)
     {

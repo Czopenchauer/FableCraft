@@ -34,7 +34,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
                 x.CharacterStates.Single().Tracker,
                 x.CharacterMemories.Select(m => new CharacterMemoryDto(
                     m.Summary,
-                    m.StoryTracker,
+                    m.SceneTracker,
                     m.Salience,
                     m.Data
                 )).ToList(),
@@ -42,7 +42,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
                     r.TargetCharacterName,
                     r.Data,
                     r.SequenceNumber,
-                    r.StoryTracker
+                    r.UpdateTime
                 )).ToList()
             ))
             .ToArrayAsync(cancellationToken);

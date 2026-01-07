@@ -15,12 +15,9 @@ export interface FieldDefinition {
 }
 
 export interface TrackerStructure {
-  story: FieldDefinition[];
-  charactersPresent: FieldDefinition;
+  story: FieldDefinition[];  // Contains Time, Weather, Location, CharactersPresent
   mainCharacter: FieldDefinition[];
   characters: FieldDefinition[];
-  characterDevelopment?: FieldDefinition[];
-  mainCharacterDevelopment?: FieldDefinition[];
 }
 
 export interface TrackerDefinitionDto {

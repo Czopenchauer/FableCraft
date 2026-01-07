@@ -1,3 +1,5 @@
+#pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
+
 using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
@@ -27,23 +29,33 @@ public static class StartupExtensions
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
-            .AddScoped<IProcessor, TrackerProcessor>()
+            .AddScoped<IProcessor, CharacterTrackersProcessor>()
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
-            .AddScoped<IProcessor, NarrativeDirectorAgent>()
-            .AddScoped<ContextGatheringService>()
+            .AddScoped<IProcessor, ResolutionAgent>()
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()
             .AddScoped<StoryTrackerAgent>()
             .AddScoped<CharacterCrafter>()
+            .AddScoped<PartialProfileCrafter>()
             .AddScoped<LoreCrafter>()
             .AddScoped<ItemCrafter>()
             .AddScoped<CharacterTrackerAgent>()
             .AddScoped<CharacterReflectionAgent>()
             .AddScoped<LocationCrafter>()
-            .AddScoped<MainCharacterEmulatorAgent>();
+            .AddScoped<MainCharacterEmulatorAgent>()
+            .AddScoped<ChroniclerAgent>()
+            .AddScoped<SimulationPlannerAgent>()
+            .AddScoped<StandaloneSimulationAgent>()
+            .AddScoped<SimulationModeratorAgent>()
+            .AddScoped<CharacterSimulationAgent>()
+            .AddScoped<OffscreenInferenceAgent>()
+            .AddScoped<IntentCheckAgent>()
+            .AddScoped<IProcessor, SceneTrackerProcessor>()
+            .AddScoped<IProcessor, SimulationOrchestrator>()
+            .AddScoped<IProcessor, OffscreenInferenceProcessor>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();
@@ -54,6 +66,8 @@ public static class StartupExtensions
         services.AddTransient<CharacterStatePlugin>();
         services.AddTransient<CharacterRelationshipPlugin>();
         services.AddTransient<CharacterEmulationPlugin>();
+        services.AddTransient<IntentCheckPlugin>();
+        services.AddTransient<CharacterSimulationToolsPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();

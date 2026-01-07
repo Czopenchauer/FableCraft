@@ -21,9 +21,9 @@ internal sealed class StoryTrackerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    protected override AgentName GetAgentName() => AgentName.StoryTrackerAgent;
+    protected override AgentName GetAgentName() => AgentName.SceneTrackerAgent;
 
-    public async Task<StoryTracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
+    public async Task<SceneTracker> Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
@@ -78,7 +78,7 @@ internal sealed class StoryTrackerAgent(
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<StoryTracker>("story_tracker", true);
+        var outputParser = ResponseParser.CreateJsonParser<SceneTracker>("scene_tracker", true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(

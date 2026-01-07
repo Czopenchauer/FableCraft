@@ -31,18 +31,18 @@ public class TrackerDefinitionDtoValidator : AbstractValidator<TrackerDefinition
         RuleFor(x => x.Structure)
             .NotNull().WithMessage("Tracker structure is required");
 
-        // Validate Story section
+        // Validate Scene section
         RuleFor(x => x.Structure.Story)
-            .NotNull().WithMessage("Story section is required")
-            .NotEmpty().WithMessage("Story section must contain at least the framework fields")
+            .NotNull().WithMessage("Scene section is required")
+            .NotEmpty().WithMessage("Scene section must contain at least the framework fields")
             .Must(story => HasRequiredField(story, "Time", FieldType.String))
-            .WithMessage("Story section must contain a 'Time' field of type String")
+            .WithMessage("Scene section must contain a 'Time' field of type String")
             .Must(story => HasRequiredField(story, "Weather", FieldType.String))
-            .WithMessage("Story section must contain a 'Weather' field of type String")
+            .WithMessage("Scene section must contain a 'Weather' field of type String")
             .Must(story => HasRequiredField(story, "CharactersPresent", FieldType.Array))
-            .WithMessage("Story section must contain a 'CharactersPresent' field of type Array")
+            .WithMessage("Scene section must contain a 'CharactersPresent' field of type Array")
             .Must(story => HasRequiredField(story, "Location", FieldType.String))
-            .WithMessage("Story section must contain a 'Location' field of type String");
+            .WithMessage("Scene section must contain a 'Location' field of type String");
 
         // Validate MainCharacter section
         RuleFor(x => x.Structure.MainCharacter)

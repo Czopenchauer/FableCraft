@@ -15,9 +15,9 @@ public class CharacterMemoryConfiguration : IEntityTypeConfiguration<CharacterMe
 
         builder.HasIndex(x => new { x.CharacterId });
         builder.HasIndex(x => new { x.CharacterId, x.Salience });
-        builder.Property(x => x.StoryTracker).HasConversion<string>(
+        builder.Property(x => x.SceneTracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
-            x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+            x => JsonSerializer.Deserialize<SceneTracker>(x, options)!);
         
         builder.Property(x => x.Data).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),

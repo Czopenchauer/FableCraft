@@ -222,6 +222,46 @@
               </div>
             </div>
           </div>
+
+          <!-- Test Connection Section -->
+          <div class="form-section test-connection-section">
+            <h3 class="section-title">Test Connection</h3>
+            <div class="test-connection-content">
+              <p class="test-description">Send a test message to verify your LLM configuration works correctly.</p>
+              <button
+                (click)="testConnection()"
+                [disabled]="isTesting || isSaving"
+                class="btn btn-test"
+                type="button">
+                <span *ngIf="!isTesting" class="test-btn-content">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                  </svg>
+                  Test Connection
+                </span>
+                <span *ngIf="isTesting" class="testing-content">
+                  <span class="spinner"></span>
+                  <span>Testing...</span>
+                </span>
+              </button>
+
+              <!-- Test Result -->
+              <div *ngIf="testResult" class="test-result" [class.success]="testSuccess" [class.error]="!testSuccess">
+                <div class="test-result-icon">
+                  <svg *ngIf="testSuccess" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                  </svg>
+                  <svg *ngIf="!testSuccess" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                  </svg>
+                </div>
+                <div class="test-result-content">
+                  <span class="test-result-status">{{ testSuccess ? 'Connection Successful' : 'Connection Failed' }}</span>
+                  <span class="test-result-message">{{ testResult }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
 

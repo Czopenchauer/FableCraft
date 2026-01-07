@@ -36,7 +36,9 @@ public sealed class CharacterMemoryOutput
 public sealed class CharacterRelationshipOutput
 {
     public required string Name { get; set; }
-    
+
+    public required object? Dynamic { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }

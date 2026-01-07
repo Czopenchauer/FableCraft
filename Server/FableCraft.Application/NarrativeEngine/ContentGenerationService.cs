@@ -47,25 +47,23 @@ public sealed class ContentGenerationService(
             return null;
         }
 
-        if (lastScene.Metadata.NarrativeMetadata is null)
-        {
-            logger.Warning("Scene {SceneId} has no narrative metadata, cannot generate content", lastScene.Id);
-            return null;
-        }
-
         var context = await BuildContextForContentGeneration(adventureId, lastScene, cancellationToken);
 
         // Clear existing content fields to force regeneration
         context.NewCharacters = null;
         context.NewLocations = null;
-        context.NewLore = null;
         context.NewItems = null;
 
         var processors = serviceProvider.GetServices<IProcessor>();
+
+        var sceneTrackerProcessor = processors.First(p => p is SceneTrackerProcessor);
+        await sceneTrackerProcessor.Invoke(context, cancellationToken);
+
         var contentGenerator = processors.First(p => p is ContentGenerator);
-        await contentGenerator.Invoke(context, cancellationToken);
-        var trackerProcessor = processors.First(p => p is TrackerProcessor);
-        await trackerProcessor.Invoke(context, cancellationToken);
+        var characterTrackersProcessor = processors.First(p => p is CharacterTrackersProcessor);
+        await Task.WhenAll(
+            contentGenerator.Invoke(context, cancellationToken),
+            characterTrackersProcessor.Invoke(context, cancellationToken));
 
         // Save the generated content and character updates to the database
         var saveProcessor = processors.First(p => p is SaveSceneEnrichment);
@@ -77,7 +75,7 @@ public sealed class ContentGenerationService(
             lastScene.Id,
             context.NewCharacters?.Length ?? 0,
             context.NewLocations?.Length ?? 0,
-            context.NewLore?.Length ?? 0,
+            context.NewLore?.Count ?? 0,
             context.NewItems?.Length ?? 0);
 
         return new ContentGenerationResult
@@ -86,7 +84,7 @@ public sealed class ContentGenerationService(
             SequenceNumber = lastScene.SequenceNumber,
             NewCharactersCount = context.NewCharacters?.Length ?? 0,
             NewLocationsCount = context.NewLocations?.Length ?? 0,
-            NewLoreCount = context.NewLore?.Length ?? 0,
+            NewLoreCount = context.NewLore?.Count ?? 0,
             NewItemsCount = context.NewItems?.Length ?? 0,
             NewCharacterNames = context.NewCharacters?.Select(c => c.Name).ToArray() ?? [],
             NewLocationNames = context.NewLocations?.Select(l => l.Title).ToArray() ?? [],
@@ -111,8 +109,7 @@ public sealed class ContentGenerationService(
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
                 x.AdventureStartTime,
-                x.WorldSettings,
-                x.AuthorNotes
+                x.WorldSettings
             })
             .SingleAsync(cancellationToken);
 
@@ -141,7 +138,7 @@ public sealed class ContentGenerationService(
             PlayerAction = lastScene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty,
             GenerationProcessStep = GenerationProcessStep.SceneGenerated,
             NewSceneId = lastScene.Id,
-            NewNarrativeDirection = lastScene.Metadata.NarrativeMetadata,
+            NewResolution = lastScene.Metadata.ResolutionOutput,
             NewScene = new GeneratedScene
             {
                 Scene = lastScene.NarrativeText,
@@ -159,7 +156,6 @@ public sealed class ContentGenerationService(
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             adventure.WorldSettings,
-            adventure.AuthorNotes,
             createdLore);
 
         return context;
@@ -180,35 +176,44 @@ public sealed class ContentGenerationService(
         return existingCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single().Description,
+                Description = x.CharacterStates.Single()
+                    .Description,
                 Name = x.Name,
-                CharacterState = x.CharacterStates.Single().CharacterStats,
-                CharacterTracker = x.CharacterStates.Single().Tracker,
+                CharacterState = x.CharacterStates.Single()
+                    .CharacterStats,
+                CharacterTracker = x.CharacterStates.Single()
+                    .Tracker,
                 CharacterId = x.Id,
                 CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                {
-                    MemoryContent = y.Summary,
-                    Salience = y.Salience,
-                    Data = y.Data,
-                    StoryTracker = y.StoryTracker
-                }).ToList(),
+                    {
+                        MemoryContent = y.Summary,
+                        Salience = y.Salience,
+                        Data = y.Data,
+                        SceneTracker = y.SceneTracker
+                    })
+                    .ToList(),
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
-                    .Select(g => g.OrderByDescending(r => r.SequenceNumber).First())
+                    .Select(g => g.OrderByDescending(r => r.SequenceNumber)
+                        .First())
                     .Select(y => new CharacterRelationshipContext
                     {
                         TargetCharacterName = y!.TargetCharacterName,
                         Data = y.Data,
-                        StoryTracker = y.StoryTracker,
-                        SequenceNumber = y.SequenceNumber
+                        UpdateTime = y.UpdateTime,
+                        SequenceNumber = y.SequenceNumber,
+                        Dynamic = y.Dynamic!
                     })
                     .ToList(),
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
-                {
-                    Content = y.Content,
-                    StoryTracker = y.StoryTracker,
-                    SequenceNumber = y.SequenceNumber
-                }).ToList(),
+                    {
+                        Content = y.Content,
+                        StoryTracker = y.SceneTracker,
+                        SequenceNumber = y.SequenceNumber
+                    })
+                    .ToList(),
+                Importance = x.Importance,
+                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
             }).ToList();
     }
 }

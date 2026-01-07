@@ -11,7 +11,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
-                name: "StoryTracker",
+                name: "SceneTracker",
                 table: "CharacterRelationships",
                 type: "text",
                 nullable: true,
@@ -23,7 +23,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
-                name: "StoryTracker",
+                name: "SceneTracker",
                 table: "CharacterRelationships",
                 type: "text",
                 nullable: false,

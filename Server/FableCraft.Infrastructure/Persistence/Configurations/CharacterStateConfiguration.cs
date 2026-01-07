@@ -19,6 +19,9 @@ public class CharacterStateConfiguration : IEntityTypeConfiguration<CharacterSta
         builder.Property(x => x.Tracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<CharacterTracker>(x, options)!);
+        builder.Property(x => x.SimulationMetadata).HasConversion<string>(
+            x => JsonSerializer.Serialize(x, options),
+            x => JsonSerializer.Deserialize<SimulationMetadata>(x, options));
         builder.HasIndex(x => x.SequenceNumber);
         builder.HasIndex(x => new { x.CharacterId, x.SequenceNumber });
 

@@ -9,6 +9,12 @@ public class CharacterConfiguration : IEntityTypeConfiguration<Character>
 {
     public void Configure(EntityTypeBuilder<Character> builder)
     {
+        builder.Property(x => x.Importance)
+            .HasConversion(
+                v => v.Value,
+                v => CharacterImportanceConverter.FromString(v))
+            .HasMaxLength(50);
+
         builder.HasMany(x => x.CharacterStates)
             .WithOne()
             .HasForeignKey(x => x.CharacterId)

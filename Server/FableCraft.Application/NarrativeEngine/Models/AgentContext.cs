@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -22,7 +23,6 @@ internal sealed class GenerationContext
         string promptPath,
         string adventureStartTime,
         string? worldSettings,
-        string? authorNotes,
         LorebookEntry[] previouslyGeneratedLore)
     {
         SceneContext = sceneContext;
@@ -33,7 +33,6 @@ internal sealed class GenerationContext
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
         WorldSettings = worldSettings;
-        AuthorNotes = authorNotes;
         PreviouslyGeneratedLore = previouslyGeneratedLore;
     }
 
@@ -71,24 +70,23 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public string? WorldSettings { get; set; }
 
-    [JsonIgnore]
-    public string? AuthorNotes { get; set; }
-
     // Lore entries that were already generated in previous steps, they weren't yet commited to KG.
     [JsonIgnore]
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
     public CharacterContext[]? NewCharacters { get; set; }
 
-    public List<CharacterContext>? CharacterUpdates { get; set; }
+    public ConcurrentQueue<CharacterContext> CharacterUpdates { get; set; } = new();
 
     public LocationGenerationResult[]? NewLocations { get; set; }
 
-    public GeneratedLore[]? NewLore { get; set; }
+    public ConcurrentQueue<GeneratedLore> NewLore { get; set; } = [];
 
     public GeneratedItem[]? NewItems { get; set; }
 
-    public NarrativeDirectorOutput? NewNarrativeDirection { get; set; }
+    public ConcurrentQueue<GeneratedPartialProfile> NewBackgroundCharacters { get; set; } = new();
+
+    public string? NewResolution { get; set; }
 
     public ContextBase? ContextGathered { get; set; }
 
@@ -101,6 +99,51 @@ internal sealed class GenerationContext
     public GenerationProcessStep GenerationProcessStep { get; set; }
 
     public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
+
+    /// <summary>
+    /// Writer guidance from ChroniclerAgent for the next scene.
+    /// </summary>
+    public WriterGuidance? WriterGuidance { get; set; }
+
+    /// <summary>
+    /// World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
+    /// </summary>
+    public ConcurrentQueue<WorldEvent> NewWorldEvents { get; set; } = new();
+
+    /// <summary>
+    /// Chronicler story state to persist in scene metadata.
+    /// </summary>
+    public ChroniclerStoryState? NewChroniclerState { get; set; }
+
+    /// <summary>
+    /// Simulation plan from SimulationPlannerAgent.
+    /// </summary>
+    public SimulationPlannerOutput? SimulationPlan { get; set; }
+
+    /// <summary>
+    /// CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
+    /// Collected by OffscreenInferenceProcessor after processing events.
+    /// </summary>
+    public ConcurrentQueue<Guid> CharacterEventsToConsume { get; set; } = new();
+
+    /// <summary>
+    /// New CharacterEvents to save in SaveEnrichmentStep.
+    /// Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
+    /// </summary>
+    public ConcurrentQueue<CharacterEventToSave> NewCharacterEvents { get; set; } = new();
+}
+
+/// <summary>
+/// Data for a CharacterEvent to be saved.
+/// </summary>
+internal sealed class CharacterEventToSave
+{
+    public required Guid AdventureId { get; init; }
+    public required string TargetCharacterName { get; init; }
+    public required string SourceCharacterName { get; init; }
+    public required string Time { get; init; }
+    public required string Event { get; init; }
+    public required string SourceRead { get; init; }
 }
 
 internal sealed class CharacterContext
@@ -111,6 +154,8 @@ internal sealed class CharacterContext
 
     public required string Description { get; set; } = null!;
 
+    public required CharacterImportance Importance { get; set; }
+
     public required CharacterStats CharacterState { get; set; } = null!;
 
     public required CharacterTracker? CharacterTracker { get; set; }
@@ -120,13 +165,15 @@ internal sealed class CharacterContext
     public required List<CharacterRelationshipContext> Relationships { get; set; } = new();
 
     public required List<CharacterSceneContext> SceneRewrites { get; set; } = new();
+
+    public required SimulationMetadata? SimulationMetadata { get; set; }
 }
 
 internal sealed class MemoryContext
 {
     public required string MemoryContent { get; set; } = null!;
 
-    public required StoryTracker StoryTracker { get; set; }
+    public required SceneTracker SceneTracker { get; set; }
 
     public required double Salience { get; set; }
 
@@ -137,11 +184,13 @@ internal sealed class CharacterRelationshipContext
 {
     public required string TargetCharacterName { get; set; } = null!;
 
+    public required object Dynamic { get; set; }
+
     public required IDictionary<string, object> Data { get; set; } = null!;
 
     public required int SequenceNumber { get; set; }
 
-    public required StoryTracker? StoryTracker { get; set; }
+    public required string? UpdateTime { get; set; }
 }
 
 internal sealed class CharacterSceneContext
@@ -150,7 +199,7 @@ internal sealed class CharacterSceneContext
 
     public required int SequenceNumber { get; set; }
 
-    public required StoryTracker? StoryTracker { get; set; }
+    public required SceneTracker? StoryTracker { get; set; }
 }
 
 internal sealed class SceneContext

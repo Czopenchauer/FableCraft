@@ -84,13 +84,17 @@ internal sealed class CharacterCrafter : BaseAgent
             Name = result.characterStats.CharacterIdentity.FullName!,
             CharacterMemories = new List<MemoryContext>(),
             Relationships = result.relationships.Select(r => new CharacterRelationshipContext
-            {
-                Data = r.ExtensionData,
-                TargetCharacterName = r.Name,
-                StoryTracker = null,
-                SequenceNumber = 0
-            }).ToList(),
-            SceneRewrites = new List<CharacterSceneContext>()
+                {
+                    Data = r.ExtensionData,
+                    TargetCharacterName = r.Name,
+                    UpdateTime = null,
+                    SequenceNumber = 0,
+                    Dynamic = r.Dynamic
+                })
+                .ToList(),
+            SceneRewrites = new List<CharacterSceneContext>(),
+            Importance = request.Importance,
+            SimulationMetadata = null
         };
     }
 
@@ -119,9 +123,11 @@ internal sealed class CharacterCrafter : BaseAgent
         JsonSerializerOptions options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
         var prompt = await GetPromptAsync(context);
+        var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.CharacterTrackerStructure, JsonSerializer.Serialize(GetSystemPrompt(structure), options)),
-            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
+            (PlaceholderNames.CharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
+            ("{{progression_system}}", progressionSystem));
     }
 
     private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
@@ -138,7 +144,9 @@ internal sealed class CharacterCrafter : BaseAgent
 
     private class InitialRelationship
     {
-        public string Name { get; set; } = string.Empty;
+        public required string Name { get; set; }
+
+        public required object Dynamic { get; set; }
 
         [JsonExtensionData]
         public Dictionary<string, object> ExtensionData { get; set; } = new();

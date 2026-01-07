@@ -28,7 +28,7 @@ internal sealed class CharacterTrackerAgent(
     public async Task<CharacterDeltaTrackerOutput> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
-        StoryTracker storyTrackerResult,
+        SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
@@ -41,7 +41,7 @@ internal sealed class CharacterTrackerAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(generationContext.WorldSettings)}
 
-                             {PromptSections.StoryTracker(generationContext, storyTrackerResult)}
+                             {PromptSections.StoryTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 
@@ -52,7 +52,7 @@ internal sealed class CharacterTrackerAgent(
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.CurrentScene(generationContext)}
+                             {context.SceneRewrites.Last().Content}
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 

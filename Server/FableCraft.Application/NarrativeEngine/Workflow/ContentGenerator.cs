@@ -1,5 +1,6 @@
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Serilog;
 
@@ -9,6 +10,7 @@ internal class ContentGenerator(
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
     CharacterCrafter characterCrafter,
+    PartialProfileCrafter partialProfileCrafter,
     ItemCrafter itemCrafter,
     ILogger logger
 ) : IProcessor
@@ -16,19 +18,26 @@ internal class ContentGenerator(
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         // Skip if already fully processed
-        if (context.NewCharacters != null &&
-            context.NewLore != null &&
-            context.NewLocations != null &&
-            context.NewItems != null)
+        if (context.NewCharacters != null && context.NewLore != null && context.NewLocations != null && context.NewItems != null)
         {
             logger.Information("Content already generated, skipping");
             return;
         }
 
-        var creationRequests = context.NewNarrativeDirection!.CreationRequests;
+        var creationRequests = context.NewScene?.CreationRequests ?? new CreationRequests();
 
-        // Start all content generation tasks in parallel
-        Task<CharacterContext[]>? characterTask = null;
+        // Split character requests by importance tier
+        var backgroundCharacterRequests = creationRequests.Characters
+            .Where(x => x.Importance == CharacterImportance.Background)
+            .ToList();
+
+        var fullProfileCharacterRequests = creationRequests.Characters
+            .Where(x => x.Importance == CharacterImportance.ArcImportance ||
+                        x.Importance == CharacterImportance.Significant)
+            .ToList();
+
+        Task<CharacterContext[]>? fullCharacterTask = null;
+        Task<GeneratedPartialProfile[]>? backgroundCharacterTask = null;
         Task<GeneratedLore[]>? loreTask = null;
         Task<LocationGenerationResult[]>? locationTask = null;
         Task<GeneratedItem[]>? itemTask = null;
@@ -39,13 +48,22 @@ internal class ContentGenerator(
         }
         else
         {
-            characterTask = Task.WhenAll(creationRequests.Characters
-                .Select(x => characterCrafter.Invoke(context, x, cancellationToken)).ToArray());
+            if (fullProfileCharacterRequests.Count > 0)
+            {
+                fullCharacterTask = Task.WhenAll(fullProfileCharacterRequests
+                    .Select(x => characterCrafter.Invoke(context, x, cancellationToken)).ToArray());
+            }
+
+            if (backgroundCharacterRequests.Count > 0)
+            {
+                backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
+                    .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
+            }
         }
 
         if (context.NewLore != null)
         {
-            logger.Information("Lore already created, skipping ({Count})", context.NewLore.Length);
+            logger.Information("Lore already created, skipping ({Count})", context.NewLore.Count);
         }
         else
         {
@@ -73,17 +91,35 @@ internal class ContentGenerator(
                 .Select(item => itemCrafter.Invoke(context, item, cancellationToken)).ToArray());
         }
 
-        // Await all tasks in parallel
-        if (characterTask != null)
+        if (fullCharacterTask != null)
         {
-            context.NewCharacters = await characterTask;
-            logger.Information("Created {Count} new characters", context.NewCharacters.Length);
+            context.NewCharacters = await fullCharacterTask;
+            logger.Information("Created {Count} new full character profiles", context.NewCharacters.Length);
+        }
+        else
+        {
+            context.NewCharacters ??= Array.Empty<CharacterContext>();
+        }
+
+        if (backgroundCharacterTask != null)
+        {
+            var backgrounds = await backgroundCharacterTask;
+            foreach (var bg in backgrounds)
+            {
+                context.NewBackgroundCharacters.Enqueue(bg);
+            }
+            logger.Information("Created {Count} new background character profiles", backgrounds.Length);
         }
 
         if (loreTask != null)
         {
-            context.NewLore = await loreTask;
-            logger.Information("Created {Count} new lore", context.NewLore.Length);
+            var lore = await loreTask;
+            foreach (GeneratedLore generatedLore in lore)
+            {
+                context.NewLore!.Enqueue(generatedLore);
+            }
+
+            logger.Information("Created {Count} new lore", context.NewLore!.Count);
         }
 
         if (locationTask != null)

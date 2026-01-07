@@ -20,7 +20,7 @@ public sealed class CharacterMemory : IEntity
 
     public Scene Scene { get; set; } = null!;
 
-    public required StoryTracker StoryTracker { get; set; }
+    public required SceneTracker SceneTracker { get; set; }
 
     /// <summary>
     /// Short summary of the memory.

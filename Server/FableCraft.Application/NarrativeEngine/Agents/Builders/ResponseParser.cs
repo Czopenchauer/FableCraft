@@ -51,29 +51,11 @@ internal static class ResponseParser
     }
 
     /// <summary>
-    ///     Creates a parser function that extracts JSON and text from different tags
+    ///     Creates a parser function for use with SendRequestAsync that extracts raw text from a tag
     /// </summary>
-    public static Func<string, (T, string)> CreateJsonTextParser<T>(
-        string jsonTag, string textTag,
-        bool ignoreNull = false)
+    public static Func<string, string> CreateTextParser(string tag)
     {
-        return response => (
-            ExtractJson<T>(response, jsonTag, ignoreNull),
-            ExtractText(response, textTag)
-        );
-    }
-
-    /// <summary>
-    ///     Creates a parser function that deserializes raw JSON response (no XML tag extraction)
-    /// </summary>
-    public static Func<string, T> CreateRawJsonParser<T>(bool ignoreNull = false)
-    {
-        return response =>
-        {
-            JsonSerializerOptions options = PromptSections.GetJsonOptions(ignoreNull);
-            return JsonSerializer.Deserialize<T>(response.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
-                   ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
-        };
+        return response => ExtractText(response, tag);
     }
 
     private static string? ExtractTagContent(string response, string tag)

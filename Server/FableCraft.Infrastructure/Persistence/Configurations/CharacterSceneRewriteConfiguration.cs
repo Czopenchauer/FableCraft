@@ -14,9 +14,9 @@ public class CharacterSceneRewriteConfiguration : IEntityTypeConfiguration<Chara
         var options = JsonExtensions.JsonSerializerOptions;
 
         builder.HasIndex(x => new { x.CharacterId, x.SequenceNumber });
-        builder.Property(x => x.StoryTracker).HasConversion<string>(
+        builder.Property(x => x.SceneTracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
-            x => JsonSerializer.Deserialize<StoryTracker>(x, options)!);
+            x => JsonSerializer.Deserialize<SceneTracker>(x, options)!);
 
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterSceneRewrites)

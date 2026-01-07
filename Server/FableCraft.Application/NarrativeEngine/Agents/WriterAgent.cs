@@ -46,22 +46,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
-
                              {PromptSections.CharacterForEmulation(context.Characters)}
 
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
-
-                             {PromptSections.NewLore(context.NewLore)}
-
-                             {PromptSections.NewLocations(context.NewLocations)}
-
-                             {PromptSections.NewItems(context.NewItems)}
-
-                             These characters will be created after the scene is generated so emulation is not required for them. You have to emulate them yourself:
-                             {PromptSections.NewCharacterRequests(context.NewNarrativeDirection?.CreationRequests.Characters)}
 
                              {PromptSections.Context(context)}
 
@@ -73,16 +62,39 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        var requestPrompt = $"""
-                             {GetStyleGuide(context)}
+        string requestPrompt;
+        if (!hasSceneContext)
+        {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                             Your new instructions:
-                             {PromptSections.SceneDirection(context.NewNarrativeDirection!.WriterInstructions)}
+            var instruction = await dbContext.Adventures
+                .Select(x => new { x.Id, x.FirstSceneGuidance })
+                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+            requestPrompt = $"""
+                             {PromptSections.ResolutionOutput(context.NewResolution)}
 
-                             {(hasSceneContext ? PromptSections.PlayerAction(context.PlayerAction) : "")}
+                             {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 
-                             Generate a detailed scene based on the above direction and context. Make sure to follow the scene direction instructions closely.
+                             Generate a detailed scene based on the above resolution and context.
                              """;
+        }
+        else
+        {
+            requestPrompt = $"""
+                             {PromptSections.ChroniclerGuidance(context.SceneContext)}
+
+                             {GetPendingMcInteractions(context)}
+
+                             {PromptSections.ResolutionOutput(context.NewResolution)}
+
+                             {PromptSections.PlayerAction(context.PlayerAction)}
+
+                             {PromptSections.ActionResolution(context)}
+
+                             Generate a detailed scene based on the above resolution and context.
+                             """;
+        }
+
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -105,18 +117,37 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         context.NewScene = newScene;
     }
 
-    private static string GetStyleGuide(GenerationContext context)
+    /// <summary>
+    /// Builds a prompt section for pending MC interactions from characters who want to seek the MC.
+    /// Characters with high/immediate urgency should be woven into the upcoming scene.
+    /// </summary>
+    private static string GetPendingMcInteractions(GenerationContext context)
     {
-        if (File.Exists(Path.Combine(context.PromptPath, "StoryBible.md")))
+        var pendingInteractions = context.Characters
+            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
+            .Select(c => new
+            {
+                Character = c.Name,
+                Data = c.SimulationMetadata!.PendingMcInteraction!.ExtensionData!
+            })
+            .ToList();
+
+        if (pendingInteractions.Count == 0)
         {
-            var content = File.ReadAllText(Path.Combine(context.PromptPath, "StoryBible.md"));
-            return $"""
-                     <story_bible>
-                     {content}
-                     </story_bible>
-                    """;
+            return string.Empty;
         }
 
-        return string.Empty;
+        var formatted = string.Join("\n\n",
+            pendingInteractions.Select(p => $"""
+                                             **{p.Character}**)
+                                             {p.Data}
+                                             """.Trim()));
+
+        return $"""
+                <pending_mc_interactions>
+                The following characters have decided to seek out the MC. Consider weaving them into the scene based on urgency:
+                {formatted}
+                </pending_mc_interactions>
+                """;
     }
 }

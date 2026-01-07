@@ -66,7 +66,10 @@ public class Scene : IEntity
 
 public sealed class Metadata
 {
-    public required NarrativeDirectorOutput NarrativeMetadata { get; set; }
+    /// <summary>
+    /// Resolution output from ResolutionAgent (raw JSON string).
+    /// </summary>
+    public string? ResolutionOutput { get; set; }
 
     public Tracker? Tracker { get; set; }
 
@@ -77,10 +80,19 @@ public sealed class Metadata
     public GatheredContext? GatheredContext { get; set; }
 
     /// <summary>
-    /// Character observations from the Writer agent.
-    /// Contains potential profiles for new characters and recurring NPCs to maintain continuity.
+    /// Extra context from writer that will be used in the next scene generation.
     /// </summary>
-    public CharacterObservations? CharacterObservations { get; set; }
+    public Dictionary<string, object>? WriterObservation { get; set; }
+
+    /// <summary>
+    /// Chronicler story state (dramatic questions, promises, threads, stakes, windows, world momentum).
+    /// </summary>
+    public ChroniclerStoryState? ChroniclerState { get; set; }
+
+    /// <summary>
+    /// Writer guidance from the Chronicler for the next scene (stored as JSON string).
+    /// </summary>
+    public string? WriterGuidance { get; set; }
 }
 
 /// <summary>
@@ -88,27 +100,12 @@ public sealed class Metadata
 /// </summary>
 public sealed class GatheredContext
 {
-    public required GatheredContextAnalysis AnalysisSummary { get; set; }
-
     public GatheredContextItem[] WorldContext { get; set; } = [];
 
     public GatheredContextItem[] NarrativeContext { get; set; } = [];
 
-    public GatheredDroppedContext[] DroppedContext { get; set; } = [];
-}
-
-/// <summary>
-/// Analysis summary of the gathered context.
-/// </summary>
-public sealed class GatheredContextAnalysis
-{
-    public required string CurrentSituation { get; set; }
-
-    public string[] KeyElementsInPlay { get; set; } = [];
-
-    public string[] PrimaryFocusAreas { get; set; } = [];
-
-    public required string ContextContinuity { get; set; }
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
 
 /// <summary>
@@ -122,26 +119,16 @@ public sealed class GatheredContextItem
 }
 
 /// <summary>
-/// Context that was dropped as no longer relevant.
-/// </summary>
-public sealed class GatheredDroppedContext
-{
-    public required string Topic { get; set; }
-
-    public required string Reason { get; set; }
-}
-
-/// <summary>
 /// Tracker for story and main character progress within the adventure. Characters other than the main character are tracked separately - <see cref="Character"/>
 /// </summary>
 public sealed class Tracker
 {
-    public StoryTracker? Story { get; set; }
+    public SceneTracker? Scene { get; set; }
 
-    public MainCharacterTracker? MainCharacter { get; set; }
+    public MainCharacterState? MainCharacter { get; set; }
 }
 
-public sealed class StoryTracker
+public sealed class SceneTracker
 {
     public required string Time { get; init; }
 
@@ -155,69 +142,27 @@ public sealed class StoryTracker
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
 
-public sealed class MainCharacterTracker
+public sealed class MainCharacterState
 {
     public string? MainCharacterDescription { get; set; }
 
-    public CharacterTracker? MainCharacter { get; set; }
+    public MainCharacterTracker? MainCharacter { get; set; }
 }
 
 public sealed class CharacterTracker
 {
     public required string Name { get; init; }
 
+    public required string Location { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
 
-/// <summary>
-/// Character observations from scene generation.
-/// Contains potential profiles for new characters and recurring NPCs to maintain continuity.
-/// </summary>
-public class CharacterObservations
+public sealed class MainCharacterTracker
 {
-    [JsonPropertyName("potential_profiles")]
-    public PotentialProfile[] PotentialProfiles { get; init; } = [];
+    public required string Name { get; init; }
 
-    [JsonPropertyName("recurring_npcs")]
-    public RecurringNpc[] RecurringNpcs { get; init; } = [];
-}
-
-public class PotentialProfile
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = null!;
-
-    [JsonPropertyName("role")]
-    public string Role { get; init; } = null!;
-
-    [JsonPropertyName("reason")]
-    public string Reason { get; init; } = null!;
-
-    [JsonPropertyName("established_details")]
-    public EstablishedDetails EstablishedDetails { get; init; } = null!;
-}
-
-public class EstablishedDetails
-{
-    [JsonPropertyName("appearance")]
-    public string Appearance { get; init; } = null!;
-
-    [JsonPropertyName("personality")]
-    public string Personality { get; init; } = null!;
-
-    [JsonPropertyName("background")]
-    public string Background { get; init; } = null!;
-
-    [JsonPropertyName("relationship_seed")]
-    public string RelationshipSeed { get; init; } = null!;
-}
-
-public class RecurringNpc
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = null!;
-
-    [JsonPropertyName("details_to_maintain")]
-    public string DetailsToMaintain { get; init; } = null!;
+    [JsonExtensionData]
+    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }

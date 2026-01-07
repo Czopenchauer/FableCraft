@@ -108,10 +108,10 @@ internal sealed class CharacterAgent : BaseAgent
                 {memoriesSection}
 
                 <current_time>
-                {latestScene?.Metadata.Tracker?.Story?.Time}
+                {latestScene?.Metadata.Tracker?.Scene?.Time}
                 </current_time>
                 <current_location>
-                {latestScene?.Metadata.Tracker?.Story?.Location}
+                {latestScene?.Metadata.Tracker?.Scene?.Location}
                 </current_location>
                 """;
     }
@@ -124,7 +124,7 @@ internal sealed class CharacterAgent : BaseAgent
         }
 
         var memoriesText = string.Join("\n",
-            context.CharacterMemories.Select(m => $"- [Time: {m.StoryTracker.Time}, Location: {m.StoryTracker.Location}] {m.MemoryContent} [{m.Data.ToJsonString()}]"));
+            context.CharacterMemories.Select(m => $"- [Time: {m.SceneTracker.Time}, Location: {m.SceneTracker.Location}] {m.MemoryContent} [{m.Data.ToJsonString()}]"));
 
         return $"""
                 <character_memories>

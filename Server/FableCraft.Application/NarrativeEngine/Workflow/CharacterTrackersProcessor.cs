@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence;
@@ -7,25 +9,53 @@ using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class TrackerProcessor(
-    StoryTrackerAgent storyTracker,
+/// <summary>
+/// Processor responsible for character tracking: main character tracker, character reflection,
+/// character tracker updates, and chronicler. Depends on SceneTrackerProcessor having run first.
+/// </summary>
+internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
+    ChroniclerAgent chroniclerAgent,
+    LoreCrafter loreCrafter,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var storyTrackerResult = context.NewTracker?.Story ?? await storyTracker.Invoke(context, cancellationToken);
+        // SceneTrackerProcessor must have run first
+        var storyTrackerResult = context.NewTracker?.Scene
+            ?? throw new InvalidOperationException(
+                "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. " +
+                "Ensure SceneTrackerProcessor runs before this processor.");
 
-        if (string.IsNullOrEmpty(storyTrackerResult.Location) || string.IsNullOrEmpty(storyTrackerResult.Time) || string.IsNullOrEmpty(storyTrackerResult.Weather))
+        var chroniclerTask = chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken).ContinueWith(async output =>
         {
-            throw new InvalidOperationException();
-        }
+            var chroniclerOutput = output.Result;
+            logger.Information("Chronicler requested {Count} lore entries", chroniclerOutput.LoreRequests.Length);
 
-        context.NewTracker ??= new Tracker();
-        context.NewTracker.Story = storyTrackerResult;
+            context.WriterGuidance = chroniclerOutput.WriterGuidance;
+            foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+            {
+                context.NewWorldEvents.Enqueue(chroniclerOutputWorldEvent);
+            }
+
+            context.NewChroniclerState = chroniclerOutput.StoryState;
+
+            var loreResults = await Task.WhenAll(
+                chroniclerOutput.LoreRequests.Select(req =>
+                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
+
+            foreach (GeneratedLore generatedLore in loreResults)
+            {
+                context.NewLore.Enqueue(generatedLore);
+            }
+
+            logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
+        },
+        cancellationToken);
+
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
             : ProcessMainChar(context, storyTrackerResult, cancellationToken);
@@ -34,7 +64,7 @@ internal sealed class TrackerProcessor(
                                              .Select(x => x.Name)
                                          ?? [];
 
-        Task<CharacterContext>[]? characterUpdateTask = null;
+        Task<CharacterContext?>[] characterUpdateTask = [];
         if (context.Characters.Count != 0)
         {
             characterUpdateTask = context.Characters
@@ -42,9 +72,9 @@ internal sealed class TrackerProcessor(
                 .Select(async character =>
                 {
                     // Skip if this character was already processed in a previous attempt
-                    if (alreadyProcessedCharacters.Contains(character.Name))
+                    if (alreadyProcessedCharacters.Contains(character.Name) || (context.NewCharacters?.Select(x => x.Name) ?? []).Contains(character.Name))
                     {
-                        return context.CharacterUpdates!.First(x => x.Name == character.Name);
+                        return null;
                     }
 
                     var reflectionOutput = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
@@ -75,8 +105,9 @@ internal sealed class TrackerProcessor(
                             {
                                 TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData!,
-                                StoryTracker = storyTrackerResult,
+                                UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = 0,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic!,
                             });
                         }
                         else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
@@ -86,8 +117,9 @@ internal sealed class TrackerProcessor(
                             {
                                 TargetCharacterName = relationship.TargetCharacterName,
                                 Data = updatedRelationship,
-                                StoryTracker = storyTrackerResult,
+                                UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = relationship.SequenceNumber + 1,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? relationship.Dynamic,
                             };
                             characterRelationships.Add(newRelationship);
                         }
@@ -101,12 +133,13 @@ internal sealed class TrackerProcessor(
                         Name = character.Name,
                         Description = character.Description,
                         CharacterMemories = reflectionOutput.Memory!.Select(x => new MemoryContext
-                        {
-                            Salience = x.Salience,
-                            Data = x.ExtensionData!,
-                            MemoryContent = x.Summary,
-                            StoryTracker = storyTrackerResult,
-                        }).ToList(),
+                            {
+                                Salience = x.Salience,
+                                Data = x.ExtensionData!,
+                                MemoryContent = x.Summary,
+                                SceneTracker = storyTrackerResult,
+                            })
+                            .ToList(),
                         Relationships = characterRelationships,
                         SceneRewrites =
                         [
@@ -114,9 +147,14 @@ internal sealed class TrackerProcessor(
                             {
                                 Content = reflectionOutput.SceneRewrite,
                                 StoryTracker = storyTrackerResult,
-                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)?.SequenceNumber + 1 ?? 0,
+                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                     ?.SequenceNumber
+                                                 + 1
+                                                 ?? 0,
                             }
-                        ]
+                        ],
+                        Importance = character.Importance,
+                        SimulationMetadata = null
                     };
 
                     var trackerDelta = await characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
@@ -155,7 +193,7 @@ internal sealed class TrackerProcessor(
                     {
                         Salience = x.Salience,
                         Data = x.ExtensionData!,
-                        StoryTracker = storyTrackerResult,
+                        SceneTracker = storyTrackerResult,
                         MemoryContent = x.Summary
                     }).ToList();
 
@@ -179,27 +217,37 @@ internal sealed class TrackerProcessor(
         {
             await Task.WhenAll(sceneRewriteForNewChar);
         }
+
+        await chroniclerTask;
     }
 
-    private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext>[] tasks)
+    private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req)
     {
-        context.CharacterUpdates ??= new List<CharacterContext>();
+        return JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
+    }
+
+    private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
+    {
         foreach (var task in tasks)
         {
-            context.CharacterUpdates.Add(await task);
+            var res = await task;
+            if (res is not null)
+            {
+                context.CharacterUpdates.Enqueue(res);
+            }
         }
     }
 
-    private async Task<MainCharacterTracker> ProcessMainChar(GenerationContext context, StoryTracker storyTrackerResult, CancellationToken cancellationToken)
+    private async Task<MainCharacterState> ProcessMainChar(GenerationContext context, SceneTracker sceneTrackerResult, CancellationToken cancellationToken)
     {
         if (context.SceneContext.Length == 0)
         {
-            return await initMainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            return await initMainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
         }
 
-        var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+        var mainCharacterDeltaTrackerOutput = await mainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
 
-        var newTracker = new MainCharacterTracker
+        var newTracker = new MainCharacterState
         {
             MainCharacter = context.LatestTracker()!.MainCharacter!.MainCharacter.PatchWith(mainCharacterDeltaTrackerOutput.TrackerChanges!.ExtensionData!),
             MainCharacterDescription = mainCharacterDeltaTrackerOutput.Description

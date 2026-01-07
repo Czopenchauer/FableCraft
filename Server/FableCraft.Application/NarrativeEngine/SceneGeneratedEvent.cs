@@ -117,10 +117,10 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 var sceneContent = $"""
                                     Scene Sequence Number: {scene.SequenceNumber}
                                     Main character is: {scene.Metadata.Tracker!.MainCharacter!.MainCharacter!.Name}
-                                    Time: {scene.Metadata.Tracker.Story!.Time}
-                                    Location: {scene.Metadata.Tracker.Story!.Location}
-                                    Weather: {scene.Metadata.Tracker.Story!.Weather}
-                                    Characters on scene: {string.Join(", ", scene.Metadata.Tracker.Story.CharactersPresent)}
+                                    Time: {scene.Metadata.Tracker.Scene!.Time}
+                                    Location: {scene.Metadata.Tracker.Scene!.Location}
+                                    Weather: {scene.Metadata.Tracker.Scene!.Weather}
+                                    Characters on scene: {string.Join(", ", scene.Metadata.Tracker.Scene.CharactersPresent)}
 
                                     {scene.GetSceneWithSelectedAction()}
                                     """;
@@ -155,10 +155,10 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         var content = $"""
                                        Scene Sequence Number: {x.SequenceNumber}
                                        Character: {characters.Single(y => y.Id == x.CharacterId).Name}
-                                       Time: {x.StoryTracker.Time}
-                                       Location: {x.StoryTracker.Location}
-                                       Weather: {x.StoryTracker.Weather}
-                                       Characters on scene: {string.Join(", ", x.StoryTracker.CharactersPresent)}
+                                       Time: {x.SceneTracker.Time}
+                                       Location: {x.SceneTracker.Location}
+                                       Weather: {x.SceneTracker.Weather}
+                                       Characters on scene: {string.Join(", ", x.SceneTracker.CharactersPresent)}
 
                                        {x.Content}
                                        """;
