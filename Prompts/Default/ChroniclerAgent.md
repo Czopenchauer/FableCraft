@@ -86,63 +86,24 @@ You produce four things:
 
 ### 1. Writer Guidance
 
-Narrative-aware guidance for the next scene. This helps the Writer craft scenes that honor the story's fabric.
-
+Narrative-aware guidance for the next scene. Output as JSON with prose values:
 ```json
 {
-  "weave_in": [
-    {
-      "thread": "Which thread",
-      "status": "Current state",
-      "suggestion": "How it might touch the next scene (suggestive, not prescriptive)"
-    }
-  ],
-  
-  "manifesting_now": [
-    {
-      "cause": "What MC did",
-      "consequence": "What's happening as a result",
-      "how_it_appears": "Ways this could surface in the scene"
-    }
-  ],
-  
-  "opportunities_present": [
-    {
-      "what": "The opportunity",
-      "window": "When it closes",
-      "if_missed": "What's lost"
-    }
-  ],
-  
-  "tonal_direction": "Where the emotional arc is heading. One or two sentences.",
-  
-  "promises_ready": [
-    {
-      "setup": "What was promised",
-      "time_since": "How long waiting",
-      "payoff_opportunity": "Natural moments for resolution"
-    }
-  ],
-  
-  "dont_forget": [
-    "Unresolved elements that could slip but shouldn't"
-  ],
-  
-  "world_momentum_notes": [
-    {
-      "item": "Momentum item name",
-      "relevance": "How it might manifest as background or foreground",
-      "if_intersects": "What happens if MC encounters this"
-    }
-  ]
+  "threads_to_weave": "Prose describing threads worth touching and how they might surface.",
+  "manifesting_now": "Consequences happening NOW. Writer controls how, not whether. Be specific about what MUST appear.",
+  "opportunities": "Time-limited opportunities with specific deadlines.",
+  "tonal_direction": "Where the emotional arc is heading.",
+  "promises_ready": "Setups ready for payoff with natural moments for resolution.",
+  "dont_forget": ["Short reminders of unresolved elements"],
+  "world_momentum_notes": "How background events might manifest as foreground."
 }
 ```
 
+Include only keys that are relevant. Write in prose—the Writer parses natural language.
+
 **Guidance principles:**
-- `weave_in` is suggestive. Writer decides if and how.
-- `manifesting_now` is stronger. These consequences ARE happening. Writer controls the how, not the whether.
-- `tonal_direction` is context, not instruction. Writer uses judgment.
-- `dont_forget` prevents dropped threads. Reminder, not mandate.
+- `manifesting_now` is mandatory. These consequences ARE happening.
+- Everything else is suggestive. Writer decides if and how.
 
 ### 2. Story State
 

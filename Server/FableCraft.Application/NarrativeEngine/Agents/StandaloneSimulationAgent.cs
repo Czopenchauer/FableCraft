@@ -40,11 +40,12 @@ internal sealed class StandaloneSimulationAgent(
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
-        systemPrompt = PopulatePlaceholders(systemPrompt, input);
+        systemPrompt = await PopulateSystemPlaceholders(systemPrompt, input, context);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(BuildSceneHistoryPrompt(input.Character));
+        chatHistory.AddUserMessage(BuildContextPrompt(input, context));
+        chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId);
@@ -74,19 +75,90 @@ internal sealed class StandaloneSimulationAgent(
             cancellationToken);
     }
 
-    private string PopulatePlaceholders(string prompt, StandaloneSimulationInput input)
+    private async Task<string> PopulateSystemPlaceholders(string prompt, StandaloneSimulationInput input, GenerationContext context)
     {
-        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var characterName = input.Character.Name;
 
-        prompt = prompt.Replace(PlaceholderNames.CharacterName, input.Character.Name);
+        prompt = prompt.Replace(PlaceholderNames.CharacterName, characterName);
 
-        prompt = prompt.Replace("{{core_profile}}", input.Character.CharacterState.ToJsonString(jsonOptions));
-        prompt = prompt.Replace("{{character_tracker}}", input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}");
-        prompt = prompt.Replace("{{relationships}}", FormatRelationships(input.Character));
-        prompt = prompt.Replace("{{time_period}}", input.TimePeriod);
-        prompt = prompt.Replace("{{world_events}}", FormatWorldEvents(input.WorldEvents));
+        prompt = await ReplaceInjectableReference(prompt, "{{dot_notation_reference}}", "DotNotation.md", context.PromptPath);
+        prompt = await ReplaceInjectableReference(prompt, "{{salience_scale}}", "Salience.md", context.PromptPath);
+        prompt = await ReplaceInjectableReference(prompt, "{{physical_state_reference}}", "PhysicalStateReference.md", context.PromptPath);
+        prompt = await ReplaceInjectableReference(prompt, "{{knowledge_boundaries}}", "KnowledgeBoundaries.md", context.PromptPath);
 
         return prompt;
+    }
+
+    private async static Task<string> ReplaceInjectableReference(string prompt, string placeholder, string fileName, string promptPath)
+    {
+        if (!prompt.Contains(placeholder))
+        {
+            return prompt;
+        }
+
+        var filePath = Path.Combine(promptPath, fileName);
+        if (File.Exists(filePath))
+        {
+            var fileContent = await File.ReadAllTextAsync(filePath);
+            return prompt.Replace(placeholder, fileContent);
+        }
+
+        return prompt;
+    }
+
+    private string BuildContextPrompt(StandaloneSimulationInput input, GenerationContext context)
+    {
+        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var characterName = input.Character.Name;
+
+        var arcImportantNames = context.Characters
+            .Where(c => c.Importance == CharacterImportance.ArcImportance && c.Name != characterName)
+            .Select(c => c.Name)
+            .ToArray();
+
+        var significantNames = context.Characters
+            .Where(c => c.Importance == CharacterImportance.Significant)
+            .Select(c => c.Name)
+            .ToArray();
+
+        return $"""
+            <identity>
+            {input.Character.CharacterState.ToJsonString(jsonOptions)}
+            </identity>
+
+            <physical_state>
+            {input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}"}
+            </physical_state>
+
+            <relationships>
+            {FormatRelationships(input.Character)}
+            </relationships>
+
+            <world_events>
+            {FormatWorldEvents(input.WorldEvents)}
+            </world_events>
+
+            <available_npcs>
+            **Arc-important characters** (cannot interact during standalone simulation, for awareness only):
+            {FormatProfiledCharacters(arcImportantNames, characterName)}
+
+            **Significant characters** (can interact with, log interactions to character_events):
+            {FormatProfiledCharacters(significantNames, characterName)}
+            </available_npcs>
+
+            <last_scenes>
+            {BuildSceneHistoryContent(input.Character)}
+            </last_scenes>
+            """;
+    }
+
+    private static string BuildRequestPrompt(StandaloneSimulationInput input)
+    {
+        return $"""
+            Live through the period: {input.TimePeriod}
+
+            What do you do? What happens? How are you affected?
+            """;
     }
 
     private static string FormatRelationships(CharacterContext character)
@@ -133,19 +205,16 @@ internal sealed class StandaloneSimulationAgent(
         return filtered.Length > 0 ? string.Join(", ", filtered) : "None";
     }
 
-    private static string BuildSceneHistoryPrompt(CharacterContext character)
+    private static string BuildSceneHistoryContent(CharacterContext character)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("## Your Recent Scenes");
-        sb.AppendLine();
-        sb.AppendLine("These are scenes from your perspective (your memories of recent events). This simulation continues from where you left off.");
-        sb.AppendLine();
-
         if (character.SceneRewrites.Count == 0)
         {
-            sb.AppendLine("*No previous scenes recorded.*");
-            return sb.ToString();
+            return "*No previous scenes recorded.*";
         }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("These are scenes from your perspective (your memories of recent events). This simulation continues from where you left off.");
+        sb.AppendLine();
 
         var recentScenes = character.SceneRewrites
             .OrderByDescending(s => s.SequenceNumber)

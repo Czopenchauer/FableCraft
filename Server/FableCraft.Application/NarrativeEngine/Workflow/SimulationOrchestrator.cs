@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -14,6 +15,7 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 /// Runs SimulationPlanner to determine which characters need simulation,
 /// then executes standalone simulations for arc_important characters.
 /// </summary>
+[Experimental("SKEXP0110")]
 internal sealed class SimulationOrchestrator(
     SimulationPlannerAgent plannerAgent,
     StandaloneSimulationAgent standaloneAgent,
@@ -63,12 +65,6 @@ internal sealed class SimulationOrchestrator(
         if (plan.Standalone is { Count: > 0 })
         {
             await RunStandaloneSimulations(context, plan, cancellationToken);
-        }
-
-        if (plan.Cohorts is { Count: > 0 })
-        {
-            logger.Information("Cohort simulations requested but not yet implemented. Cohorts: {Cohorts}",
-                string.Join(", ", plan.Cohorts.Select(c => string.Join("+", c.Characters))));
         }
     }
 

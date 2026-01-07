@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿#pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
+
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 

@@ -1,5 +1,8 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -20,7 +23,8 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class SimulationPlannerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory,
+    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.SimulationPlannerAgent;
 
@@ -45,7 +49,11 @@ internal sealed class SimulationPlannerAgent(
         var contextPrompt = BuildContextPrompt(input);
         chatHistory.AddUserMessage(contextPrompt);
 
-        Kernel kernel = kernelBuilder.Create().Build();
+        // Create kernel with IntentCheck plugin for dynamic character intent queries
+        Microsoft.SemanticKernel.IKernelBuilder kernelBuilderSk = kernelBuilder.Create();
+        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        await pluginFactory.AddPluginAsync<IntentCheckPlugin>(kernelBuilderSk, context, callerContext);
+        Kernel kernel = kernelBuilderSk.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<SimulationPlannerOutput>("simulation_plan", ignoreNull: true);
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

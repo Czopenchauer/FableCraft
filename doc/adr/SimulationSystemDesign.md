@@ -33,10 +33,6 @@ The system maintains strict knowledge boundaries through three separate knowledg
 - World KG (public/discoverable facts)
 - Their own KG (their memories)
 
-**During simulation, characters can query:**
-- World KG — to inform decisions with world facts
-- Their own KG — to recall their experiences and what they've learned
-
 **When characters emit to World KG:**
 - Action has visible consequences (fire, destruction, death)
 - Information becomes public or discoverable
@@ -163,6 +159,8 @@ This goes to the World KG—shared knowledge anyone could discover.
 
 - **Standalone** — Character simulated alone, interactions with significant/background NPCs summarized in their narrative
 - **Cohort** — 2-4 arc_important characters simulated together when IntentCheck determines they want to interact
+
+See **Cohort Simulation Architecture** section for detailed orchestration mechanics.
 
 ### Offscreen Inference (significant characters)
 
@@ -454,14 +452,15 @@ flowchart TD
     IC --> Form
     
     Form --> Check{Any cohorts<br/>formed?}
-    Check -->|YES| Cohort[SimulationModerator<br/>orchestrates group]
+    Check -->|YES| Cohort[SimulationModerator<br/>orchestrates via query_character tool]
     Check -->|NO| Standalone[StandaloneSim<br/>each character alone]
     
     Plan --> SigPlan[Identify significant<br/>likely to appear]
     SigPlan --> SigOut[significant_for_inference<br/>list output]
     
-    Cohort --> Out[Simulation Outputs]
-    Standalone --> Out
+    Cohort --> CharOut[Characters submit<br/>via submit_reflection tool]
+    Standalone --> Out[Simulation Outputs]
+    CharOut --> Out
     
     Out -->|scenes, memories| CharKG[(Character KG)]
     Out -->|state updates| Profile[(Character Profile)]
@@ -474,15 +473,19 @@ flowchart TD
 
 ### IntentCheck Integration
 
-IntentCheck runs **before** simulation to determine who should be cohorted.
+IntentCheck runs **before** simulation to determine who should be cohorted. This replaces the old `potential_interactions` output approach.
 
-**The flow:**
+**Old flow (removed):**
+1. Standalone simulation runs
+2. Character outputs `potential_interactions` saying "I want to meet X"
+3. Next SimulationPlanner sees this, forms cohort
+
+**New flow:**
 1. SimulationPlanner scores all arc_important pairs
 2. For borderline cases (score = 3) or chains, IntentCheck queries characters
 3. Characters who confirm wanting to interact get cohorted
 4. Simulation runs with cohorts determined upfront
-5. Character state updates (memories, goals, emotional state)
-6. Next cycle, IntentCheck runs again—character naturally expresses any new desires based on their updated state
+5. Next cycle, IntentCheck runs again with updated state
 
 **When to use IntentCheck:**
 - Borderline scores (exactly 3)
@@ -493,8 +496,6 @@ IntentCheck runs **before** simulation to determine who should be cohorted.
 - Clear high scores (4+) from goals/location
 - Clear low scores (0-2) with no relationship
 - Obvious standalone cases
-
-**Key insight:** No need for a `potential_interactions` output field. The character's updated state (memories, goals, emotional landscape) IS the communication mechanism. When IntentCheck asks "who are you seeking?" next cycle, the character naturally expresses desires that emerged during simulation.
 
 ### Context Gathering
 
@@ -677,6 +678,140 @@ If scoring produces a cluster of 5+:
 
 ---
 
+## Cohort Simulation Architecture
+
+When multiple arc_important characters need to interact during off-screen time, they're simulated together as a cohort. The SimulationModerator orchestrates this using explicit function calling—characters are isolated agents that only see what the Moderator passes them.
+
+### Tool Architecture
+
+**SimulationModerator has one tool:**
+
+```
+query_character(
+  character: string,      // Character name (exact match)
+  query_type: string,     // "intention" | "response" | "reflection"  
+  stimulus: string,       // What's happening that they're responding to
+  query: string           // What you're asking them
+)
+```
+
+Returns the character's prose response. Character sees only:
+- Their own profile, state, relationships, memories (injected automatically)
+- The stimulus and query provided
+- Their accumulated history from this simulation run
+
+Character does NOT see:
+- Other characters' internal states or reasoning
+- Moderator's orchestration logic
+- Other characters' responses (unless included as observable stimulus)
+
+**CharacterSimulation has tools:**
+
+```
+query_world_kg(queries: string[])     // Batch queries to world knowledge graph
+query_personal_kg(queries: string[])  // Batch queries to personal narrative graph
+submit_reflection(output: object)     // Submit final structured output
+```
+
+### Information Flow (Critical)
+
+The Moderator controls what characters perceive. This is the core responsibility.
+
+When Character A acts, Character B's stimulus contains only **observable elements**:
+- Physical actions
+- Speech (words and tone)
+- Visible expressions and body language
+- Environmental changes
+
+**Not included:**
+- Internal thoughts
+- Strategic reasoning
+- Hidden emotions
+- Anything A wouldn't show
+
+**Translation example:**
+- A's response: "I feel nervous but hide it behind a calm facade"
+- B's stimulus: "Kira's face is neutral, but her hands are slightly tense on the table"
+
+The Moderator translates internal experience to external observation.
+
+### Physical Location Constraints
+
+Characters can only interact if they can physically reach each other within the simulation period.
+
+- Characters track their own locations internally
+- Travel takes time and generates scene content
+- Interactions require physical proximity
+- `pending_mc_interaction` only flagged if character is AT protagonist's location, not traveling toward them
+
+**Journey to MC is activity content, not a pending interaction.** The character might decide to seek MC, travel there, and THEN flag `pending_mc_interaction` once they've arrived.
+
+### Time Chunking
+
+The Moderator doesn't micromanage hours. Flow:
+
+1. **Solo periods before interactions** — One query per character covering their independent activities
+2. **Interactions** — Full back-and-forth until natural resolution (3-7 exchanges typical)
+3. **Solo periods after interactions** — Remaining time after interaction concludes
+4. **Reflections** — Each character structures their own scenes and outputs
+
+Characters decide scene boundaries and granularity during reflection. Routine morning = 1 paragraph. Tense negotiation = detailed scene.
+
+### Handling Emergence
+
+The Moderator follows authentically, doesn't force outcomes:
+
+- Characters may refuse expected interactions
+- Interactions may escalate beyond initial intent
+- New intents may emerge during exchanges
+- Characters may exit unexpectedly
+- Evasion is itself interaction content
+
+IntentCheck upstream identifies *who wants to interact*. The Moderator discovers *what actually happens*.
+
+### Query Types
+
+**intention** — "What do you plan to do this period?"
+- Character responds with intended actions, timing, locations
+- Used at simulation start
+
+**response** — "This is happening. How do you respond?"
+- Character receives stimulus describing situation
+- Responds with internal state, action, speech, stance
+- Used during interactions
+
+**reflection** — "The period has concluded. Provide your final output."
+- Character receives summary of what they experienced
+- Submits full structured output via `submit_reflection`
+- Scenes, memories, relationship updates, state changes, etc.
+
+### Moderator Output
+
+When all characters have submitted reflections, the Moderator outputs only the timeline:
+
+```json
+{
+  "timeline": [
+    {
+      "time": "Morning",
+      "events": ["Kira scouted warehouses", "Tam processed paperwork"]
+    },
+    {
+      "time": "Afternoon",
+      "interaction": {
+        "participants": ["Kira", "Tam"],
+        "type": "negotiation",
+        "outcome": "Settled debt for 30 silver plus favor owed"
+      }
+    }
+  ]
+}
+```
+
+Character data (scenes, memories, state updates) is submitted directly by the characters via their tools—the Moderator doesn't handle or pass through that data.
+
+---
+
 ## Agents Summary
 
 | Agent | Purpose | When | Input | Output |
@@ -684,9 +819,9 @@ If scoring produces a cluster of 5+:
 | **Chronicler** | Track story fabric, world momentum, guide writer | After scene | Scene, time, previous story_state, previous simulation events | writer_guidance, story_state, world_events, lore_requests |
 | **SimulationPlanner** | Decide who simulates and who needs inference | After scene (if time threshold met) | Character roster, story state, MC trajectory | Cohorts, standalone list, significant_for_inference |
 | **IntentCheck** | Query character intentions for cohort decisions | During planning (borderline cases) | Character profile, state, roster context | seeking, avoiding, self_focused |
-| **SimulationModerator** | Orchestrate cohort simulation | During cohort sim | Cohort members, time period | Pass-through character outputs, timeline |
-| **CharacterSimulation** | Live as character in group | During cohort sim | Profile, state, KG access, queries from Moderator | Scenes, memories, state updates, relationship updates, character_events, pending_mc_interaction, world_events_emitted |
-| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, KG access, time period | Scenes, memories, state updates, relationship updates, character_events, pending_mc_interaction, world_events_emitted |
+| **SimulationModerator** | Orchestrate cohort simulation via function calls | During cohort sim | Cohort members, time period, IntentCheck results | Timeline summary |
+| **CharacterSimulation** | Respond to Moderator queries, submit reflection | During cohort sim | Own profile/state/memories + stimulus from Moderator | Prose responses, then full reflection output |
+| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, time period | Scenes, memories, state updates, pending_mc_interaction |
 | **OffscreenInference** | Derive state and produce brief memories | Before scene (for significant_for_inference) | Profile, routine, events log, time | Scenes (brief), memories, current situation, state updates |
 | **ContextGatherer** | Query KG for world/narrative context | Before scene | Recent scenes, narrative direction, previous results | World context, narrative history |
 | **PartialProfileCrafter** | Create lightweight profile | When background char needs consistency | Character request, context | Partial profile (voice, appearance, behavior) |
@@ -851,11 +986,13 @@ Narrative discipline + compute budget. More than 8 characters with full simulati
 
 Cost and complexity. Moderator overhead is significant. Most characters, even important ones, are on separate tracks. Cohort only when IntentCheck confirms they actually want to interact.
 
+### Why tool-based orchestration instead of "group chat"?
+
+Knowledge isolation. In a group chat, all participants see all messages—characters would see each other's internal states, reasoning, and responses. With function calling, the Moderator controls exactly what each character perceives. Character A's internal monologue never reaches Character B. The Moderator translates internal experience to external observation, maintaining strict information boundaries. Characters are truly isolated agents responding only to what they could actually perceive.
+
 ### Why IntentCheck instead of potential_interactions?
 
-Character state IS the communication mechanism. When a character realizes during simulation "I need to talk to Marcus," that realization updates their memories, goals, and emotional state. Next cycle, IntentCheck asks them "who are you seeking?"—and they naturally answer based on their updated state.
-
-No need for a separate `potential_interactions` output field. Simpler architecture, no state to persist between cycles, and the character's authentic voice (via IntentCheck) determines cohort formation rather than a structured flag.
+Simpler flow. The old approach had characters output intent during simulation, then the next cycle had to consume it. IntentCheck queries intent upfront, before simulation, so cohorts are determined correctly from the start. No state to persist between cycles.
 
 ### Why Chronicler separate from SceneTracker?
 
@@ -872,7 +1009,3 @@ Writer has creative authority. Chronicler observes and advises. `manifesting_now
 ### Why does OffscreenInference produce scenes now?
 
 Consistency. When significant characters are encountered, they should have memories of their recent time—even if brief. This prevents the awkwardness of "I have no idea what I've been doing" when asked. The scenes are lightweight (1-3 paragraphs, salience capped at 6) but real.
-
-### Why do simulated characters have KG access?
-
-Characters need to recall things. "Where did I stash that document?" requires querying their own KG. "What's the political situation in the eastern district?" requires querying World KG. Without KG access, characters would be limited to what's in their immediate context window, leading to amnesia and world-ignorance.
