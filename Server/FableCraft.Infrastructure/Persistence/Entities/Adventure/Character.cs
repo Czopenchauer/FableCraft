@@ -1,5 +1,9 @@
-﻿namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
+namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
+[JsonConverter(typeof(CharacterImportanceJsonConverter))]
 public readonly struct CharacterImportance : IEquatable<CharacterImportance>
 {
     public readonly static CharacterImportance ArcImportance = new("arc_important");
@@ -23,6 +27,31 @@ public readonly struct CharacterImportance : IEquatable<CharacterImportance>
     public static bool operator !=(CharacterImportance left, CharacterImportance right) => !left.Equals(right);
 
     public static implicit operator string(CharacterImportance characterImportance) => characterImportance.Value;
+}
+
+public static class CharacterImportanceConverter
+{
+    public static CharacterImportance FromString(string value) => value switch
+    {
+        "arc_important" => CharacterImportance.ArcImportance,
+        "significant" => CharacterImportance.Significant,
+        "background" => CharacterImportance.Background,
+        _ => throw new ArgumentException($"Unknown CharacterImportance value: {value}", nameof(value))
+    };
+}
+
+public class CharacterImportanceJsonConverter : JsonConverter<CharacterImportance>
+{
+    public override CharacterImportance Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var value = reader.GetString() ?? throw new JsonException("Expected a string value for CharacterImportance");
+        return CharacterImportanceConverter.FromString(value);
+    }
+
+    public override void Write(Utf8JsonWriter writer, CharacterImportance value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.Value);
+    }
 }
 
 public sealed class Character : IEntity

@@ -320,16 +320,16 @@ Note: Present tense throughout. MC perceives and feels but doesn't decide next a
     "upgrade_requests": [
       {
         "character": "Name",
-        "from": "significant | background",
-        "to": "arc_important | significant",
+        "from": "significant",
+        "to": "arc_important",
         "reason": "Why their importance has grown"
       }
     ],
     "downgrade_requests": [
       {
         "character": "Name",
-        "from": "arc_important | significant",
-        "to": "significant | background",
+        "from": "arc_important",
+        "to": "significant",
         "reason": "Why their arc has concluded"
       }
     ]

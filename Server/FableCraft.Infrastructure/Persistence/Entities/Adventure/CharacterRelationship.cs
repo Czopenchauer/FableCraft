@@ -37,7 +37,7 @@ public sealed class CharacterRelationship : IEntity
     /// <summary>
     /// 2-4 sentences: How they feel about this person and why. The emotional reality of the relationship. Include warmth, tension, history, unresolved feelings - whatever is true.
     /// </summary>
-    public object? Dynamic { get; set; }
+    public string? Dynamic { get; set; }
 
     /// <summary>
     /// JSON string containing the full relationship data (feelings, trust level, history, etc.)

@@ -58,9 +58,7 @@ public static class Extensions
             // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
-        
-        var seqLogUrl = builder.Configuration["FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT"] 
-                        ?? throw new InvalidOperationException("FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT is not set");
+
         builder.Services.AddSerilog(config => config
             .MinimumLevel.Information()
             .Enrich.FromLogContext()
