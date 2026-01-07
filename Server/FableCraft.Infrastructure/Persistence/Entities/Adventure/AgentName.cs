@@ -7,6 +7,7 @@ public enum AgentName
     CharacterTrackerAgent,
     MainCharacterTrackerAgent,
     CharacterCrafter,
+    PartialProfileCrafter,
     ItemCrafter,
     LoreCrafter,
     LocationCrafter,

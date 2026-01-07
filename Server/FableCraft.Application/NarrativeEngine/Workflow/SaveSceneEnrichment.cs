@@ -7,9 +7,14 @@ using FableCraft.Infrastructure.Queue;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
-internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext> dbContextFactory, IMessageDispatcher messageDispatcher) : IProcessor
+internal sealed class SaveSceneEnrichment(
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IMessageDispatcher messageDispatcher,
+    ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
@@ -98,9 +103,21 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                                  }).ToList()
                                  ?? new List<LorebookEntry>();
 
+        var backgroundCharacterEntities = context.NewBackgroundCharacters?.Select(x => new LorebookEntry
+                                          {
+                                              AdventureId = context.AdventureId,
+                                              Title = x.Name,
+                                              Description = x.Description,
+                                              Category = nameof(LorebookCategory.BackgroundCharacter),
+                                              Content = x.ToJsonString(),
+                                              ContentType = ContentType.json
+                                          }).ToList()
+                                          ?? new List<LorebookEntry>();
+
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
         loreEntities.AddRange(worldEventEntities);
+        loreEntities.AddRange(backgroundCharacterEntities);
         scene.Lorebooks = loreEntities;
 
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
@@ -117,10 +134,10 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
 
             await UpsertCharacters(context, scene, cancellationToken, dbContext);
 
-            // Mark CharacterEvents as consumed (deferred from OffscreenInferenceProcessor)
+            await ProcessImportanceFlags(context, dbContext, logger, cancellationToken);
+
             await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
 
-            // Save new CharacterEvents (deferred from SimulationOrchestrator)
             await SaveNewCharacterEvents(context, dbContext);
 
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -248,7 +265,7 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
                         CharacterMemories = memories,
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
-                        Importance = default,
+                        Importance = contextNewCharacter.Importance,
                     };
                     dbContext.Characters.Add(newChar);
                 }
@@ -302,5 +319,74 @@ internal sealed class SaveSceneEnrichment(IDbContextFactory<ApplicationDbContext
         });
 
         await dbContext.CharacterEvents.AddRangeAsync(entities);
+    }
+
+    private async static Task ProcessImportanceFlags(
+        GenerationContext context,
+        ApplicationDbContext dbContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var importanceFlags = context.NewScene?.ImportanceFlags;
+        if (importanceFlags == null)
+        {
+            return;
+        }
+
+        var allRequests = importanceFlags.UpgradeRequests
+            .Concat(importanceFlags.DowngradeRequests)
+            .ToList();
+
+        if (allRequests.Count == 0)
+        {
+            return;
+        }
+
+        var validRequests = allRequests.Where(IsValidTransition).ToList();
+        var invalidRequests = allRequests.Except(validRequests).ToList();
+
+        foreach (var invalid in invalidRequests)
+        {
+            logger.Warning(
+                "Invalid importance transition requested for {Character}: {From} -> {To}. " +
+                "Only arc_important <-> significant transitions are supported.",
+                invalid.Character, invalid.From, invalid.To);
+        }
+
+        if (validRequests.Count == 0)
+        {
+            return;
+        }
+
+        var characterNames = validRequests.Select(r => r.Character).ToList();
+        var characters = await dbContext.Characters
+            .Where(x => x.AdventureId == context.AdventureId && characterNames.Contains(x.Name))
+            .ToListAsync(cancellationToken);
+
+        foreach (var request in validRequests)
+        {
+            var character = characters.SingleOrDefault(c => c.Name == request.Character);
+            if (character == null)
+            {
+                logger.Warning(
+                    "Character {Character} not found for importance transition",
+                    request.Character);
+                continue;
+            }
+
+            var newImportance = CharacterImportanceConverter.FromString(request.To);
+
+            logger.Information(
+                "Updating importance for {Character}: {From} -> {To}. Reason: {Reason}",
+                request.Character, request.From, request.To, request.Reason);
+
+            character.Importance = newImportance;
+        }
+    }
+
+    private static bool IsValidTransition(ImportanceChangeRequest request)
+    {
+        return (request.From == "arc_important" && request.To == "significant") ||
+               (request.From == "significant" && request.To == "arc_important");
     }
 }

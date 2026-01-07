@@ -132,7 +132,7 @@ This isn't arbitrary—it's a narrative principle. Stories have limited bandwidt
 - **Memories** — Indexed for retrieval (summary, salience, entities, tags)
 - **State updates** — Emotional state, goal progress, arc progression
 - **Tracker updates** — Physical state (fatigue, needs, etc.)
-- **Relationship updates** — Changes in how they view others
+- **Relationship updates** — Changes in how they view others (prose-based)
 - **character_events** — Logged events affecting significant characters they interacted with (feeds OffscreenInference)
 - **pending_mc_interaction** — If they decide to seek the MC
 - **world_events_emitted** — Facts about the world others could discover (goes to World KG)
@@ -159,8 +159,6 @@ This goes to the World KG—shared knowledge anyone could discover.
 
 - **Standalone** — Character simulated alone, interactions with significant/background NPCs summarized in their narrative
 - **Cohort** — 2-4 arc_important characters simulated together when IntentCheck determines they want to interact
-
-See **Cohort Simulation Architecture** section for detailed orchestration mechanics.
 
 ### Offscreen Inference (significant characters)
 
@@ -268,9 +266,9 @@ The Chronicler is a narrative awareness agent that tracks the story's fabric and
 ### What It Produces
 
 **writer_guidance** — Narrative-aware guidance for the Writer:
-- `weave_in` — Threads worth touching (suggestive)
+- `threads_to_weave` — Threads worth touching (suggestive)
 - `manifesting_now` — Consequences happening NOW (mandatory)
-- `opportunities_present` — Windows open/closing
+- `opportunities` — Windows open/closing
 - `tonal_direction` — Where the emotional arc is heading
 - `promises_ready` — Setups ready for payoff
 - `dont_forget` — Things that could slip
@@ -452,15 +450,14 @@ flowchart TD
     IC --> Form
     
     Form --> Check{Any cohorts<br/>formed?}
-    Check -->|YES| Cohort[SimulationModerator<br/>orchestrates via query_character tool]
+    Check -->|YES| Cohort[SimulationModerator<br/>orchestrates group]
     Check -->|NO| Standalone[StandaloneSim<br/>each character alone]
     
     Plan --> SigPlan[Identify significant<br/>likely to appear]
     SigPlan --> SigOut[significant_for_inference<br/>list output]
     
-    Cohort --> CharOut[Characters submit<br/>via submit_reflection tool]
-    Standalone --> Out[Simulation Outputs]
-    CharOut --> Out
+    Cohort --> Out[Simulation Outputs]
+    Standalone --> Out
     
     Out -->|scenes, memories| CharKG[(Character KG)]
     Out -->|state updates| Profile[(Character Profile)]
@@ -678,140 +675,6 @@ If scoring produces a cluster of 5+:
 
 ---
 
-## Cohort Simulation Architecture
-
-When multiple arc_important characters need to interact during off-screen time, they're simulated together as a cohort. The SimulationModerator orchestrates this using explicit function calling—characters are isolated agents that only see what the Moderator passes them.
-
-### Tool Architecture
-
-**SimulationModerator has one tool:**
-
-```
-query_character(
-  character: string,      // Character name (exact match)
-  query_type: string,     // "intention" | "response" | "reflection"  
-  stimulus: string,       // What's happening that they're responding to
-  query: string           // What you're asking them
-)
-```
-
-Returns the character's prose response. Character sees only:
-- Their own profile, state, relationships, memories (injected automatically)
-- The stimulus and query provided
-- Their accumulated history from this simulation run
-
-Character does NOT see:
-- Other characters' internal states or reasoning
-- Moderator's orchestration logic
-- Other characters' responses (unless included as observable stimulus)
-
-**CharacterSimulation has tools:**
-
-```
-query_world_kg(queries: string[])     // Batch queries to world knowledge graph
-query_personal_kg(queries: string[])  // Batch queries to personal narrative graph
-submit_reflection(output: object)     // Submit final structured output
-```
-
-### Information Flow (Critical)
-
-The Moderator controls what characters perceive. This is the core responsibility.
-
-When Character A acts, Character B's stimulus contains only **observable elements**:
-- Physical actions
-- Speech (words and tone)
-- Visible expressions and body language
-- Environmental changes
-
-**Not included:**
-- Internal thoughts
-- Strategic reasoning
-- Hidden emotions
-- Anything A wouldn't show
-
-**Translation example:**
-- A's response: "I feel nervous but hide it behind a calm facade"
-- B's stimulus: "Kira's face is neutral, but her hands are slightly tense on the table"
-
-The Moderator translates internal experience to external observation.
-
-### Physical Location Constraints
-
-Characters can only interact if they can physically reach each other within the simulation period.
-
-- Characters track their own locations internally
-- Travel takes time and generates scene content
-- Interactions require physical proximity
-- `pending_mc_interaction` only flagged if character is AT protagonist's location, not traveling toward them
-
-**Journey to MC is activity content, not a pending interaction.** The character might decide to seek MC, travel there, and THEN flag `pending_mc_interaction` once they've arrived.
-
-### Time Chunking
-
-The Moderator doesn't micromanage hours. Flow:
-
-1. **Solo periods before interactions** — One query per character covering their independent activities
-2. **Interactions** — Full back-and-forth until natural resolution (3-7 exchanges typical)
-3. **Solo periods after interactions** — Remaining time after interaction concludes
-4. **Reflections** — Each character structures their own scenes and outputs
-
-Characters decide scene boundaries and granularity during reflection. Routine morning = 1 paragraph. Tense negotiation = detailed scene.
-
-### Handling Emergence
-
-The Moderator follows authentically, doesn't force outcomes:
-
-- Characters may refuse expected interactions
-- Interactions may escalate beyond initial intent
-- New intents may emerge during exchanges
-- Characters may exit unexpectedly
-- Evasion is itself interaction content
-
-IntentCheck upstream identifies *who wants to interact*. The Moderator discovers *what actually happens*.
-
-### Query Types
-
-**intention** — "What do you plan to do this period?"
-- Character responds with intended actions, timing, locations
-- Used at simulation start
-
-**response** — "This is happening. How do you respond?"
-- Character receives stimulus describing situation
-- Responds with internal state, action, speech, stance
-- Used during interactions
-
-**reflection** — "The period has concluded. Provide your final output."
-- Character receives summary of what they experienced
-- Submits full structured output via `submit_reflection`
-- Scenes, memories, relationship updates, state changes, etc.
-
-### Moderator Output
-
-When all characters have submitted reflections, the Moderator outputs only the timeline:
-
-```json
-{
-  "timeline": [
-    {
-      "time": "Morning",
-      "events": ["Kira scouted warehouses", "Tam processed paperwork"]
-    },
-    {
-      "time": "Afternoon",
-      "interaction": {
-        "participants": ["Kira", "Tam"],
-        "type": "negotiation",
-        "outcome": "Settled debt for 30 silver plus favor owed"
-      }
-    }
-  ]
-}
-```
-
-Character data (scenes, memories, state updates) is submitted directly by the characters via their tools—the Moderator doesn't handle or pass through that data.
-
----
-
 ## Agents Summary
 
 | Agent | Purpose | When | Input | Output |
@@ -819,14 +682,14 @@ Character data (scenes, memories, state updates) is submitted directly by the ch
 | **Chronicler** | Track story fabric, world momentum, guide writer | After scene | Scene, time, previous story_state, previous simulation events | writer_guidance, story_state, world_events, lore_requests |
 | **SimulationPlanner** | Decide who simulates and who needs inference | After scene (if time threshold met) | Character roster, story state, MC trajectory | Cohorts, standalone list, significant_for_inference |
 | **IntentCheck** | Query character intentions for cohort decisions | During planning (borderline cases) | Character profile, state, roster context | seeking, avoiding, self_focused |
-| **SimulationModerator** | Orchestrate cohort simulation via function calls | During cohort sim | Cohort members, time period, IntentCheck results | Timeline summary |
-| **CharacterSimulation** | Respond to Moderator queries, submit reflection | During cohort sim | Own profile/state/memories + stimulus from Moderator | Prose responses, then full reflection output |
-| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, time period | Scenes, memories, state updates, pending_mc_interaction |
+| **SimulationModerator** | Orchestrate cohort simulation | During cohort sim | Cohort members, time period | Pass-through character outputs, timeline |
+| **CharacterSimulation** | Live as character in group | During cohort sim | Profile, state, queries from Moderator | Scenes, memories, relationship_updates, state updates, pending_mc_interaction |
+| **StandaloneSimulation** | Live as character alone | During standalone sim | Profile, state, time period | Scenes, memories, relationship_updates, state updates, pending_mc_interaction |
 | **OffscreenInference** | Derive state and produce brief memories | Before scene (for significant_for_inference) | Profile, routine, events log, time | Scenes (brief), memories, current situation, state updates |
 | **ContextGatherer** | Query KG for world/narrative context | Before scene | Recent scenes, narrative direction, previous results | World context, narrative history |
 | **PartialProfileCrafter** | Create lightweight profile | When background char needs consistency | Character request, context | Partial profile (voice, appearance, behavior) |
 | **CharacterPlugin** | Respond as character in scene | During scene generation | Profile, state, stimulus | Character response (internal, action, speech, attention) |
-| **CharacterReflection** | Process scene into character's memory | After scene | MC-POV scene, profile, state | Scene rewrite, memory, state updates |
+| **CharacterReflection** | Process scene into character's memory | After scene | MC-POV scene, profile, state, relationships | Scene rewrite, memory, relationship_updates, state updates |
 | **Writer** | Generate scene narrative | Scene generation | Resolution, tracker states, writer_guidance, pending_mc_interactions, characters, KG context | Scene, choices, creation_requests, importance_flags |
 
 **Note:** CharacterPlugin is used for both arc_important and significant characters during scene generation. The difference is only in off-screen processing (simulation vs inference).
@@ -904,6 +767,65 @@ Character data (scenes, memories, state updates) is submitted directly by the ch
 }
 ```
 
+### Relationship Updates (Prose-Based)
+
+Relationships use prose rather than numerical scores. This aligns with how LLMs naturally reason about character dynamics.
+
+**When a relationship changes:**
+
+```json
+{
+  "name": "Protagonist",
+  "event": "They confronted me about the warehouse—know more than I thought",
+  
+  "dynamic": "Dangerous. They're not going to let this go and they're smarter than I gave them credit for. I underestimated them and now I'm exposed. Need to figure out what they actually know before I can plan next moves.",
+  
+  "evolution": {
+    "direction": "volatile",
+    "recent_shifts": ["Initial dismissal as nobody important", "They showed up asking about the warehouse"],
+    "tension": "They have information. I don't know how much. This is a threat I can't ignore."
+  },
+  
+  "mental_model": {
+    "perceives_as": "A threat I underestimated",
+    "assumptions": ["They have some evidence", "They won't stop digging", "Someone is feeding them information"],
+    "blind_spots": ["Their actual motives", "Who they're working with"]
+  },
+  
+  "behavioral_implications": "Can't dismiss them anymore. Need to be careful what I say, figure out what they know, and decide whether to buy them off, scare them off, or eliminate the problem."
+}
+```
+
+**Required fields:** `name`, `event`
+
+**Include other fields only when they changed.** For minor shifts, just `name`, `event`, and a brief `dynamic` update may suffice.
+
+**Direction values:** `warming`, `cooling`, `stable`, `complicated`, `volatile`
+
+### Memory Index Entry
+
+```json
+{
+  "summary": "Brief one-sentence description of core experience",
+  "salience": 7,
+  "emotional_tone": "anxious",
+  "entities": ["Protagonist", "warehouse", "evidence"],
+  "tags": ["confrontation", "exposure_risk", "secrets"]
+}
+```
+
+**Salience scoring:**
+
+| Score | Meaning | Examples |
+|-------|---------|----------|
+| 1-2 | Routine, forgettable | Casual greetings, background events |
+| 3-4 | Notable but minor | Interesting conversations, small favors |
+| 5-6 | Significant | Important information, meaningful interactions |
+| 7-8 | Major | Confrontations, intimate moments, reveals |
+| 9-10 | Critical | Betrayals, life-changing events, trauma |
+
+Score based on importance **to this character**, not plot importance.
+
 ### Story State (Chronicler output)
 
 ```json
@@ -962,6 +884,26 @@ Character data (scenes, memories, state updates) is submitted directly by the ch
 }
 ```
 
+### Writer Guidance (Chronicler output)
+
+```json
+{
+  "threads_to_weave": "The Halvard investigation thread is building momentum—MC has evidence but hasn't acted on it. The merchant Tam could provide a connection to underground routes if approached. Consider surfacing the tension between gathering more evidence vs. running now.",
+  
+  "manifesting_now": "The sealed letter from her mother has been carried for 4 days without opening. This promise is overdue—find a natural moment for her to read it. The contents should matter.",
+  
+  "opportunities": "Merchant caravan to Ranoa leaves at dawn on the 7th. This is a concrete escape window that closes soon. Make the deadline visible to MC.",
+  
+  "tonal_direction": "Tension is building toward a crisis point. The net is closing. Scenes should carry increasing pressure—fewer safe moments, more awareness of being hunted.",
+  
+  "promises_ready": ["The mother's letter", "Tam's hinted knowledge about 'other ways out'"],
+  
+  "dont_forget": ["Halvard knows about the warehouse", "Kira owes MC a favor"],
+  
+  "world_momentum_notes": "Crimson Veil ritual preparations are accelerating in the background. Cultist activity might draw guard attention away from MC—or toward locations MC needs to access."
+}
+```
+
 ---
 
 ## Key Design Decisions
@@ -986,10 +928,6 @@ Narrative discipline + compute budget. More than 8 characters with full simulati
 
 Cost and complexity. Moderator overhead is significant. Most characters, even important ones, are on separate tracks. Cohort only when IntentCheck confirms they actually want to interact.
 
-### Why tool-based orchestration instead of "group chat"?
-
-Knowledge isolation. In a group chat, all participants see all messages—characters would see each other's internal states, reasoning, and responses. With function calling, the Moderator controls exactly what each character perceives. Character A's internal monologue never reaches Character B. The Moderator translates internal experience to external observation, maintaining strict information boundaries. Characters are truly isolated agents responding only to what they could actually perceive.
-
 ### Why IntentCheck instead of potential_interactions?
 
 Simpler flow. The old approach had characters output intent during simulation, then the next cycle had to consume it. IntentCheck queries intent upfront, before simulation, so cohorts are determined correctly from the start. No state to persist between cycles.
@@ -1009,3 +947,7 @@ Writer has creative authority. Chronicler observes and advises. `manifesting_now
 ### Why does OffscreenInference produce scenes now?
 
 Consistency. When significant characters are encountered, they should have memories of their recent time—even if brief. This prevents the awkwardness of "I have no idea what I've been doing" when asked. The scenes are lightweight (1-3 paragraphs, salience capped at 6) but real.
+
+### Why prose-based relationships instead of numerical scores?
+
+LLMs reason more naturally in prose. "Trust: 35" means nothing to a model—it's an arbitrary number. "I don't trust them—they've helped me once but I don't know their real motives" gives the model actual reasoning material. Prose relationships also capture nuance that numbers can't: you can trust someone professionally but not personally, respect their competence while despising their morals.

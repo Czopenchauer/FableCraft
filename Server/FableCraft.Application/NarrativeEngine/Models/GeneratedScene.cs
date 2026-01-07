@@ -14,7 +14,10 @@ public class GeneratedScene
 
     [JsonPropertyName("creation_requests")]
     public CreationRequests? CreationRequests { get; init; }
-    
+
+    [JsonPropertyName("importance_flags")]
+    public ImportanceFlags? ImportanceFlags { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

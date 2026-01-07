@@ -84,6 +84,8 @@ internal sealed class GenerationContext
 
     public GeneratedItem[]? NewItems { get; set; }
 
+    public ConcurrentQueue<GeneratedPartialProfile> NewBackgroundCharacters { get; set; } = new();
+
     public string? NewResolution { get; set; }
 
     public ContextBase? ContextGathered { get; set; }

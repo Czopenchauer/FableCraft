@@ -24,5 +24,6 @@ internal enum LorebookCategory
     Location,
     Item,
     Lore,
-    WorldEvent
+    WorldEvent,
+    BackgroundCharacter
 }
