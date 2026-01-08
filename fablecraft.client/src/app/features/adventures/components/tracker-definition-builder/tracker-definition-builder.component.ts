@@ -40,7 +40,7 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   private readonly frameworkFields = {
     story: ['Time', 'Weather', 'Location', 'CharactersPresent'],
     mainCharacter: ['Name'],
-    characters: ['Name']
+    characters: ['Name', 'Location']
   };
 
   FieldType = FieldType;

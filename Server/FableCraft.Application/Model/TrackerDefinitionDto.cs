@@ -56,7 +56,9 @@ public class TrackerDefinitionDtoValidator : AbstractValidator<TrackerDefinition
             .NotNull().WithMessage("Characters section is required")
             .NotEmpty().WithMessage("Characters section must contain at least the framework fields")
             .Must(characters => HasRequiredField(characters, "Name", FieldType.String))
-            .WithMessage("Characters section must contain a 'Name' field of type String");
+            .WithMessage("Characters section must contain a 'Name' field of type String")
+            .Must(characters => HasRequiredField(characters, "Location", FieldType.String))
+            .WithMessage("Characters section must contain a 'Location' field of type String");
     }
 
     private static bool HasRequiredField(FieldDefinition[] fields, string fieldName, FieldType expectedType)
@@ -155,6 +157,19 @@ public static class TrackerDefinitionFactory
                         "Ariel",
                         "Kael",
                         "Valerius"
+                    ]
+                },
+                new FieldDefinition
+                {
+                    Name = "Location",
+                    Type = FieldType.String,
+                    Prompt = "The character's current location.",
+                    DefaultValue = "Unknown",
+                    ExampleValues =
+                    [
+                        "Conference Room B, 12th Floor, Apex Corporation",
+                        "Main Street, Downtown",
+                        "Home"
                     ]
                 }
             ]

@@ -2,6 +2,8 @@
 using System.Reflection;
 using System.Threading.Channels;
 
+using FableCraft.Infrastructure.Llm;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -48,6 +50,7 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
                                     using var linkedActivity = new Activity("ProcessMessage")
                                         .SetParentId(messageWithContext.Activity!.Id!)
                                         .Start();
+                                    using var llmActivity = Telemetry.LlmActivitySource.StartActivity(message.GetType().Name);
 
                                     using (messageWithContext.LogContext is not null
                                                ? LogContext.Push(messageWithContext.LogContext)

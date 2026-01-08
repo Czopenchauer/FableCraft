@@ -15,7 +15,7 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
-internal sealed class StoryTrackerAgent(
+internal sealed class SceneTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
@@ -85,7 +85,7 @@ internal sealed class StoryTrackerAgent(
             chatHistory,
             outputParser,
             promptExecutionSettings,
-            nameof(StoryTrackerAgent),
+            nameof(SceneTrackerAgent),
             kernelWithKg,
             cancellationToken);
     }
@@ -95,7 +95,7 @@ internal sealed class StoryTrackerAgent(
         var structure = context.TrackerStructure;
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
-            (PlaceholderNames.StoryTrackerStructure, TrackerExtensions.ConvertToSystemJson(structure.Story).ToJsonString()),
-            (PlaceholderNames.StoryTrackerOutput, TrackerExtensions.ConvertToOutputJson(structure.Story).ToJsonString()));
+            (PlaceholderNames.SceneTrackerStructure, TrackerExtensions.ConvertToSystemJson(structure.Story).ToJsonString()),
+            (PlaceholderNames.SceneTrackerOutput, TrackerExtensions.ConvertToOutputJson(structure.Story).ToJsonString()));
     }
 }

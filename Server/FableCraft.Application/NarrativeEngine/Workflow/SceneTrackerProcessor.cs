@@ -8,11 +8,11 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 /// Processor responsible for updating the scene tracker (time, location, weather, characters present).
 /// This must run before other processors that depend on context.NewTracker.Scene.
 /// </summary>
-internal sealed class SceneTrackerProcessor(StoryTrackerAgent storyTracker) : IProcessor
+internal sealed class SceneTrackerProcessor(SceneTrackerAgent sceneTracker) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        var result = context.NewTracker?.Scene ?? await storyTracker.Invoke(context, cancellationToken);
+        var result = context.NewTracker?.Scene ?? await sceneTracker.Invoke(context, cancellationToken);
         context.NewTracker ??= new Tracker();
         context.NewTracker.Scene = result;
     }

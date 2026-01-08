@@ -37,7 +37,7 @@ public static class StartupExtensions
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()
-            .AddScoped<StoryTrackerAgent>()
+            .AddScoped<SceneTrackerAgent>()
             .AddScoped<CharacterCrafter>()
             .AddScoped<PartialProfileCrafter>()
             .AddScoped<LoreCrafter>()

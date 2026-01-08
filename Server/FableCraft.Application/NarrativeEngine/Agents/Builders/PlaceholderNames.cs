@@ -39,12 +39,12 @@ internal static class PlaceholderNames
     /// <summary>
     /// Scene tracker schema/format definition.
     /// </summary>
-    public const string StoryTrackerStructure = "{{story_tracker_structure}}";
+    public const string SceneTrackerStructure = "{{scene_tracker_structure}}";
 
     /// <summary>
     /// Scene tracker output template.
     /// </summary>
-    public const string StoryTrackerOutput = "{{story_tracker_output}}";
+    public const string SceneTrackerOutput = "{{scene_tracker_output}}";
 
     /// <summary>
     /// World setting configuration for chronicler context.
