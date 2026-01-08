@@ -21,8 +21,6 @@ public class Adventure : IEntity
 
     public DateTimeOffset? LastPlayedAt { get; init; }
 
-    public required string WorldSettings { get; set; }
-
     public required string PromptPath { get; set; }
 
     public required MainCharacter MainCharacter { get; set; }

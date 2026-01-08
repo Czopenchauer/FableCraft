@@ -35,7 +35,7 @@ internal sealed class ItemCrafter(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.CreatedCharacters(context.NewCharacters)}
 

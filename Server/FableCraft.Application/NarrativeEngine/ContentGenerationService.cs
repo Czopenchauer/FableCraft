@@ -108,8 +108,7 @@ public sealed class ContentGenerationService(
                 x.MainCharacter,
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
-                x.AdventureStartTime,
-                x.WorldSettings
+                x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -155,7 +154,6 @@ public sealed class ContentGenerationService(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings,
             createdLore);
 
         return context;

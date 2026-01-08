@@ -34,7 +34,7 @@ internal sealed class StoryTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.MainCharacter(context)}
 

@@ -19,8 +19,6 @@ public class AdventureDto
 
     public required string ReferenceTime { get; init; }
 
-    public required string WorldSettings { get; init; }
-
     public required MainCharacterDto MainCharacter { get; init; } = null!;
 
     public Guid? WorldbookId { get; init; }

@@ -45,8 +45,7 @@ public sealed class MainCharacterEmulatorAgent(
             {
                 x.MainCharacter,
                 x.AgentLlmPresets,
-                x.PromptPath,
-                x.WorldSettings
+                x.PromptPath
             })
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -91,7 +90,7 @@ public sealed class MainCharacterEmulatorAgent(
             mainCharacterDescription,
             mainCharacterTracker,
             recentScenes,
-            adventure.WorldSettings);
+            adventure.PromptPath);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -149,8 +148,10 @@ public sealed class MainCharacterEmulatorAgent(
         string characterDescription,
         MainCharacterState? tracker,
         List<Scene> recentScenes,
-        string? worldSettings)
+        string promptPath)
     {
+        var worldSettingsPath = Path.Combine(promptPath, "WorldSettings.md");
+        var worldSettings = File.Exists(worldSettingsPath) ? File.ReadAllText(worldSettingsPath) : null;
         var worldSettingsSection = string.IsNullOrWhiteSpace(worldSettings)
             ? string.Empty
             : $"""

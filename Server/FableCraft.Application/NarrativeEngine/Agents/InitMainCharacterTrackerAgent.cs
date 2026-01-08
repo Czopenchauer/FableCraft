@@ -39,7 +39,7 @@ internal sealed class InitMainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             {PromptSections.WorldSettings(context.PromptPath)}
                              
                              {PromptSections.CurrentStoryTracker(context)}
 
@@ -112,7 +112,7 @@ internal sealed class InitMainCharacterTrackerAgent(
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
             (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
-            ("{{world_setting}}", context.WorldSettings)!,
+            ("{{world_setting}}", File.Exists(Path.Combine(context.PromptPath, "WorldSettings.md")) ? File.ReadAllText(Path.Combine(context.PromptPath, "WorldSettings.md")) : string.Empty),
             ("{{character_definition}}", context.MainCharacter.Description),
             ("{{progression_system}}", progressionSystem),
             ("{{story_bible}}", storyBible)!);

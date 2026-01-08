@@ -463,7 +463,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -603,7 +603,6 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings,
             createdLore);
 
         return context;
@@ -657,7 +656,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -689,7 +688,6 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings,
             createdLore);
         return generationContext;
     }
@@ -704,7 +702,7 @@ internal sealed class SceneGenerationOrchestrator(
             .Select(x => new
             {
                 x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime, x.WorldSettings
+                PromptPaths = x.PromptPath, x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -757,7 +755,6 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            adventure.WorldSettings,
             createdLore);
 
         return context;

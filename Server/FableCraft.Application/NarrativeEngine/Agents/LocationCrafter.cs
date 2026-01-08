@@ -37,7 +37,7 @@ internal sealed class LocationCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentStoryTracker(context)}
                              
-                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.CreatedCharacters(context.NewCharacters)}
 

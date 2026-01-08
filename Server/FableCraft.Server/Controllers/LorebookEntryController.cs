@@ -29,13 +29,16 @@ public class LorebookEntryController : ControllerBase
     {
         var adventure = await _dbContext.Adventures
             .Where(a => a.Id == adventureId)
-            .Select(a => new { a.WorldSettings })
+            .Select(a => new { a.PromptPath })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (adventure == null)
         {
             return NotFound(new { error = "Adventure not found" });
         }
+
+        var worldSettingsPath = Path.Combine(adventure.PromptPath, "WorldSettings.md");
+        var worldSettings = System.IO.File.Exists(worldSettingsPath) ? await System.IO.File.ReadAllTextAsync(worldSettingsPath, cancellationToken) : null;
 
         var entries = await _dbContext.LorebookEntries
             .Where(e => e.AdventureId == adventureId)
@@ -57,7 +60,7 @@ public class LorebookEntryController : ControllerBase
 
         return Ok(new AdventureLoreResponseDto
         {
-            WorldSettings = adventure.WorldSettings,
+            WorldSettings = worldSettings,
             Entries = entries
         });
     }

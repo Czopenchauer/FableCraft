@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251220130046_NullableTrackerForRelationships")]
-    partial class NullableTrackerForRelationships
+    [Migration("20260108091452_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,9 +33,6 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("AdventureStartTime")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("AuthorNotes")
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -70,6 +67,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("WorldSettings")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -115,6 +113,11 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("AdventureId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Importance")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -127,6 +130,43 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.HasIndex("AdventureId");
 
                     b.ToTable("Characters");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.CharacterEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdventureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Consumed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceCharacterName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceRead")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TargetCharacterName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Time")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CharacterEvents");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.CharacterMemory", b =>
@@ -147,7 +187,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("StoryTracker")
+                    b.Property<string>("SceneTracker")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -179,17 +219,20 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Dynamic")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
-                    b.Property<string>("StoryTracker")
-                        .HasColumnType("text");
-
                     b.Property<string>("TargetCharacterName")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UpdateTime")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -217,12 +260,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SceneId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("SequenceNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("StoryTracker")
+                    b.Property<string>("SceneTracker")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -255,6 +298,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SimulationMetadata")
+                        .HasColumnType("text");
 
                     b.Property<string>("Tracker")
                         .IsRequired()
@@ -396,7 +442,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AdventureId", "SequenceNumber");
+                    b.HasIndex("AdventureId", "SequenceNumber")
+                        .IsUnique();
 
                     b.HasIndex("Id", "SequenceNumber", "CommitStatus");
 

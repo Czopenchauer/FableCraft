@@ -46,7 +46,7 @@ internal sealed class ContextGatherer(
 
         var previousContext = GetPreviousContextSummary(context);
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.WorldSettings)}
+                             {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.MainCharacter(context)}
 

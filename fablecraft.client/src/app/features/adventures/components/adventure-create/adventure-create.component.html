@@ -73,33 +73,6 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="authorNotes">Author Notes (Style Guide) *</label>
-          <textarea
-            [class.input-error]="isFieldInvalid('authorNotes')"
-            class="form-textarea"
-            formControlName="authorNotes"
-            id="authorNotes"
-            placeholder="Describe the style, tone, and world of your adventure (e.g., 'dark and gritty fantasy with steampunk elements', 'whimsical high fantasy')..."
-            rows="3"
-          ></textarea>
-          <span *ngIf="isFieldInvalid('authorNotes')" class="error-text">
-            {{ getFieldError('authorNotes') }}
-          </span>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="worldSettings">World Settings</label>
-          <textarea
-            class="form-textarea"
-            formControlName="worldSettings"
-            id="worldSettings"
-            placeholder="Describe the world's rules, magic systems, technology level, geography, factions, or any other setting details that should apply to all scenes..."
-            rows="4"
-          ></textarea>
-          <span class="help-text">Optional background information about the world that will be provided to all AI agents</span>
-        </div>
-
-        <div class="form-group">
           <label class="form-label" for="firstSceneDescription">First Scene Description *</label>
           <textarea
             [class.input-error]="isFieldInvalid('firstSceneDescription')"
@@ -201,7 +174,7 @@
             [disabled]="isSubmitting"
             (pathSelected)="onPromptPathSelected($event)"
           ></app-directory-browser>
-          <span class="help-text">Path to the directory containing agent prompt templates</span>
+          <span class="help-text">Path to the directory containing agent prompt templates. You can customize your world by adding StoryBible.md and WorldSettings.md files to this directory.</span>
           <span *ngIf="isFieldInvalid('promptPath')" class="error-text">
             {{ getFieldError('promptPath') }}
           </span>

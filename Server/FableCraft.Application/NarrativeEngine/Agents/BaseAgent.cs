@@ -33,10 +33,12 @@ internal abstract class BaseAgent
             $"{agentName}.md"
         );
         var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
+        var worldSettingsPath = Path.Combine(generationContext.PromptPath, "WorldSettings.md");
+        var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
         var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
-        return promp.Replace(PlaceholderNames.StoryBible, storyBible).Replace(PlaceholderNames.WorldSetting, generationContext.WorldSettings);
+        return promp.Replace(PlaceholderNames.StoryBible, storyBible).Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 
     private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)

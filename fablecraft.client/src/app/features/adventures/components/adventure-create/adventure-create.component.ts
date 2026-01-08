@@ -83,8 +83,6 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       name: formValue.name,
       firstSceneDescription: formValue.firstSceneDescription,
       referenceTime: formValue.referenceTime,
-      authorNotes: formValue.authorNotes,
-      worldSettings: formValue.worldSettings || '',
       mainCharacter: {
         name: formValue.mainCharacter.name,
         description: formValue.mainCharacter.description
@@ -139,8 +137,6 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(3)]],
       firstSceneDescription: ['', Validators.required],
       referenceTime: ['', Validators.required],
-      authorNotes: ['', Validators.required],
-      worldSettings: [''],
       mainCharacter: this.fb.group({
         name: ['', [Validators.required, Validators.minLength(2)]],
         description: ['', Validators.required]

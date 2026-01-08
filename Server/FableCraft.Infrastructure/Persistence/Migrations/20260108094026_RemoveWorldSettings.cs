@@ -5,25 +5,25 @@
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class SceneTrackerStatus : Migration
+    public partial class RemoveWorldSettings : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "EnrichmentStatus",
-                table: "Scenes",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
+            migrationBuilder.DropColumn(
+                name: "WorldSettings",
+                table: "Adventures");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "EnrichmentStatus",
-                table: "Scenes");
+            migrationBuilder.AddColumn<string>(
+                name: "WorldSettings",
+                table: "Adventures",
+                type: "text",
+                nullable: false,
+                defaultValue: "");
         }
     }
 }

@@ -485,8 +485,11 @@ internal static class PromptSections
                 """;
     }
 
-    public static string WorldSettings(string? worldSettings)
+    public static string WorldSettings(string promptPath)
     {
+        var worldSettingsPath = Path.Combine(promptPath, "WorldSettings.md");
+        var worldSettings = File.Exists(worldSettingsPath) ? File.ReadAllText(worldSettingsPath) : null;
+
         if (string.IsNullOrWhiteSpace(worldSettings))
         {
             return string.Empty;

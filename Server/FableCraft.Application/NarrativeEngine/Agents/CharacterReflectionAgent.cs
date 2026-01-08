@@ -65,7 +65,7 @@ internal sealed class CharacterReflectionAgent(
 
                              {PromptSections.MainCharacter(generationContext)}
 
-                             {PromptSections.WorldSettings(generationContext.WorldSettings)}
+                             {PromptSections.WorldSettings(generationContext.PromptPath)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 
