@@ -8,6 +8,7 @@ using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -172,6 +173,7 @@ internal sealed class SceneGenerationOrchestrator(
         CancellationToken cancellationToken)
     {
         var context = await GetOrCreateGenerationContext(adventureId, playerAction, cancellationToken);
+        ProcessExecutionContext.SceneId.Value = context.NewSceneId;
 
         if (context.GenerationProcessStep == GenerationProcessStep.SceneGenerated)
         {
@@ -254,6 +256,8 @@ internal sealed class SceneGenerationOrchestrator(
         {
             throw new SceneNotFoundException(adventureId);
         }
+
+        ProcessExecutionContext.SceneId.Value = sceneId;
 
         if (scene.EnrichmentStatus == EnrichmentStatus.Enriched)
         {
@@ -386,6 +390,8 @@ internal sealed class SceneGenerationOrchestrator(
         {
             throw new SceneNotFoundException(adventureId);
         }
+
+        ProcessExecutionContext.SceneId.Value = sceneId;
 
         GenerationContext context = await BuildRegenerationContextFromScene(adventureId, scene, cancellationToken);
 
@@ -765,7 +771,8 @@ internal sealed class SceneGenerationOrchestrator(
             {
                 AdventureId = adventureId,
                 PlayerAction = playerAction,
-                GenerationProcessStep = GenerationProcessStep.NotStarted
+                GenerationProcessStep = GenerationProcessStep.NotStarted,
+                NewSceneId = Guid.NewGuid()
             };
             var process = new GenerationProcess
             {

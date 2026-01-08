@@ -25,6 +25,8 @@ public sealed class ResponseReceivedEvent : IMessage
     public required long Duration { get; init; }
 
     public Guid AdventureId { get; set; }
+
+    public Guid? SceneId { get; set; }
 }
 
 internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IMessageHandler<ResponseReceivedEvent>
@@ -34,6 +36,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
         var llmCallLog = new LlmLog
         {
             AdventureId = message.AdventureId,
+            SceneId = message.SceneId,
             CallerName = message.CallerName,
             RequestContent = message.RequestContent,
             ResponseContent = message.ResponseContent,

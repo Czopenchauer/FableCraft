@@ -13,6 +13,7 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
     {
         var newScene = new Scene
         {
+            Id = context.NewSceneId!.Value,
             SequenceNumber = (context.SceneContext.OrderByDescending(x => x.SequenceNumber)
                                   .FirstOrDefault()?.SequenceNumber
                               ?? 0)
@@ -77,7 +78,5 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
                 throw;
             }
         });
-
-        context.NewSceneId = newScene.Id;
     }
 }

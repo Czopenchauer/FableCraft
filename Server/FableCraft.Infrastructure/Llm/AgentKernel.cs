@@ -127,6 +127,7 @@ internal sealed class AgentKernel : IAgentKernel
                                          await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
                                              {
                                                  AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
+                                                 SceneId = ProcessExecutionContext.SceneId.Value,
                                                  CallerName = operationName,
                                                  RequestContent = requestContent,
                                                  ResponseContent = result.Content ?? string.Empty,

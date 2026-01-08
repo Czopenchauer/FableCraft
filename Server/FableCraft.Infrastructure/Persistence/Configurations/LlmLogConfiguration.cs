@@ -10,5 +10,6 @@ public class LlmLogConfiguration : IEntityTypeConfiguration<LlmLog>
     public void Configure(EntityTypeBuilder<LlmLog> builder)
     {
         builder.HasIndex(x => x.AdventureId);
+        builder.HasIndex(x => x.SceneId);
     }
 }

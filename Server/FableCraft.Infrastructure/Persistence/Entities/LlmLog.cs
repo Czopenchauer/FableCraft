@@ -4,6 +4,8 @@ public sealed class LlmLog : IEntity
 {
     public Guid? AdventureId { get; set; }
 
+    public Guid? SceneId { get; set; }
+
     public string? CallerName { get; set; }
 
     public required string RequestContent { get; set; }
