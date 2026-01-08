@@ -12,7 +12,8 @@ internal class ContentGenerator(
     CharacterCrafter characterCrafter,
     PartialProfileCrafter partialProfileCrafter,
     ItemCrafter itemCrafter,
-    ILogger logger
+    ILogger logger,
+    CharacterReflectionAgent characterReflectionAgent
 ) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -32,8 +33,7 @@ internal class ContentGenerator(
             .ToList();
 
         var fullProfileCharacterRequests = creationRequests.Characters
-            .Where(x => x.Importance == CharacterImportance.ArcImportance ||
-                        x.Importance == CharacterImportance.Significant)
+            .Where(x => x.Importance == CharacterImportance.ArcImportance || x.Importance == CharacterImportance.Significant)
             .ToList();
 
         Task<CharacterContext[]>? fullCharacterTask = null;
@@ -51,7 +51,34 @@ internal class ContentGenerator(
             if (fullProfileCharacterRequests.Count > 0)
             {
                 fullCharacterTask = Task.WhenAll(fullProfileCharacterRequests
-                    .Select(x => characterCrafter.Invoke(context, x, cancellationToken)).ToArray());
+                    .Select(async x =>
+                    {
+                        var character = await characterCrafter.Invoke(context, x, cancellationToken);
+                        if (character.SceneRewrites.Count > 0)
+                        {
+                            return character;
+                        }
+
+                        var reflection = await characterReflectionAgent.Invoke(context, character, context.NewTracker!.Scene!, cancellationToken);
+                        character.SceneRewrites =
+                        [
+                            new CharacterSceneContext
+                            {
+                                Content = reflection.SceneRewrite,
+                                SceneTracker = context.NewTracker!.Scene!,
+                                SequenceNumber = 0
+                            }
+                        ];
+                        character.CharacterMemories = reflection.Memory!.Select(y => new MemoryContext()
+                        {
+                            Salience = y.Salience,
+                            Data = y.ExtensionData!,
+                            SceneTracker = context.NewTracker!.Scene!,
+                            MemoryContent = y.Summary
+                        }).ToList();
+
+                        return character;
+                    }).ToArray());
             }
 
             if (backgroundCharacterRequests.Count > 0)
@@ -108,6 +135,7 @@ internal class ContentGenerator(
             {
                 context.NewBackgroundCharacters.Enqueue(bg);
             }
+
             logger.Information("Created {Count} new background character profiles", backgrounds.Length);
         }
 

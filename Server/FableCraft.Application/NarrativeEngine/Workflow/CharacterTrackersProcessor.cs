@@ -168,56 +168,8 @@ internal sealed class CharacterTrackersProcessor(
                 .ToArray();
         }
 
-        Task<CharacterContext>[]? sceneRewriteForNewChar = null;
-        if (context.NewCharacters?.Length > 0)
-        {
-            sceneRewriteForNewChar = context.NewCharacters
-                .Select(async character =>
-                {
-                    if (character.SceneRewrites.Count > 0)
-                    {
-                        return character;
-                    }
-
-                    var reflection = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-                    character.SceneRewrites =
-                    [
-                        new CharacterSceneContext
-                        {
-                            Content = reflection.SceneRewrite,
-                            SceneTracker = storyTrackerResult,
-                            SequenceNumber = 0
-                        }
-                    ];
-                    character.CharacterMemories = reflection.Memory!.Select(x => new MemoryContext()
-                    {
-                        Salience = x.Salience,
-                        Data = x.ExtensionData!,
-                        SceneTracker = storyTrackerResult,
-                        MemoryContent = x.Summary
-                    }).ToList();
-
-                    if (reflection.ExtensionData != null)
-                    {
-                        character.CharacterState = character.CharacterState.PatchWith(reflection.ExtensionData);
-                    }
-
-                    return character;
-                })
-                .ToArray();
-        }
-
         context.NewTracker!.MainCharacter = await mainCharTrackerTask;
-        if (characterUpdateTask != null)
-        {
-            await UnpackCharacterUpdates(context, characterUpdateTask);
-        }
-
-        if (sceneRewriteForNewChar != null)
-        {
-            await Task.WhenAll(sceneRewriteForNewChar);
-        }
-
+        await UnpackCharacterUpdates(context, characterUpdateTask);
         await chroniclerTask;
     }
 
