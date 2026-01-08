@@ -45,12 +45,6 @@ internal sealed class OffscreenInferenceOutput
     public List<OffscreenScene>? Scenes { get; init; }
 
     /// <summary>
-    /// Where the character is and what they're doing right now.
-    /// </summary>
-    [JsonPropertyName("current_situation")]
-    public required CurrentSituation CurrentSituation { get; init; }
-
-    /// <summary>
     /// Updates to the character's profile/state using dot-notation keys.
     /// </summary>
     [JsonPropertyName("profile_updates")]
@@ -118,33 +112,6 @@ internal sealed class OffscreenMemory
 
     [JsonPropertyName("salience")]
     public required int Salience { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
-}
-
-/// <summary>
-/// The character's current situation for interaction context.
-/// </summary>
-internal sealed class CurrentSituation
-{
-    /// <summary>
-    /// Where they are right now.
-    /// </summary>
-    [JsonPropertyName("location")]
-    public required string Location { get; init; }
-
-    /// <summary>
-    /// What they're doing when found/contacted.
-    /// </summary>
-    [JsonPropertyName("activity")]
-    public required string Activity { get; init; }
-
-    /// <summary>
-    /// Context for whoever is about to interact — busy? distracted? expecting trouble?
-    /// </summary>
-    [JsonPropertyName("ready_for_interaction")]
-    public required string ReadyForInteraction { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }

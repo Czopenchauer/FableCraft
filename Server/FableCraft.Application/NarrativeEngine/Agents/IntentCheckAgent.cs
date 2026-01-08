@@ -26,7 +26,7 @@ internal sealed class IntentCheckAgent(
 {
     protected override AgentName GetAgentName() => AgentName.IntentCheckAgent;
 
-    public async Task<IntentCheckOutput> Invoke(
+    public async Task<string> Invoke(
         GenerationContext context,
         IntentCheckInput input,
         CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ internal sealed class IntentCheckAgent(
 
         Kernel kernel = kernelBuilder.Create().Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<IntentCheckOutput>("intent", ignoreNull: true);
+        var outputParser = ResponseParser.CreateTextParser("intent");
         PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
@@ -68,10 +68,8 @@ internal sealed class IntentCheckAgent(
         prompt = prompt.Replace("{{core_profile}}", character.CharacterState.ToJsonString(jsonOptions));
         prompt = prompt.Replace("{{character_tracker}}", character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}");
         prompt = prompt.Replace("{{relationships}}", FormatRelationships(character));
-        prompt = prompt.Replace("{{time_period}}", input.TimePeriod);
         prompt = prompt.Replace("{{arc_important_list}}", FormatArcImportantList(input.ArcImportantCharacters));
         prompt = prompt.Replace("{{world_events}}", input.WorldEvents ?? "No significant world events.");
-        prompt = prompt.Replace("{{previous_intentions}}", input.PreviousIntentions ?? "No previous intentions recorded.");
 
         return prompt;
     }

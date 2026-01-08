@@ -35,16 +35,11 @@ internal sealed class QueryCharacterPlugin : PluginBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Set up the plugin with cohort simulation context.
-    /// Initializes sessions for each cohort member.
-    /// </summary>
     public Task SetupAsync(GenerationContext context, CallerContext callerContext, CohortSimulationInput cohortInput)
     {
         base.SetupAsync(context, callerContext);
         _cohortInput = cohortInput;
 
-        // Initialize sessions for each cohort member
         foreach (var member in cohortInput.CohortMembers)
         {
             var character = context.Characters.FirstOrDefault(c => c.Name == member.Name);
@@ -82,7 +77,6 @@ internal sealed class QueryCharacterPlugin : PluginBase
         string query,
         CancellationToken cancellationToken = default)
     {
-        // Validate character exists in cohort
         if (!_sessions.TryGetValue(character, out var session))
         {
             var availableCharacters = string.Join(", ", _sessions.Keys);
@@ -133,11 +127,6 @@ internal sealed class QueryCharacterPlugin : PluginBase
             return $"Error: Failed to query character '{character}': {ex.Message}";
         }
     }
-
-    /// <summary>
-    /// Get all sessions for post-simulation processing.
-    /// </summary>
-    public IReadOnlyDictionary<string, CharacterSimulationSession> GetSessions() => _sessions;
 
     /// <summary>
     /// Get all completed reflections (characters who submitted their reflection).

@@ -96,7 +96,6 @@ internal sealed class SimulationPlannerAgent(
     private SimulationPlannerInput BuildInput(GenerationContext context, SceneTracker sceneTracker)
     {
         var roster = BuildCharacterRoster(context);
-        var pendingMcInteractions = ExtractPendingMcInteractions(context);
         var previousState = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
@@ -105,7 +104,6 @@ internal sealed class SimulationPlannerAgent(
             SceneTracker = sceneTracker,
             CharacterRoster = roster,
             WorldEvents = previousState?.StoryState.WorldMomentum,
-            PendingMcInteractions = pendingMcInteractions,
             NarrativeDirection = context.WriterGuidance
         };
     }
@@ -195,16 +193,6 @@ internal sealed class SimulationPlannerAgent(
                           """);
         }
 
-        if (input.PendingMcInteractions is { Count: > 0 })
-        {
-            sections.Add($"""
-                          ### Pending MC Interactions
-                          <pending_mc_interactions>
-                          {FormatPendingMcInteractions(input.PendingMcInteractions)}
-                          </pending_mc_interactions>
-                          """);
-        }
-
         if (input.NarrativeDirection != null)
         {
             sections.Add($"""
@@ -252,17 +240,6 @@ internal sealed class SimulationPlannerAgent(
     {
         return string.Join("\n", events.ToJsonString());
     }
-
-    private static string FormatPendingMcInteractions(List<PendingMcInteractionEntry> interactions)
-    {
-        return string.Join("\n\n",
-            interactions.Select(p =>
-                $"""
-                     **{p.Character}**
-                     {p.ExtensionData}
-                     """.Trim()));
-    }
-
 
     /// <summary>
     /// Validates that cohorts are independent groups with no character overlaps.

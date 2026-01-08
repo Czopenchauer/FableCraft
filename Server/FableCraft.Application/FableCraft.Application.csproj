@@ -17,8 +17,4 @@
         <ProjectReference Include="..\FableCraft.Infrastructure\FableCraft.Infrastructure.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="NarrativeEngine\Simulation\" />
-    </ItemGroup>
-
 </Project>

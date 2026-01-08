@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -22,14 +24,157 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class OffscreenInferenceAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.OffscreenInferenceAgent;
 
-    public async Task<OffscreenInferenceOutput> Invoke(
+    public async Task Invoke(
         GenerationContext context,
-        OffscreenInferenceInput input,
+        SimulationPlannerOutput plan,
         CancellationToken cancellationToken)
+    {
+        var significantForInference = plan.SignificantForInference;
+        if (significantForInference is not { Count: > 0 })
+        {
+            logger.Debug("OffscreenInferenceProcessor: No significant characters need inference");
+            return;
+        }
+
+        var currentSceneTracker = context.NewTracker?.Scene;
+        if (currentSceneTracker == null)
+        {
+            logger.Warning("OffscreenInferenceProcessor: No scene tracker available, skipping inference");
+            return;
+        }
+
+        logger.Information("Running OffscreenInference for {Count} significant characters",
+            significantForInference.Count);
+
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var characterNames = significantForInference.Select(s => s.Character).ToList();
+
+        var eventsByCharacter = await dbContext.CharacterEvents
+            .Where(e => e.AdventureId == context.AdventureId
+                        && characterNames.Contains(e.TargetCharacterName)
+                        && !e.Consumed)
+            .GroupBy(e => e.TargetCharacterName)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => g.ToList(),
+                cancellationToken);
+
+        foreach (var significantEntry in significantForInference)
+        {
+            var character = context.Characters.FirstOrDefault(c => c.Name == significantEntry.Character);
+            if (character == null)
+            {
+                logger.Warning("OffscreenInference requested for unknown character: {CharacterName}",
+                    significantEntry.Character);
+                continue;
+            }
+
+            var events = eventsByCharacter.GetValueOrDefault(character.Name, []);
+            var eventDtos = events.Select(e => new CharacterEventDto
+            {
+                Time = e.Time,
+                Event = e.Event,
+                SourceCharacter = e.SourceCharacterName,
+                SourceRead = e.SourceRead
+            }).ToList();
+
+            var timeElapsed = $"""
+                               Last action time: {character.SimulationMetadata?.LastSimulated}
+                               Current time: {context.NewTracker!.Scene!.Time}
+                               """;
+
+            var input = new OffscreenInferenceInput
+            {
+                Character = character,
+                EventsLog = eventDtos,
+                TimeElapsed = timeElapsed,
+                CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
+                WorldEvents = context.SceneContext?
+                    .OrderByDescending(x => x.SequenceNumber)
+                    .FirstOrDefault()?.Metadata.ChroniclerState?.StoryState.WorldMomentum
+            };
+
+            try
+            {
+                logger.Information("Running OffscreenInference for {CharacterName} (events: {EventCount})",
+                    character.Name,
+                    eventDtos.Count);
+
+                var result = await Simulate(context, input, cancellationToken);
+
+                var memories = new List<MemoryContext>();
+                var sceneRewrites = new List<CharacterSceneContext>();
+
+                if (result.Scenes is { Count: > 0 })
+                {
+                    foreach (var scene in result.Scenes)
+                    {
+                        var sceneTracker = new SceneTracker
+                        {
+                            Time = scene.SceneTracker.DateTime,
+                            Location = scene.SceneTracker.Location,
+                            Weather = scene.SceneTracker.Weather ?? "Unknown",
+                            CharactersPresent = scene.SceneTracker.CharactersPresent?.ToArray() ?? []
+                        };
+
+                        memories.Add(new MemoryContext
+                        {
+                            MemoryContent = scene.Memory.Summary,
+                            SceneTracker = sceneTracker,
+                            Salience = scene.Memory.Salience,
+                            Data = scene.Memory.ExtensionData
+                        });
+
+                        sceneRewrites.Add(new CharacterSceneContext
+                        {
+                            Content = scene.Narrative,
+                            SequenceNumber = 0,
+                            SceneTracker = sceneTracker
+                        });
+                    }
+
+                    logger.Debug("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
+                        memories.Count,
+                        sceneRewrites.Count,
+                        character.Name);
+                }
+
+                var updatedCharacter = new CharacterContext
+                {
+                    CharacterId = character.CharacterId,
+                    Name = character.Name,
+                    Description = character.Description,
+                    Importance = character.Importance,
+                    CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? new Dictionary<string, object>()),
+                    CharacterTracker = character.CharacterTracker.PatchWith(result.TrackerUpdates ?? new Dictionary<string, object>()),
+                    CharacterMemories = memories,
+                    Relationships = [],
+                    SceneRewrites = sceneRewrites,
+                    SimulationMetadata = character.SimulationMetadata
+                };
+
+                context.CharacterUpdates.Enqueue(updatedCharacter);
+
+                foreach (var evt in events)
+                {
+                    context.CharacterEventsToConsume.Enqueue(evt.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "OffscreenInference failed for {CharacterName}", character.Name);
+                throw;
+            }
+        }
+    }
+
+    private async Task<OffscreenInferenceOutput> Simulate(GenerationContext context, OffscreenInferenceInput input, CancellationToken cancellationToken)
     {
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
@@ -39,7 +184,6 @@ internal sealed class OffscreenInferenceAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        // No plugins needed for inference - it's lightweight reasoning based on provided context
         Kernel kernel = kernelBuilder.Create().Build();
 
         var outputParser = ResponseParser.CreateJsonParser<OffscreenInferenceOutput>(
@@ -65,17 +209,9 @@ internal sealed class OffscreenInferenceAgent(
 
         prompt = prompt.Replace("{{core_profile}}", input.Character.CharacterState.ToJsonString(jsonOptions));
 
-        var routine = input.Character.CharacterState.Routine;
-        prompt = prompt.Replace("{{routine}}", routine?.ToJsonString(jsonOptions) ?? "No routine defined.");
-
-        var goals = input.Character.CharacterState.Goals;
-        prompt = prompt.Replace("{{active_projects}}", goals?.ToJsonString(jsonOptions) ?? "No active projects.");
-
         prompt = prompt.Replace("{{last_state}}", input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}");
 
         prompt = prompt.Replace("{{time_elapsed}}", input.TimeElapsed);
-
-        prompt = prompt.Replace("{{current_datetime}}", input.CurrentDateTime);
 
         prompt = prompt.Replace("{{world_events}}", FormatWorldEvents(input.WorldEvents));
 

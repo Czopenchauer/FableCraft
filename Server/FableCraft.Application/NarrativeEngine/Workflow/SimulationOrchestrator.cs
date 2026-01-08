@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -16,11 +15,11 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 /// then executes standalone simulations for arc_important characters
 /// and cohort simulations for characters who interact together.
 /// </summary>
-[Experimental("SKEXP0110")]
 internal sealed class SimulationOrchestrator(
     SimulationPlannerAgent plannerAgent,
     StandaloneSimulationAgent standaloneAgent,
     SimulationModeratorAgent cohortModeratorAgent,
+    OffscreenInferenceAgent offscreenInferenceAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -64,7 +63,7 @@ internal sealed class SimulationOrchestrator(
             string.Join(", ", string.Join("+", plan.Standalone?.Select(c => c.Character) ?? [])),
             string.Join(", ", string.Join("+", plan.Skip?.Select(c => c.Character) ?? [])));
 
-        await Task.WhenAll(RunStandaloneSimulations(context, plan, cancellationToken), RunCohortSimulations(context, plan, cancellationToken));
+        await Task.WhenAll(RunStandaloneSimulations(context, plan, cancellationToken), RunCohortSimulations(context, plan, cancellationToken), offscreenInferenceAgent.Invoke(context, plan, cancellationToken));
     }
 
     private async Task RunStandaloneSimulations(

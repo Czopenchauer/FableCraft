@@ -321,43 +321,6 @@ internal sealed class SceneGenerationOrchestrator(
                     adventureId);
                 throw;
             }
-
-            // Run OffscreenInference for significant characters (after parallel, before save)
-            stopwatch.Restart();
-            try
-            {
-                var offscreenProcessor = processors.First(p => p is OffscreenInferenceProcessor);
-                await offscreenProcessor.Invoke(context, cancellationToken);
-                logger.Information("[Enrichment] OffscreenInferenceProcessor took {ElapsedMilliseconds} ms",
-                    stopwatch.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex,
-                    "Error during OffscreenInferenceProcessor for adventure {AdventureId}",
-                    adventureId);
-                // Continue to save - inference failures shouldn't block scene enrichment
-            }
-
-            stopwatch.Restart();
-            try
-            {
-                var saveProcessor = processors.First(p => p is SaveSceneEnrichment);
-                await saveProcessor.Invoke(context, cancellationToken);
-                logger.Information("[Enrichment] SaveSceneEnrichment took {ElapsedMilliseconds} ms",
-                    stopwatch.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                await dbContext.Scenes
-                    .Where(s => s.Id == sceneId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.EnrichmentFailed),
-                        cancellationToken);
-                logger.Error(ex,
-                    "Error during SaveSceneEnrichment for adventure {AdventureId}",
-                    adventureId);
-                throw;
-            }
         }
 
         scene = await dbContext.Scenes

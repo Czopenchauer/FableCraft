@@ -62,7 +62,7 @@ internal sealed class SimulationModeratorAgent(
         logger.Information(
             "Starting cohort simulation for characters: {Characters}",
             string.Join(", ", input.CohortMembers.Select(m => m.Name)));
-        
+
         var output = ResponseParser.CreateJsonParser<CohortSimulationOutput>(
             "simulation",
             ignoreNull: true);
@@ -76,12 +76,27 @@ internal sealed class SimulationModeratorAgent(
 
         var reflections = queryPlugin.GetCompletedReflections();
 
-        var pendingCharacters = queryPlugin.GetPendingReflectionCharacters().ToList();
+        var pendingCharacters = queryPlugin.GetPendingReflectionCharacters();
         if (pendingCharacters.Any())
         {
             logger.Warning(
                 "Characters did not submit reflections: {Characters}",
                 string.Join(", ", pendingCharacters));
+
+            chatHistory.AddUserMessage($"The following characters did not submit reflections: {string.Join(", ", pendingCharacters)}");
+            response = await agentKernel.SendRequestAsync(
+                chatHistory,
+                output,
+                promptExecutionSettings,
+                nameof(SimulationModeratorAgent),
+                builtKernel,
+                cancellationToken);
+
+            if (queryPlugin.GetPendingReflectionCharacters().Any())
+            {
+                throw new InvalidOperationException(
+                    $"Characters still missing reflections after retry: {string.Join(", ", queryPlugin.GetPendingReflectionCharacters())}");
+            }
         }
 
         return new CohortSimulationResult
@@ -96,7 +111,6 @@ internal sealed class SimulationModeratorAgent(
         var sb = new StringBuilder();
         var cohortNames = input.CohortMembers.Select(m => m.Name).ToHashSet();
 
-        // Cohort members
         sb.AppendLine("## Cohort");
         sb.AppendLine();
         foreach (var member in input.CohortMembers)
@@ -117,6 +131,7 @@ internal sealed class SimulationModeratorAgent(
                     sb.AppendLine($"  - {rel.TargetCharacterName}: {rel.Dynamic}");
                 }
             }
+
             sb.AppendLine();
         }
 
@@ -135,7 +150,6 @@ internal sealed class SimulationModeratorAgent(
             sb.AppendLine();
         }
 
-        // World events
         sb.AppendLine("## World Events");
         if (input.WorldEvents != null)
         {
@@ -145,9 +159,9 @@ internal sealed class SimulationModeratorAgent(
         {
             sb.AppendLine("No significant world events.");
         }
+
         sb.AppendLine();
 
-        // Significant characters
         sb.AppendLine("## Significant Characters (Available for Interaction)");
         if (input.SignificantCharacters?.Length > 0)
         {
@@ -166,54 +180,14 @@ internal sealed class SimulationModeratorAgent(
         var characterNames = string.Join(", ", input.CohortMembers.Select(m => m.Name));
 
         return $"""
-            Run the simulation for this cohort: {characterNames}
+                Run the simulation for this cohort: {characterNames}
 
-            Begin.
-            """;
+                Begin.
+                """;
     }
 
     private static string ExtractPrimaryGoal(CharacterContext character)
     {
-        // Try to extract goals from character state - check Goals property first
-        var goals = character.CharacterState.Goals;
-        if (goals != null)
-        {
-            if (goals is JsonElement jsonElement)
-            {
-                if (jsonElement.ValueKind == JsonValueKind.Array && jsonElement.GetArrayLength() > 0)
-                {
-                    var firstGoal = jsonElement[0];
-                    if (firstGoal.TryGetProperty("goal", out var goalProp))
-                    {
-                        return goalProp.GetString() ?? "Pursuing personal objectives";
-                    }
-                    return firstGoal.GetString() ?? "Pursuing personal objectives";
-                }
-                if (jsonElement.ValueKind == JsonValueKind.String)
-                {
-                    return jsonElement.GetString() ?? "Pursuing personal objectives";
-                }
-            }
-            return goals.ToString() ?? "Pursuing personal objectives";
-        }
-
-        // Fall back to extension data for active_goals
-        if (character.CharacterState.ExtensionData?.TryGetValue("active_goals", out var activeGoals) == true)
-        {
-            if (activeGoals is JsonElement element)
-            {
-                if (element.ValueKind == JsonValueKind.Array && element.GetArrayLength() > 0)
-                {
-                    var firstGoal = element[0];
-                    if (firstGoal.TryGetProperty("goal", out var goalProp))
-                    {
-                        return goalProp.GetString() ?? "Pursuing personal objectives";
-                    }
-                }
-            }
-            return activeGoals.ToString() ?? "Pursuing personal objectives";
-        }
-
-        return "Pursuing personal objectives";
+        return character.CharacterState.Goals.ToJsonString();
     }
 }

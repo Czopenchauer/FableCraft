@@ -7,7 +7,7 @@ public sealed class GeneratedLore
     [JsonPropertyName("name")]
     public string Title { get; init; } = null!;
 
-    [JsonPropertyName("description")]
+    [JsonPropertyName("content")]
     public string Description { get; init; } = null!;
 
     [JsonExtensionData]

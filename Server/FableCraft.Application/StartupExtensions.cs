@@ -54,8 +54,7 @@ public static class StartupExtensions
             .AddScoped<OffscreenInferenceAgent>()
             .AddScoped<IntentCheckAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
-            .AddScoped<IProcessor, SimulationOrchestrator>()
-            .AddScoped<IProcessor, OffscreenInferenceProcessor>();
+            .AddScoped<IProcessor, SimulationOrchestrator>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();

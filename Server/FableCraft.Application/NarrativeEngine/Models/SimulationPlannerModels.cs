@@ -25,11 +25,6 @@ internal sealed class SimulationPlannerInput
     public object? WorldEvents { get; init; }
 
     /// <summary>
-    /// Characters who have flagged intent to seek the MC.
-    /// </summary>
-    public List<PendingMcInteractionEntry>? PendingMcInteractions { get; init; }
-
-    /// <summary>
     /// Writer guidance from Chronicler - where the story is heading.
     /// </summary>
     public WriterGuidance? NarrativeDirection { get; init; }

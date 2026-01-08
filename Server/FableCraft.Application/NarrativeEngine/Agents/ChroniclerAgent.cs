@@ -27,7 +27,7 @@ internal sealed class ChroniclerAgent(
     IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     private const int MaxScene = 20;
-    
+
     protected override AgentName GetAgentName() => AgentName.ChroniclerAgent;
 
     public async Task<ChroniclerOutput> Invoke(
@@ -46,7 +46,7 @@ internal sealed class ChroniclerAgent(
         var contextPrompt = BuildContextPrompt(context, sceneTracker, isFirstScene);
         chatHistory.AddUserMessage(contextPrompt);
 
-        var requestPrompt = BuildRequestPrompt(context, isFirstScene);
+        var requestPrompt = await BuildRequestPrompt(context, isFirstScene, cancellationToken);
         chatHistory.AddUserMessage(requestPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
@@ -84,11 +84,17 @@ internal sealed class ChroniclerAgent(
                 """;
     }
 
-    private string BuildRequestPrompt(GenerationContext context, bool isFirstScene)
+    private async Task<string> BuildRequestPrompt(GenerationContext context, bool isFirstScene, CancellationToken cancellationToken)
     {
         if (isFirstScene)
         {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+            var instruction = await dbContext.Adventures
+                .Select(x => new { x.Id, x.FirstSceneGuidance })
+                .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
             return $"""
+                    {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
+
                     {PromptSections.CurrentScene(context)}
 
                     It's the first scene of the adventure. Initialize the story state based on the scene content.

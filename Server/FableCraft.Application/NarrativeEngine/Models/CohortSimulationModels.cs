@@ -38,36 +38,6 @@ internal sealed class CohortSimulationInput
 }
 
 /// <summary>
-/// Information about a cohort member for the Moderator.
-/// </summary>
-internal sealed class CohortMemberInfo
-{
-    /// <summary>
-    /// Character name.
-    /// </summary>
-    [JsonPropertyName("name")]
-    public required string Name { get; init; }
-
-    /// <summary>
-    /// Current location.
-    /// </summary>
-    [JsonPropertyName("location")]
-    public required string Location { get; init; }
-
-    /// <summary>
-    /// Primary active goal.
-    /// </summary>
-    [JsonPropertyName("primary_goal")]
-    public required string PrimaryGoal { get; init; }
-
-    /// <summary>
-    /// Relationship notes with other cohort members.
-    /// </summary>
-    [JsonPropertyName("cohort_relationships")]
-    public Dictionary<string, string>? CohortRelationships { get; init; }
-}
-
-/// <summary>
 /// Output from the SimulationModeratorAgent.
 /// </summary>
 internal sealed class CohortSimulationOutput

@@ -17,7 +17,6 @@ namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 internal sealed class IntentCheckPlugin : PluginBase
 {
     private readonly IntentCheckAgent _intentCheckAgent;
-    private string _timePeriod = string.Empty;
     private string[] _arcImportantCharacters = [];
     private string? _worldEvents;
 
@@ -29,9 +28,6 @@ internal sealed class IntentCheckPlugin : PluginBase
     public override Task SetupAsync(GenerationContext context, CallerContext callerContext)
     {
         base.SetupAsync(context, callerContext);
-        _timePeriod = context.SimulationPlan?.SimulationPeriod?.ToJsonString()
-                      ?? context.NewTracker?.Scene?.Time
-                      ?? "Unknown period";
 
         _arcImportantCharacters = context.Characters
             .Where(c => c.Importance == CharacterImportance.ArcImportance)
@@ -68,7 +64,6 @@ internal sealed class IntentCheckPlugin : PluginBase
         var input = new IntentCheckInput
         {
             Character = character,
-            TimePeriod = _timePeriod,
             ArcImportantCharacters = _arcImportantCharacters,
             WorldEvents = _worldEvents,
             PreviousIntentions = previousIntentions
