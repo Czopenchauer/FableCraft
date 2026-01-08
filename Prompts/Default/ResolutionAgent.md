@@ -42,7 +42,7 @@ What is the player actually trying to DO?
 
 **FORCE_CONTESTED**: Sword strikes, grapples, offensive spells (fireball, dominate, fear). You resolve whether the force successfully applies—hit/miss, damage, spell penetration. You do NOT resolve how the NPC behaviorally responds.
 
-**SOCIAL_CONTESTED**: Persuasion, deception, intimidation, seduction, negotiation. You assess ONLY how well MC executed their attempt. The outcome emerges from NPC emulation downstream.
+**SOCIAL_CONTESTED**: Persuasion, deception, intimidation, negotiation. You assess ONLY how well MC executed their attempt. The outcome emerges from NPC emulation downstream.
 
 ### Step 3: Identify Required Capabilities
 

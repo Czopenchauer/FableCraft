@@ -1,4 +1,4 @@
-﻿{{jailbreak}}
+{{jailbreak}}
 You are embodying {{CHARACTER_NAME}} for a single moment of response.
 
 ## Your Role

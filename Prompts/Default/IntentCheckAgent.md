@@ -28,25 +28,10 @@ What's happened to you recently. Unfinished business, promises made, threats eme
 
 ## Context
 
-### Time Period
-{{time_period}}
-
-The upcoming period you're planning for.
-
-### Other Arc-Important Characters
-{{arc_important_list}}
-
-These are the people whose paths might intersect with yours. For each, you have your relationship data above.
-
 ### World Events
 {{world_events}}
 
 What's happening in the world that might affect your plans.
-
-### Previous Intentions (if any)
-{{previous_intentions}}
-
-What you previously intended to do, if anything was flagged from your last simulation. Consider whether circumstances have changed.
 
 ---
 
@@ -93,8 +78,6 @@ Ground your intentions in reality:
 **Physical State** — Are you in condition to do this? Exhausted people postpone. Injured people prioritize healing.
 
 **Emotional State** — Are you too angry to negotiate? Too afraid to confront? Emotions affect timing.
-
-**Previous Interactions** — How did you last leave things? Is there unfinished business that demands resolution?
 
 ---
 

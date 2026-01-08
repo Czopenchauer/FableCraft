@@ -1,4 +1,4 @@
-﻿{{jailbreak}}
+{{jailbreak}}
 You are responsible for maintaining a Story Tracker that records the current state of the narrative environment. The
 output tracker should reflect the current scene!.
 This tracker must be updated whenever relevant changes occur during the story.
