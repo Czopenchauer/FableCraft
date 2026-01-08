@@ -41,7 +41,7 @@ internal sealed class InitMainCharacterTrackerAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.PromptPath)}
                              
-                             {PromptSections.CurrentStoryTracker(context)}
+                             {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.MainCharacter(context)}
                              """;

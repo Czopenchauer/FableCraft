@@ -52,7 +52,7 @@ internal sealed class ContextGatherer(
 
                              {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
 
-                             {PromptSections.CurrentStoryTracker(context)}
+                             {PromptSections.CurrentSceneTracker(context)}
 
                              {LoreGenerated(context)}
 

@@ -106,10 +106,10 @@ internal sealed class OffscreenInferenceProcessor(
                     {
                         var sceneTracker = new SceneTracker
                         {
-                            Time = scene.StoryTracker.DateTime,
-                            Location = scene.StoryTracker.Location,
-                            Weather = scene.StoryTracker.Weather ?? "Unknown",
-                            CharactersPresent = scene.StoryTracker.CharactersPresent?.ToArray() ?? []
+                            Time = scene.SceneTracker.DateTime,
+                            Location = scene.SceneTracker.Location,
+                            Weather = scene.SceneTracker.Weather ?? "Unknown",
+                            CharactersPresent = scene.SceneTracker.CharactersPresent?.ToArray() ?? []
                         };
 
                         memories.Add(new MemoryContext
@@ -124,7 +124,7 @@ internal sealed class OffscreenInferenceProcessor(
                         {
                             Content = scene.Narrative,
                             SequenceNumber = 0,
-                            StoryTracker = sceneTracker
+                            SceneTracker = sceneTracker
                         });
                     }
 

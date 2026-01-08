@@ -78,7 +78,7 @@ internal sealed class ChroniclerAgent(
 
                 {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, MaxScene) : "")}
 
-                {PromptSections.StoryTracker(context, sceneTracker)}
+                {PromptSections.SceneTracker(context, sceneTracker)}
 
                 {previousChroniclerState}
                 """;

@@ -146,7 +146,7 @@ internal sealed class CharacterTrackersProcessor(
                             new CharacterSceneContext
                             {
                                 Content = reflectionOutput.SceneRewrite,
-                                StoryTracker = storyTrackerResult,
+                                SceneTracker = storyTrackerResult,
                                 SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
                                                      ?.SequenceNumber
                                                  + 1
@@ -185,7 +185,7 @@ internal sealed class CharacterTrackersProcessor(
                         new CharacterSceneContext
                         {
                             Content = reflection.SceneRewrite,
-                            StoryTracker = storyTrackerResult,
+                            SceneTracker = storyTrackerResult,
                             SequenceNumber = 0
                         }
                     ];

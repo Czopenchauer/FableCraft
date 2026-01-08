@@ -157,7 +157,7 @@ internal sealed class SimulationOrchestrator(
                                 Salience = x.Memory.Salience,
                                 Data = x.Memory.ExtensionData!,
                                 MemoryContent = x.Memory.Summary,
-                                SceneTracker = x.StoryTracker,
+                                SceneTracker = x.SceneTracker,
                             })
                             .ToList(),
                         Relationships = characterRelationships,
@@ -167,7 +167,7 @@ internal sealed class SimulationOrchestrator(
                                 SequenceNumber = character.SceneRewrites.Count > 0
                                     ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
                                     : 1,
-                                StoryTracker = x.StoryTracker
+                                SceneTracker = x.SceneTracker
                             })
                             .ToList(),
                         Importance = character.Importance,
@@ -373,7 +373,7 @@ internal sealed class SimulationOrchestrator(
                     Salience = x.Memory.Salience,
                     Data = x.Memory.ExtensionData!,
                     MemoryContent = x.Memory.Summary,
-                    SceneTracker = x.StoryTracker,
+                    SceneTracker = x.SceneTracker,
                 })
                 .ToList(),
             Relationships = characterRelationships,
@@ -383,7 +383,7 @@ internal sealed class SimulationOrchestrator(
                     SequenceNumber = character.SceneRewrites.Count > 0
                         ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
                         : 1,
-                    StoryTracker = x.StoryTracker
+                    SceneTracker = x.SceneTracker
                 })
                 .ToList(),
             Importance = character.Importance,

@@ -206,7 +206,7 @@ public sealed class ContentGenerationService(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
                     {
                         Content = y.Content,
-                        StoryTracker = y.SceneTracker,
+                        SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber
                     })
                     .ToList(),

@@ -75,7 +75,7 @@ internal sealed class OffscreenScene
     /// Story tracker for the scene (DateTime, Location, Weather, CharactersPresent).
     /// </summary>
     [JsonPropertyName("story_tracker")]
-    public required OffscreenStoryTracker StoryTracker { get; init; }
+    public required OffscreenSceneTracker SceneTracker { get; init; }
 
     /// <summary>
     /// First-person prose from this character's perspective.
@@ -91,9 +91,9 @@ internal sealed class OffscreenScene
 }
 
 /// <summary>
-/// Story tracker for an offscreen scene.
+/// Scene tracker for an offscreen scene.
 /// </summary>
-internal sealed class OffscreenStoryTracker
+internal sealed class OffscreenSceneTracker
 {
     [JsonPropertyName("DateTime")]
     public required string DateTime { get; init; }

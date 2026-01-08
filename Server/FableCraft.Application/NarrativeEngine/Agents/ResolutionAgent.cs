@@ -49,7 +49,7 @@ internal sealed class ResolutionAgent(
 
                              {PromptSections.ExistingCharacters(context.Characters)}
 
-                             {PromptSections.CurrentStoryTracker(context)}
+                             {PromptSections.CurrentSceneTracker(context)}
 
                              {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
                              """;

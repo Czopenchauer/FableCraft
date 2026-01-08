@@ -76,7 +76,7 @@ internal sealed class CharacterReflectionAgent(
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
 
-                             {PromptSections.StoryTracker(generationContext, sceneTrackerResult)}
+                             {PromptSections.SceneTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.CurrentScene(generationContext)}
 

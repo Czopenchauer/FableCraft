@@ -54,7 +54,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.Context(context)}
 
-                             {PromptSections.CurrentStoryTracker(context)}
+                             {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.PreviousCharacterObservations(context.SceneContext)}
 

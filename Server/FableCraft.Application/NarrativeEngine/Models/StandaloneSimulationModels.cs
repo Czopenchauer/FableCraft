@@ -86,7 +86,7 @@ internal sealed class SimulationScene
     /// Time, location, weather, and characters present for this scene.
     /// </summary>
     [JsonPropertyName("story_tracker")]
-    public required SceneTracker StoryTracker { get; init; }
+    public required SceneTracker SceneTracker { get; init; }
 
     /// <summary>
     /// First-person narrative from the character's perspective.

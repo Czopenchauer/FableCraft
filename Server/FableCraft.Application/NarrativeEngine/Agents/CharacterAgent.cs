@@ -71,10 +71,10 @@ internal sealed class CharacterAgent : BaseAgent
             .Select(s => $"""
                           SCENE NUMBER: {s.SequenceNumber}
                           <scene_tracker>
-                          TIME: {s.StoryTracker?.Time}
-                          Location: {s.StoryTracker?.Weather}
-                          Weather: {s.StoryTracker?.Location}
-                          Characters on scene: {string.Join(", ", s.StoryTracker?.CharactersPresent ?? [])}
+                          TIME: {s.SceneTracker?.Time}
+                          Location: {s.SceneTracker?.Weather}
+                          Weather: {s.SceneTracker?.Location}
+                          Characters on scene: {string.Join(", ", s.SceneTracker?.CharactersPresent ?? [])}
                           </scene_tracker>
 
                           {s.Content}

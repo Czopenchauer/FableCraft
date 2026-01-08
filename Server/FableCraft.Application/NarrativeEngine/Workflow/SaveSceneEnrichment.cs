@@ -195,7 +195,7 @@ internal sealed class SaveSceneEnrichment(
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    SceneTracker = x.StoryTracker!
+                    SceneTracker = x.SceneTracker!
                 });
                 character.CharacterMemories.AddRange(memories);
                 character.CharacterRelationships.AddRange(relationships);
@@ -235,7 +235,7 @@ internal sealed class SaveSceneEnrichment(
                     Content = x.Content,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    SceneTracker = x.StoryTracker!
+                    SceneTracker = x.SceneTracker!
                 }).ToList();
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)

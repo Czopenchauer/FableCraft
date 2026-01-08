@@ -12,7 +12,7 @@ internal sealed class SimulationPlannerInput
     /// <summary>
     /// Current scene tracker with time, location, and characters present.
     /// </summary>
-    public required SceneTracker StoryTracker { get; init; }
+    public required SceneTracker SceneTracker { get; init; }
 
     /// <summary>
     /// All arc_important and significant characters.

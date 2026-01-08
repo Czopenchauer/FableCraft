@@ -133,13 +133,13 @@ export interface NarrativeDirectorOutput {
 }
 
 export interface TrackerDto {
-  story: StoryTracker;
+  story: SceneTracker;
   mainCharacter: MainCharacterTrackerDto;
   charactersOnScene: string[];
   characters: CharacterStateDto[];
 }
 
-export interface StoryTracker {
+export interface SceneTracker {
   [key: string]: any;
 }
 

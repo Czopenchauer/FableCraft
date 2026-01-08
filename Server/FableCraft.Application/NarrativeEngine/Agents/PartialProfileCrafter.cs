@@ -39,7 +39,7 @@ internal sealed class PartialProfileCrafter(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.CurrentStoryTracker(context)}
+                             {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.WorldSettings(context.PromptPath)}
 

@@ -540,7 +540,7 @@ internal sealed class SceneGenerationOrchestrator(
                     .Select(x => new CharacterSceneContext
                     {
                         Content = x.Content,
-                        StoryTracker = x.SceneTracker,
+                        SceneTracker = x.SceneTracker,
                         SequenceNumber = x.SequenceNumber
                     })
                     .ToList(),
@@ -579,7 +579,7 @@ internal sealed class SceneGenerationOrchestrator(
                     .Select(x => new CharacterSceneContext
                     {
                         Content = x.Content,
-                        StoryTracker = x.SceneTracker,
+                        SceneTracker = x.SceneTracker,
                         SequenceNumber = x.SequenceNumber
                     })
                     .ToList(),
@@ -627,7 +627,7 @@ internal sealed class SceneGenerationOrchestrator(
                     context.NewItems = null;
                     break;
 
-                case nameof(EnrichmentAgent.StoryTracker):
+                case nameof(EnrichmentAgent.SceneTracker):
                     context.NewTracker?.Scene = null;
                     break;
                 case nameof(EnrichmentAgent.MainCharacterTracker):
@@ -833,7 +833,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext
                     {
                         Content = y.Content,
-                        StoryTracker = y.SceneTracker,
+                        SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber
                     })
                     .ToList(),
@@ -893,7 +893,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SceneRewrites = x.CharacterSceneRewrites.Select(y => new CharacterSceneContext()
                     {
                         Content = y.Content,
-                        StoryTracker = y.SceneTracker,
+                        SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber
                     })
                     .ToList(),

@@ -194,7 +194,7 @@ internal sealed class CharacterSceneContext
 
     public required int SequenceNumber { get; set; }
 
-    public required SceneTracker? StoryTracker { get; set; }
+    public required SceneTracker? SceneTracker { get; set; }
 }
 
 internal sealed class SceneContext

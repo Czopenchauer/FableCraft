@@ -32,28 +32,28 @@ internal static class PromptSections
         return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
     }
 
-    public static string StoryTracker(GenerationContext context, SceneTracker sceneTracker)
+    public static string SceneTracker(GenerationContext context, SceneTracker sceneTracker)
     {
         var previousTime = context.LatestTracker()?.Scene;
         return $"""
                 Current Time, Location and general Scene information:
-                <story_tracker>
+                <scene_tracker>
                 Time: {sceneTracker.Time}
                 Location: {sceneTracker.Location}
                 Weather: {sceneTracker.Weather}
-                </story_tracker>
+                </scene_tracker>
 
                 Previous time: {previousTime?.Time}
                 """;
     }
 
-    public static string CurrentStoryTracker(GenerationContext context)
+    public static string CurrentSceneTracker(GenerationContext context)
     {
         return context.LatestTracker()?.Scene != null
             ? $"""
-               <current_story_tracker>
+               <current_scene_tracker>
                {context.LatestTracker()?.Scene.ToJsonString(GetJsonOptions())}
-               </current_story_tracker>
+               </current_scene_tracker>
                """
             : string.Empty;
     }
@@ -250,8 +250,8 @@ internal static class PromptSections
                 .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
-                              TIME: {s.StoryTracker?.Time}
-                              Location: {s.StoryTracker?.Location}
+                              TIME: {s.SceneTracker?.Time}
+                              Location: {s.SceneTracker?.Location}
 
                               {s.Content}
                               """));
@@ -458,7 +458,7 @@ internal static class PromptSections
                 """;
     }
 
-    public static string PreviousStoryTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = true)
+    public static string PreviousSceneTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = true)
     {
         JsonSerializerOptions options = GetJsonOptions(ignoreNull);
         var formatted = string.Join("\n\n",
@@ -468,10 +468,10 @@ internal static class PromptSections
                 .Select(s => s.Metadata.Tracker?.Scene.ToJsonString(options)));
 
         return $"""
-                Here are the story trackers from previous scene. Update their information based on the current scene:
-                <previous_story_trackers>
+                Here are the scene trackers from previous scene. Update their information based on the current scene:
+                <previous_scene_trackers>
                 {formatted}
-                </previous_story_trackers>
+                </previous_scene_trackers>
                 """;
     }
 

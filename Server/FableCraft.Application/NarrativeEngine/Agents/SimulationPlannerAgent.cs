@@ -102,7 +102,7 @@ internal sealed class SimulationPlannerAgent(
             .FirstOrDefault()?.Metadata.ChroniclerState;
         return new SimulationPlannerInput
         {
-            StoryTracker = sceneTracker,
+            SceneTracker = sceneTracker,
             CharacterRoster = roster,
             WorldEvents = previousState?.StoryState.WorldMomentum,
             PendingMcInteractions = pendingMcInteractions,
@@ -171,10 +171,10 @@ internal sealed class SimulationPlannerAgent(
             $"""
              ### Story Tracker
              <story_tracker>
-             Time: {input.StoryTracker.Time}
-             Location: {input.StoryTracker.Location}
-             Weather: {input.StoryTracker.Weather}
-             Characters Present: {string.Join(", ", input.StoryTracker.CharactersPresent ?? [])}
+             Time: {input.SceneTracker.Time}
+             Location: {input.SceneTracker.Location}
+             Weather: {input.SceneTracker.Weather}
+             Characters Present: {string.Join(", ", input.SceneTracker.CharactersPresent ?? [])}
              </story_tracker>
              """,
             $"""

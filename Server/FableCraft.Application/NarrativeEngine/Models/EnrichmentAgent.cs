@@ -12,7 +12,7 @@ public enum EnrichmentAgent
     ItemCrafter,
 
     // Tracker agents
-    StoryTracker,
+    SceneTracker,
     MainCharacterTracker,
 
     // All updates for side characters, state, tracker are treated atomically. They cannot be partially regenerated.

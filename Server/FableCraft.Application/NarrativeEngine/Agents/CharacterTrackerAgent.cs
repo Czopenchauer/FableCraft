@@ -41,7 +41,7 @@ internal sealed class CharacterTrackerAgent(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(generationContext.PromptPath)}
 
-                             {PromptSections.StoryTracker(generationContext, sceneTrackerResult)}
+                             {PromptSections.SceneTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 

@@ -225,10 +225,10 @@ internal sealed class CharacterSimulationAgent(
         {
             sb.AppendLine("---");
             sb.AppendLine($"**Scene {scene.SequenceNumber}**");
-            if (scene.StoryTracker != null)
+            if (scene.SceneTracker != null)
             {
-                sb.AppendLine($"Time: {scene.StoryTracker.Time}");
-                sb.AppendLine($"Location: {scene.StoryTracker.Location}");
+                sb.AppendLine($"Time: {scene.SceneTracker.Time}");
+                sb.AppendLine($"Location: {scene.SceneTracker.Location}");
             }
 
             sb.AppendLine();
