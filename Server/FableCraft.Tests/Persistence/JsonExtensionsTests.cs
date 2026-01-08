@@ -823,6 +823,27 @@ public class JsonExtensionsTests
         await Assert.That(result.Name).IsEqualTo("Test Character");
     }
 
+    [Test]
+    public async Task PatchWith_ArrayItemByIdentifier_NullValue_RemovesItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithSkills();
+        var updates = new Dictionary<string, object>
+        {
+            ["Skills[Reality Manipulation]"] = null!
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Item should be removed
+        await Assert.That(result.Skills!.Count).IsEqualTo(1);
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Reality Manipulation")).IsFalse();
+
+        // Assert - Other items preserved
+        await Assert.That(result.Skills!.Any(s => s.SkillName == "Consciousness Analysis")).IsTrue();
+    }
+
     #endregion
 
     #region Nested Path with Array Access Tests

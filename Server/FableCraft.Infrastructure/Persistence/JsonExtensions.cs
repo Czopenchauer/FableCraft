@@ -72,15 +72,20 @@ public static partial class JsonExtensions
             var arrayNode = current[arrayProperty] as JsonArray
                 ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array");
 
-            var valueNode = value is null ? null : JsonSerializer.SerializeToNode(value, JsonSerializerOptions);
-
             if (TryFindArrayItemByIdentifier(arrayNode, identifier, out var itemIndex))
             {
-                arrayNode[itemIndex] = valueNode;
+                if (value is null)
+                {
+                    arrayNode.RemoveAt(itemIndex);
+                }
+                else
+                {
+                    arrayNode[itemIndex] = JsonSerializer.SerializeToNode(value, JsonSerializerOptions);
+                }
             }
-            else
+            else if (value is not null)
             {
-                arrayNode.Add(valueNode);
+                arrayNode.Add(JsonSerializer.SerializeToNode(value, JsonSerializerOptions));
             }
         }
         else if (current is JsonObject jsonObject)
