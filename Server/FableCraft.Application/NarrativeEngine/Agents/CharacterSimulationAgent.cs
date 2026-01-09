@@ -152,15 +152,10 @@ internal sealed class CharacterSimulationAgent(
 
     private static string ExtractCurrentState(CharacterContext character)
     {
-        // Try to extract emotional_landscape or current_state from CharacterState extension data
-        if (character.CharacterState.ExtensionData?.TryGetValue("emotional_landscape", out var emotionalLandscape) == true)
+        // Try to extract psychology section from CharacterState extension data (new schema)
+        if (character.CharacterState.ExtensionData?.TryGetValue("psychology", out var psychology) == true)
         {
-            return emotionalLandscape.ToJsonString();
-        }
-
-        if (character.CharacterState.ExtensionData?.TryGetValue("current_state", out var currentState) == true)
-        {
-            return currentState.ToJsonString();
+            return psychology.ToJsonString();
         }
 
         return "Current psychological state not explicitly tracked.";

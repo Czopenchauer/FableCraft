@@ -65,7 +65,7 @@ public class SceneGenerationOutput
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                         {
                             CharacterId = x.CharacterId,
-                            Name = x.CharacterStats.CharacterIdentity.FullName!,
+                            Name = x.CharacterStats.CharacterIdentity.Name!,
                             Description = x.Description,
                             State = x.CharacterStats,
                             Tracker = x.Tracker
@@ -108,7 +108,7 @@ public class SceneEnrichmentOutput
                 Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                     {
                         CharacterId = x.CharacterId,
-                        Name = x.CharacterStats.CharacterIdentity.FullName!,
+                        Name = x.CharacterStats.CharacterIdentity.Name!,
                         Description = x.Description,
                         State = x.CharacterStats,
                         Tracker = x.Tracker
@@ -482,7 +482,7 @@ internal sealed class SceneGenerationOrchestrator(
             CharacterUpdates = new ConcurrentQueue<CharacterContext>(scene.CharacterStates.Where(c => c.SequenceNumber != 0).Select(cs => new CharacterContext
             {
                 CharacterId = cs.CharacterId,
-                Name = cs.CharacterStats.CharacterIdentity.FullName!,
+                Name = cs.CharacterStats.CharacterIdentity.Name!,
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
@@ -521,7 +521,7 @@ internal sealed class SceneGenerationOrchestrator(
             NewCharacters = scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
             {
                 CharacterId = cs.CharacterId,
-                Name = cs.CharacterStats.CharacterIdentity.FullName!,
+                Name = cs.CharacterStats.CharacterIdentity.Name!,
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,

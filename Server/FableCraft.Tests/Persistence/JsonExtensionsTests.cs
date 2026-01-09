@@ -14,17 +14,17 @@ public class JsonExtensionsTests
         [JsonPropertyName("character_identity")]
         public required CharacterIdentity CharacterIdentity { get; set; }
 
-        [JsonPropertyName("emotional_landscape")]
-        public EmotionalLandscape? EmotionalLandscape { get; set; }
+        [JsonPropertyName("psychology")]
+        public Psychology? Psychology { get; set; }
 
-        [JsonPropertyName("goals_and_motivations")]
-        public GoalsAndMotivations? GoalsAndMotivations { get; set; }
+        [JsonPropertyName("motivations")]
+        public Motivations? Motivations { get; set; }
 
-        [JsonPropertyName("behavioral_tendencies")]
-        public BehavioralTendencies? BehavioralTendencies { get; set; }
+        [JsonPropertyName("behavioral_defaults")]
+        public BehavioralDefaults? BehavioralDefaults { get; set; }
 
-        [JsonPropertyName("character_arc")]
-        public CharacterArc? CharacterArc { get; set; }
+        [JsonPropertyName("in_development")]
+        public InDevelopment? InDevelopment { get; set; }
 
         [JsonExtensionData]
         public IDictionary<string, object>? ExtensionData { get; set; }
@@ -39,64 +39,64 @@ public class JsonExtensionsTests
         public string? Role { get; set; }
     }
 
-    private sealed class EmotionalLandscape
+    private sealed class Psychology
     {
-        [JsonPropertyName("current_state")]
-        public EmotionalState? CurrentState { get; set; }
+        [JsonPropertyName("emotional_baseline")]
+        public string? EmotionalBaseline { get; set; }
 
-        [JsonPropertyName("baseline")]
-        public string? Baseline { get; set; }
+        [JsonPropertyName("triggers")]
+        public Triggers? Triggers { get; set; }
     }
 
-    private sealed class EmotionalState
+    private sealed class Triggers
     {
-        [JsonPropertyName("primary_emotion")]
-        public string? PrimaryEmotion { get; set; }
+        [JsonPropertyName("primary_trigger")]
+        public string? PrimaryTrigger { get; set; }
 
-        [JsonPropertyName("secondary_emotions")]
-        public List<string>? SecondaryEmotions { get; set; }
+        [JsonPropertyName("secondary_triggers")]
+        public List<string>? SecondaryTriggers { get; set; }
 
         [JsonPropertyName("intensity")]
         public double Intensity { get; set; }
 
-        [JsonPropertyName("cause")]
-        public string? Cause { get; set; }
+        [JsonPropertyName("response")]
+        public string? Response { get; set; }
     }
 
-    private sealed class GoalsAndMotivations
+    private sealed class Motivations
     {
-        [JsonPropertyName("primary_goal")]
-        public string? PrimaryGoal { get; set; }
+        [JsonPropertyName("needs")]
+        public string? Needs { get; set; }
 
-        [JsonPropertyName("immediate_intention")]
-        public string? ImmediateIntention { get; set; }
+        [JsonPropertyName("goals_current")]
+        public string? GoalsCurrent { get; set; }
     }
 
-    private sealed class BehavioralTendencies
+    private sealed class BehavioralDefaults
     {
-        [JsonPropertyName("decision_style")]
-        public string? DecisionStyle { get; set; }
+        [JsonPropertyName("conflict_style")]
+        public string? ConflictStyle { get; set; }
 
-        [JsonPropertyName("current_plan")]
-        public CurrentPlan? CurrentPlan { get; set; }
+        [JsonPropertyName("routine")]
+        public Routine? Routine { get; set; }
     }
 
-    private sealed class CurrentPlan
+    private sealed class Routine
     {
-        [JsonPropertyName("intention")]
-        public string? Intention { get; set; }
+        [JsonPropertyName("daily_pattern")]
+        public string? DailyPattern { get; set; }
 
-        [JsonPropertyName("steps")]
-        public List<string>? Steps { get; set; }
+        [JsonPropertyName("activities")]
+        public List<string>? Activities { get; set; }
     }
 
-    private sealed class CharacterArc
+    private sealed class InDevelopment
     {
-        [JsonPropertyName("current_stage")]
-        public string? CurrentStage { get; set; }
+        [JsonPropertyName("aspect")]
+        public string? Aspect { get; set; }
 
-        [JsonPropertyName("progress_percentage")]
-        public int ProgressPercentage { get; set; }
+        [JsonPropertyName("progress")]
+        public int Progress { get; set; }
     }
 
     private static CharacterStats CreateTestCharacter() => new()
@@ -106,35 +106,35 @@ public class JsonExtensionsTests
             Name = "Viktor Volkov",
             Role = "Antagonist"
         },
-        EmotionalLandscape = new EmotionalLandscape
+        Psychology = new Psychology
         {
-            CurrentState = new EmotionalState
+            Triggers = new Triggers
             {
-                PrimaryEmotion = "calm",
-                SecondaryEmotions = ["calculating"],
+                PrimaryTrigger = "calm",
+                SecondaryTriggers = ["calculating"],
                 Intensity = 0.3,
-                Cause = "routine business"
+                Response = "routine business"
             },
-            Baseline = "stoic"
+            EmotionalBaseline = "stoic"
         },
-        GoalsAndMotivations = new GoalsAndMotivations
+        Motivations = new Motivations
         {
-            PrimaryGoal = "Expand territory",
-            ImmediateIntention = "Monitor competitors"
+            Needs = "Expand territory",
+            GoalsCurrent = "Monitor competitors"
         },
-        BehavioralTendencies = new BehavioralTendencies
+        BehavioralDefaults = new BehavioralDefaults
         {
-            DecisionStyle = "methodical",
-            CurrentPlan = new CurrentPlan
+            ConflictStyle = "methodical",
+            Routine = new Routine
             {
-                Intention = "gather information",
-                Steps = ["observe", "report", "plan"]
+                DailyPattern = "gather information",
+                Activities = ["observe", "report", "plan"]
             }
         },
-        CharacterArc = new CharacterArc
+        InDevelopment = new InDevelopment
         {
-            CurrentStage = "rising_action",
-            ProgressPercentage = 25
+            Aspect = "rising_action",
+            Progress = 25
         }
     };
 
@@ -154,7 +154,7 @@ public class JsonExtensionsTests
 
         // Assert
         await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("calm");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("calm");
     }
 
     [Test]
@@ -179,7 +179,7 @@ public class JsonExtensionsTests
         await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Ivan Petrov");
         await Assert.That(result.CharacterIdentity.Role).IsEqualTo("Informant");
         // Other properties should remain unchanged
-        await Assert.That(result.EmotionalLandscape!.Baseline).IsEqualTo("stoic");
+        await Assert.That(result.Psychology!.EmotionalBaseline).IsEqualTo("stoic");
     }
 
     [Test]
@@ -187,27 +187,27 @@ public class JsonExtensionsTests
     {
         // Arrange
         var original = CreateTestCharacter();
-        var newCurrentState = new EmotionalState
+        var newCurrentState = new Triggers
         {
-            PrimaryEmotion = "anxious",
-            SecondaryEmotions = ["calculating", "defensive"],
+            PrimaryTrigger = "anxious",
+            SecondaryTriggers = ["calculating", "defensive"],
             Intensity = 0.7,
-            Cause = "protagonist getting too close"
+            Response = "protagonist getting too close"
         };
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = newCurrentState
+            ["psychology.triggers"] = newCurrentState
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("anxious");
-        await Assert.That(result.EmotionalLandscape.CurrentState.Intensity).IsEqualTo(0.7);
-        await Assert.That(result.EmotionalLandscape.CurrentState.SecondaryEmotions).Contains("defensive");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("anxious");
+        await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.7);
+        await Assert.That(result.Psychology.Triggers.SecondaryTriggers).Contains("defensive");
         // Sibling properties should remain unchanged
-        await Assert.That(result.EmotionalLandscape.Baseline).IsEqualTo("stoic");
+        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("stoic");
     }
 
     [Test]
@@ -215,24 +215,24 @@ public class JsonExtensionsTests
     {
         // Arrange
         var original = CreateTestCharacter();
-        var newPlan = new CurrentPlan
+        var newPlan = new Routine
         {
-            Intention = "assess damage",
-            Steps = ["talk to dockmaster", "check records", "prepare alibi"]
+            DailyPattern = "assess damage",
+            Activities = ["talk to dockmaster", "check records", "prepare alibi"]
         };
         var updates = new Dictionary<string, object>
         {
-            ["behavioral_tendencies.current_plan"] = newPlan
+            ["behavioral_defaults.routine"] = newPlan
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan!.Intention).IsEqualTo("assess damage");
-        await Assert.That(result.BehavioralTendencies.CurrentPlan.Steps).Contains("prepare alibi");
+        await Assert.That(result.BehavioralDefaults!.Routine!.DailyPattern).IsEqualTo("assess damage");
+        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("prepare alibi");
         // Sibling property should remain unchanged
-        await Assert.That(result.BehavioralTendencies.DecisionStyle).IsEqualTo("methodical");
+        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
     }
 
     #endregion
@@ -246,18 +246,18 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = new EmotionalState
+            ["psychology.triggers"] = new Triggers
             {
-                PrimaryEmotion = "anxious",
-                SecondaryEmotions = ["calculating", "defensive"],
+                PrimaryTrigger = "anxious",
+                SecondaryTriggers = ["calculating", "defensive"],
                 Intensity = 0.7,
-                Cause = "protagonist getting too close"
+                Response = "protagonist getting too close"
             },
-            ["goals_and_motivations.immediate_intention"] = "gather intelligence before next confrontation",
-            ["behavioral_tendencies.current_plan"] = new CurrentPlan
+            ["motivations.goals_current"] = "gather intelligence before next confrontation",
+            ["behavioral_defaults.routine"] = new Routine
             {
-                Intention = "assess damage",
-                Steps = ["talk to dockmaster", "check records", "prepare alibi"]
+                DailyPattern = "assess damage",
+                Activities = ["talk to dockmaster", "check records", "prepare alibi"]
             }
         };
 
@@ -265,15 +265,15 @@ public class JsonExtensionsTests
         var result = original.PatchWith(updates);
 
         // Assert - All updates applied
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("anxious");
-        await Assert.That(result.GoalsAndMotivations!.ImmediateIntention).IsEqualTo("gather intelligence before next confrontation");
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan!.Intention).IsEqualTo("assess damage");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("anxious");
+        await Assert.That(result.Motivations!.GoalsCurrent).IsEqualTo("gather intelligence before next confrontation");
+        await Assert.That(result.BehavioralDefaults!.Routine!.DailyPattern).IsEqualTo("assess damage");
 
         // Assert - Unchanged properties preserved
         await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
-        await Assert.That(result.EmotionalLandscape.Baseline).IsEqualTo("stoic");
-        await Assert.That(result.GoalsAndMotivations.PrimaryGoal).IsEqualTo("Expand territory");
-        await Assert.That(result.BehavioralTendencies.DecisionStyle).IsEqualTo("methodical");
+        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("stoic");
+        await Assert.That(result.Motivations.Needs).IsEqualTo("Expand territory");
+        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
     }
 
     [Test]
@@ -283,22 +283,22 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = new EmotionalState
+            ["psychology.triggers"] = new Triggers
             {
-                PrimaryEmotion = "angry",
-                SecondaryEmotions = ["frustrated"],
+                PrimaryTrigger = "angry",
+                SecondaryTriggers = ["frustrated"],
                 Intensity = 0.8,
-                Cause = "betrayal discovered"
+                Response = "betrayal discovered"
             },
-            ["emotional_landscape.baseline"] = "volatile"
+            ["psychology.emotional_baseline"] = "volatile"
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert - Both emotional_landscape children updated
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("angry");
-        await Assert.That(result.EmotionalLandscape.Baseline).IsEqualTo("volatile");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("angry");
+        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("volatile");
     }
 
     #endregion
@@ -312,15 +312,15 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["goals_and_motivations.immediate_intention"] = "flee the scene"
+            ["motivations.goals_current"] = "flee the scene"
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.GoalsAndMotivations!.ImmediateIntention).IsEqualTo("flee the scene");
-        await Assert.That(result.GoalsAndMotivations.PrimaryGoal).IsEqualTo("Expand territory");
+        await Assert.That(result.Motivations!.GoalsCurrent).IsEqualTo("flee the scene");
+        await Assert.That(result.Motivations.Needs).IsEqualTo("Expand territory");
     }
 
     [Test]
@@ -330,15 +330,15 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["character_arc.progress_percentage"] = 75
+            ["in_development.progress"] = 75
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.CharacterArc!.ProgressPercentage).IsEqualTo(75);
-        await Assert.That(result.CharacterArc.CurrentStage).IsEqualTo("rising_action");
+        await Assert.That(result.InDevelopment!.Progress).IsEqualTo(75);
+        await Assert.That(result.InDevelopment.Aspect).IsEqualTo("rising_action");
     }
 
     [Test]
@@ -346,23 +346,23 @@ public class JsonExtensionsTests
     {
         // Arrange
         var original = CreateTestCharacter();
-        var newState = new EmotionalState
+        var newState = new Triggers
         {
-            PrimaryEmotion = "calm",
-            SecondaryEmotions = [],
+            PrimaryTrigger = "calm",
+            SecondaryTriggers = [],
             Intensity = 0.95,
-            Cause = "meditation"
+            Response = "meditation"
         };
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = newState
+            ["psychology.triggers"] = newState
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.Intensity).IsEqualTo(0.95);
+        await Assert.That(result.Psychology!.Triggers!.Intensity).IsEqualTo(0.95);
     }
 
     #endregion
@@ -374,22 +374,22 @@ public class JsonExtensionsTests
     {
         // Arrange
         var original = CreateTestCharacter();
-        var newPlan = new CurrentPlan
+        var newPlan = new Routine
         {
-            Intention = "escape",
-            Steps = ["disable alarm", "exit through back", "meet contact", "leave city"]
+            DailyPattern = "escape",
+            Activities = ["disable alarm", "exit through back", "meet contact", "leave city"]
         };
         var updates = new Dictionary<string, object>
         {
-            ["behavioral_tendencies.current_plan"] = newPlan
+            ["behavioral_defaults.routine"] = newPlan
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan!.Steps!.Count).IsEqualTo(4);
-        await Assert.That(result.BehavioralTendencies.CurrentPlan.Steps).Contains("leave city");
+        await Assert.That(result.BehavioralDefaults!.Routine!.Activities!.Count).IsEqualTo(4);
+        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("leave city");
     }
 
     #endregion
@@ -403,15 +403,15 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["behavioral_tendencies.current_plan"] = null!
+            ["behavioral_defaults.routine"] = null!
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan).IsNull();
-        await Assert.That(result.BehavioralTendencies.DecisionStyle).IsEqualTo("methodical");
+        await Assert.That(result.BehavioralDefaults!.Routine).IsNull();
+        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
     }
 
     [Test]
@@ -421,21 +421,21 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updates = new Dictionary<string, object>
         {
-            ["character_arc.current_stage"] = "climax"
+            ["in_development.aspect"] = "climax"
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert - Updated property changed
-        await Assert.That(result.CharacterArc!.CurrentStage).IsEqualTo("climax");
+        await Assert.That(result.InDevelopment!.Aspect).IsEqualTo("climax");
 
         // Assert - All other nested structures preserved completely
         await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("calm");
-        await Assert.That(result.EmotionalLandscape.CurrentState.SecondaryEmotions).Contains("calculating");
-        await Assert.That(result.GoalsAndMotivations!.PrimaryGoal).IsEqualTo("Expand territory");
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan!.Steps).Contains("observe");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("calm");
+        await Assert.That(result.Psychology.Triggers.SecondaryTriggers).Contains("calculating");
+        await Assert.That(result.Motivations!.Needs).IsEqualTo("Expand territory");
+        await Assert.That(result.BehavioralDefaults!.Routine!.Activities).Contains("observe");
     }
 
     [Test]
@@ -445,24 +445,24 @@ public class JsonExtensionsTests
         var original = CreateTestCharacter();
         var updateJson = """
         {
-            "primary_emotion": "terrified",
-            "secondary_emotions": ["panicked"],
+            "primary_trigger": "terrified",
+            "secondary_triggers": ["panicked"],
             "intensity": 0.9,
-            "cause": "ambush"
+            "response": "ambush"
         }
         """;
         var jsonElement = JsonSerializer.Deserialize<JsonElement>(updateJson);
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = jsonElement
+            ["psychology.triggers"] = jsonElement
         };
 
         // Act
         var result = original.PatchWith(updates);
 
         // Assert
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("terrified");
-        await Assert.That(result.EmotionalLandscape.CurrentState.Intensity).IsEqualTo(0.9);
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("terrified");
+        await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.9);
     }
 
     #endregion
@@ -478,18 +478,18 @@ public class JsonExtensionsTests
         // Simulates CharacterReflectionAgent output from ADR
         var updates = new Dictionary<string, object>
         {
-            ["emotional_landscape.current_state"] = new EmotionalState
+            ["psychology.triggers"] = new Triggers
             {
-                PrimaryEmotion = "anxious",
-                SecondaryEmotions = ["calculating", "defensive"],
+                PrimaryTrigger = "anxious",
+                SecondaryTriggers = ["calculating", "defensive"],
                 Intensity = 0.7,
-                Cause = "protagonist getting too close"
+                Response = "protagonist getting too close"
             },
-            ["goals_and_motivations.immediate_intention"] = "gather intelligence before next confrontation",
-            ["behavioral_tendencies.current_plan"] = new CurrentPlan
+            ["motivations.goals_current"] = "gather intelligence before next confrontation",
+            ["behavioral_defaults.routine"] = new Routine
             {
-                Intention = "assess damage",
-                Steps = ["talk to dockmaster", "check records", "prepare alibi"]
+                DailyPattern = "assess damage",
+                Activities = ["talk to dockmaster", "check records", "prepare alibi"]
             }
         };
 
@@ -497,25 +497,25 @@ public class JsonExtensionsTests
         var result = original.PatchWith(updates);
 
         // Assert - Volatile state updated as per ADR
-        await Assert.That(result.EmotionalLandscape!.CurrentState!.PrimaryEmotion).IsEqualTo("anxious");
-        await Assert.That(result.EmotionalLandscape.CurrentState.SecondaryEmotions).Contains("defensive");
-        await Assert.That(result.EmotionalLandscape.CurrentState.Intensity).IsEqualTo(0.7);
-        await Assert.That(result.EmotionalLandscape.CurrentState.Cause).IsEqualTo("protagonist getting too close");
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("anxious");
+        await Assert.That(result.Psychology.Triggers.SecondaryTriggers).Contains("defensive");
+        await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.7);
+        await Assert.That(result.Psychology.Triggers.Response).IsEqualTo("protagonist getting too close");
 
-        await Assert.That(result.GoalsAndMotivations!.ImmediateIntention)
+        await Assert.That(result.Motivations!.GoalsCurrent)
             .IsEqualTo("gather intelligence before next confrontation");
 
-        await Assert.That(result.BehavioralTendencies!.CurrentPlan!.Intention).IsEqualTo("assess damage");
-        await Assert.That(result.BehavioralTendencies.CurrentPlan.Steps).Contains("prepare alibi");
+        await Assert.That(result.BehavioralDefaults!.Routine!.DailyPattern).IsEqualTo("assess damage");
+        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("prepare alibi");
 
         // Assert - Core profile (stable) unchanged as per ADR
         await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
         await Assert.That(result.CharacterIdentity.Role).IsEqualTo("Antagonist");
 
         // Assert - Sibling properties preserved
-        await Assert.That(result.EmotionalLandscape.Baseline).IsEqualTo("stoic");
-        await Assert.That(result.GoalsAndMotivations.PrimaryGoal).IsEqualTo("Expand territory");
-        await Assert.That(result.BehavioralTendencies.DecisionStyle).IsEqualTo("methodical");
+        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("stoic");
+        await Assert.That(result.Motivations.Needs).IsEqualTo("Expand territory");
+        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
     }
 
     #endregion

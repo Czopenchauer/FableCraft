@@ -22,7 +22,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 /// - scene_rewrite: Full character-POV prose -> stored in KG
 /// - memory: Summary, salience, entities, emotional_tone -> stored in DB
 /// - relationship_updates: Per-character relationship state -> stored in DB
-/// - emotional_state, goals_and_motivations, current_plan -> stored in CharacterStats
+/// - psychology, motivations, in_development -> stored in CharacterStats
 /// </summary>
 internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,

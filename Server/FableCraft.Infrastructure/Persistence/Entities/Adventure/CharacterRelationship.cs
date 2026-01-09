@@ -40,7 +40,7 @@ public sealed class CharacterRelationship : IEntity
     public string? Dynamic { get; set; }
 
     /// <summary>
-    /// JSON string containing the full relationship data (feelings, trust level, history, etc.)
+    /// JSON containing the full relationship data: foundation, stance, trust, desire, intimacy, power, dynamic, unspoken, developing.
     /// </summary>
     public required IDictionary<string, object> Data { get; set; }
 }

@@ -188,6 +188,6 @@ internal sealed class SimulationModeratorAgent(
 
     private static string ExtractPrimaryGoal(CharacterContext character)
     {
-        return character.CharacterState.Goals.ToJsonString();
+        return character.CharacterState.Motivations.ToJsonString();
     }
 }

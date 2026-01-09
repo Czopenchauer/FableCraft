@@ -43,7 +43,7 @@ internal sealed class StandaloneSimulationOutput
     public List<SimulationRelationshipUpdate>? RelationshipUpdates { get; init; }
 
     /// <summary>
-    /// Updates to the character's profile/state (e.g., emotional_landscape, goals).
+    /// Updates to the character's profile/state (e.g., psychology, motivations).
     /// </summary>
     [JsonPropertyName("profile_updates")]
     public Dictionary<string, object>? ProfileUpdates { get; init; }

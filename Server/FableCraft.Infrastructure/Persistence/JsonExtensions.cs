@@ -29,7 +29,7 @@ public static partial class JsonExtensions
 
     /// <summary>
     /// Patches an object with updates specified using dot-notation paths.
-    /// Each key is a path like "emotional_landscape.current_state" and the value
+    /// Each key is a path like "psychology.emotional_baseline" and the value
     /// is the complete object to replace at that path.
     /// Supports array item access by identifier e.g.: "Skills[Consciousness Analysis]" or
     /// "MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"

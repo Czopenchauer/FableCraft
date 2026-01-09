@@ -81,7 +81,7 @@ internal sealed class CharacterCrafter : BaseAgent
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
-            Name = result.characterStats.CharacterIdentity.FullName!,
+            Name = result.characterStats.CharacterIdentity.Name!,
             CharacterMemories = new List<MemoryContext>(),
             Relationships = result.relationships.Select(r => new CharacterRelationshipContext
                 {

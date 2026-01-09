@@ -119,7 +119,7 @@ internal sealed class SimulationPlannerAgent(
                 Importance = c.Importance.Value,
                 Location = c.CharacterTracker?.Location ?? "unknown",
                 LastSimulated = c.SimulationMetadata?.LastSimulated,
-                GoalsSummary = c.CharacterState.Goals.ToJsonString(),
+                GoalsSummary = c.CharacterState.Motivations.ToJsonString(),
                 KeyRelationships = c.Relationships?.Select(r => r.TargetCharacterName).ToArray(),
                 RelationshipNotes = BuildRelationshipNotes(c),
                 RoutineSummary = c.CharacterState.Routine.ToJsonString()

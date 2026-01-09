@@ -55,8 +55,8 @@ public class CharacterStats
     [JsonPropertyName("character_identity")]
     public required CharacterIdentity CharacterIdentity { get; set; }
 
-    [JsonPropertyName("goals_and_motivations")]
-    public required object? Goals { get; set; }
+    [JsonPropertyName("motivations")]
+    public required object? Motivations { get; set; }
 
     [JsonPropertyName("routine")]
     public required object? Routine { get; set; }
@@ -67,8 +67,8 @@ public class CharacterStats
 
 public class CharacterIdentity
 {
-    [JsonPropertyName("full_name")]
-    public string? FullName { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 
     [JsonExtensionData]
     public IDictionary<string, object>? ExtensionData { get; set; }

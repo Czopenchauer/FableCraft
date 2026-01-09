@@ -27,7 +27,7 @@ internal sealed class CharacterRelationshipPlugin : CharacterPluginBase
 
     [KernelFunction("get_relationship")]
     [Description(
-        "Get a character's current view of their relationship with another character. Returns the relationship data including trust, affection, impression, and other details.")]
+        "Get a character's current view of their relationship with another character. Returns the relationship data including stance, trust, desire, intimacy, power, dynamic, and unspoken.")]
     public string GetRelationship(
         [Description("The name of the other character (the target of the relationship)")]
         string targetCharacterName)
