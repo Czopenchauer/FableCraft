@@ -33,6 +33,12 @@ internal sealed class SceneTrackerAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
+        string newCharactersSection;
+        lock (context)
+        {
+            newCharactersSection = context.NewCharacters?.Count > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "";
+        }
+
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.PromptPath)}
 
@@ -41,9 +47,9 @@ internal sealed class SceneTrackerAgent(
                              {PromptSections.ExistingCharacters(context.Characters)}
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
-                             
-                             {(context.NewCharacters?.Count > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
-                             
+
+                             {newCharactersSection}
+
                              {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);

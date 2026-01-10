@@ -56,17 +56,48 @@ internal sealed class SaveSceneEnrichment(
             };
         }
 
-        var loreEntities = context.NewLore?.Select(x => new LorebookEntry
-                           {
-                               AdventureId = context.AdventureId,
-                               Description = x.Description,
-                               Title = x.Title,
-                               Category = nameof(LorebookCategory.Lore),
-                               Content = x.ToJsonString(),
-                               ContentType = ContentType.json
-                           }).ToList()
-                           ?? new List<LorebookEntry>();
-        
+        List<LorebookEntry> loreEntities;
+        lock (context)
+        {
+            loreEntities = context.NewLore?.Select(x => new LorebookEntry
+                               {
+                                   AdventureId = context.AdventureId,
+                                   Description = x.Description,
+                                   Title = x.Title,
+                                   Category = nameof(LorebookCategory.Lore),
+                                   Content = x.ToJsonString(),
+                                   ContentType = ContentType.json
+                               }).ToList()
+                               ?? new List<LorebookEntry>();
+
+            var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
+                                     {
+                                         AdventureId = context.AdventureId,
+                                         Title = $"Event at {x.Where}",
+                                         Description = $"[{x.When}] {x.Where}",
+                                         Category = nameof(LorebookCategory.WorldEvent),
+                                         Content = $"""
+                                                    {x.When}: {x.Where}\n\n{x.Event}
+                                                    """,
+                                         ContentType = ContentType.txt
+                                     }).ToList()
+                                     ?? new List<LorebookEntry>();
+
+            var backgroundCharacterEntities = context.NewBackgroundCharacters?.Select(x => new LorebookEntry
+                                              {
+                                                  AdventureId = context.AdventureId,
+                                                  Title = x.Name,
+                                                  Description = x.Description,
+                                                  Category = nameof(LorebookCategory.BackgroundCharacter),
+                                                  Content = x.ToJsonString(),
+                                                  ContentType = ContentType.json
+                                              }).ToList()
+                                              ?? new List<LorebookEntry>();
+
+            loreEntities.AddRange(worldEventEntities);
+            loreEntities.AddRange(backgroundCharacterEntities);
+        }
+
         var chroniclerLore = context.ChroniclerLore?.Select(x => new LorebookEntry
                            {
                                AdventureId = context.AdventureId,
@@ -100,35 +131,9 @@ internal sealed class SaveSceneEnrichment(
                             }).ToList()
                             ?? new List<LorebookEntry>();
 
-        var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
-                                 {
-                                     AdventureId = context.AdventureId,
-                                     Title = $"Event at {x.Where}",
-                                     Description = $"[{x.When}] {x.Where}",
-                                     Category = nameof(LorebookCategory.WorldEvent),
-                                     Content = $"""
-                                                {x.When}: {x.Where}\n\n{x.Event}
-                                                """,
-                                     ContentType = ContentType.txt
-                                 }).ToList()
-                                 ?? new List<LorebookEntry>();
-
-        var backgroundCharacterEntities = context.NewBackgroundCharacters?.Select(x => new LorebookEntry
-                                          {
-                                              AdventureId = context.AdventureId,
-                                              Title = x.Name,
-                                              Description = x.Description,
-                                              Category = nameof(LorebookCategory.BackgroundCharacter),
-                                              Content = x.ToJsonString(),
-                                              ContentType = ContentType.json
-                                          }).ToList()
-                                          ?? new List<LorebookEntry>();
-
         loreEntities.AddRange(chroniclerLore);
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
-        loreEntities.AddRange(worldEventEntities);
-        loreEntities.AddRange(backgroundCharacterEntities);
         scene.Lorebooks = loreEntities;
 
         IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
@@ -165,16 +170,25 @@ internal sealed class SaveSceneEnrichment(
 
     private async static Task UpsertCharacters(GenerationContext context, Scene scene, CancellationToken cancellationToken, ApplicationDbContext dbContext)
     {
-        if (context.CharacterUpdates?.Count > 0)
+        List<CharacterContext> characterUpdates;
+        List<CharacterContext> newCharacters;
+        lock (context)
         {
+            characterUpdates = context.CharacterUpdates?.ToList() ?? [];
+            newCharacters = context.NewCharacters?.ToList() ?? [];
+        }
+
+        if (characterUpdates.Count > 0)
+        {
+            var updateNames = characterUpdates.Select(y => y.Name).ToList();
             var characters = await dbContext
                 .Characters
-                .Where(x => x.AdventureId == context.AdventureId && context.CharacterUpdates.Select(y => y.Name).Contains(x.Name))
+                .Where(x => x.AdventureId == context.AdventureId && updateNames.Contains(x.Name))
                 .ToListAsync(cancellationToken: cancellationToken);
 
             foreach (Character character in characters)
             {
-                var update = context.CharacterUpdates!.Single(x => x.Name == character.Name);
+                var update = characterUpdates.Single(x => x.Name == character.Name);
                 character.CharacterStates.Add(new CharacterState
                 {
                     Description = update.Description,
@@ -215,14 +229,15 @@ internal sealed class SaveSceneEnrichment(
             }
         }
 
-        if (context.NewCharacters.Count > 0)
+        if (newCharacters.Count > 0)
         {
+            var newCharacterNames = newCharacters.Select(y => y.Name).ToList();
             var characters = await dbContext
                 .Characters
-                .Where(x => x.AdventureId == context.AdventureId && context.NewCharacters.Select(y => y.Name).Contains(x.Name))
+                .Where(x => x.AdventureId == context.AdventureId && newCharacterNames.Contains(x.Name))
                 .ToListAsync(cancellationToken: cancellationToken);
 
-            foreach (CharacterContext contextNewCharacter in context.NewCharacters)
+            foreach (CharacterContext contextNewCharacter in newCharacters)
             {
                 var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
                 {
@@ -286,12 +301,15 @@ internal sealed class SaveSceneEnrichment(
 
     private async static Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
     {
-        if (context.CharacterEventsToConsume.IsEmpty)
+        List<Guid> eventIds;
+        lock (context)
         {
-            return;
+            if (context.CharacterEventsToConsume.Count == 0)
+            {
+                return;
+            }
+            eventIds = context.CharacterEventsToConsume.ToList();
         }
-
-        var eventIds = context.CharacterEventsToConsume.ToList();
         if (eventIds.Count == 0)
         {
             return;
@@ -306,12 +324,15 @@ internal sealed class SaveSceneEnrichment(
 
     private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
     {
-        if (context.NewCharacterEvents.IsEmpty)
+        List<CharacterEventToSave> eventsToSave;
+        lock (context)
         {
-            return;
+            if (context.NewCharacterEvents.Count == 0)
+            {
+                return;
+            }
+            eventsToSave = context.NewCharacterEvents.ToList();
         }
-
-        var eventsToSave = context.NewCharacterEvents.ToList();
         if (eventsToSave.Count == 0)
         {
             return;

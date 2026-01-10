@@ -159,11 +159,14 @@ internal sealed class OffscreenInferenceAgent(
                     SimulationMetadata = character.SimulationMetadata
                 };
 
-                context.CharacterUpdates.Enqueue(updatedCharacter);
-
-                foreach (var evt in events)
+                lock (context)
                 {
-                    context.CharacterEventsToConsume.Enqueue(evt.Id);
+                    context.CharacterUpdates.Add(updatedCharacter);
+
+                    foreach (var evt in events)
+                    {
+                        context.CharacterEventsToConsume.Add(evt.Id);
+                    }
                 }
             }
             catch (Exception ex)

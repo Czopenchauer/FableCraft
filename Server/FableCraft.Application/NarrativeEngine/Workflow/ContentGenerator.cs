@@ -50,13 +50,17 @@ internal class ContentGenerator(
                     CharacterContext character;
                     if (x.CharacterId != null)
                     {
-                        character = await characterCrafter.Invoke(context, x, cancellationToken);
-                        x.CharacterId = character.CharacterId;
-                        context.NewCharacters!.Add(character);
+                        character = context.NewCharacters!.Single(y => y.CharacterId == x.CharacterId);
                     }
                     else
                     {
-                        character = context.NewCharacters!.Single(y => y.CharacterId == x.CharacterId);
+                        character = await characterCrafter.Invoke(context, x, cancellationToken);
+                        lock (context)
+                        {
+                            x.CharacterId = character.CharacterId;
+                            context.NewCharacters!.Add(character);
+                            
+                        }
                     }
 
                     if (character.CharacterMemories.Count > 0 && character.SceneRewrites.Count > 0)
@@ -94,7 +98,12 @@ internal class ContentGenerator(
                 }).ToArray());
         }
 
-        if (backgroundCharacterRequests.Count > 0 && !context.NewBackgroundCharacters.IsEmpty)
+        bool hasBackgroundCharacters;
+        lock (context)
+        {
+            hasBackgroundCharacters = context.NewBackgroundCharacters.Count > 0;
+        }
+        if (backgroundCharacterRequests.Count > 0 && hasBackgroundCharacters)
         {
             backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
                 .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
@@ -135,9 +144,12 @@ internal class ContentGenerator(
         if (backgroundCharacterTask != null)
         {
             var backgrounds = await backgroundCharacterTask;
-            foreach (var bg in backgrounds)
+            lock (context)
             {
-                context.NewBackgroundCharacters.Enqueue(bg);
+                foreach (var bg in backgrounds)
+                {
+                    context.NewBackgroundCharacters.Add(bg);
+                }
             }
 
             logger.Information("Created {Count} new background character profiles", backgrounds.Length);
@@ -146,12 +158,17 @@ internal class ContentGenerator(
         if (loreTask != null)
         {
             var lore = await loreTask;
-            foreach (GeneratedLore generatedLore in lore)
+            int loreCount;
+            lock (context)
             {
-                context.NewLore!.Enqueue(generatedLore);
+                foreach (GeneratedLore generatedLore in lore)
+                {
+                    context.NewLore!.Add(generatedLore);
+                }
+                loreCount = context.NewLore!.Count;
             }
 
-            logger.Information("Created {Count} new lore", context.NewLore!.Count);
+            logger.Information("Created {Count} new lore", loreCount);
         }
 
         if (locationTask != null)

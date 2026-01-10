@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -69,17 +68,17 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
-    public ConcurrentBag<CharacterContext> NewCharacters { get; set; } = new();
+    public List<CharacterContext> NewCharacters { get; set; } = [];
 
-    public ConcurrentQueue<CharacterContext> CharacterUpdates { get; set; } = new();
+    public List<CharacterContext> CharacterUpdates { get; set; } = [];
 
     public LocationGenerationResult[]? NewLocations { get; set; }
 
-    public ConcurrentQueue<GeneratedLore> NewLore { get; set; } = [];
+    public List<GeneratedLore> NewLore { get; set; } = [];
 
     public GeneratedItem[]? NewItems { get; set; }
 
-    public ConcurrentQueue<GeneratedPartialProfile> NewBackgroundCharacters { get; set; } = new();
+    public List<GeneratedPartialProfile> NewBackgroundCharacters { get; set; } = [];
 
     public string? NewResolution { get; set; }
 
@@ -107,7 +106,7 @@ internal sealed class GenerationContext
     /// <summary>
     /// World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
     /// </summary>
-    public ConcurrentQueue<WorldEvent> NewWorldEvents { get; set; } = new();
+    public List<WorldEvent> NewWorldEvents { get; set; } = [];
 
     /// <summary>
     /// Chronicler story state to persist in scene metadata.
@@ -123,13 +122,13 @@ internal sealed class GenerationContext
     /// CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
     /// Collected by OffscreenInferenceProcessor after processing events.
     /// </summary>
-    public ConcurrentQueue<Guid> CharacterEventsToConsume { get; set; } = new();
+    public List<Guid> CharacterEventsToConsume { get; set; } = [];
 
     /// <summary>
     /// New CharacterEvents to save in SaveEnrichmentStep.
     /// Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
     /// </summary>
-    public ConcurrentQueue<CharacterEventToSave> NewCharacterEvents { get; set; } = new();
+    public List<CharacterEventToSave> NewCharacterEvents { get; set; } = [];
 }
 
 /// <summary>

@@ -48,8 +48,12 @@ internal sealed class CharacterAgent : BaseAgent
         _generationContext = generationContext;
         _kernelBuilder = await GetKernelBuilder(generationContext);
 
-        var characters = new List<CharacterContext>(generationContext.Characters);
-        characters.AddRange(generationContext.NewCharacters);
+        List<CharacterContext> characters;
+        lock (generationContext)
+        {
+            characters = new List<CharacterContext>(generationContext.Characters);
+            characters.AddRange(generationContext.NewCharacters);
+        }
 
         var promptTemplate = await BuildInstruction(generationContext);
         _chatHistory = characters.ToDictionary(character => character.Name,

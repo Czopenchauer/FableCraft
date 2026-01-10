@@ -19,7 +19,6 @@ public class CreationRequests
 
 public class CharacterRequest
 {
-    [JsonIgnore]
     public Guid? CharacterId { get; set; }
 
     [JsonPropertyName("importance")]

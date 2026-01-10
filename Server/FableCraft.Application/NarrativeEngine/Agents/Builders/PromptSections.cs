@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -283,7 +282,7 @@ internal static class PromptSections
                 """;
     }
 
-    public static string NewCharacters(ConcurrentBag<CharacterContext> characters)
+    public static string NewCharacters(List<CharacterContext> characters)
     {
         if (characters == null || characters.Count == 0) return string.Empty;
 

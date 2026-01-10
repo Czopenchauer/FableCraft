@@ -35,9 +35,13 @@ internal sealed class CharacterTrackersProcessor(
             ? Task.FromResult(context.NewTracker.MainCharacter)
             : ProcessMainChar(context, storyTrackerResult, cancellationToken);
 
-        var alreadyProcessedCharacters = context.CharacterUpdates?
-                                             .Select(x => x.Name)
-                                         ?? [];
+        HashSet<string> alreadyProcessedCharacters;
+        lock (context)
+        {
+            alreadyProcessedCharacters = (context.CharacterUpdates?.Select(x => x.Name) ?? [])
+                .Concat(context.NewCharacters?.Select(x => x.Name) ?? [])
+                .ToHashSet();
+        }
 
         Task<CharacterContext?>[] characterUpdateTask = [];
         if (context.Characters.Count != 0)
@@ -47,7 +51,7 @@ internal sealed class CharacterTrackersProcessor(
                 .Select(async character =>
                 {
                     // Skip if this character was already processed in a previous attempt
-                    if (alreadyProcessedCharacters.Contains(character.Name) || (context.NewCharacters?.Select(x => x.Name) ?? []).Contains(character.Name))
+                    if (alreadyProcessedCharacters.Contains(character.Name))
                     {
                         return null;
                     }
@@ -73,12 +77,12 @@ internal sealed class CharacterTrackersProcessor(
                             logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
                         }
 
-                        var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Name);
+                        var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Toward);
                         if (relationship == null)
                         {
                             characterRelationships.Add(new CharacterRelationshipContext
                             {
-                                TargetCharacterName = reflectionOutputRelationshipUpdate.Name,
+                                TargetCharacterName = reflectionOutputRelationshipUpdate.Toward,
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData!,
                                 UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = 0,
@@ -165,7 +169,10 @@ internal sealed class CharacterTrackersProcessor(
             var res = await task;
             if (res is not null)
             {
-                context.CharacterUpdates.Enqueue(res);
+                lock (context)
+                {
+                    context.CharacterUpdates.Add(res);
+                }
             }
         }
     }
@@ -195,9 +202,12 @@ internal sealed class CharacterTrackersProcessor(
             context.ChroniclerOutput = chroniclerOutput;
 
             logger.Information("Chronicler produced {Count} world events", chroniclerOutput.WorldEvents);
-            foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+            lock (context)
             {
-                context.NewWorldEvents.Enqueue(chroniclerOutputWorldEvent);
+                foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+                {
+                    context.NewWorldEvents.Add(chroniclerOutputWorldEvent);
+                }
             }
         }
 

@@ -190,32 +190,37 @@ internal sealed class SimulationOrchestrator(
 
         foreach (var result in results)
         {
-            context.CharacterUpdates.Enqueue(result.characterContext);
             var worldEvents = result.WorldEventsEmitted?.Select(x => new WorldEvent
                               {
                                   When = x.When,
                                   Where = x.Where,
                                   Event = x.Event
                               })
+                              .ToList()
                               ?? [];
-            foreach (var @event in worldEvents)
-            {
-                context.NewWorldEvents.Enqueue(@event);
-            }
 
-            if (result.CharacterEvents is { Count: > 0 })
+            lock (context)
             {
-                foreach (var ce in result.CharacterEvents)
+                context.CharacterUpdates.Add(result.characterContext);
+                foreach (var @event in worldEvents)
                 {
-                    context.NewCharacterEvents.Enqueue(new CharacterEventToSave
+                    context.NewWorldEvents.Add(@event);
+                }
+
+                if (result.CharacterEvents is { Count: > 0 })
+                {
+                    foreach (var ce in result.CharacterEvents)
                     {
-                        AdventureId = context.AdventureId,
-                        TargetCharacterName = ce.Character,
-                        SourceCharacterName = result.Name,
-                        Time = ce.Time,
-                        Event = ce.Event,
-                        SourceRead = ce.MyRead
-                    });
+                        context.NewCharacterEvents.Add(new CharacterEventToSave
+                        {
+                            AdventureId = context.AdventureId,
+                            TargetCharacterName = ce.Character,
+                            SourceCharacterName = result.Name,
+                            Time = ce.Time,
+                            Event = ce.Event,
+                            SourceRead = ce.MyRead
+                        });
+                    }
                 }
             }
         }
@@ -289,16 +294,19 @@ internal sealed class SimulationOrchestrator(
                         plan,
                         context);
 
-                    context.CharacterUpdates.Enqueue(processedResult.CharacterContext);
-
-                    foreach (var worldEvent in processedResult.WorldEvents)
+                    lock (context)
                     {
-                        context.NewWorldEvents.Enqueue(worldEvent);
-                    }
+                        context.CharacterUpdates.Add(processedResult.CharacterContext);
 
-                    foreach (var charEvent in processedResult.CharacterEvents)
-                    {
-                        context.NewCharacterEvents.Enqueue(charEvent);
+                        foreach (var worldEvent in processedResult.WorldEvents)
+                        {
+                            context.NewWorldEvents.Add(worldEvent);
+                        }
+
+                        foreach (var charEvent in processedResult.CharacterEvents)
+                        {
+                            context.NewCharacterEvents.Add(charEvent);
+                        }
                     }
                 }
             }
