@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using ILogger = Serilog.ILogger;
+
 namespace FableCraft.Server.Controllers;
 
 [ApiController]
@@ -19,11 +21,13 @@ public class LlmPresetController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly KernelBuilderFactory _kernelBuilderFactory;
+    private readonly ILogger _logger;
 
-    public LlmPresetController(ApplicationDbContext dbContext, KernelBuilderFactory kernelBuilderFactory)
+    public LlmPresetController(ApplicationDbContext dbContext, KernelBuilderFactory kernelBuilderFactory, ILogger logger)
     {
         _dbContext = dbContext;
         _kernelBuilderFactory = kernelBuilderFactory;
+        _logger = logger;
     }
 
     /// <summary>
@@ -304,6 +308,7 @@ public class LlmPresetController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "LLM preset connection test failed");
             return BadRequest(new TestConnectionResponseDto
             {
                 Success = false,

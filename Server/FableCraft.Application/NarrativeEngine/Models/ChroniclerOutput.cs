@@ -10,10 +10,10 @@ namespace FableCraft.Application.NarrativeEngine.Models;
 internal sealed class ChroniclerOutput
 {
     [JsonPropertyName("writer_guidance")]
-    public required WriterGuidance WriterGuidance { get; init; }
+    public WriterGuidance WriterGuidance { get; init; } = null!;
 
     [JsonPropertyName("story_state")]
-    public required ChroniclerStoryState StoryState { get; init; }
+    public ChroniclerStoryState StoryState { get; init; } = null!;
 
     [JsonPropertyName("world_events")]
     public WorldEvent[] WorldEvents { get; init; } = [];
@@ -37,13 +37,13 @@ internal sealed class WriterGuidance
 internal sealed class WorldEvent
 {
     [JsonPropertyName("when")]
-    public required string When { get; init; }
+    public string When { get; init; } = null!;
 
     [JsonPropertyName("where")]
-    public required string Where { get; init; }
+    public string Where { get; init; } = null!;
 
     [JsonPropertyName("event")]
-    public required string Event { get; init; }
+    public string Event { get; init; } = null!;
 }
 
 /// <summary>

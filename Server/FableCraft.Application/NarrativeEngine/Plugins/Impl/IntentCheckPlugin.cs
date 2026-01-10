@@ -38,7 +38,7 @@ internal sealed class IntentCheckPlugin : PluginBase
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
 
-        _worldEvents = previousState?.StoryState?.WorldMomentum?.ToJsonString();
+        _worldEvents = previousState?.WorldMomentum?.ToJsonString();
         return Task.CompletedTask;
     }
 

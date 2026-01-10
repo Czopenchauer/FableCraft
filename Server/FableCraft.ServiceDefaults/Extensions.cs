@@ -95,7 +95,7 @@ public static class Extensions
                 Timeout = TimeSpan.FromMinutes(20)
             };
 
-            options.Retry.MaxRetryAttempts = 5;
+            options.Retry.MaxRetryAttempts = 3;
             options.Retry.Delay = TimeSpan.FromSeconds(5);
             options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(20);
         });

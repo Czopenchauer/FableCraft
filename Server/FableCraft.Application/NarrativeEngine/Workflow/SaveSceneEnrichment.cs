@@ -38,7 +38,6 @@ internal sealed class SaveSceneEnrichment(
             scene.Metadata.WriterGuidance = context.WriterGuidance.ToJsonString();
         }
 
-        // Save gathered context for use in next scene generation
         if (context.ContextGathered != null)
         {
             scene.Metadata.GatheredContext = new GatheredContext
@@ -58,6 +57,17 @@ internal sealed class SaveSceneEnrichment(
         }
 
         var loreEntities = context.NewLore?.Select(x => new LorebookEntry
+                           {
+                               AdventureId = context.AdventureId,
+                               Description = x.Description,
+                               Title = x.Title,
+                               Category = nameof(LorebookCategory.Lore),
+                               Content = x.ToJsonString(),
+                               ContentType = ContentType.json
+                           }).ToList()
+                           ?? new List<LorebookEntry>();
+        
+        var chroniclerLore = context.ChroniclerLore?.Select(x => new LorebookEntry
                            {
                                AdventureId = context.AdventureId,
                                Description = x.Description,
@@ -114,6 +124,7 @@ internal sealed class SaveSceneEnrichment(
                                           }).ToList()
                                           ?? new List<LorebookEntry>();
 
+        loreEntities.AddRange(chroniclerLore);
         loreEntities.AddRange(locationEntities);
         loreEntities.AddRange(itemsEntities);
         loreEntities.AddRange(worldEventEntities);

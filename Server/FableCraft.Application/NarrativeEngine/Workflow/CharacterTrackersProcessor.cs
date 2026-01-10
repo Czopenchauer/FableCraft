@@ -24,37 +24,12 @@ internal sealed class CharacterTrackersProcessor(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
-        // SceneTrackerProcessor must have run first
         var storyTrackerResult = context.NewTracker?.Scene
-            ?? throw new InvalidOperationException(
-                "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. " +
-                "Ensure SceneTrackerProcessor runs before this processor.");
+                                 ?? throw new InvalidOperationException(
+                                     "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. "
+                                     + "Ensure SceneTrackerProcessor runs before this processor.");
 
-        var chroniclerTask = chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken).ContinueWith(async output =>
-        {
-            var chroniclerOutput = output.Result;
-            logger.Information("Chronicler requested {Count} lore entries", chroniclerOutput.LoreRequests.Length);
-
-            context.WriterGuidance = chroniclerOutput.WriterGuidance;
-            foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
-            {
-                context.NewWorldEvents.Enqueue(chroniclerOutputWorldEvent);
-            }
-
-            context.NewChroniclerState = chroniclerOutput.StoryState;
-
-            var loreResults = await Task.WhenAll(
-                chroniclerOutput.LoreRequests.Select(req =>
-                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
-
-            foreach (GeneratedLore generatedLore in loreResults)
-            {
-                context.NewLore.Enqueue(generatedLore);
-            }
-
-            logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
-        },
-        cancellationToken);
+        var chroniclerTask = ProcessChronicler(context, storyTrackerResult, cancellationToken);
 
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
@@ -205,5 +180,31 @@ internal sealed class CharacterTrackersProcessor(
             MainCharacterDescription = mainCharacterDeltaTrackerOutput.Description
         };
         return newTracker;
+    }
+
+    private async Task ProcessChronicler(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
+    {
+        if (context.ChroniclerOutput is null)
+        {
+            var chroniclerOutput = await chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            context.ChroniclerOutput = chroniclerOutput;
+
+            logger.Information("Chronicler produced {Count} world events", chroniclerOutput.WorldEvents);
+            foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+            {
+                context.NewWorldEvents.Enqueue(chroniclerOutputWorldEvent);
+            }
+        }
+
+        if (context.ChroniclerLore.Length == 0 && context.ChroniclerOutput.LoreRequests.Length != 0)
+        {
+            logger.Information("Chronicler requested {Count} lore entries", context.ChroniclerOutput.LoreRequests.Length);
+            var loreResults = await Task.WhenAll(
+                context.ChroniclerOutput.LoreRequests.Select(req =>
+                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
+
+            context.ChroniclerLore = loreResults;
+            logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
+        }
     }
 }

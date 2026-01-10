@@ -35,6 +35,11 @@ internal sealed class ChroniclerAgent(
         SceneTracker sceneTracker,
         CancellationToken cancellationToken)
     {
+        if (context.ChroniclerOutput is not null)
+        {
+            return context.ChroniclerOutput;
+        }
+
         IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);

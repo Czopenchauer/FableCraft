@@ -152,9 +152,12 @@ internal static class PromptSections
 
     public static string MainCharacter(GenerationContext context)
     {
+        var tracker = context.LatestTracker()?.MainCharacter?.MainCharacter;
         return $"""
                 <main_character>
                 Name: {context.MainCharacter.Name}
+                Appearance: {tracker?.Appearance}
+                GeneralBuild: {tracker?.GeneralBuild}
                 {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
                 </main_character>
                 """;
@@ -187,6 +190,8 @@ internal static class PromptSections
                                     <character>
                                     Name: {c.Name}
                                     Location: {c.CharacterTracker?.Location}
+                                    Appearance: {c.CharacterTracker?.Appearance}
+                                    GeneralBuild: {c.CharacterTracker?.GeneralBuild}
                                     {c.Description}
                                     </character>
                                     """));
@@ -199,15 +204,26 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters)
+    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters, GenerationContext context)
     {
         var names = string.Join("\n- ",
             characters.Select(c => c.Name));
+
+        var mainCharTracker = context.LatestTracker()?.MainCharacter?.MainCharacter;
+        var mainCharProfile = $"""
+                               <profile name="{context.MainCharacter.Name}" role="main_character">
+                               Appearance: {mainCharTracker?.Appearance}
+                               GeneralBuild: {mainCharTracker?.GeneralBuild}
+                               {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
+                               </profile>
+                               """;
 
         var profiles = string.Join("\n",
             characters.Select(c =>
                 $"""
                  <profile name="{c.Name}">
+                 Appearance: {c.CharacterTracker?.Appearance}
+                 GeneralBuild: {c.CharacterTracker?.GeneralBuild}
                  {c.Description}
                  </profile>
                  """
@@ -222,8 +238,10 @@ internal static class PromptSections
 
                 ---
 
-                <character_profiles>{profiles}
-                                     </character_profiles>
+                <character_profiles>
+                {mainCharProfile}
+                {profiles}
+                </character_profiles>
                 """;
     }
 

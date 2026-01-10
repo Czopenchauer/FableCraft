@@ -55,24 +55,24 @@ public static class StartupExtensions
                 client.BaseAddress = new Uri(graphApiBaseUrl);
 
                 // LLM calls can take a while
-                client.Timeout = TimeSpan.FromMinutes(20);
+                client.Timeout = TimeSpan.FromMinutes(120);
             })
             .RemoveAllResilienceHandlers()
             .AddStandardResilienceHandler(options =>
             {
                 options.AttemptTimeout = new HttpTimeoutStrategyOptions
                 {
-                    Timeout = TimeSpan.FromMinutes(20)
+                    Timeout = TimeSpan.FromMinutes(120)
                 };
 
                 options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
                 {
-                    Timeout = TimeSpan.FromMinutes(40)
+                    Timeout = TimeSpan.FromMinutes(240)
                 };
 
                 options.Retry.MaxRetryAttempts = 5;
                 options.Retry.Delay = TimeSpan.FromSeconds(5);
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(40);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(240);
             });
 
         services.AddHttpClient<IRagSearch, RagClient>(client =>

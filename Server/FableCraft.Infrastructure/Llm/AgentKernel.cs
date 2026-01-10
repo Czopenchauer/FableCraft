@@ -55,7 +55,7 @@ internal sealed class AgentKernel : IAgentKernel
                     .Handle<HttpOperationException>(e => e.StatusCode == HttpStatusCode.TooManyRequests)
                     .Handle<LlmEmptyResponseException>()
                     .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.TooManyRequests),
-                MaxRetryAttempts = 5,
+                MaxRetryAttempts = 1,
                 Delay = TimeSpan.FromSeconds(5),
                 OnRetry = args =>
                 {

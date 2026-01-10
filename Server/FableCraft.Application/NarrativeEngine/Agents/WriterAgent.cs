@@ -46,7 +46,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.CharacterForEmulation(context.Characters)}
+                             {PromptSections.CharacterForEmulation(context.Characters, context)}
 
                              {PromptSections.MainCharacter(context)}
 

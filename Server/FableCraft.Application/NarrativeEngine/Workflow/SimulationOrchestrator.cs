@@ -97,7 +97,7 @@ internal sealed class SimulationOrchestrator(
                 {
                     Character = character,
                     TimePeriod = plan.SimulationPeriod.ToJsonString(),
-                    WorldEvents = previousState?.StoryState.WorldMomentum
+                    WorldEvents = previousState?.WorldMomentum
                 };
 
                 try
@@ -265,7 +265,7 @@ internal sealed class SimulationOrchestrator(
                 CohortMembers = context.Characters.Where(x => validCharacters.Contains(x.Name)).ToArray(),
                 SimulationPeriod = plan.SimulationPeriod!,
                 KnownInteractions = cohort.ExtensionData,
-                WorldEvents = previousState?.StoryState.WorldMomentum,
+                WorldEvents = previousState?.WorldMomentum,
                 SignificantCharacters = significantCharacters.Length > 0 ? significantCharacters : null
             };
 

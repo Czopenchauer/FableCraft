@@ -352,7 +352,7 @@ internal class GameService : IGameService
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                         {
                             CharacterId = x.CharacterId,
-                            Name = x.CharacterStats.CharacterIdentity.Name!,
+                            Name = x.CharacterStats.Name!,
                             Description = x.Description,
                             State = x.CharacterStats,
                             Tracker = x.Tracker

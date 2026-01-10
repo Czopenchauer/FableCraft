@@ -535,8 +535,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    * Get the list of characters present in the scene for tabs
    */
   getCharactersOnScene(): string[] {
-    if (!this.currentScene?.tracker?.charactersOnScene) return [];
-    return this.currentScene.tracker.charactersOnScene;
+    if (!this.currentScene?.tracker?.scene?.charactersPresent) return [];
+    return this.currentScene.tracker.scene.charactersPresent;
   }
 
   /**

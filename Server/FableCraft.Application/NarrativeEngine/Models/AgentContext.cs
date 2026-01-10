@@ -95,10 +95,14 @@ internal sealed class GenerationContext
 
     public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
 
+    public ChroniclerOutput? ChroniclerOutput { get; set; }
+
+    public GeneratedLore[] ChroniclerLore { get; set; } = [];
+
     /// <summary>
     /// Writer guidance from ChroniclerAgent for the next scene.
     /// </summary>
-    public WriterGuidance? WriterGuidance { get; set; }
+    public WriterGuidance? WriterGuidance => ChroniclerOutput?.WriterGuidance;
 
     /// <summary>
     /// World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
@@ -108,7 +112,7 @@ internal sealed class GenerationContext
     /// <summary>
     /// Chronicler story state to persist in scene metadata.
     /// </summary>
-    public ChroniclerStoryState? NewChroniclerState { get; set; }
+    public ChroniclerStoryState? NewChroniclerState => ChroniclerOutput?.StoryState;
 
     /// <summary>
     /// Simulation plan from SimulationPlannerAgent.
@@ -134,10 +138,15 @@ internal sealed class GenerationContext
 internal sealed class CharacterEventToSave
 {
     public required Guid AdventureId { get; init; }
+
     public required string TargetCharacterName { get; init; }
+
     public required string SourceCharacterName { get; init; }
+
     public required string Time { get; init; }
+
     public required string Event { get; init; }
+
     public required string SourceRead { get; init; }
 }
 

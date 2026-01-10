@@ -65,7 +65,7 @@ public class SceneGenerationOutput
                     Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                         {
                             CharacterId = x.CharacterId,
-                            Name = x.CharacterStats.CharacterIdentity.Name!,
+                            Name = x.CharacterStats.Name!,
                             Description = x.Description,
                             State = x.CharacterStats,
                             Tracker = x.Tracker
@@ -108,7 +108,7 @@ public class SceneEnrichmentOutput
                 Characters = scene.CharacterStates.Select(x => new CharacterStateDto
                     {
                         CharacterId = x.CharacterId,
-                        Name = x.CharacterStats.CharacterIdentity.Name!,
+                        Name = x.CharacterStats.Name!,
                         Description = x.Description,
                         State = x.CharacterStats,
                         Tracker = x.Tracker
@@ -299,10 +299,7 @@ internal sealed class SceneGenerationOrchestrator(
             try
             {
                 await Task.WhenAll(parallelProcessors.Select(p => p.Invoke(context, cancellationToken)));
-                await dbContext.GenerationProcesses
-                    .Where(x => x.AdventureId == adventureId)
-                    .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
-                        cancellationToken);
+                await processors.First(x => x is SaveSceneEnrichment).Invoke(context, cancellationToken);
                 logger.Information("[Enrichment] Parallel processing took {ElapsedMilliseconds} ms",
                     stopwatch.ElapsedMilliseconds);
             }
@@ -332,6 +329,9 @@ internal sealed class SceneGenerationOrchestrator(
             .Include(x => x.CharacterActions)
             .Include(x => x.Lorebooks)
             .SingleAsync(cancellationToken);
+        await dbContext.GenerationProcesses
+            .Where(x => x.AdventureId == adventureId)
+            .ExecuteDeleteAsync(cancellationToken);
 
         return SceneEnrichmentOutput.CreateFromScene(scene);
     }
@@ -482,7 +482,7 @@ internal sealed class SceneGenerationOrchestrator(
             CharacterUpdates = new ConcurrentQueue<CharacterContext>(scene.CharacterStates.Where(c => c.SequenceNumber != 0).Select(cs => new CharacterContext
             {
                 CharacterId = cs.CharacterId,
-                Name = cs.CharacterStats.CharacterIdentity.Name!,
+                Name = cs.CharacterStats.Name!,
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
@@ -521,7 +521,7 @@ internal sealed class SceneGenerationOrchestrator(
             NewCharacters = scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
             {
                 CharacterId = cs.CharacterId,
-                Name = cs.CharacterStats.CharacterIdentity.Name!,
+                Name = cs.CharacterStats.Name!,
                 Description = cs.Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,

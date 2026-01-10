@@ -155,6 +155,10 @@ public sealed class CharacterTracker
 
     public required string Location { get; init; }
 
+    public string? Appearance { get; init; }
+
+    public string? GeneralBuild { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
@@ -162,6 +166,10 @@ public sealed class CharacterTracker
 public sealed class MainCharacterTracker
 {
     public required string Name { get; init; }
+
+    public string? Appearance { get; init; }
+
+    public string? GeneralBuild { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;

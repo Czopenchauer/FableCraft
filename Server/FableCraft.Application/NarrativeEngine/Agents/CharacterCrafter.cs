@@ -48,6 +48,8 @@ internal sealed class CharacterCrafter : BaseAgent
                              {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.Context(context)}
+                             
+                             {PromptSections.MainCharacter(context)}
 
                              {PromptSections.LastScenes(context.SceneContext, 3)}
                              """;
@@ -81,12 +83,12 @@ internal sealed class CharacterCrafter : BaseAgent
             CharacterState = result.characterStats,
             Description = result.description,
             CharacterTracker = result.tracker,
-            Name = result.characterStats.CharacterIdentity.Name!,
+            Name = result.characterStats.Name!,
             CharacterMemories = new List<MemoryContext>(),
             Relationships = result.relationships.Select(r => new CharacterRelationshipContext
                 {
                     Data = r.ExtensionData,
-                    TargetCharacterName = r.Name,
+                    TargetCharacterName = r.Toward,
                     UpdateTime = null,
                     SequenceNumber = 0,
                     Dynamic = r.Dynamic
@@ -104,10 +106,10 @@ internal sealed class CharacterCrafter : BaseAgent
         return response =>
         {
             var characterStats = ResponseParser.ExtractJson<CharacterStats>(response, "character");
-            var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "character_statistics");
-            var relationship = ResponseParser.ExtractJson<InitialRelationship[]>(response, "initial_relationships");
+            var tracker = ResponseParser.ExtractJson<CharacterTracker>(response, "tracker");
+            var relationship = ResponseParser.ExtractJson<InitialRelationship[]>(response, "relationships");
 
-            var description = ResponseParser.ExtractText(response, "character_description");
+            var description = ResponseParser.ExtractText(response, "description");
 
             if (string.IsNullOrEmpty(description))
             {
@@ -144,7 +146,7 @@ internal sealed class CharacterCrafter : BaseAgent
 
     private class InitialRelationship
     {
-        public required string Name { get; set; }
+        public required string Toward { get; set; }
 
         public required object Dynamic { get; set; }
 

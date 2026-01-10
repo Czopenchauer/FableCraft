@@ -2,30 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
-public class NarrativeDirectorOutput
-{
-    [JsonPropertyName("writer_instructions")]
-    public WriterInstructions WriterInstructions { get; set; } = new();
-
-    [JsonPropertyName("creation_requests")]
-    public CreationRequests CreationRequests { get; set; } = new();
-
-    [JsonPropertyName("narrative_tracking")]
-    public NarrativeTracking NarrativeTracking { get; set; } = new();
-}
-
-public class WriterInstructions
-{
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalData { get; set; } = new();
-}
-
-public class NarrativeTracking
-{
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalData { get; set; } = new();
-}
-
 public class CreationRequests
 {
     [JsonPropertyName("characters")]

@@ -130,13 +130,10 @@
       </div>
     </div>
 
-    <!-- Story Tracker (above scene) - Story and Characters Present only -->
+    <!-- Story Tracker (above scene) - Scene and Characters Present only -->
     <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker" class="story-tracker-panel" [class.regenerating]="isRegenerating" [class.regenerating-enrichment]="isRegeneratingEnrichment">
-      <div *ngIf="currentScene.tracker.story" class="story-tracker-section">
-        <app-json-renderer [data]="{story: currentScene.tracker.story}"></app-json-renderer>
-      </div>
-      <div *ngIf="currentScene.tracker.charactersOnScene" class="story-tracker-section">
-        <app-json-renderer [data]="{charactersOnScene: currentScene.tracker.charactersOnScene}"></app-json-renderer>
+      <div *ngIf="currentScene.tracker.scene" class="story-tracker-section">
+        <app-json-renderer [data]="{scene: currentScene.tracker.scene}"></app-json-renderer>
       </div>
     </div>
 

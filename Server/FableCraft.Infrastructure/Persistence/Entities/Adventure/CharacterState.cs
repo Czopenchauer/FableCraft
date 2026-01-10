@@ -52,23 +52,14 @@ public class PendingMcInteraction
 
 public class CharacterStats
 {
-    [JsonPropertyName("character_identity")]
-    public required CharacterIdentity CharacterIdentity { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 
     [JsonPropertyName("motivations")]
     public required object? Motivations { get; set; }
 
     [JsonPropertyName("routine")]
     public required object? Routine { get; set; }
-
-    [JsonExtensionData]
-    public IDictionary<string, object>? ExtensionData { get; set; }
-}
-
-public class CharacterIdentity
-{
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
 
     [JsonExtensionData]
     public IDictionary<string, object>? ExtensionData { get; set; }

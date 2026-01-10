@@ -1,3 +1,5 @@
+using System.Text;
+
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -101,6 +103,8 @@ internal sealed class CharacterAgent : BaseAgent
                 {context.CharacterTracker.ToJsonString()}
                 </character_tracker>
 
+                {BuildMainCharacterSection(_generationContext, context)}
+
                 <previous_scenes>
                 {string.Join("\n\n---\n\n", previousScenes)}
                 </previous_scenes>
@@ -148,6 +152,39 @@ internal sealed class CharacterAgent : BaseAgent
                 {relationshipsText}
                 </character_relationships>
                 """;
+    }
+
+    private string BuildMainCharacterSection(GenerationContext context, CharacterContext currentCharacter)
+    {
+        var tracker = _generationContext.LatestTracker()?.MainCharacter?.MainCharacter;
+        var description = _generationContext.LatestTracker()?.MainCharacter?.MainCharacterDescription
+                          ?? _generationContext.MainCharacter.Description;
+
+        var builder = new StringBuilder($"""
+                                         <character name="{tracker!.Name}">
+                                         Appearance: {tracker.Appearance}
+                                         GeneralBuild: {tracker.GeneralBuild}
+                                         {description}
+                                         </character>
+                                         """);
+        var scene = context.LatestTracker()!.Scene!.CharactersPresent;
+        var otherCharacters = _generationContext.Characters
+            .Where(c => c.Name != currentCharacter.Name && scene.Contains(c.Name))
+            .ToList();
+
+        if (otherCharacters.Count == 0)
+        {
+            return builder.ToString();
+        }
+
+        otherCharacters.ForEach(c => builder.AppendLine($"""
+                                                                         <character name="{c.Name}">
+                                                                         Appearance: {c.CharacterTracker?.Appearance}
+                                                                         GeneralBuild: {c.CharacterTracker?.GeneralBuild}
+                                                                         {c.Description}
+                                                                         </character>
+                                                                         """));
+        return builder.ToString();
     }
 
     public async Task<string> EmulateCharacterAction(

@@ -133,27 +133,25 @@ export interface NarrativeDirectorOutput {
 }
 
 export interface TrackerDto {
-  story: SceneTracker;
+  scene: SceneTracker;
   mainCharacter: MainCharacterTrackerDto;
-  charactersOnScene: string[];
   characters: CharacterStateDto[];
 }
 
 export interface SceneTracker {
+  time: string;
+  location: string;
+  weather: string;
+  charactersPresent: string[];
   [key: string]: any;
 }
 
 export interface MainCharacterTrackerDto {
   tracker: CharacterTracker;
-  development: CharacterDevelopmentTracker;
   description: string;
 }
 
 export interface CharacterTracker {
-  [key: string]: any;
-}
-
-export interface CharacterDevelopmentTracker {
   [key: string]: any;
 }
 
@@ -163,7 +161,6 @@ export interface CharacterStateDto {
   description: string;
   state: any;
   tracker: CharacterTracker;
-  development: CharacterDevelopmentTracker;
 }
 
 // Flattened client-side model for easier use in components

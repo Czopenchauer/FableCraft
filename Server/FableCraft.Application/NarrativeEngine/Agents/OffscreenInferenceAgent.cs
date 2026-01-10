@@ -97,7 +97,7 @@ internal sealed class OffscreenInferenceAgent(
                 CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
                 WorldEvents = context.SceneContext?
                     .OrderByDescending(x => x.SequenceNumber)
-                    .FirstOrDefault()?.Metadata.ChroniclerState?.StoryState.WorldMomentum
+                    .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum
             };
 
             try
