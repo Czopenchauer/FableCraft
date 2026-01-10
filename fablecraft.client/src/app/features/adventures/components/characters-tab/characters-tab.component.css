@@ -1,0 +1,229 @@
+/* Characters Tab - Theme-aware styling */
+
+/* Loading State */
+.loading-state,
+.loading-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Body - Two Column Layout */
+.characters-body {
+  display: flex;
+  gap: var(--spacing-xl);
+  min-height: 400px;
+  padding: var(--spacing-xl);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Column: Sidebar */
+.character-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-secondary);
+  padding: var(--spacing-md);
+  margin: calc(-1 * var(--spacing-xl));
+  margin-right: 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="modern-dark"] .character-sidebar {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="medieval-fantasy"] .character-sidebar {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Empty State */
+.empty-state,
+.no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  height: 100%;
+}
+
+.empty-icon,
+.no-selection-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-state p,
+.no-selection p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* Character List */
+.character-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.character-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+}
+
+[data-theme="modern-dark"] .character-list-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="medieval-fantasy"] .character-list-item {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.character-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .character-list-item:hover {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="medieval-fantasy"] .character-list-item:hover {
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.character-list-item.selected {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--color-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="modern-dark"] .character-list-item.selected {
+  background: rgba(168, 85, 247, 0.15);
+  border-left-color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .character-list-item.selected {
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.character-name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Importance Badges */
+.importance-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.importance-arc {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+[data-theme="medieval-fantasy"] .importance-arc {
+  background: rgba(184, 134, 11, 0.3);
+  color: var(--color-primary);
+}
+
+.importance-significant {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .importance-significant {
+  background: rgba(139, 90, 43, 0.3);
+  color: #c9a35e;
+}
+
+.importance-background {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+[data-theme="medieval-fantasy"] .importance-background {
+  background: rgba(75, 60, 45, 0.3);
+  color: #8b7355;
+}
+
+/* Right Column: Detail Pane */
+.character-detail-pane {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .characters-body {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .character-sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-secondary);
+    padding: var(--spacing-md);
+    margin: calc(-1 * var(--spacing-xl));
+    margin-bottom: 0;
+    max-height: 200px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .character-detail-pane {
+    min-height: 300px;
+  }
+}

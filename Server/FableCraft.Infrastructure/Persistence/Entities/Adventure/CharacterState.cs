@@ -16,9 +16,9 @@ public sealed class CharacterState
 
     public required string Description { get; set; }
 
-    public CharacterStats CharacterStats { get; init; } = null!;
+    public CharacterStats CharacterStats { get; set; } = null!;
 
-    public CharacterTracker Tracker { get; init; } = null!;
+    public CharacterTracker Tracker { get; set; } = null!;
 
     public SimulationMetadata? SimulationMetadata { get; init; }
 }

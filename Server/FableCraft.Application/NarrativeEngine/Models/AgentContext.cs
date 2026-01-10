@@ -69,7 +69,7 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
-    public CharacterContext[]? NewCharacters { get; set; }
+    public ConcurrentBag<CharacterContext> NewCharacters { get; set; } = new();
 
     public ConcurrentQueue<CharacterContext> CharacterUpdates { get; set; } = new();
 

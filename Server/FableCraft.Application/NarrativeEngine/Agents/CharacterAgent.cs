@@ -49,7 +49,7 @@ internal sealed class CharacterAgent : BaseAgent
         _kernelBuilder = await GetKernelBuilder(generationContext);
 
         var characters = new List<CharacterContext>(generationContext.Characters);
-        characters.AddRange(generationContext.NewCharacters ?? Array.Empty<CharacterContext>());
+        characters.AddRange(generationContext.NewCharacters);
 
         var promptTemplate = await BuildInstruction(generationContext);
         _chatHistory = characters.ToDictionary(character => character.Name,

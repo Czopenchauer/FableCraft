@@ -75,6 +75,14 @@ internal sealed class ChroniclerAgent(
     private string BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene)
     {
         var previousChroniclerState = GetPreviousChroniclerState(context);
+        var loreRequested = context.NewScene!.CreationRequests?.Lore != null
+            ? $"""
+               <lore_requested>
+               This lore was already requested. Do not request it again.
+               {string.Join("\n", context.NewScene!.CreationRequests?.Lore.ToJsonString() ?? string.Empty)}
+               </lore_requested>
+               """
+            : string.Empty;
 
         return $"""
                 {PromptSections.MainCharacter(context)}
@@ -84,6 +92,8 @@ internal sealed class ChroniclerAgent(
                 {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, MaxScene) : "")}
 
                 {PromptSections.SceneTracker(context, sceneTracker)}
+
+                {loreRequested}
 
                 {previousChroniclerState}
                 """;

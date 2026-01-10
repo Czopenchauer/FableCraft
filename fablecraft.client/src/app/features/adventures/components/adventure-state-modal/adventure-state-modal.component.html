@@ -1,0 +1,59 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header with Tabs -->
+      <div class="modal-header">
+        <div class="tabs-header">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'lore'"
+            (click)="setActiveTab('lore')"
+          >
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            <span>Lore</span>
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'characters'"
+            (click)="setActiveTab('characters')"
+          >
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+            <span>Characters</span>
+          </button>
+        </div>
+        <button
+          (click)="onClose()"
+          class="close-button"
+          title="Close"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="modal-body">
+        <!-- Lore Tab -->
+        <div *ngIf="activeTab === 'lore'" class="tab-content">
+          <app-lore-content
+            [adventureId]="adventureId"
+            [isActive]="activeTab === 'lore'">
+          </app-lore-content>
+        </div>
+
+        <!-- Characters Tab -->
+        <div *ngIf="activeTab === 'characters'" class="tab-content">
+          <app-characters-tab
+            [adventureId]="adventureId"
+            [isActive]="activeTab === 'characters'">
+          </app-characters-tab>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

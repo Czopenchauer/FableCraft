@@ -56,9 +56,9 @@ internal sealed class CharacterTrackersProcessor(
 
                     var characterState = character.CharacterState;
 
-                    if (reflectionOutput.ExtensionData?.Count > 0)
+                    if (reflectionOutput.ProfileUpdates.Count > 0)
                     {
-                        characterState = characterState.PatchWith(reflectionOutput.ExtensionData);
+                        characterState = characterState.PatchWith(reflectionOutput.ProfileUpdates);
                     }
                     else
                     {
@@ -99,6 +99,18 @@ internal sealed class CharacterTrackersProcessor(
                             characterRelationships.Add(newRelationship);
                         }
                     }
+                    
+                    var memory = new List<MemoryContext>();
+                    if (reflectionOutput.Memory is not null)
+                    {
+                        memory.Add(new MemoryContext
+                        {
+                            Salience = reflectionOutput.Memory!.Salience,
+                            Data = reflectionOutput.Memory.ExtensionData!,
+                            MemoryContent = reflectionOutput.Memory.Summary,
+                            SceneTracker = storyTrackerResult,
+                        });
+                    }
 
                     var characterContext = new CharacterContext
                     {
@@ -107,14 +119,7 @@ internal sealed class CharacterTrackersProcessor(
                         CharacterTracker = character.CharacterTracker,
                         Name = character.Name,
                         Description = character.Description,
-                        CharacterMemories = reflectionOutput.Memory!.Select(x => new MemoryContext
-                            {
-                                Salience = x.Salience,
-                                Data = x.ExtensionData!,
-                                MemoryContent = x.Summary,
-                                SceneTracker = storyTrackerResult,
-                            })
-                            .ToList(),
+                        CharacterMemories = memory,
                         Relationships = characterRelationships,
                         SceneRewrites =
                         [

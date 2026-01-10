@@ -100,9 +100,9 @@
           <span>Settings</span>
         </button>
         <button
-          (click)="openLoreModal()"
+          (click)="openAdventureStateModal()"
           class="btn-action btn-lore"
-          title="Lore management"
+          title="Adventure State"
         >
           <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
             <path
@@ -616,10 +616,10 @@
     [isOpen]="showSettingsModal">
   </app-adventure-settings-modal>
 
-  <!-- Lore Management Modal -->
-  <app-lore-management-modal
-    (close)="closeLoreModal()"
+  <!-- Adventure State Modal (Lore + Characters) -->
+  <app-adventure-state-modal
+    (close)="closeAdventureStateModal()"
     [adventureId]="adventureId"
-    [isOpen]="showLoreModal">
-  </app-lore-management-modal>
+    [isOpen]="showAdventureStateModal">
+  </app-adventure-state-modal>
 </div>

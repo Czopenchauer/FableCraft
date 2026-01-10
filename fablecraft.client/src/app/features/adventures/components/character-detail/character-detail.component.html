@@ -1,0 +1,181 @@
+<div class="character-detail">
+  <!-- Header with Name and Importance -->
+  <div class="detail-header">
+    <h3 class="character-name">{{ character.name }}</h3>
+
+    <div class="importance-control" *ngIf="canEditImportance">
+      <label>Importance:</label>
+      <select
+        [value]="pendingImportance || character.importance"
+        (change)="onImportanceChange($event)"
+        class="importance-select"
+      >
+        <option value="arc_important">Arc Important</option>
+        <option value="significant">Significant</option>
+      </select>
+
+      <div class="importance-actions" *ngIf="hasImportanceChanges">
+        <button class="btn-save-sm" (click)="saveImportance()" [disabled]="isSavingImportance">
+          <span *ngIf="!isSavingImportance">Save</span>
+          <span *ngIf="isSavingImportance">...</span>
+        </button>
+        <button class="btn-discard-sm" (click)="discardImportance()" [disabled]="isSavingImportance">
+          Discard
+        </button>
+      </div>
+    </div>
+
+    <div class="importance-label" *ngIf="!canEditImportance">
+      <span class="importance-badge importance-background">
+        {{ getImportanceLabel(character.importance) }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Character State Section (Description + Stats) -->
+  <section class="detail-section">
+    <div class="section-header">
+      <h4>Character State</h4>
+      <button class="btn-edit" (click)="editProfile()" title="Edit character state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+      </button>
+    </div>
+    <div class="section-content">
+      <div class="subsection">
+        <h5>Description</h5>
+        <p class="description-text">{{ character.description || 'No description available.' }}</p>
+      </div>
+      <div class="subsection" *ngIf="character.characterState">
+        <h5>Stats</h5>
+        <div class="json-content-inline">
+          <app-json-renderer [data]="character.characterState"></app-json-renderer>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tracker Section -->
+  <section class="detail-section" *ngIf="character.characterTracker">
+    <div class="section-header">
+      <h4>Tracker</h4>
+      <button class="btn-edit" (click)="editTracker()" title="Edit tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+      </button>
+    </div>
+    <div class="section-content json-content">
+      <app-json-renderer [data]="character.characterTracker"></app-json-renderer>
+    </div>
+  </section>
+
+  <!-- Relationships Section -->
+  <section class="detail-section" *ngIf="character.relationships && character.relationships.length > 0">
+    <div class="section-header">
+      <h4>Relationships ({{ character.relationships.length }})</h4>
+    </div>
+    <div class="section-content relationships-list">
+      <div *ngFor="let rel of character.relationships" class="relationship-item">
+        <div class="relationship-header">
+          <strong class="relationship-target">{{ rel.targetCharacterName }}</strong>
+          <button class="btn-edit-sm" (click)="editRelationship(rel)" title="Edit relationship">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </button>
+        </div>
+        <p *ngIf="rel.dynamic" class="relationship-dynamic">{{ rel.dynamic }}</p>
+        <div class="relationship-data">
+          <app-json-renderer [data]="rel.data"></app-json-renderer>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Memories Section -->
+  <section class="detail-section">
+    <div class="section-header">
+      <h4>Memories ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})</h4>
+    </div>
+    <div class="section-content memories-list" *ngIf="character.characterMemories.length > 0">
+      <div *ngFor="let memory of character.characterMemories" class="memory-item">
+        <div class="memory-header">
+          <span class="memory-salience">Salience: {{ memory.salience | number:'1.1-1' }}</span>
+          <button class="btn-edit-sm" (click)="editMemory(memory)" title="Edit memory">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </button>
+        </div>
+        <p class="memory-content">{{ memory.memoryContent }}</p>
+        <div class="memory-context" *ngIf="memory.sceneTracker">
+          <span class="context-item">{{ memory.sceneTracker.time }}</span>
+          <span class="context-item">{{ memory.sceneTracker.location }}</span>
+        </div>
+      </div>
+
+      <!-- Load More Memories Button -->
+      <button
+        *ngIf="hasMoreMemories"
+        class="btn-load-more"
+        (click)="loadMoreMemories()"
+        [disabled]="isLoadingMoreMemories"
+      >
+        <span *ngIf="!isLoadingMoreMemories">
+          Load More ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})
+        </span>
+        <span *ngIf="isLoadingMoreMemories">Loading...</span>
+      </button>
+    </div>
+    <div class="section-content empty-section" *ngIf="character.characterMemories.length === 0">
+      <p>No memories recorded.</p>
+    </div>
+  </section>
+
+  <!-- Scene Rewrites Section (Read-only) -->
+  <section class="detail-section">
+    <div class="section-header">
+      <h4>Scene Rewrites ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})</h4>
+    </div>
+    <div class="section-content rewrites-list" *ngIf="character.sceneRewrites.length > 0">
+      <div *ngFor="let rewrite of character.sceneRewrites" class="rewrite-item">
+        <div class="rewrite-header">
+          <span class="rewrite-scene">Scene #{{ rewrite.sequenceNumber }}</span>
+          <span class="rewrite-context" *ngIf="rewrite.sceneTracker">
+            {{ rewrite.sceneTracker.time }} - {{ rewrite.sceneTracker.location }}
+          </span>
+        </div>
+        <p class="rewrite-content">{{ rewrite.content }}</p>
+      </div>
+
+      <!-- Load More Rewrites Button -->
+      <button
+        *ngIf="hasMoreRewrites"
+        class="btn-load-more"
+        (click)="loadMoreRewrites()"
+        [disabled]="isLoadingMoreRewrites"
+      >
+        <span *ngIf="!isLoadingMoreRewrites">
+          Load More ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})
+        </span>
+        <span *ngIf="isLoadingMoreRewrites">Loading...</span>
+      </button>
+    </div>
+    <div class="section-content empty-section" *ngIf="character.sceneRewrites.length === 0">
+      <p>No scene rewrites available.</p>
+    </div>
+  </section>
+</div>
+
+<!-- JSON Editor Modal -->
+<app-json-editor-modal
+  [isOpen]="editModal.isOpen"
+  [title]="editModal.title"
+  [data]="editModal.data"
+  (save)="onModalSave($event)"
+  (cancel)="onModalCancel()">
+</app-json-editor-modal>

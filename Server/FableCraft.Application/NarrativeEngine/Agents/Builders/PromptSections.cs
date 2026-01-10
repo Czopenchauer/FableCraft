@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -282,9 +283,9 @@ internal static class PromptSections
                 """;
     }
 
-    public static string NewCharacters(CharacterContext[]? characters)
+    public static string NewCharacters(ConcurrentBag<CharacterContext> characters)
     {
-        if (characters == null || characters.Length == 0) return string.Empty;
+        if (characters == null || characters.Count == 0) return string.Empty;
 
         var formatted = string.Join("\n\n", characters.Select(c => $"{c.Name}\n{c.Description}"));
         return $"""

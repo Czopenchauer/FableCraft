@@ -92,7 +92,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             filesToCommit.Add(new FileToWrite(
                 newCharacterChunk,
                 characterContent,
-                [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)]));
+                [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId), RagClientExtensions.GetWorldDatasetName(message.AdventureId)]));
         }
 
         if (filesToCommit.Count > 0 && adventure.RagProcessingStatus is not ProcessingStatus.Completed)

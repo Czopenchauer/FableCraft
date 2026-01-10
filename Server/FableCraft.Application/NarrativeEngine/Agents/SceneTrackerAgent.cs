@@ -42,7 +42,7 @@ internal sealed class SceneTrackerAgent(
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
                              
-                             {(context.NewCharacters?.Length > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
+                             {(context.NewCharacters?.Count > 0 ? PromptSections.NewCharacters(context.NewCharacters) : "")}
                              
                              {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
                              """;

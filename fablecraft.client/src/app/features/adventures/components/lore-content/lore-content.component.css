@@ -1,0 +1,543 @@
+/* Lore Content - Theme-aware styling */
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Body - Two Column Layout */
+.lore-body {
+  display: flex;
+  gap: var(--spacing-xl);
+  min-height: 400px;
+  padding: var(--spacing-xl);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Column: Sidebar */
+.lore-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-secondary);
+  padding: var(--spacing-md);
+  margin: calc(-1 * var(--spacing-xl));
+  margin-right: 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+[data-theme="modern-dark"] .lore-sidebar {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="medieval-fantasy"] .lore-sidebar {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Empty State */
+.empty-state,
+.no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  height: 100%;
+}
+
+.empty-icon,
+.no-selection-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-state p,
+.no-selection p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* World Settings Group */
+.world-settings-group {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.world-settings-group .category-header {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="modern-dark"] .world-settings-group .category-header {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="medieval-fantasy"] .world-settings-group .category-header {
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.world-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.world-settings-item {
+  font-style: italic;
+}
+
+/* Category Groups */
+.category-group {
+  margin-bottom: var(--spacing-sm);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  user-select: none;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.category-header:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="modern-dark"] .category-header:hover {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+[data-theme="medieval-fantasy"] .category-header:hover {
+  background: rgba(184, 134, 11, 0.1);
+}
+
+.chevron-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.category-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex: 1;
+}
+
+[data-theme="modern-dark"] .category-name {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .category-name {
+  color: var(--color-primary);
+}
+
+.entry-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* Category Entries */
+.category-entries {
+  padding-left: var(--spacing-lg);
+  margin-top: var(--spacing-xs);
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+}
+
+[data-theme="modern-dark"] .entry-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="medieval-fantasy"] .entry-item {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.entry-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .entry-item:hover {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="medieval-fantasy"] .entry-item:hover {
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.entry-item.selected {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--color-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="modern-dark"] .entry-item.selected {
+  background: rgba(168, 85, 247, 0.15);
+  border-left-color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .entry-item.selected {
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.entry-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.json-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .json-badge {
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--color-primary);
+}
+
+/* Right Column: Detail Pane */
+.lore-detail {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.entry-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.detail-title {
+  font-size: var(--font-size-xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+[data-theme="medieval-fantasy"] .detail-title {
+  color: var(--color-primary);
+}
+
+/* Entry Meta */
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.meta-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.meta-item.scene-specific {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .meta-item.scene-specific {
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--color-primary);
+}
+
+/* Entry Description */
+.entry-description {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-secondary);
+}
+
+.entry-description strong {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.entry-description p {
+  margin: var(--spacing-xs) 0 0 0;
+  color: var(--text-primary);
+}
+
+/* Entry Content */
+.entry-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.entry-content h4 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.json-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.text-content-wrapper {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.text-content {
+  margin: 0;
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* JSON Error */
+.json-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #ef4444;
+  font-size: var(--font-size-sm);
+}
+
+.error-message svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* World Settings Detail */
+.world-settings-detail .detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.title-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+}
+
+.world-settings-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+/* Markdown Content */
+.markdown-content {
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family-heading);
+  color: var(--text-primary);
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+.markdown-content p {
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.markdown-content li {
+  margin: var(--spacing-xs) 0;
+}
+
+.markdown-content code {
+  font-family: var(--font-family-mono, monospace);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.markdown-content pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--spacing-sm) 0;
+}
+
+.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.markdown-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.markdown-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: var(--spacing-lg) 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lore-body {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .lore-sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-secondary);
+    padding: var(--spacing-md);
+    margin: calc(-1 * var(--spacing-xl));
+    margin-bottom: 0;
+    max-height: 200px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .lore-detail {
+    min-height: 300px;
+  }
+
+  .entry-meta {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .meta-item {
+    width: fit-content;
+  }
+}

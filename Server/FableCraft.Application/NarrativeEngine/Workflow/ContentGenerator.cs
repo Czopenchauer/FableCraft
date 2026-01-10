@@ -19,7 +19,7 @@ internal class ContentGenerator(
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         // Skip if already fully processed
-        if (context.NewCharacters != null && context.NewLore != null && context.NewLocations != null && context.NewItems != null)
+        if (context.NewLore != null && context.NewLocations != null && context.NewItems != null)
         {
             logger.Information("Content already generated, skipping");
             return;
@@ -36,56 +36,68 @@ internal class ContentGenerator(
             .Where(x => x.Importance == CharacterImportance.ArcImportance || x.Importance == CharacterImportance.Significant)
             .ToList();
 
-        Task<CharacterContext[]>? fullCharacterTask = null;
+        Task<CharacterContext[]> fullCharacterTask = Task.FromResult<CharacterContext[]>([]);
         Task<GeneratedPartialProfile[]>? backgroundCharacterTask = null;
         Task<GeneratedLore[]>? loreTask = null;
         Task<LocationGenerationResult[]>? locationTask = null;
         Task<GeneratedItem[]>? itemTask = null;
 
-        if (context.NewCharacters != null)
+        if (fullProfileCharacterRequests.Count > 0)
         {
-            logger.Information("Characters already created, skipping ({Count})", context.NewCharacters.Length);
-        }
-        else
-        {
-            if (fullProfileCharacterRequests.Count > 0)
-            {
-                fullCharacterTask = Task.WhenAll(fullProfileCharacterRequests
-                    .Select(async x =>
+            fullCharacterTask = Task.WhenAll(fullProfileCharacterRequests
+                .Select(async x =>
+                {
+                    CharacterContext character;
+                    if (x.CharacterId != null)
                     {
-                        var character = await characterCrafter.Invoke(context, x, cancellationToken);
-                        if (character.SceneRewrites.Count > 0)
-                        {
-                            return character;
-                        }
+                        character = await characterCrafter.Invoke(context, x, cancellationToken);
+                        x.CharacterId = character.CharacterId;
+                        context.NewCharacters!.Add(character);
+                    }
+                    else
+                    {
+                        character = context.NewCharacters!.Single(y => y.CharacterId == x.CharacterId);
+                    }
 
-                        var reflection = await characterReflectionAgent.Invoke(context, character, context.NewTracker!.Scene!, cancellationToken);
-                        character.SceneRewrites =
-                        [
-                            new CharacterSceneContext
-                            {
-                                Content = reflection.SceneRewrite,
-                                SceneTracker = context.NewTracker!.Scene!,
-                                SequenceNumber = 0
-                            }
-                        ];
-                        character.CharacterMemories = reflection.Memory!.Select(y => new MemoryContext()
-                        {
-                            Salience = y.Salience,
-                            Data = y.ExtensionData!,
-                            SceneTracker = context.NewTracker!.Scene!,
-                            MemoryContent = y.Summary
-                        }).ToList();
-
+                    if (character.CharacterMemories.Count > 0 && character.SceneRewrites.Count > 0)
+                    {
+                        logger.Information("Character {CharacterName} already has memories and scene rewrites, skipping reflection", character.Name);
                         return character;
-                    }).ToArray());
-            }
+                    }
 
-            if (backgroundCharacterRequests.Count > 0)
-            {
-                backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
-                    .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
-            }
+                    var reflection = await characterReflectionAgent.Invoke(context, character, context.NewTracker!.Scene!, cancellationToken);
+                    character.SceneRewrites =
+                    [
+                        new CharacterSceneContext
+                        {
+                            Content = reflection.SceneRewrite,
+                            SceneTracker = context.NewTracker!.Scene!,
+                            SequenceNumber = 0
+                        }
+                    ];
+
+                    var memory = new List<MemoryContext>();
+                    if (reflection.Memory is not null)
+                    {
+                        memory.Add(new MemoryContext
+                        {
+                            Salience = reflection.Memory!.Salience,
+                            Data = reflection.Memory.ExtensionData!,
+                            MemoryContent = reflection.Memory.Summary,
+                            SceneTracker = context.NewTracker!.Scene!,
+                        });
+                    }
+
+                    character.CharacterMemories = memory;
+
+                    return character;
+                }).ToArray());
+        }
+
+        if (backgroundCharacterRequests.Count > 0 && !context.NewBackgroundCharacters.IsEmpty)
+        {
+            backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
+                .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
         }
 
         if (context.NewLore != null)
@@ -118,15 +130,7 @@ internal class ContentGenerator(
                 .Select(item => itemCrafter.Invoke(context, item, cancellationToken)).ToArray());
         }
 
-        if (fullCharacterTask != null)
-        {
-            context.NewCharacters = await fullCharacterTask;
-            logger.Information("Created {Count} new full character profiles", context.NewCharacters.Length);
-        }
-        else
-        {
-            context.NewCharacters ??= Array.Empty<CharacterContext>();
-        }
+        await Task.WhenAll(fullCharacterTask);
 
         if (backgroundCharacterTask != null)
         {

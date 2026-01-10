@@ -36,8 +36,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   // Settings modal state
   showSettingsModal = false;
 
-  // Lore modal state
-  showLoreModal = false;
+  // Adventure State modal state (Lore + Characters)
+  showAdventureStateModal = false;
 
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
@@ -608,17 +608,17 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Open the lore management modal
+   * Open the adventure state modal (Lore + Characters)
    */
-  openLoreModal(): void {
-    this.showLoreModal = true;
+  openAdventureStateModal(): void {
+    this.showAdventureStateModal = true;
   }
 
   /**
-   * Close the lore management modal
+   * Close the adventure state modal
    */
-  closeLoreModal(): void {
-    this.showLoreModal = false;
+  closeAdventureStateModal(): void {
+    this.showAdventureStateModal = false;
   }
 
   /**

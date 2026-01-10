@@ -215,7 +215,7 @@ internal sealed class SaveSceneEnrichment(
             }
         }
 
-        if (context.NewCharacters?.Length > 0)
+        if (context.NewCharacters.Count > 0)
         {
             var characters = await dbContext
                 .Characters

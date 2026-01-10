@@ -518,7 +518,7 @@ internal sealed class SceneGenerationOrchestrator(
                 SimulationMetadata = cs.SimulationMetadata
             })),
             // Sequence number 0 indicates newly introduced characters in this scene
-            NewCharacters = scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
+            NewCharacters = new ConcurrentBag<CharacterContext>(scene.CharacterStates.Where(c => c.SequenceNumber == 0).Select(cs => new CharacterContext
             {
                 CharacterId = cs.CharacterId,
                 Name = cs.CharacterStats.Name!,
@@ -555,7 +555,7 @@ internal sealed class SceneGenerationOrchestrator(
                 Importance = adventureCharacters.Single(ac => ac.CharacterId == cs.CharacterId)
                     .Importance,
                 SimulationMetadata = null,
-            }).ToArray(),
+            })),
             NewLore = new ConcurrentQueue<GeneratedLore>(scene.Lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore))
                 .Select(lb => JsonSerializer.Deserialize<GeneratedLore>(lb.Content)!).ToArray()),
             NewLocations = scene.Lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location))
@@ -584,7 +584,7 @@ internal sealed class SceneGenerationOrchestrator(
             switch (agent)
             {
                 case nameof(EnrichmentAgent.CharacterCrafter):
-                    context.NewCharacters = null;
+                    context.NewCharacters = [];
                     break;
                 case nameof(EnrichmentAgent.LoreCrafter):
                     context.NewLore = [];

@@ -1,0 +1,206 @@
+/* Adventure State Modal - Theme-aware styling */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-container {
+  animation: slideIn 0.3s ease-out;
+  max-width: 1400px;
+  width: 95%;
+  max-height: 90vh;
+  margin: 0 var(--spacing-lg);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: var(--backdrop-blur);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+[data-theme="medieval-fantasy"] .modal-content {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.98) 0%, rgba(45, 24, 16, 0.98) 100%);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(184, 134, 11, 0.1);
+}
+
+/* Header with Tabs */
+.modal-header {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-bottom: 2px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: var(--spacing-lg);
+}
+
+/* Tabs Header */
+.tabs-header {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="modern-dark"] .tab-btn.active {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .tab-btn.active {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: rgba(184, 134, 11, 0.3);
+  color: var(--color-primary);
+}
+
+.tab-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.tab-btn.active .tab-icon {
+  color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .tab-btn.active .tab-icon {
+  color: #a855f7;
+}
+
+/* Close Button */
+.close-button {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.close-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.close-button:hover {
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* Body */
+.modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-container {
+    max-width: 100%;
+    width: 100%;
+    margin: var(--spacing-md);
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    flex-wrap: wrap;
+  }
+
+  .tabs-header {
+    flex: 1;
+    justify-content: center;
+    order: 2;
+    width: 100%;
+    margin-top: var(--spacing-sm);
+  }
+
+  .close-button {
+    order: 1;
+  }
+
+  .tab-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-xs);
+  }
+
+  .tab-btn span {
+    display: none;
+  }
+
+  .tab-icon {
+    width: 20px;
+    height: 20px;
+  }
+}

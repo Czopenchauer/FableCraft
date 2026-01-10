@@ -12,13 +12,13 @@ public sealed class CharacterReflectionOutput
     public required string SceneRewrite { get; set; }
 
     [JsonPropertyName("memory")]
-    public CharacterMemoryOutput[]? Memory { get; set; }
+    public CharacterMemoryOutput? Memory { get; set; }
 
     [JsonPropertyName("relationship_updates")]
     public CharacterRelationshipOutput[] RelationshipUpdates { get; set; } = [];
 
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
+    [JsonPropertyName("profile_updates")]
+    public Dictionary<string, object> ProfileUpdates { get; set; } = [];
 }
 
 public sealed class CharacterMemoryOutput

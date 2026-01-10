@@ -50,7 +50,7 @@ public sealed class ContentGenerationService(
         var context = await BuildContextForContentGeneration(adventureId, lastScene, cancellationToken);
 
         // Clear existing content fields to force regeneration
-        context.NewCharacters = null;
+        context.NewCharacters = [];
         context.NewLocations = null;
         context.NewItems = null;
 
@@ -73,7 +73,7 @@ public sealed class ContentGenerationService(
             "Content generated for adventure {AdventureId}, scene {SceneId}: {CharactersCount} characters, {LocationsCount} locations, {LoreCount} lore, {ItemsCount} items",
             adventureId,
             lastScene.Id,
-            context.NewCharacters?.Length ?? 0,
+            context.NewCharacters?.Count ?? 0,
             context.NewLocations?.Length ?? 0,
             context.NewLore?.Count ?? 0,
             context.NewItems?.Length ?? 0);
@@ -82,7 +82,7 @@ public sealed class ContentGenerationService(
         {
             SceneId = lastScene.Id,
             SequenceNumber = lastScene.SequenceNumber,
-            NewCharactersCount = context.NewCharacters?.Length ?? 0,
+            NewCharactersCount = context.NewCharacters?.Count ?? 0,
             NewLocationsCount = context.NewLocations?.Length ?? 0,
             NewLoreCount = context.NewLore?.Count ?? 0,
             NewItemsCount = context.NewItems?.Length ?? 0,

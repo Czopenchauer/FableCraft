@@ -37,8 +37,6 @@ internal sealed class ItemCrafter(
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.PromptPath)}
 
-                             {PromptSections.CreatedCharacters(context.NewCharacters)}
-
                              {PromptSections.Context(context)}
 
                              {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
