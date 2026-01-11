@@ -12,7 +12,10 @@ public readonly struct CharacterImportance : IEquatable<CharacterImportance>
 
     public string Value { get; }
 
-    private CharacterImportance(string value) => Value = value;
+    private CharacterImportance(string value)
+    {
+        Value = value;
+    }
 
     public override string ToString() => Value;
 
@@ -31,13 +34,16 @@ public readonly struct CharacterImportance : IEquatable<CharacterImportance>
 
 public static class CharacterImportanceConverter
 {
-    public static CharacterImportance FromString(string value) => value switch
-                                                                  {
-                                                                      "arc_important" => CharacterImportance.ArcImportance,
-                                                                      "significant" => CharacterImportance.Significant,
-                                                                      "background" => CharacterImportance.Background,
-                                                                      _ => throw new ArgumentException($"Unknown CharacterImportance value: {value}", nameof(value))
-                                                                  };
+    public static CharacterImportance FromString(string value)
+    {
+        return value switch
+               {
+                   "arc_important" => CharacterImportance.ArcImportance,
+                   "significant" => CharacterImportance.Significant,
+                   "background" => CharacterImportance.Background,
+                   _ => throw new ArgumentException($"Unknown CharacterImportance value: {value}", nameof(value))
+               };
+    }
 }
 
 public class CharacterImportanceJsonConverter : JsonConverter<CharacterImportance>
@@ -56,8 +62,6 @@ public class CharacterImportanceJsonConverter : JsonConverter<CharacterImportanc
 
 public sealed class Character : IEntity
 {
-    public Guid Id { get; set; }
-
     public Guid AdventureId { get; set; }
 
     public required Guid IntroductionScene { get; set; }
@@ -77,4 +81,6 @@ public sealed class Character : IEntity
     public List<CharacterSceneRewrite> CharacterSceneRewrites { get; set; } = new();
 
     public List<CharacterMemory> CharacterMemories { get; set; } = new();
+
+    public Guid Id { get; set; }
 }

@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { TrackerDefinitionService } from '../../services/tracker-definition.service';
-import { TrackerDefinitionResponseDto } from '../../models/tracker-definition.model';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterModule} from '@angular/router';
+import {TrackerDefinitionService} from '../../services/tracker-definition.service';
+import {TrackerDefinitionResponseDto} from '../../models/tracker-definition.model';
 
 @Component({
   selector: 'app-tracker-definition-manager',
@@ -16,7 +16,8 @@ export class TrackerDefinitionManagerComponent implements OnInit {
   isLoading = false;
   error: string | null = null;
 
-  constructor(private trackerDefinitionService: TrackerDefinitionService) {}
+  constructor(private trackerDefinitionService: TrackerDefinitionService) {
+  }
 
   ngOnInit(): void {
     this.loadDefinitions();

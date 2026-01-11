@@ -187,16 +187,16 @@ public sealed class MainCharacterEmulatorAgent(
         if (tracker != null)
         {
             return $"""
-                              {worldSettingsSection}
+                    {worldSettingsSection}
 
-                              <character_state>
-                              Current tracker information reflecting the character's state:
+                    <character_state>
+                    Current tracker information reflecting the character's state:
 
-                              {tracker.ToJsonString()}
-                              </character_state>
+                    {tracker.ToJsonString()}
+                    </character_state>
 
-                              {scenesSection}
-                              """;
+                    {scenesSection}
+                    """;
         }
 
         return $"""

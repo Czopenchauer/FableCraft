@@ -93,8 +93,6 @@ public static class StartupExtensions
 
     public static IServiceCollection AddMessageHandler<TMessage, THandler>(this IServiceCollection services)
         where TMessage : IMessage
-        where THandler : class, IMessageHandler<TMessage>
-    {
-        return services.AddTransient<IMessageHandler<TMessage>, THandler>();
-    }
+        where THandler : class, IMessageHandler<TMessage> =>
+        services.AddTransient<IMessageHandler<TMessage>, THandler>();
 }

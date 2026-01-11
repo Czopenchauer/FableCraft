@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Writer output for character importance tier changes.
-/// Only arc_important &lt;-&gt; significant transitions are valid.
-/// Background characters cannot be upgraded/downgraded.
+///     Writer output for character importance tier changes.
+///     Only arc_important &lt;-&gt; significant transitions are valid.
+///     Background characters cannot be upgraded/downgraded.
 /// </summary>
 public sealed class ImportanceFlags
 {
@@ -17,8 +17,8 @@ public sealed class ImportanceFlags
 }
 
 /// <summary>
-/// Request to change a character's importance tier.
-/// Valid transitions: significant -&gt; arc_important (upgrade) or arc_important -&gt; significant (downgrade).
+///     Request to change a character's importance tier.
+///     Valid transitions: significant -&gt; arc_important (upgrade) or arc_important -&gt; significant (downgrade).
 /// </summary>
 public sealed class ImportanceChangeRequest
 {

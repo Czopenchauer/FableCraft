@@ -1,153 +1,153 @@
-<div class="json-renderer" [class.json-renderer-root]="level === 0">
+<div [class.json-renderer-root]="level === 0" class="json-renderer">
   <div *ngFor="let node of renderedNodes; trackBy: trackByKey" class="json-node">
     <!-- Skip null and undefined values -->
     <ng-container *ngIf="node.type !== ValueType.NULL && node.type !== ValueType.UNDEFINED">
 
-    <!-- OBJECT: Collapsible Panel -->
-    <div *ngIf="node.type === ValueType.OBJECT" class="json-panel">
-      <div
-        class="json-panel-header"
-        [class.constant-field]="node.isConstant"
-        role="button"
-        [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
-        tabindex="0"
-        (click)="toggleExpanded(node.key)"
-        (keydown)="onKeyDown($event, node.key)"
-      >
-        <svg
-          class="chevron-icon"
-          [class.expanded]="isExpanded(node.key)"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <!-- OBJECT: Collapsible Panel -->
+      <div *ngIf="node.type === ValueType.OBJECT" class="json-panel">
+        <div
+          (click)="toggleExpanded(node.key)"
+          (keydown)="onKeyDown($event, node.key)"
+          [attr.aria-expanded]="isExpanded(node.key)"
+          [attr.aria-label]="'Toggle ' + node.label + ' panel'"
+          [class.constant-field]="node.isConstant"
+          class="json-panel-header"
+          role="button"
+          tabindex="0"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="json-key">{{ node.label }}</span>
+          <svg
+            [class.expanded]="isExpanded(node.key)"
+            class="chevron-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M9 5l7 7-7 7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+          <span class="json-key">{{ node.label }}</span>
+        </div>
+
+        <div *ngIf="isExpanded(node.key)" class="json-panel-content">
+          <app-json-renderer
+            [constantFields]="constantFields"
+            [data]="node.value"
+            [level]="level + 1"
+            [parentKey]="buildPath(node.key)"
+          ></app-json-renderer>
+        </div>
       </div>
 
-      <div class="json-panel-content" *ngIf="isExpanded(node.key)">
-        <app-json-renderer
-          [data]="node.value"
-          [level]="level + 1"
-          [parentKey]="buildPath(node.key)"
-          [constantFields]="constantFields"
-        ></app-json-renderer>
-      </div>
-    </div>
-
-    <!-- ARRAY OF OBJECTS: Multiple Collapsible Panels -->
-    <div *ngIf="node.type === ValueType.ARRAY_OF_OBJECTS" class="json-panel">
-      <div
-        class="json-panel-header"
-        [class.constant-field]="node.isConstant"
-        role="button"
-        [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
-        tabindex="0"
-        (click)="toggleExpanded(node.key)"
-        (keydown)="onKeyDown($event, node.key)"
-      >
-        <svg
-          class="chevron-icon"
-          [class.expanded]="isExpanded(node.key)"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <!-- ARRAY OF OBJECTS: Multiple Collapsible Panels -->
+      <div *ngIf="node.type === ValueType.ARRAY_OF_OBJECTS" class="json-panel">
+        <div
+          (click)="toggleExpanded(node.key)"
+          (keydown)="onKeyDown($event, node.key)"
+          [attr.aria-expanded]="isExpanded(node.key)"
+          [attr.aria-label]="'Toggle ' + node.label + ' panel'"
+          [class.constant-field]="node.isConstant"
+          class="json-panel-header"
+          role="button"
+          tabindex="0"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="json-key">{{ node.label }}</span>
+          <svg
+            [class.expanded]="isExpanded(node.key)"
+            class="chevron-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M9 5l7 7-7 7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+          <span class="json-key">{{ node.label }}</span>
+        </div>
+
+        <div *ngIf="isExpanded(node.key)" class="json-panel-content">
+          <app-json-renderer
+            [constantFields]="constantFields"
+            [data]="node.value"
+            [level]="level + 1"
+            [parentKey]="buildPath(node.key)"
+          ></app-json-renderer>
+        </div>
       </div>
 
-      <div class="json-panel-content" *ngIf="isExpanded(node.key)">
-        <app-json-renderer
-          [data]="node.value"
-          [level]="level + 1"
-          [parentKey]="buildPath(node.key)"
-          [constantFields]="constantFields"
-        ></app-json-renderer>
-      </div>
-    </div>
-
-    <!-- ARRAY OF PRIMITIVES: Collapsible List Display -->
-    <div *ngIf="node.type === ValueType.ARRAY_OF_PRIMITIVES" class="json-panel">
-      <div
-        class="json-panel-header"
-        [class.constant-field]="node.isConstant"
-        role="button"
-        [attr.aria-expanded]="isExpanded(node.key)"
-        [attr.aria-label]="'Toggle ' + node.label + ' panel'"
-        tabindex="0"
-        (click)="toggleExpanded(node.key)"
-        (keydown)="onKeyDown($event, node.key)"
-      >
-        <svg
-          class="chevron-icon"
-          [class.expanded]="isExpanded(node.key)"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <!-- ARRAY OF PRIMITIVES: Collapsible List Display -->
+      <div *ngIf="node.type === ValueType.ARRAY_OF_PRIMITIVES" class="json-panel">
+        <div
+          (click)="toggleExpanded(node.key)"
+          (keydown)="onKeyDown($event, node.key)"
+          [attr.aria-expanded]="isExpanded(node.key)"
+          [attr.aria-label]="'Toggle ' + node.label + ' panel'"
+          [class.constant-field]="node.isConstant"
+          class="json-panel-header"
+          role="button"
+          tabindex="0"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="json-key">{{ node.label }}</span>
+          <svg
+            [class.expanded]="isExpanded(node.key)"
+            class="chevron-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M9 5l7 7-7 7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+          <span class="json-key">{{ node.label }}</span>
+        </div>
+
+        <div *ngIf="isExpanded(node.key)" class="json-panel-content">
+          <ul class="json-list">
+            <li *ngFor="let item of $any(node.value)" class="json-list-item">{{ item }}</li>
+          </ul>
+        </div>
       </div>
 
-      <div class="json-panel-content" *ngIf="isExpanded(node.key)">
-        <ul class="json-list">
-          <li *ngFor="let item of $any(node.value)" class="json-list-item">{{ item }}</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- EMPTY ARRAY -->
-    <div *ngIf="node.type === ValueType.ARRAY && $any(node.value).length === 0" class="json-field">
-      <span class="json-key" [class.constant-field]="node.isConstant">
+      <!-- EMPTY ARRAY -->
+      <div *ngIf="node.type === ValueType.ARRAY && $any(node.value).length === 0" class="json-field">
+      <span [class.constant-field]="node.isConstant" class="json-key">
         {{ node.label }}:
       </span>
-      <span class="json-value json-empty">[]</span>
-    </div>
-
-    <!-- STRING -->
-    <div *ngIf="node.type === ValueType.STRING" class="json-field json-field-block">
-      <div class="json-key" [class.constant-field]="node.isConstant">
-        {{ node.label }}:
+        <span class="json-value json-empty">[]</span>
       </div>
-      <div class="json-value json-string">{{ node.value }}</div>
-    </div>
 
-    <!-- NUMBER -->
-    <div *ngIf="node.type === ValueType.NUMBER" class="json-field">
-      <span class="json-key" [class.constant-field]="node.isConstant">
+      <!-- STRING -->
+      <div *ngIf="node.type === ValueType.STRING" class="json-field json-field-block">
+        <div [class.constant-field]="node.isConstant" class="json-key">
+          {{ node.label }}:
+        </div>
+        <div class="json-value json-string">{{ node.value }}</div>
+      </div>
+
+      <!-- NUMBER -->
+      <div *ngIf="node.type === ValueType.NUMBER" class="json-field">
+      <span [class.constant-field]="node.isConstant" class="json-key">
         {{ node.label }}:
       </span>
-      <span class="json-value json-number">{{ node.value }}</span>
-    </div>
+        <span class="json-value json-number">{{ node.value }}</span>
+      </div>
 
-    <!-- BOOLEAN -->
-    <div *ngIf="node.type === ValueType.BOOLEAN" class="json-field">
-      <span class="json-key" [class.constant-field]="node.isConstant">
+      <!-- BOOLEAN -->
+      <div *ngIf="node.type === ValueType.BOOLEAN" class="json-field">
+      <span [class.constant-field]="node.isConstant" class="json-key">
         {{ node.label }}:
       </span>
-      <span class="json-value json-boolean">{{ node.value }}</span>
-    </div>
+        <span class="json-value json-boolean">{{ node.value }}</span>
+      </div>
 
     </ng-container>
   </div>

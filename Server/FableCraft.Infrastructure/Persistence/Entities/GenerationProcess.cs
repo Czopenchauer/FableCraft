@@ -19,8 +19,5 @@ public class GenerationProcess : IEntity
 
     public Guid Id { get; set; }
 
-    public T GetContextAs<T>()
-    {
-        return JsonSerializer.Deserialize<T>(Context, JsonExtensions.JsonSerializerOptions)!;
-    }
+    public T GetContextAs<T>() => JsonSerializer.Deserialize<T>(Context, JsonExtensions.JsonSerializerOptions)!;
 }

@@ -12,12 +12,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent : BaseAgent, IProcessor
 {
+    private const int SceneContextCount = 15;
     private readonly IAgentKernel _agentKernel;
     private readonly IPluginFactory _pluginFactory;
 
@@ -30,15 +29,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         _pluginFactory = pluginFactory;
     }
 
-    private const int SceneContextCount = 15;
-
-    protected override AgentName GetAgentName() => AgentName.WriterAgent;
-
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
         var hasSceneContext = context.SceneContext.Length > 0;
 
@@ -97,16 +92,16 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");
 
-        GeneratedScene newScene = await _agentKernel.SendRequestAsync(
+        var newScene = await _agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
@@ -117,9 +112,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         context.NewScene = newScene;
     }
 
+    protected override AgentName GetAgentName() => AgentName.WriterAgent;
+
     /// <summary>
-    /// Builds a prompt section for pending MC interactions from characters who want to seek the MC.
-    /// Characters with high/immediate urgency should be woven into the upcoming scene.
+    ///     Builds a prompt section for pending MC interactions from characters who want to seek the MC.
+    ///     Characters with high/immediate urgency should be woven into the upcoming scene.
     /// </summary>
     private static string GetPendingMcInteractions(GenerationContext context)
     {

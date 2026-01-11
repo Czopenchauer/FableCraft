@@ -40,7 +40,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            GameScene scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
+            var scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)
@@ -133,7 +133,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            GameScene scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
+            var scene = await _gameService.RegenerateAsync(adventureId, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)

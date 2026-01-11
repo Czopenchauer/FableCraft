@@ -12,7 +12,7 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await dbContext.Scenes
             .Where(x => x.CommitStatus == CommitStatus.Lock)
@@ -39,7 +39,7 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
             }
         }
 
-        foreach (GenerationProcess generationProcess in processes)
+        foreach (var generationProcess in processes)
         {
             if (generationProcess.Step == GenerationProcessStep.GeneratingScene)
             {
@@ -50,8 +50,5 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

@@ -16,10 +16,7 @@ import {
   GenerateLorebookDto,
   SceneEnrichmentResult
 } from '../models/adventure.model';
-import {
-  AdventureSettingsResponseDto,
-  UpdateAdventureSettingsDto
-} from '../models/adventure-settings.model';
+import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../models/adventure-settings.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -49,7 +46,7 @@ export class AdventureService {
    * Get available prompt directories for a given path (for directory browser)
    */
   getPromptDirectories(path?: string): Observable<DirectoryListingDto> {
-    const options = path ? { params: { path } } : {};
+    const options = path ? {params: {path}} : {};
     return this.http.get<DirectoryListingDto>(`${this.apiUrl}/prompt-directories`, options);
   }
 
@@ -121,7 +118,10 @@ export class AdventureService {
    * Submit a player action (choice selection)
    */
   submitAction(adventureId: string, actionText: string): Observable<GameScene> {
-    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/submit`, {adventureId, actionText})
+    return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/submit`, {
+      adventureId,
+      actionText
+    })
       .pipe(map(mapApiResponseToGameScene));
   }
 
@@ -153,7 +153,7 @@ export class AdventureService {
   regenerateEnrichment(adventureId: string, sceneId: string, agentsToRegenerate: string[]): Observable<SceneEnrichmentResult> {
     return this.http.post<SceneEnrichmentResult>(
       `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/enrich/regenerate`,
-      { adventureId, sceneId, agentsToRegenerate }
+      {adventureId, sceneId, agentsToRegenerate}
     );
   }
 

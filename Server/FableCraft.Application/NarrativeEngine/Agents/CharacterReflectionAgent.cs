@@ -11,18 +11,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Character Reflection Agent - runs post-scene for each meaningful character present.
-///
-/// Output:
-/// - scene_rewrite: Full character-POV prose -> stored in KG
-/// - memory: Summary, salience, entities, emotional_tone -> stored in DB
-/// - relationship_updates: Per-character relationship state -> stored in DB
-/// - psychology, motivations, in_development -> stored in CharacterStats
+///     Character Reflection Agent - runs post-scene for each meaningful character present.
+///     Output:
+///     - scene_rewrite: Full character-POV prose -> stored in KG
+///     - memory: Summary, salience, entities, emotional_tone -> stored in DB
+///     - relationship_updates: Per-character relationship state -> stored in DB
+///     - psychology, motivations, in_development -> stored in CharacterStats
 /// </summary>
 internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,
@@ -38,7 +35,7 @@ internal sealed class CharacterReflectionAgent(
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(generationContext);
+        var kernelBuilder = await GetKernelBuilder(generationContext);
 
         var systemPrompt = await BuildInstruction(generationContext, context.Name);
 
@@ -86,14 +83,14 @@ internal sealed class CharacterReflectionAgent(
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterReflectionOutput>("character_reflection", true);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
         await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, generationContext, callerContext, context.CharacterId);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         return await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,

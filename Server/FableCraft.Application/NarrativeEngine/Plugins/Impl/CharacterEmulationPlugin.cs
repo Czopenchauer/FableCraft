@@ -9,8 +9,8 @@ using Microsoft.SemanticKernel;
 namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
-/// Plugin that exposes character emulation functionality as a Semantic Kernel function.
-/// Wraps CharacterAgent and delegates the emulation work to it.
+///     Plugin that exposes character emulation functionality as a Semantic Kernel function.
+///     Wraps CharacterAgent and delegates the emulation work to it.
 /// </summary>
 internal sealed class CharacterEmulationPlugin : PluginBase
 {
@@ -37,8 +37,6 @@ internal sealed class CharacterEmulationPlugin : PluginBase
         string stimulus,
         [Description("\"What do they do?\" / \"What do they say?\" / \"How do they react?\"")]
         string query
-    )
-    {
-        return await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
-    }
+    ) =>
+        await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
 }

@@ -19,7 +19,8 @@ export class DirectoryBrowserComponent implements OnChanges {
   listing: DirectoryListingDto | null = null;
   errorMessage = '';
 
-  constructor(private adventureService: AdventureService) {}
+  constructor(private adventureService: AdventureService) {
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentPath'] && this.isOpen && this.currentPath) {
@@ -103,7 +104,7 @@ export class DirectoryBrowserComponent implements OnChanges {
     let accumulated = '';
     for (const part of parts) {
       accumulated += (accumulated ? '/' : '') + part;
-      result.push({ name: part, path: accumulated });
+      result.push({name: part, path: accumulated});
     }
 
     return result;

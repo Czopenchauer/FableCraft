@@ -3,7 +3,6 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using FluentValidation;
-using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +21,7 @@ public class LorebookController : ControllerBase
     }
 
     /// <summary>
-    /// Get all lorebooks for a worldbook
+    ///     Get all lorebooks for a worldbook
     /// </summary>
     [HttpGet("worldbook/{worldbookId:guid}")]
     [ProducesResponseType(typeof(IEnumerable<LorebookResponseDto>), StatusCodes.Status200OK)]
@@ -31,7 +30,7 @@ public class LorebookController : ControllerBase
         Guid worldbookId,
         CancellationToken cancellationToken)
     {
-        bool worldbookExists = await _dbContext.Worldbooks
+        var worldbookExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Id == worldbookId, cancellationToken);
 
         if (!worldbookExists)
@@ -57,7 +56,7 @@ public class LorebookController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single lorebook by ID
+    ///     Get a single lorebook by ID
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(LorebookResponseDto), StatusCodes.Status200OK)]
@@ -87,7 +86,7 @@ public class LorebookController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new lorebook
+    ///     Create a new lorebook
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(LorebookResponseDto), StatusCodes.Status201Created)]
@@ -99,7 +98,7 @@ public class LorebookController : ControllerBase
         [FromServices] IValidator<LorebookDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -107,7 +106,7 @@ public class LorebookController : ControllerBase
         }
 
         // Check if worldbook exists
-        bool worldbookExists = await _dbContext.Worldbooks
+        var worldbookExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Id == dto.WorldbookId, cancellationToken);
 
         if (!worldbookExists)
@@ -116,7 +115,7 @@ public class LorebookController : ControllerBase
         }
 
         // Check for duplicate title within worldbook
-        bool titleExists = await _dbContext.Lorebooks
+        var titleExists = await _dbContext.Lorebooks
             .AnyAsync(l => l.WorldbookId == dto.WorldbookId && l.Title == dto.Title, cancellationToken);
 
         if (titleExists)
@@ -155,7 +154,7 @@ public class LorebookController : ControllerBase
     }
 
     /// <summary>
-    /// Update an existing lorebook
+    ///     Update an existing lorebook
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(LorebookResponseDto), StatusCodes.Status200OK)]
@@ -168,7 +167,7 @@ public class LorebookController : ControllerBase
         [FromServices] IValidator<LorebookDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -185,7 +184,7 @@ public class LorebookController : ControllerBase
         // Check if worldbook exists (in case WorldbookId is being changed)
         if (lorebook.WorldbookId != dto.WorldbookId)
         {
-            bool worldbookExists = await _dbContext.Worldbooks
+            var worldbookExists = await _dbContext.Worldbooks
                 .AnyAsync(w => w.Id == dto.WorldbookId, cancellationToken);
 
             if (!worldbookExists)
@@ -195,7 +194,7 @@ public class LorebookController : ControllerBase
         }
 
         // Check for duplicate title within worldbook (excluding current lorebook)
-        bool titleExists = await _dbContext.Lorebooks
+        var titleExists = await _dbContext.Lorebooks
             .AnyAsync(l => l.WorldbookId == dto.WorldbookId && l.Title == dto.Title && l.Id != id, cancellationToken);
 
         if (titleExists)
@@ -229,7 +228,7 @@ public class LorebookController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a lorebook
+    ///     Delete a lorebook
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -249,4 +248,3 @@ public class LorebookController : ControllerBase
         return NoContent();
     }
 }
-

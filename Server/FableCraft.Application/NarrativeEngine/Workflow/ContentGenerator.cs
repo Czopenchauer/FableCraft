@@ -36,7 +36,7 @@ internal class ContentGenerator(
             .Where(x => x.Importance == CharacterImportance.ArcImportance || x.Importance == CharacterImportance.Significant)
             .ToList();
 
-        Task<CharacterContext[]> fullCharacterTask = Task.FromResult<CharacterContext[]>([]);
+        var fullCharacterTask = Task.FromResult<CharacterContext[]>([]);
         Task<GeneratedPartialProfile[]>? backgroundCharacterTask = null;
         Task<GeneratedLore[]>? loreTask = null;
         Task<LocationGenerationResult[]>? locationTask = null;
@@ -59,7 +59,6 @@ internal class ContentGenerator(
                         {
                             x.CharacterId = character.CharacterId;
                             context.NewCharacters!.Add(character);
-                            
                         }
                     }
 
@@ -88,7 +87,7 @@ internal class ContentGenerator(
                             Salience = reflection.Memory!.Salience,
                             Data = reflection.Memory.ExtensionData!,
                             MemoryContent = reflection.Memory.Summary,
-                            SceneTracker = context.NewTracker!.Scene!,
+                            SceneTracker = context.NewTracker!.Scene!
                         });
                     }
 
@@ -103,6 +102,7 @@ internal class ContentGenerator(
         {
             hasBackgroundCharacters = context.NewBackgroundCharacters.Count > 0;
         }
+
         if (backgroundCharacterRequests.Count > 0 && hasBackgroundCharacters)
         {
             backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
@@ -161,10 +161,11 @@ internal class ContentGenerator(
             int loreCount;
             lock (context)
             {
-                foreach (GeneratedLore generatedLore in lore)
+                foreach (var generatedLore in lore)
                 {
                     context.NewLore!.Add(generatedLore);
                 }
+
                 loreCount = context.NewLore!.Count;
             }
 

@@ -18,7 +18,7 @@ public class CharacterMemoryConfiguration : IEntityTypeConfiguration<CharacterMe
         builder.Property(x => x.SceneTracker).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<SceneTracker>(x, options)!);
-        
+
         builder.Property(x => x.Data).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<IDictionary<string, object>>(x, options)!);

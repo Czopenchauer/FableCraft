@@ -11,8 +11,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class ResolutionAgent(
@@ -23,8 +21,6 @@ internal sealed class ResolutionAgent(
 {
     private const int SceneContextCount = 2;
 
-    protected override AgentName GetAgentName() => AgentName.ResolutionAgent;
-
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         if (context.NewResolution != null)
@@ -33,7 +29,7 @@ internal sealed class ResolutionAgent(
             return;
         }
 
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
         var hasSceneContext = context.SceneContext.Length > 0;
 
@@ -75,12 +71,12 @@ internal sealed class ResolutionAgent(
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernelSkBuilder = kernelBuilder.Create();
-        Kernel kernel = kernelSkBuilder.Build();
+        var kernelSkBuilder = kernelBuilder.Create();
+        var kernel = kernelSkBuilder.Build();
 
         var outputParser = ResponseParser.CreateTextParser("resolution");
 
-        string resolutionOutput = await agentKernel.SendRequestAsync(
+        var resolutionOutput = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
@@ -90,4 +86,6 @@ internal sealed class ResolutionAgent(
 
         context.NewResolution = resolutionOutput;
     }
+
+    protected override AgentName GetAgentName() => AgentName.ResolutionAgent;
 }

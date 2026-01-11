@@ -13,27 +13,27 @@ using Serilog;
 namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
-/// Plugin providing tools for character agents during cohort simulation.
-/// Includes knowledge graph queries and reflection submission.
+///     Plugin providing tools for character agents during cohort simulation.
+///     Includes knowledge graph queries and reflection submission.
 /// </summary>
 internal class CharacterSimulationToolsPlugin : CharacterPluginBase
 {
-    private readonly IRagSearch _ragSearch;
-    private readonly ILogger _logger;
     private const int MaxQueries = 10;
+    private readonly ILogger _logger;
+    private readonly IRagSearch _ragSearch;
     private int _queryCount;
-
-    /// <summary>
-    /// The submitted reflection output from the character.
-    /// Set when submit_reflection is called.
-    /// </summary>
-    public StandaloneSimulationOutput? SubmittedReflection { get; private set; }
 
     public CharacterSimulationToolsPlugin(IRagSearch ragSearch, ILogger logger)
     {
         _ragSearch = ragSearch;
         _logger = logger;
     }
+
+    /// <summary>
+    ///     The submitted reflection output from the character.
+    ///     Set when submit_reflection is called.
+    /// </summary>
+    public StandaloneSimulationOutput? SubmittedReflection { get; private set; }
 
     [KernelFunction("query_knowledge_graph")]
     [Description(
@@ -48,7 +48,8 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
         {
             _logger.Warning(
                 "Maximum knowledge graph queries reached for character {CharacterId} in AdventureId: {AdventureId}",
-                CharacterId, CallerContext?.AdventureId);
+                CharacterId,
+                CallerContext?.AdventureId);
             return $"Maximum number of knowledge graph queries ({MaxQueries}) reached. You cannot perform more searches!";
         }
 
@@ -98,7 +99,7 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
     {
         try
         {
-            var options = PromptSections.GetJsonOptions(ignoreNull: true);
+            var options = PromptSections.GetJsonOptions(true);
             var reflection = JsonSerializer.Deserialize<StandaloneSimulationOutput>(outputJson, options);
 
             if (reflection == null)

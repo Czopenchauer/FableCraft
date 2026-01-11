@@ -15,9 +15,9 @@ namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 /// </summary>
 internal class WorldKnowledgePlugin : PluginBase
 {
-    private readonly IRagSearch _ragSearch;
-    private readonly ILogger _logger;
     private const int MaxQueries = 10;
+    private readonly ILogger _logger;
+    private readonly IRagSearch _ragSearch;
     private int _queryCount;
 
     public WorldKnowledgePlugin(IRagSearch ragSearch, ILogger logger)
@@ -37,7 +37,9 @@ internal class WorldKnowledgePlugin : PluginBase
     {
         if (_queryCount >= MaxQueries)
         {
-            _logger.Warning("Maximum number of world knowledge queries reached for AdventureId: {AdventureId} and caller {caller}", CallerContext?.AdventureId, CallerContext?.CallerType);
+            _logger.Warning("Maximum number of world knowledge queries reached for AdventureId: {AdventureId} and caller {caller}",
+                CallerContext?.AdventureId,
+                CallerContext?.CallerType);
             return $"Maximum number of world knowledge queries ({MaxQueries}) reached. You cannot perform more searches!";
         }
 

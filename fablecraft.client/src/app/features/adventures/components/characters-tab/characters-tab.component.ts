@@ -1,7 +1,7 @@
 import {Component, Input, OnChanges, SimpleChanges} from '@angular/core';
 import {CharacterService} from '../../services/character.service';
 import {ToastService} from '../../../../core/services/toast.service';
-import {CharacterListItem, CharacterDetail, CharacterImportance} from '../../models/character.model';
+import {CharacterDetail, CharacterImportance, CharacterListItem} from '../../models/character.model';
 
 @Component({
   selector: 'app-characters-tab',
@@ -24,7 +24,8 @@ export class CharactersTabComponent implements OnChanges {
   constructor(
     private characterService: CharacterService,
     private toastService: ToastService
-  ) {}
+  ) {
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Load characters when becoming active for the first time
@@ -33,54 +34,11 @@ export class CharactersTabComponent implements OnChanges {
     }
   }
 
-  private loadCharacters(): void {
-    if (!this.adventureId) return;
-
-    this.isLoading = true;
-
-    this.characterService.getCharacterList(this.adventureId).subscribe({
-      next: (characters) => {
-        this.characters = characters;
-        this.isLoading = false;
-        this.hasLoaded = true;
-
-        // Auto-select first character if available
-        if (characters.length > 0 && !this.selectedCharacterId) {
-          this.selectCharacter(characters[0].characterId);
-        }
-      },
-      error: (err) => {
-        console.error('Error loading characters:', err);
-        this.toastService.error('Failed to load characters.');
-        this.isLoading = false;
-      }
-    });
-  }
-
   selectCharacter(characterId: string): void {
     if (this.selectedCharacterId === characterId) return;
 
     this.selectedCharacterId = characterId;
     this.loadCharacterDetail(characterId);
-  }
-
-  private loadCharacterDetail(characterId: string): void {
-    if (!this.adventureId) return;
-
-    this.isLoadingDetail = true;
-    this.selectedCharacter = null;
-
-    this.characterService.getCharacterDetail(this.adventureId, characterId).subscribe({
-      next: (character) => {
-        this.selectedCharacter = character;
-        this.isLoadingDetail = false;
-      },
-      error: (err) => {
-        console.error('Error loading character detail:', err);
-        this.toastService.error('Failed to load character details.');
-        this.isLoadingDetail = false;
-      }
-    });
   }
 
   getImportanceBadgeClass(character: CharacterListItem): string {
@@ -127,5 +85,48 @@ export class CharactersTabComponent implements OnChanges {
     if (this.selectedCharacterId && this.adventureId) {
       this.loadCharacterDetail(this.selectedCharacterId);
     }
+  }
+
+  private loadCharacters(): void {
+    if (!this.adventureId) return;
+
+    this.isLoading = true;
+
+    this.characterService.getCharacterList(this.adventureId).subscribe({
+      next: (characters) => {
+        this.characters = characters;
+        this.isLoading = false;
+        this.hasLoaded = true;
+
+        // Auto-select first character if available
+        if (characters.length > 0 && !this.selectedCharacterId) {
+          this.selectCharacter(characters[0].characterId);
+        }
+      },
+      error: (err) => {
+        console.error('Error loading characters:', err);
+        this.toastService.error('Failed to load characters.');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private loadCharacterDetail(characterId: string): void {
+    if (!this.adventureId) return;
+
+    this.isLoadingDetail = true;
+    this.selectedCharacter = null;
+
+    this.characterService.getCharacterDetail(this.adventureId, characterId).subscribe({
+      next: (character) => {
+        this.selectedCharacter = character;
+        this.isLoadingDetail = false;
+      },
+      error: (err) => {
+        console.error('Error loading character detail:', err);
+        this.toastService.error('Failed to load character details.');
+        this.isLoadingDetail = false;
+      }
+    });
   }
 }

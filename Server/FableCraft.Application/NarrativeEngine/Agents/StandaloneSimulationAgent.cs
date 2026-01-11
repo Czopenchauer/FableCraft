@@ -13,14 +13,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Simulates a single arc_important character during off-screen time periods.
-/// The character lives through the time period, pursuing goals, handling problems,
-/// and potentially deciding to seek out the MC or other profiled characters.
+///     Simulates a single arc_important character during off-screen time periods.
+///     The character lives through the time period, pursuing goals, handling problems,
+///     and potentially deciding to seek out the MC or other profiled characters.
 /// </summary>
 internal sealed class StandaloneSimulationAgent(
     IAgentKernel agentKernel,
@@ -37,7 +35,7 @@ internal sealed class StandaloneSimulationAgent(
         StandaloneSimulationInput input,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
         systemPrompt = await PopulateSystemPlaceholders(systemPrompt, input, context);
@@ -47,7 +45,7 @@ internal sealed class StandaloneSimulationAgent(
         chatHistory.AddUserMessage(BuildContextPrompt(input, context));
         chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
 
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
@@ -58,13 +56,13 @@ internal sealed class StandaloneSimulationAgent(
             callerContext,
             input.Character.CharacterId);
 
-        Kernel builtKernel = kernel.Build();
+        var builtKernel = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<StandaloneSimulationOutput>(
             "solo_simulation",
-            ignoreNull: true);
+            true);
 
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -108,7 +106,7 @@ internal sealed class StandaloneSimulationAgent(
 
     private string BuildContextPrompt(StandaloneSimulationInput input, GenerationContext context)
     {
-        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var jsonOptions = PromptSections.GetJsonOptions(true);
         var characterName = input.Character.Name;
 
         var arcImportantCharacters = context.Characters
@@ -122,44 +120,42 @@ internal sealed class StandaloneSimulationAgent(
             .ToArray();
 
         return $"""
-            <identity>
-            {input.Character.CharacterState.ToJsonString(jsonOptions)}
-            </identity>
+                <identity>
+                {input.Character.CharacterState.ToJsonString(jsonOptions)}
+                </identity>
 
-            <physical_state>
-            {input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}"}
-            </physical_state>
+                <physical_state>
+                {input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}"}
+                </physical_state>
 
-            <relationships>
-            {FormatRelationships(input.Character)}
-            </relationships>
+                <relationships>
+                {FormatRelationships(input.Character)}
+                </relationships>
 
-            <world_events>
-            {FormatWorldEvents(input.WorldEvents)}
-            </world_events>
+                <world_events>
+                {FormatWorldEvents(input.WorldEvents)}
+                </world_events>
 
-            <available_npcs>
-            **Arc-important characters** (cannot interact):
-            {FormatCharacterList(arcImportantCharacters)}
+                <available_npcs>
+                **Arc-important characters** (cannot interact):
+                {FormatCharacterList(arcImportantCharacters)}
 
-            **Significant characters** (can interact with, log interactions to character_events):
-            {FormatCharacterList(significantCharacters)}
-            </available_npcs>
+                **Significant characters** (can interact with, log interactions to character_events):
+                {FormatCharacterList(significantCharacters)}
+                </available_npcs>
 
-            <last_scenes>
-            {BuildSceneHistoryContent(input.Character)}
-            </last_scenes>
-            """;
+                <last_scenes>
+                {BuildSceneHistoryContent(input.Character)}
+                </last_scenes>
+                """;
     }
 
-    private static string BuildRequestPrompt(StandaloneSimulationInput input)
-    {
-        return $"""
-            Live through the period: {input.TimePeriod}
+    private static string BuildRequestPrompt(StandaloneSimulationInput input) =>
+        $"""
+         Live through the period: {input.TimePeriod}
 
-            What do you do? What happens? How are you affected?
-            """;
-    }
+         What do you do? What happens? How are you affected?
+         """;
 
     private static string FormatRelationships(CharacterContext character)
     {
@@ -175,7 +171,7 @@ internal sealed class StandaloneSimulationAgent(
             sb.AppendLine($"**Dynamic:** {rel.Dynamic}");
             if (rel.Data.Count > 0)
             {
-                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(ignoreNull: true))}");
+                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(true))}");
             }
 
             sb.AppendLine();

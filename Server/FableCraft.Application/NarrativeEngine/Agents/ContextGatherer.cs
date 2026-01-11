@@ -12,7 +12,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 using SearchResult = FableCraft.Infrastructure.Clients.SearchResult;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
@@ -26,8 +25,6 @@ internal sealed class ContextGatherer(
 {
     private const int SceneContextCount = 10;
 
-    protected override AgentName GetAgentName() => AgentName.ContextGatherer;
-
     public async Task Invoke(
         GenerationContext context,
         CancellationToken cancellationToken)
@@ -38,7 +35,7 @@ internal sealed class ContextGatherer(
             return;
         }
 
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
 
         var chatHistory = new ChatHistory();
@@ -76,9 +73,9 @@ internal sealed class ContextGatherer(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<ContextGathererOutput>("output");
-        Kernel kernel = kernelBuilder.Create().Build();
+        var kernel = kernelBuilder.Create().Build();
 
-        ContextGathererOutput output = await agentKernel.SendRequestAsync(
+        var output = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             kernelBuilder.GetDefaultPromptExecutionSettings(),
@@ -92,7 +89,7 @@ internal sealed class ContextGatherer(
             var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);
             var narrativeContext = new List<ContextItem>(output.CarriedForward.NarrativeContext);
 
-            Task<SearchResult[]> worldQueryTasks = Task.FromResult(Array.Empty<SearchResult>());
+            var worldQueryTasks = Task.FromResult(Array.Empty<SearchResult>());
             if (output.WorldQueries.Length > 0)
             {
                 var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
@@ -158,6 +155,8 @@ internal sealed class ContextGatherer(
             logger.Error(ex, "Error gathering context for adventure {AdventureId}", context.AdventureId);
         }
     }
+
+    protected override AgentName GetAgentName() => AgentName.ContextGatherer;
 
     private static string GetPreviousContextSummary(GenerationContext context)
     {

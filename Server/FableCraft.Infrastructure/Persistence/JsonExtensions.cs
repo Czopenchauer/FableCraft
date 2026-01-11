@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -17,23 +18,17 @@ public static partial class JsonExtensions
     [GeneratedRegex(@"^(?<property>\w+)\[(?<identifier>.+)\]$")]
     private static partial Regex ArrayAccessPattern();
 
-    public static string ToJsonString<T>(this T obj)
-    {
-        return JsonSerializer.Serialize(obj, JsonSerializerOptions);
-    }
+    public static string ToJsonString<T>(this T obj) => JsonSerializer.Serialize(obj, JsonSerializerOptions);
 
-    public static string ToJsonString<T>(this T obj, JsonSerializerOptions options)
-    {
-        return JsonSerializer.Serialize(obj, options);
-    }
+    public static string ToJsonString<T>(this T obj, JsonSerializerOptions options) => JsonSerializer.Serialize(obj, options);
 
     /// <summary>
-    /// Patches an object with updates specified using dot-notation paths.
-    /// Each key is a path like "psychology.emotional_baseline" and the value
-    /// is the complete object to replace at that path.
-    /// Supports array item access by identifier e.g.: "Skills[Consciousness Analysis]" or
-    /// "MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"
-    /// Dots inside brackets are preserved (e.g., "in_development[Curiosity vs. Discipline]")
+    ///     Patches an object with updates specified using dot-notation paths.
+    ///     Each key is a path like "psychology.emotional_baseline" and the value
+    ///     is the complete object to replace at that path.
+    ///     Supports array item access by identifier e.g.: "Skills[Consciousness Analysis]" or
+    ///     "MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"
+    ///     Dots inside brackets are preserved (e.g., "in_development[Curiosity vs. Discipline]")
     /// </summary>
     public static T PatchWith<T>(this T original, IDictionary<string, object> updates)
     {
@@ -57,7 +52,7 @@ public static partial class JsonExtensions
     private static string[] SplitPathRespectingBrackets(string path)
     {
         var segments = new List<string>();
-        var currentSegment = new System.Text.StringBuilder();
+        var currentSegment = new StringBuilder();
         var bracketDepth = 0;
 
         foreach (var c in path)
@@ -96,8 +91,8 @@ public static partial class JsonExtensions
 
     private static void SetValueAtPath(JsonNode root, string[] pathSegments, object? value)
     {
-        JsonNode current = root;
-        for (int i = 0; i < pathSegments.Length - 1; i++)
+        var current = root;
+        for (var i = 0; i < pathSegments.Length - 1; i++)
         {
             current = NavigateToSegment(current, pathSegments[i]);
         }
@@ -111,7 +106,7 @@ public static partial class JsonExtensions
             var identifier = arrayMatch.Groups["identifier"].Value;
 
             var arrayNode = current[arrayProperty] as JsonArray
-                ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array");
+                            ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array");
 
             if (TryFindArrayItemByIdentifier(arrayNode, identifier, out var itemIndex))
             {
@@ -151,19 +146,19 @@ public static partial class JsonExtensions
             var identifier = arrayMatch.Groups["identifier"].Value;
 
             var arrayNode = current[arrayProperty] as JsonArray
-                ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array or not found");
+                            ?? throw new InvalidOperationException($"Property '{arrayProperty}' is not an array or not found");
 
             var item = FindArrayItemByIdentifier(arrayNode, identifier, arrayProperty);
             return item;
         }
 
         return current[segment]
-            ?? throw new InvalidOperationException($"Path segment '{segment}' not found");
+               ?? throw new InvalidOperationException($"Path segment '{segment}' not found");
     }
 
     private static bool TryFindArrayItemByIdentifier(JsonArray array, string identifier, out int index)
     {
-        for (int i = 0; i < array.Count; i++)
+        for (var i = 0; i < array.Count; i++)
         {
             var item = array[i];
             if (item is JsonObject obj && HasMatchingStringProperty(obj, identifier))
@@ -192,13 +187,12 @@ public static partial class JsonExtensions
     {
         foreach (var property in obj)
         {
-            if (property.Value is JsonValue jsonValue &&
-                jsonValue.TryGetValue<string>(out var stringValue) &&
-                stringValue == identifier)
+            if (property.Value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue) && stringValue == identifier)
             {
                 return true;
             }
         }
+
         return false;
     }
 }

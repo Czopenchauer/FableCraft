@@ -18,7 +18,7 @@ public class LorebookEntryController : ControllerBase
     }
 
     /// <summary>
-    /// Get all lorebook entries for an adventure including world settings
+    ///     Get all lorebook entries for an adventure including world settings
     /// </summary>
     [HttpGet("adventure/{adventureId:guid}")]
     [ProducesResponseType(typeof(AdventureLoreResponseDto), StatusCodes.Status200OK)]
@@ -66,7 +66,7 @@ public class LorebookEntryController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single lorebook entry by ID
+    ///     Get a single lorebook entry by ID
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(LorebookEntryResponseDto), StatusCodes.Status200OK)]

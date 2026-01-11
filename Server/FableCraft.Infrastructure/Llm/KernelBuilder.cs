@@ -31,16 +31,21 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
 
     public string Value { get; }
 
-    private LlmProvider(string value) => Value = value;
+    private LlmProvider(string value)
+    {
+        Value = value;
+    }
 
-    public static LlmProvider FromString(string value) =>
-        value.ToLowerInvariant() switch
-        {
-            "openai" => OpenAi,
-            "gemini" => Gemini,
-            "anthropic" => Anthropic,
-            _ => OpenAi
-        };
+    public static LlmProvider FromString(string value)
+    {
+        return value.ToLowerInvariant() switch
+               {
+                   "openai" => OpenAi,
+                   "gemini" => Gemini,
+                   "anthropic" => Anthropic,
+                   _ => OpenAi
+               };
+    }
 
     public override string ToString() => Value;
 
@@ -71,11 +76,11 @@ public sealed class KernelBuilderFactory
         var provider = LlmProvider.FromString(preset.Provider);
 
         return provider switch
-        {
-            _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
-            _ when provider == LlmProvider.Anthropic => new AnthropicKernelBuilder(preset, _loggerFactory),
-            _ => new OpenAiKernelBuilder(preset, _loggerFactory)
-        };
+               {
+                   _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
+                   _ when provider == LlmProvider.Anthropic => new AnthropicKernelBuilder(preset, _loggerFactory),
+                   _ => new OpenAiKernelBuilder(preset, _loggerFactory)
+               };
     }
 }
 
@@ -93,7 +98,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
     [Experimental("EXTEXP0001")]
     public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
-        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
+        var builder = Kernel
             .CreateBuilder()
             .AddOpenAIChatCompletion(_preset.Model, new Uri(_preset.BaseUrl!), _preset.ApiKey);
 
@@ -110,9 +115,8 @@ internal class OpenAiKernelBuilder : IKernelBuilder
         return builder;
     }
 
-    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
-    {
-        return new OpenAIPromptExecutionSettings
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings() =>
+        new OpenAIPromptExecutionSettings
         {
             MaxTokens = _preset.MaxTokens,
             Temperature = _preset.Temperature,
@@ -130,11 +134,9 @@ internal class OpenAiKernelBuilder : IKernelBuilder
                 }
             }
         };
-    }
 
-    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
-    {
-        return new OpenAIPromptExecutionSettings
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
+        new OpenAIPromptExecutionSettings
         {
             MaxTokens = _preset.MaxTokens,
             Temperature = _preset.Temperature,
@@ -156,7 +158,6 @@ internal class OpenAiKernelBuilder : IKernelBuilder
                 }
             }
         };
-    }
 }
 
 internal class GeminiKernelBuilder : IKernelBuilder
@@ -181,7 +182,7 @@ internal class GeminiKernelBuilder : IKernelBuilder
     [Experimental("EXTEXP0001")]
     public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
-        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel
+        var builder = Kernel
             .CreateBuilder()
             .AddGoogleAIGeminiChatCompletion(_preset.Model, _preset.ApiKey);
 
@@ -198,9 +199,8 @@ internal class GeminiKernelBuilder : IKernelBuilder
         return builder;
     }
 
-    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
-    {
-        return new GeminiPromptExecutionSettings
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings() =>
+        new GeminiPromptExecutionSettings
         {
             MaxTokens = _preset.MaxTokens,
             Temperature = _preset.Temperature,
@@ -208,11 +208,9 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopK = _preset.TopK,
             SafetySettings = DefaultSafetySettings
         };
-    }
 
-    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
-    {
-        return new GeminiPromptExecutionSettings
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
+        new GeminiPromptExecutionSettings
         {
             MaxTokens = _preset.MaxTokens,
             Temperature = _preset.Temperature,
@@ -221,7 +219,6 @@ internal class GeminiKernelBuilder : IKernelBuilder
             ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
             SafetySettings = DefaultSafetySettings
         };
-    }
 }
 
 internal class AnthropicKernelBuilder : IKernelBuilder
@@ -243,22 +240,21 @@ internal class AnthropicKernelBuilder : IKernelBuilder
             Timeout = TimeSpan.FromMinutes(10)
         };
 
-        IChatClient chatClient = anthropicClient
+        var chatClient = anthropicClient
             .AsIChatClient(_preset.Model)
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
 
-        Microsoft.SemanticKernel.IKernelBuilder builder = Kernel.CreateBuilder();
+        var builder = Kernel.CreateBuilder();
         builder.Services.AddChatClient(chatClient);
         builder.Services.AddSingleton(_loggerFactory);
 
         return builder;
     }
 
-    public PromptExecutionSettings GetDefaultPromptExecutionSettings()
-    {
-        return new PromptExecutionSettings
+    public PromptExecutionSettings GetDefaultPromptExecutionSettings() =>
+        new()
         {
             FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
             ExtensionData = new Dictionary<string, object>
@@ -268,11 +264,9 @@ internal class AnthropicKernelBuilder : IKernelBuilder
                 ["top_p"] = _preset.TopP ?? 1.0
             }
         };
-    }
 
-    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings()
-    {
-        return new PromptExecutionSettings
+    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
+        new()
         {
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
             {
@@ -286,5 +280,4 @@ internal class AnthropicKernelBuilder : IKernelBuilder
                 ["top_p"] = _preset.TopP ?? 1.0
             }
         };
-    }
 }

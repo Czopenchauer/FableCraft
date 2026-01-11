@@ -5,7 +5,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 using Serilog;
 
@@ -23,7 +22,7 @@ internal sealed class SaveSceneEnrichment(
             .Scenes
             .Include(x => x.CharacterStates)
             .Include(x => x.Lorebooks)
-            .SingleAsync(x => x.Id == context.NewSceneId && x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
+            .SingleAsync(x => x.Id == context.NewSceneId && x.AdventureId == context.AdventureId, cancellationToken);
 
         scene.Metadata.Tracker = context.NewTracker!;
         scene.EnrichmentStatus = EnrichmentStatus.Enriched;
@@ -60,15 +59,15 @@ internal sealed class SaveSceneEnrichment(
         lock (context)
         {
             loreEntities = context.NewLore?.Select(x => new LorebookEntry
-                               {
-                                   AdventureId = context.AdventureId,
-                                   Description = x.Description,
-                                   Title = x.Title,
-                                   Category = nameof(LorebookCategory.Lore),
-                                   Content = x.ToJsonString(),
-                                   ContentType = ContentType.json
-                               }).ToList()
-                               ?? new List<LorebookEntry>();
+                           {
+                               AdventureId = context.AdventureId,
+                               Description = x.Description,
+                               Title = x.Title,
+                               Category = nameof(LorebookCategory.Lore),
+                               Content = x.ToJsonString(),
+                               ContentType = ContentType.json
+                           }).ToList()
+                           ?? new List<LorebookEntry>();
 
             var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
                                      {
@@ -99,15 +98,15 @@ internal sealed class SaveSceneEnrichment(
         }
 
         var chroniclerLore = context.ChroniclerLore?.Select(x => new LorebookEntry
-                           {
-                               AdventureId = context.AdventureId,
-                               Description = x.Description,
-                               Title = x.Title,
-                               Category = nameof(LorebookCategory.Lore),
-                               Content = x.ToJsonString(),
-                               ContentType = ContentType.json
-                           }).ToList()
-                           ?? new List<LorebookEntry>();
+                             {
+                                 AdventureId = context.AdventureId,
+                                 Description = x.Description,
+                                 Title = x.Title,
+                                 Category = nameof(LorebookCategory.Lore),
+                                 Content = x.ToJsonString(),
+                                 ContentType = ContentType.json
+                             }).ToList()
+                             ?? new List<LorebookEntry>();
 
         var locationEntities = context.NewLocations?.Select(x => new LorebookEntry
                                {
@@ -136,11 +135,11 @@ internal sealed class SaveSceneEnrichment(
         loreEntities.AddRange(itemsEntities);
         scene.Lorebooks = loreEntities;
 
-        IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
+        var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
-            await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var generationProcess = await dbContext.GenerationProcesses.FirstOrDefaultAsync(x => x.AdventureId == context.AdventureId, cancellationToken: cancellationToken);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            var generationProcess = await dbContext.GenerationProcesses.FirstOrDefaultAsync(x => x.AdventureId == context.AdventureId, cancellationToken);
             if (generationProcess != null)
             {
                 dbContext.GenerationProcesses.Remove(generationProcess);
@@ -184,9 +183,9 @@ internal sealed class SaveSceneEnrichment(
             var characters = await dbContext
                 .Characters
                 .Where(x => x.AdventureId == context.AdventureId && updateNames.Contains(x.Name))
-                .ToListAsync(cancellationToken: cancellationToken);
+                .ToListAsync(cancellationToken);
 
-            foreach (Character character in characters)
+            foreach (var character in characters)
             {
                 var update = characterUpdates.Single(x => x.Name == character.Name);
                 character.CharacterStates.Add(new CharacterState
@@ -204,7 +203,7 @@ internal sealed class SaveSceneEnrichment(
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
-                    Salience = x.Salience,
+                    Salience = x.Salience
                 });
 
                 var relationships = update.Relationships.Select(x => new CharacterRelationship
@@ -213,7 +212,7 @@ internal sealed class SaveSceneEnrichment(
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    UpdateTime = x.UpdateTime,
+                    UpdateTime = x.UpdateTime
                 });
                 var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {
@@ -235,9 +234,9 @@ internal sealed class SaveSceneEnrichment(
             var characters = await dbContext
                 .Characters
                 .Where(x => x.AdventureId == context.AdventureId && newCharacterNames.Contains(x.Name))
-                .ToListAsync(cancellationToken: cancellationToken);
+                .ToListAsync(cancellationToken);
 
-            foreach (CharacterContext contextNewCharacter in newCharacters)
+            foreach (var contextNewCharacter in newCharacters)
             {
                 var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
                 {
@@ -245,7 +244,7 @@ internal sealed class SaveSceneEnrichment(
                     Scene = scene,
                     Summary = x.MemoryContent,
                     Data = x.Data,
-                    Salience = x.Salience,
+                    Salience = x.Salience
                 }).ToList();
 
                 var relationships = contextNewCharacter.Relationships.Select(x => new CharacterRelationship
@@ -278,7 +277,7 @@ internal sealed class SaveSceneEnrichment(
                         Name = contextNewCharacter.Name,
                         CharacterStates =
                         [
-                            new()
+                            new CharacterState
                             {
                                 Description = contextNewCharacter.Description,
                                 CharacterStats = contextNewCharacter.CharacterState,
@@ -292,7 +291,7 @@ internal sealed class SaveSceneEnrichment(
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
                         Importance = contextNewCharacter.Importance,
-                        IntroductionScene = scene.Id,
+                        IntroductionScene = scene.Id
                     };
                     dbContext.Characters.Add(newChar);
                 }
@@ -309,8 +308,10 @@ internal sealed class SaveSceneEnrichment(
             {
                 return;
             }
+
             eventIds = context.CharacterEventsToConsume.ToList();
         }
+
         if (eventIds.Count == 0)
         {
             return;
@@ -323,7 +324,7 @@ internal sealed class SaveSceneEnrichment(
                 cancellationToken);
     }
 
-    private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
+    private async static Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
     {
         List<CharacterEventToSave> eventsToSave;
         lock (context)
@@ -332,8 +333,10 @@ internal sealed class SaveSceneEnrichment(
             {
                 return;
             }
+
             eventsToSave = context.NewCharacterEvents.ToList();
         }
+
         if (eventsToSave.Count == 0)
         {
             return;
@@ -381,9 +384,10 @@ internal sealed class SaveSceneEnrichment(
         foreach (var invalid in invalidRequests)
         {
             logger.Warning(
-                "Invalid importance transition requested for {Character}: {From} -> {To}. " +
-                "Only arc_important <-> significant transitions are supported.",
-                invalid.Character, invalid.From, invalid.To);
+                "Invalid importance transition requested for {Character}: {From} -> {To}. " + "Only arc_important <-> significant transitions are supported.",
+                invalid.Character,
+                invalid.From,
+                invalid.To);
         }
 
         if (validRequests.Count == 0)
@@ -411,15 +415,15 @@ internal sealed class SaveSceneEnrichment(
 
             logger.Information(
                 "Updating importance for {Character}: {From} -> {To}. Reason: {Reason}",
-                request.Character, request.From, request.To, request.Reason);
+                request.Character,
+                request.From,
+                request.To,
+                request.Reason);
 
             character.Importance = newImportance;
         }
     }
 
-    private static bool IsValidTransition(ImportanceChangeRequest request)
-    {
-        return (request.From == "arc_important" && request.To == "significant") ||
-               (request.From == "significant" && request.To == "arc_important");
-    }
+    private static bool IsValidTransition(ImportanceChangeRequest request) =>
+        request.From == "arc_important" && request.To == "significant" || request.From == "significant" && request.To == "arc_important";
 }

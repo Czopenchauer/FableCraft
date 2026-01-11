@@ -59,8 +59,8 @@ internal class AdventureCreationService : IAdventureCreationService
         AdventureDto adventureDto,
         CancellationToken cancellationToken)
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        TrackerDefinition tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken);
+        var now = _timeProvider.GetUtcNow();
+        var tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken);
 
         List<LorebookEntry> lorebookEntries = new();
         if (adventureDto.WorldbookId != null)
@@ -94,7 +94,7 @@ internal class AdventureCreationService : IAdventureCreationService
             AgentLlmPresets = adventureDto.AgentLlmPresets.Select(p => new AdventureAgentLlmPreset
                 {
                     LlmPresetId = p.LlmPresetId,
-                    AgentName = p.AgentName,
+                    AgentName = p.AgentName
                 })
                 .ToList(),
             PromptPath = adventureDto.PromptPath
@@ -120,7 +120,7 @@ internal class AdventureCreationService : IAdventureCreationService
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,
         CancellationToken cancellationToken)
     {
-        Adventure? adventure = await _dbContext.Adventures
+        var adventure = await _dbContext.Adventures
             .FirstOrDefaultAsync(w => w.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -138,7 +138,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
     public async Task DeleteAdventureAsync(Guid adventureId, CancellationToken cancellationToken)
     {
-        Adventure? adventure = await _dbContext.Adventures
+        var adventure = await _dbContext.Adventures
             .Include(w => w.MainCharacter)
             .Include(w => w.Lorebook)
             .Include(x => x.Scenes)
@@ -162,7 +162,7 @@ internal class AdventureCreationService : IAdventureCreationService
             throw;
         }
 
-        await _dbContext.Chunks.Where(x => x.AdventureId == adventureId).ExecuteDeleteAsync(cancellationToken: cancellationToken);
+        await _dbContext.Chunks.Where(x => x.AdventureId == adventureId).ExecuteDeleteAsync(cancellationToken);
         _dbContext.Adventures.Remove(adventure);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

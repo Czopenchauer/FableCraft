@@ -10,8 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class MainCharacterTrackerAgent(
@@ -26,7 +24,7 @@ internal sealed class MainCharacterTrackerAgent(
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await BuildInstruction(context);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
@@ -60,7 +58,7 @@ internal sealed class MainCharacterTrackerAgent(
         {
             requestPrompt = $"""
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
-                             
+
                              New scene content:
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
 
@@ -71,9 +69,9 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        Kernel kernelWithKg = kernel.Build();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var kernel = kernelBuilder.Create();
+        var kernelWithKg = kernel.Build();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -86,7 +84,7 @@ internal sealed class MainCharacterTrackerAgent(
 
     private async Task<string> BuildInstruction(GenerationContext context)
     {
-        JsonSerializerOptions options = PromptSections.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
         var trackerPrompt = GetSystemPrompt(structure);
 
@@ -96,13 +94,7 @@ internal sealed class MainCharacterTrackerAgent(
             (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)));
     }
 
-    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
-    }
+    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure) => TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
 
-    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-    }
+    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure) => TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
 }

@@ -6,26 +6,6 @@ namespace FableCraft.Application.NarrativeEngine.Models;
 
 internal sealed class GenerationContext
 {
-    public void SetupRequiredFields(
-        SceneContext[] sceneContext,
-        TrackerStructure trackerStructure,
-        MainCharacter mainCharacter,
-        List<CharacterContext> characters,
-        AdventureAgentLlmPreset[] agentLlmPresets,
-        string promptPath,
-        string adventureStartTime,
-        LorebookEntry[] previouslyGeneratedLore)
-    {
-        SceneContext = sceneContext;
-        TrackerStructure = trackerStructure;
-        MainCharacter = mainCharacter;
-        Characters = characters;
-        AgentLlmPreset = agentLlmPresets;
-        PromptPath = promptPath;
-        AdventureStartTime = adventureStartTime;
-        PreviouslyGeneratedLore = previouslyGeneratedLore;
-    }
-
     public required Guid AdventureId { get; set; }
 
     public required string PlayerAction { get; set; }
@@ -83,47 +63,70 @@ internal sealed class GenerationContext
 
     public Guid? NewSceneId { get; set; }
 
-    public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
-
     public ChroniclerOutput? ChroniclerOutput { get; set; }
 
     public GeneratedLore[] ChroniclerLore { get; set; } = [];
 
     /// <summary>
-    /// Writer guidance from ChroniclerAgent for the next scene.
+    ///     Writer guidance from ChroniclerAgent for the next scene.
     /// </summary>
     public WriterGuidance? WriterGuidance => ChroniclerOutput?.WriterGuidance;
 
     /// <summary>
-    /// World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
+    ///     World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
     /// </summary>
     public List<WorldEvent> NewWorldEvents { get; set; } = [];
 
     /// <summary>
-    /// Chronicler story state to persist in scene metadata.
+    ///     Chronicler story state to persist in scene metadata.
     /// </summary>
     public ChroniclerStoryState? NewChroniclerState => ChroniclerOutput?.StoryState;
 
     /// <summary>
-    /// Simulation plan from SimulationPlannerAgent.
+    ///     Simulation plan from SimulationPlannerAgent.
     /// </summary>
     public SimulationPlannerOutput? SimulationPlan { get; set; }
 
     /// <summary>
-    /// CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
-    /// Collected by OffscreenInferenceProcessor after processing events.
+    ///     CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
+    ///     Collected by OffscreenInferenceProcessor after processing events.
     /// </summary>
     public List<Guid> CharacterEventsToConsume { get; set; } = [];
 
     /// <summary>
-    /// New CharacterEvents to save in SaveEnrichmentStep.
-    /// Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
+    ///     New CharacterEvents to save in SaveEnrichmentStep.
+    ///     Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
     /// </summary>
     public List<CharacterEventToSave> NewCharacterEvents { get; set; } = [];
+
+    public void SetupRequiredFields(
+        SceneContext[] sceneContext,
+        TrackerStructure trackerStructure,
+        MainCharacter mainCharacter,
+        List<CharacterContext> characters,
+        AdventureAgentLlmPreset[] agentLlmPresets,
+        string promptPath,
+        string adventureStartTime,
+        LorebookEntry[] previouslyGeneratedLore)
+    {
+        SceneContext = sceneContext;
+        TrackerStructure = trackerStructure;
+        MainCharacter = mainCharacter;
+        Characters = characters;
+        AgentLlmPreset = agentLlmPresets;
+        PromptPath = promptPath;
+        AdventureStartTime = adventureStartTime;
+        PreviouslyGeneratedLore = previouslyGeneratedLore;
+    }
+
+    public Tracker? LatestTracker()
+    {
+        return SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
+    }
 }
 
 /// <summary>
-/// Data for a CharacterEvent to be saved.
+///     Data for a CharacterEvent to be saved.
 /// </summary>
 internal sealed class CharacterEventToSave
 {

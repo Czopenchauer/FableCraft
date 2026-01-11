@@ -5,8 +5,7 @@ import {
   CharacterDetail,
   CharacterImportance,
   CharacterMemory,
-  CharacterRelationship,
-  CharacterSceneRewrite
+  CharacterRelationship
 } from '../../models/character.model';
 
 interface EditModalState {
@@ -51,16 +50,25 @@ export class CharacterDetailComponent {
   constructor(
     private characterService: CharacterService,
     private toastService: ToastService
-  ) {}
+  ) {
+  }
+
+  get hasImportanceChanges(): boolean {
+    return this.pendingImportance !== null && this.pendingImportance !== this.character.importance;
+  }
+
+  get hasMoreMemories(): boolean {
+    return this.character.characterMemories.length < this.character.totalMemoriesCount;
+  }
+
+  get hasMoreRewrites(): boolean {
+    return this.character.sceneRewrites.length < this.character.totalSceneRewritesCount;
+  }
 
   // Importance handling
   onImportanceChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.pendingImportance = select.value as CharacterImportance;
-  }
-
-  get hasImportanceChanges(): boolean {
-    return this.pendingImportance !== null && this.pendingImportance !== this.character.importance;
   }
 
   saveImportance(): void {
@@ -165,6 +173,79 @@ export class CharacterDetailComponent {
     }
   }
 
+  onModalCancel(): void {
+    this.closeModal();
+  }
+
+  // Load more memories
+  loadMoreMemories(): void {
+    if (!this.adventureId || this.isLoadingMoreMemories) return;
+
+    this.isLoadingMoreMemories = true;
+    const offset = this.character.characterMemories.length;
+
+    this.characterService.getCharacterMemories(
+      this.adventureId,
+      this.character.characterId,
+      offset,
+      20
+    ).subscribe({
+      next: (response) => {
+        this.character.characterMemories = [
+          ...this.character.characterMemories,
+          ...response.items
+        ];
+        this.isLoadingMoreMemories = false;
+      },
+      error: (err) => {
+        console.error('Error loading more memories:', err);
+        this.toastService.error('Failed to load more memories');
+        this.isLoadingMoreMemories = false;
+      }
+    });
+  }
+
+  // Load more scene rewrites
+  loadMoreRewrites(): void {
+    if (!this.adventureId || this.isLoadingMoreRewrites) return;
+
+    this.isLoadingMoreRewrites = true;
+    const offset = this.character.sceneRewrites.length;
+
+    this.characterService.getCharacterSceneRewrites(
+      this.adventureId,
+      this.character.characterId,
+      offset,
+      20
+    ).subscribe({
+      next: (response) => {
+        this.character.sceneRewrites = [
+          ...this.character.sceneRewrites,
+          ...response.items
+        ];
+        this.isLoadingMoreRewrites = false;
+      },
+      error: (err) => {
+        console.error('Error loading more rewrites:', err);
+        this.toastService.error('Failed to load more scene rewrites');
+        this.isLoadingMoreRewrites = false;
+      }
+    });
+  }
+
+  getImportanceLabel(importance: CharacterImportance): string {
+    switch (importance) {
+      case 'arc_important':
+        return 'Arc Important';
+      case 'significant':
+        return 'Significant';
+      case 'background':
+        return 'Background';
+      default:
+        return importance;
+    }
+  }
+
   private saveProfile(data: { description: string; characterStats: any }): void {
     this.characterService.updateCharacterProfile(
       this.adventureId!,
@@ -261,10 +342,6 @@ export class CharacterDetailComponent {
     });
   }
 
-  onModalCancel(): void {
-    this.closeModal();
-  }
-
   private closeModal(): void {
     this.editModal = {
       isOpen: false,
@@ -273,82 +350,5 @@ export class CharacterDetailComponent {
       type: null
     };
     this.isSaving = false;
-  }
-
-  // Load more memories
-  loadMoreMemories(): void {
-    if (!this.adventureId || this.isLoadingMoreMemories) return;
-
-    this.isLoadingMoreMemories = true;
-    const offset = this.character.characterMemories.length;
-
-    this.characterService.getCharacterMemories(
-      this.adventureId,
-      this.character.characterId,
-      offset,
-      20
-    ).subscribe({
-      next: (response) => {
-        this.character.characterMemories = [
-          ...this.character.characterMemories,
-          ...response.items
-        ];
-        this.isLoadingMoreMemories = false;
-      },
-      error: (err) => {
-        console.error('Error loading more memories:', err);
-        this.toastService.error('Failed to load more memories');
-        this.isLoadingMoreMemories = false;
-      }
-    });
-  }
-
-  // Load more scene rewrites
-  loadMoreRewrites(): void {
-    if (!this.adventureId || this.isLoadingMoreRewrites) return;
-
-    this.isLoadingMoreRewrites = true;
-    const offset = this.character.sceneRewrites.length;
-
-    this.characterService.getCharacterSceneRewrites(
-      this.adventureId,
-      this.character.characterId,
-      offset,
-      20
-    ).subscribe({
-      next: (response) => {
-        this.character.sceneRewrites = [
-          ...this.character.sceneRewrites,
-          ...response.items
-        ];
-        this.isLoadingMoreRewrites = false;
-      },
-      error: (err) => {
-        console.error('Error loading more rewrites:', err);
-        this.toastService.error('Failed to load more scene rewrites');
-        this.isLoadingMoreRewrites = false;
-      }
-    });
-  }
-
-  get hasMoreMemories(): boolean {
-    return this.character.characterMemories.length < this.character.totalMemoriesCount;
-  }
-
-  get hasMoreRewrites(): boolean {
-    return this.character.sceneRewrites.length < this.character.totalSceneRewritesCount;
-  }
-
-  getImportanceLabel(importance: CharacterImportance): string {
-    switch (importance) {
-      case 'arc_important':
-        return 'Arc Important';
-      case 'significant':
-        return 'Significant';
-      case 'background':
-        return 'Background';
-      default:
-        return importance;
-    }
   }
 }

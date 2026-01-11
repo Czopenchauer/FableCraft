@@ -10,9 +10,9 @@
         <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
               stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
       </svg>
-      <span class="path-text" [title]="currentPath">{{ currentPath || 'Select directory...' }}</span>
+      <span [title]="currentPath" class="path-text">{{ currentPath || 'Select directory...' }}</span>
     </div>
-    <svg class="chevron-icon" [class.open]="isOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg [class.open]="isOpen" class="chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
     </svg>
   </div>
@@ -90,5 +90,5 @@
   </div>
 
   <!-- Backdrop to close dropdown -->
-  <div *ngIf="isOpen" (click)="closeDropdown()" class="browser-backdrop"></div>
+  <div (click)="closeDropdown()" *ngIf="isOpen" class="browser-backdrop"></div>
 </div>

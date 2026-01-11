@@ -23,7 +23,7 @@ internal abstract class BaseAgent
     protected abstract AgentName GetAgentName();
 
     /// <summary>
-    /// Gets the prompt for the specified agent. Prompt file must be named {AgentName}.md
+    ///     Gets the prompt for the specified agent. Prompt file must be named {AgentName}.md
     /// </summary>
     protected async Task<string> GetPromptAsync(GenerationContext generationContext)
     {

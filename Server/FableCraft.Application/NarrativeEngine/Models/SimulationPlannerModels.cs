@@ -5,33 +5,33 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Input context for the SimulationPlanner agent.
+///     Input context for the SimulationPlanner agent.
 /// </summary>
 internal sealed class SimulationPlannerInput
 {
     /// <summary>
-    /// Current scene tracker with time, location, and characters present.
+    ///     Current scene tracker with time, location, and characters present.
     /// </summary>
     public required SceneTracker SceneTracker { get; init; }
 
     /// <summary>
-    /// All arc_important and significant characters.
+    ///     All arc_important and significant characters.
     /// </summary>
     public required List<CharacterRosterEntry> CharacterRoster { get; init; }
 
     /// <summary>
-    /// Active world events that may affect character behavior.
+    ///     Active world events that may affect character behavior.
     /// </summary>
     public object? WorldEvents { get; init; }
 
     /// <summary>
-    /// Writer guidance from Chronicler - where the story is heading.
+    ///     Writer guidance from Chronicler - where the story is heading.
     /// </summary>
     public WriterGuidance? NarrativeDirection { get; init; }
 }
 
 /// <summary>
-/// Character data for simulation planning.
+///     Character data for simulation planning.
 /// </summary>
 internal sealed class CharacterRosterEntry
 {
@@ -64,7 +64,7 @@ internal sealed class CharacterRosterEntry
 }
 
 /// <summary>
-/// Entry for a character's pending MC interaction.
+///     Entry for a character's pending MC interaction.
 /// </summary>
 internal sealed class PendingMcInteractionEntry
 {
@@ -76,48 +76,48 @@ internal sealed class PendingMcInteractionEntry
 }
 
 /// <summary>
-/// Output from the SimulationPlanner agent.
+///     Output from the SimulationPlanner agent.
 /// </summary>
 internal sealed class SimulationPlannerOutput
 {
     /// <summary>
-    /// False when no simulation is needed this cycle.
+    ///     False when no simulation is needed this cycle.
     /// </summary>
     [JsonPropertyName("simulation_needed")]
     public bool? SimulationNeeded { get; init; }
 
     /// <summary>
-    /// Reason when simulation_needed is false.
+    ///     Reason when simulation_needed is false.
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
 
     /// <summary>
-    /// How much in-world time to simulate.
+    ///     How much in-world time to simulate.
     /// </summary>
     [JsonPropertyName("simulation_period")]
     public SimulationPeriod? SimulationPeriod { get; init; }
 
     /// <summary>
-    /// Groups of 2-4 arc_important characters to simulate together.
+    ///     Groups of 2-4 arc_important characters to simulate together.
     /// </summary>
     [JsonPropertyName("cohorts")]
     public List<SimulationCohort>? Cohorts { get; init; }
 
     /// <summary>
-    /// arc_important characters to simulate alone.
+    ///     arc_important characters to simulate alone.
     /// </summary>
     [JsonPropertyName("standalone")]
     public List<StandaloneSimulation>? Standalone { get; set; }
 
     /// <summary>
-    /// arc_important characters who don't need simulation (present_in_scene or recently_simulated).
+    ///     arc_important characters who don't need simulation (present_in_scene or recently_simulated).
     /// </summary>
     [JsonPropertyName("skip")]
     public List<SkippedCharacter>? Skip { get; init; }
 
     /// <summary>
-    /// Significant characters likely to appear in next scene (need OffscreenInference).
+    ///     Significant characters likely to appear in next scene (need OffscreenInference).
     /// </summary>
     [JsonPropertyName("significant_for_inference")]
     public List<SignificantForInference>? SignificantForInference { get; init; }
@@ -127,7 +127,7 @@ internal sealed class SimulationPlannerOutput
 }
 
 /// <summary>
-/// Time period for simulation.
+///     Time period for simulation.
 /// </summary>
 internal sealed class SimulationPeriod
 {
@@ -139,12 +139,12 @@ internal sealed class SimulationPeriod
 }
 
 /// <summary>
-/// A group of characters to simulate together.
+///     A group of characters to simulate together.
 /// </summary>
 internal sealed class SimulationCohort
 {
     /// <summary>
-    /// Names of characters in this cohort.
+    ///     Names of characters in this cohort.
     /// </summary>
     [JsonPropertyName("characters")]
     public required List<string> Characters { get; init; }
@@ -154,12 +154,12 @@ internal sealed class SimulationCohort
 }
 
 /// <summary>
-/// A character to simulate alone.
+///     A character to simulate alone.
 /// </summary>
 internal sealed class StandaloneSimulation
 {
     /// <summary>
-    /// Character name.
+    ///     Character name.
     /// </summary>
     [JsonPropertyName("character")]
     public required string Character { get; init; }
@@ -169,12 +169,12 @@ internal sealed class StandaloneSimulation
 }
 
 /// <summary>
-/// A character skipped from simulation.
+///     A character skipped from simulation.
 /// </summary>
 internal sealed class SkippedCharacter
 {
     /// <summary>
-    /// Character name.
+    ///     Character name.
     /// </summary>
     [JsonPropertyName("character")]
     public required string Character { get; init; }
@@ -184,12 +184,12 @@ internal sealed class SkippedCharacter
 }
 
 /// <summary>
-/// A significant character that needs OffscreenInference before next scene.
+///     A significant character that needs OffscreenInference before next scene.
 /// </summary>
 internal sealed class SignificantForInference
 {
     /// <summary>
-    /// Character name.
+    ///     Character name.
     /// </summary>
     [JsonPropertyName("character")]
     public required string Character { get; init; }

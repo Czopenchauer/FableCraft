@@ -11,13 +11,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Creates lightweight character profiles for background characters.
-/// Output is stored as LorebookEntry in World KG, not as Character entity.
+///     Creates lightweight character profiles for background characters.
+///     Output is stored as LorebookEntry in World KG, not as Character entity.
 /// </summary>
 internal sealed class PartialProfileCrafter(
     IAgentKernel agentKernel,
@@ -32,7 +30,7 @@ internal sealed class PartialProfileCrafter(
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
 
         var chatHistory = new ChatHistory();
@@ -57,10 +55,10 @@ internal sealed class PartialProfileCrafter(
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<GeneratedPartialProfile>("partial_profile");
 

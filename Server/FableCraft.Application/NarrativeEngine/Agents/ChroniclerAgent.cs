@@ -11,14 +11,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// The Chronicler is the story's memory and conscience. It watches what happens and understands
-/// the narrative implications—tracking dramatic questions, promises, threads, stakes, windows,
-/// and world momentum. It provides writer guidance for scene generation.
+///     The Chronicler is the story's memory and conscience. It watches what happens and understands
+///     the narrative implications—tracking dramatic questions, promises, threads, stakes, windows,
+///     and world momentum. It provides writer guidance for scene generation.
 /// </summary>
 internal sealed class ChroniclerAgent(
     IAgentKernel agentKernel,
@@ -40,7 +38,7 @@ internal sealed class ChroniclerAgent(
             return context.ChroniclerOutput;
         }
 
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
@@ -54,14 +52,14 @@ internal sealed class ChroniclerAgent(
         var requestPrompt = await BuildRequestPrompt(context, isFirstScene, cancellationToken);
         chatHistory.AddUserMessage(requestPrompt);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<ChroniclerOutput>("chronicler", true);
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,

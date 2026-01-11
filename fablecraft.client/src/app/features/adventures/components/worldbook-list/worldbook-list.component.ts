@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { WorldbookResponseDto } from '../../models/worldbook.model';
-import { WorldbookService } from '../../services/worldbook.service';
+import {Component, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {WorldbookResponseDto} from '../../models/worldbook.model';
+import {WorldbookService} from '../../services/worldbook.service';
 
 @Component({
   selector: 'app-worldbook-list',
@@ -22,7 +22,8 @@ export class WorldbookListComponent implements OnInit {
   constructor(
     private worldbookService: WorldbookService,
     private router: Router
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.loadWorldbooks();
@@ -56,7 +57,7 @@ export class WorldbookListComponent implements OnInit {
 
   deleteWorldbook(event: Event, worldbookId: string, worldbookName: string): void {
     event.stopPropagation();
-    this.worldbookToDelete = { id: worldbookId, name: worldbookName };
+    this.worldbookToDelete = {id: worldbookId, name: worldbookName};
     this.showDeleteModal = true;
   }
 

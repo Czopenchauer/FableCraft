@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ToastService, Toast } from '../../../core/services/toast.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Toast, ToastService} from '../../../core/services/toast.service';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
 
 interface ToastWithTimer extends Toast {
   timeoutId?: any;
@@ -17,7 +17,8 @@ export class ToastComponent implements OnInit, OnDestroy {
   toasts: ToastWithTimer[] = [];
   private destroy$ = new Subject<void>();
 
-  constructor(private toastService: ToastService) {}
+  constructor(private toastService: ToastService) {
+  }
 
   ngOnInit(): void {
     this.toastService.getToasts()
@@ -35,18 +36,6 @@ export class ToastComponent implements OnInit, OnDestroy {
     });
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private addToast(toast: Toast): void {
-    const toastWithTimer: ToastWithTimer = { ...toast };
-
-    this.toasts.push(toastWithTimer);
-
-    if (toast.duration && toast.duration > 0) {
-      toastWithTimer.timeoutId = setTimeout(() => {
-        this.removeToast(toast.id);
-      }, toast.duration);
-    }
   }
 
   removeToast(id: string): void {
@@ -70,6 +59,18 @@ export class ToastComponent implements OnInit, OnDestroy {
       case 'info':
       default:
         return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+    }
+  }
+
+  private addToast(toast: Toast): void {
+    const toastWithTimer: ToastWithTimer = {...toast};
+
+    this.toasts.push(toastWithTimer);
+
+    if (toast.duration && toast.duration > 0) {
+      toastWithTimer.timeoutId = setTimeout(() => {
+        this.removeToast(toast.id);
+      }, toast.duration);
     }
   }
 }

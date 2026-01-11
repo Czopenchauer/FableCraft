@@ -20,17 +20,17 @@ using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Agent that emulates character actions based on personality, motivations, and context.
-/// Manages per-character chat histories and LLM interactions.
+///     Agent that emulates character actions based on personality, motivations, and context.
+///     Manages per-character chat histories and LLM interactions.
 /// </summary>
 internal sealed class CharacterAgent : BaseAgent
 {
-    private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
-    private GenerationContext _generationContext = null!;
-    private IKernelBuilder _kernelBuilder = null!;
     private readonly IAgentKernel _agentKernel;
     private readonly ILogger _logger;
     private readonly IPluginFactory _pluginFactory;
+    private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
+    private GenerationContext _generationContext = null!;
+    private IKernelBuilder _kernelBuilder = null!;
 
     public CharacterAgent(IAgentKernel agentKernel,
         ILogger logger,
@@ -182,12 +182,12 @@ internal sealed class CharacterAgent : BaseAgent
         }
 
         otherCharacters.ForEach(c => builder.AppendLine($"""
-                                                                         <character name="{c.Name}">
-                                                                         Appearance: {c.CharacterTracker?.Appearance}
-                                                                         GeneralBuild: {c.CharacterTracker?.GeneralBuild}
-                                                                         {c.Description}
-                                                                         </character>
-                                                                         """));
+                                                         <character name="{c.Name}">
+                                                         Appearance: {c.CharacterTracker?.Appearance}
+                                                         GeneralBuild: {c.CharacterTracker?.GeneralBuild}
+                                                         {c.Description}
+                                                         </character>
+                                                         """));
         return builder.ToString();
     }
 
@@ -203,16 +203,16 @@ internal sealed class CharacterAgent : BaseAgent
             return "Character not found.";
         }
 
-        (CharacterContext characterContext, ChatHistory chatHistory) = ctx;
-        Microsoft.SemanticKernel.IKernelBuilder kernel = _kernelBuilder.Create();
+        var (characterContext, chatHistory) = ctx;
+        var kernel = _kernelBuilder.Create();
 
         var callerContext = new CallerContext(GetType(), _generationContext.AdventureId, _generationContext.NewSceneId);
         await _pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
         await _pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
 
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
         var chat = new ChatHistory();
-        foreach (ChatMessageContent chatMessageContent in chatHistory)
+        foreach (var chatMessageContent in chatHistory)
         {
             chat.Add(chatMessageContent);
         }
@@ -230,10 +230,7 @@ internal sealed class CharacterAgent : BaseAgent
         return response;
     }
 
-    private async Task<string> BuildInstruction(GenerationContext context)
-    {
-        return await GetPromptAsync(context);
-    }
+    private async Task<string> BuildInstruction(GenerationContext context) => await GetPromptAsync(context);
 
     protected override AgentName GetAgentName() => AgentName.CharacterPlugin;
 }

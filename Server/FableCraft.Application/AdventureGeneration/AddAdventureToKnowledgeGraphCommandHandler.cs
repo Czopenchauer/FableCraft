@@ -7,9 +7,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-
-using Adventure = FableCraft.Infrastructure.Persistence.Entities.Adventure.Adventure;
 
 namespace FableCraft.Application.AdventureGeneration;
 
@@ -28,8 +25,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
     {
         ragChunkService.EnsureDirectoryExists(message.AdventureId);
 
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        Adventure adventure = await dbContext.Adventures
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var adventure = await dbContext.Adventures
             .Include(x => x.MainCharacter)
             .Include(x => x.Lorebook)
             .Include(x => x.Scenes)
@@ -49,12 +46,12 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .Where(x => adventure.Lorebook.Select(y => y.Id).Contains(x.EntityId))
             .ToListAsync(cancellationToken);
 
-        foreach (LorebookEntry lorebookEntry in adventure.Lorebook.OrderBy(x => x.Priority))
+        foreach (var lorebookEntry in adventure.Lorebook.OrderBy(x => x.Priority))
         {
-            Chunk? existingChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == lorebookEntry.Id);
+            var existingChunk = existingLorebookChunks.SingleOrDefault(y => y.EntityId == lorebookEntry.Id);
             if (existingChunk is null)
             {
-                Chunk newLorebookChunk = ragChunkService.CreateChunk(
+                var newLorebookChunk = ragChunkService.CreateChunk(
                     lorebookEntry.Id,
                     message.AdventureId,
                     lorebookEntry.Content,
@@ -79,11 +76,11 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                                 """;
 
         var characterHash = ragChunkService.ComputeHash(characterContent);
-        Chunk? existingCharacterChunk = existingCharacterChunks.FirstOrDefault(x => x.ContentHash == characterHash);
+        var existingCharacterChunk = existingCharacterChunks.FirstOrDefault(x => x.ContentHash == characterHash);
 
         if (existingCharacterChunk is null)
         {
-            Chunk newCharacterChunk = ragChunkService.CreateChunk(
+            var newCharacterChunk = ragChunkService.CreateChunk(
                 adventure.MainCharacter.Id,
                 message.AdventureId,
                 characterContent,
@@ -101,10 +98,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 .ExecuteUpdateAsync(x => x.SetProperty(a => a.RagProcessingStatus, ProcessingStatus.InProgress),
                     cancellationToken);
 
-            IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
+            var strategy = dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     ragChunkService.EnsureDirectoryExists(message.AdventureId);
@@ -116,7 +113,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
 
                     await ragChunkService.CognifyDatasetsAsync([worldDataset, mainCharacterDataset], cancellationToken: cancellationToken);
 
-                    foreach (FileToWrite file in filesToCommit)
+                    foreach (var file in filesToCommit)
                     {
                         dbContext.Chunks.Add(file.Chunk);
                     }
@@ -140,10 +137,10 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .ExecuteUpdateAsync(x => x.SetProperty(a => a.SceneGenerationStatus, ProcessingStatus.InProgress),
                 cancellationToken);
 
-        IExecutionStrategy executionStrategy = dbContext.Database.CreateExecutionStrategy();
+        var executionStrategy = dbContext.Database.CreateExecutionStrategy();
         await executionStrategy.ExecuteAsync(async () =>
         {
-            await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 await sceneGenerationOrchestrator.GenerateSceneAsync(message.AdventureId, string.Empty, cancellationToken);

@@ -12,7 +12,7 @@ internal class ContextGathererOutput
 
     [JsonPropertyName("narrative_queries")]
     public ContextQuery[] NarrativeQueries { get; set; } = [];
-    
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

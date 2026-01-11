@@ -12,7 +12,7 @@ public static class ConfigureCosmos
             .AddAzureCosmosDB(cosmosAccountName)
             .ConfigureInfrastructure(infra =>
             {
-                CosmosDBAccount cosmosDbAccount = infra.GetProvisionableResources()
+                var cosmosDbAccount = infra.GetProvisionableResources()
                     .OfType<CosmosDBAccount>()
                     .Single();
 
@@ -35,7 +35,7 @@ public static class ConfigureCosmos
         var cosmosDatabase = cosmosDb.AddCosmosDatabase(cosmosDatabaseName);
         cosmosDb.ConfigureInfrastructure(infra =>
         {
-            CosmosDBSqlDatabase database = infra.GetProvisionableResources()
+            var database = infra.GetProvisionableResources()
                 .OfType<CosmosDBSqlDatabase>()
                 .Single(x => x.Name.Value == cosmosDatabaseName);
 
@@ -47,7 +47,7 @@ public static class ConfigureCosmos
         _ = cosmosDatabase.AddContainer(adventureContainer, "/partitionKey");
         cosmosDb.ConfigureInfrastructure(infra =>
         {
-            CosmosDBSqlContainer container = infra.GetProvisionableResources()
+            var container = infra.GetProvisionableResources()
                 .OfType<CosmosDBSqlContainer>()
                 .Single(x => x.Name.Value == adventureContainer);
 

@@ -10,10 +10,10 @@ using Serilog;
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 /// <summary>
-/// Orchestrates off-screen character simulation after a scene ends.
-/// Runs SimulationPlanner to determine which characters need simulation,
-/// then executes standalone simulations for arc_important characters
-/// and cohort simulations for characters who interact together.
+///     Orchestrates off-screen character simulation after a scene ends.
+///     Runs SimulationPlanner to determine which characters need simulation,
+///     then executes standalone simulations for arc_important characters
+///     and cohort simulations for characters who interact together.
 /// </summary>
 internal sealed class SimulationOrchestrator(
     SimulationPlannerAgent plannerAgent,
@@ -47,7 +47,7 @@ internal sealed class SimulationOrchestrator(
         }
 
         var charactersInScene = context.NewTracker?.Scene?.CharactersPresent ?? [];
-        foreach (StandaloneSimulation standaloneSimulation in plan.Standalone ?? [])
+        foreach (var standaloneSimulation in plan.Standalone ?? [])
         {
             if (charactersInScene.Contains(standaloneSimulation.Character))
             {
@@ -63,7 +63,9 @@ internal sealed class SimulationOrchestrator(
             string.Join(", ", string.Join("+", plan.Standalone?.Select(c => c.Character) ?? [])),
             string.Join(", ", string.Join("+", plan.Skip?.Select(c => c.Character) ?? [])));
 
-        await Task.WhenAll(RunStandaloneSimulations(context, plan, cancellationToken), RunCohortSimulations(context, plan, cancellationToken), offscreenInferenceAgent.Invoke(context, plan, cancellationToken));
+        await Task.WhenAll(RunStandaloneSimulations(context, plan, cancellationToken),
+            RunCohortSimulations(context, plan, cancellationToken),
+            offscreenInferenceAgent.Invoke(context, plan, cancellationToken));
     }
 
     private async Task RunStandaloneSimulations(
@@ -71,7 +73,7 @@ internal sealed class SimulationOrchestrator(
         SimulationPlannerOutput plan,
         CancellationToken cancellationToken)
     {
-        if((plan.Standalone?.Count ?? 0) == 0)
+        if ((plan.Standalone?.Count ?? 0) == 0)
         {
             return;
         }
@@ -126,7 +128,7 @@ internal sealed class SimulationOrchestrator(
                                 Data = relationshipUpdate.ExtensionData!,
                                 UpdateTime = plan.SimulationPeriod!.To,
                                 SequenceNumber = 0,
-                                Dynamic = relationshipUpdate.Dynamic,
+                                Dynamic = relationshipUpdate.Dynamic
                             });
                         }
                         else if (relationshipUpdate.ExtensionData?.Count > 0)
@@ -138,7 +140,7 @@ internal sealed class SimulationOrchestrator(
                                 Data = updatedRelationship,
                                 UpdateTime = plan.SimulationPeriod!.To,
                                 SequenceNumber = relationship.SequenceNumber + 1,
-                                Dynamic = relationshipUpdate.Dynamic,
+                                Dynamic = relationshipUpdate.Dynamic
                             };
                             characterRelationships.Add(newRelationship);
                         }
@@ -156,7 +158,7 @@ internal sealed class SimulationOrchestrator(
                                 Salience = x.Memory.Salience,
                                 Data = x.Memory.ExtensionData!,
                                 MemoryContent = x.Memory.Summary,
-                                SceneTracker = x.SceneTracker,
+                                SceneTracker = x.SceneTracker
                             })
                             .ToList(),
                         Relationships = characterRelationships,
@@ -191,12 +193,12 @@ internal sealed class SimulationOrchestrator(
         foreach (var result in results)
         {
             var worldEvents = result.WorldEventsEmitted?.Select(x => new WorldEvent
-                              {
-                                  When = x.When,
-                                  Where = x.Where,
-                                  Event = x.Event
-                              })
-                              .ToList()
+                                  {
+                                      When = x.When,
+                                      Where = x.Where,
+                                      Event = x.Event
+                                  })
+                                  .ToList()
                               ?? [];
 
             lock (context)
@@ -321,12 +323,12 @@ internal sealed class SimulationOrchestrator(
     }
 
     /// <summary>
-    /// Process a StandaloneSimulationOutput into updates for persistence.
-    /// Used by both standalone and cohort simulations.
+    ///     Process a StandaloneSimulationOutput into updates for persistence.
+    ///     Used by both standalone and cohort simulations.
     /// </summary>
     private (CharacterContext CharacterContext, List<WorldEvent> WorldEvents, List<CharacterEventToSave> CharacterEvents)
         ProcessSimulationOutput(
-            CohortSimulationResult cohortSimulationResult, 
+            CohortSimulationResult cohortSimulationResult,
             CharacterContext character,
             StandaloneSimulationOutput result,
             SimulationPlannerOutput plan,
@@ -350,7 +352,7 @@ internal sealed class SimulationOrchestrator(
                     Data = relationshipUpdate.ExtensionData!,
                     UpdateTime = plan.SimulationPeriod!.To,
                     SequenceNumber = 0,
-                    Dynamic = relationshipUpdate.Dynamic,
+                    Dynamic = relationshipUpdate.Dynamic
                 });
             }
             else if (relationshipUpdate.ExtensionData?.Count > 0)
@@ -362,7 +364,7 @@ internal sealed class SimulationOrchestrator(
                     Data = updatedRelationship,
                     UpdateTime = plan.SimulationPeriod!.To,
                     SequenceNumber = relationship.SequenceNumber + 1,
-                    Dynamic = relationshipUpdate.Dynamic,
+                    Dynamic = relationshipUpdate.Dynamic
                 };
                 characterRelationships.Add(newRelationship);
             }
@@ -380,7 +382,7 @@ internal sealed class SimulationOrchestrator(
                     Salience = x.Memory.Salience,
                     Data = x.Memory.ExtensionData!,
                     MemoryContent = x.Memory.Summary,
-                    SceneTracker = x.SceneTracker,
+                    SceneTracker = x.SceneTracker
                 })
                 .ToList(),
             Relationships = characterRelationships,

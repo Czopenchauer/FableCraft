@@ -1,11 +1,11 @@
 <!-- Loading State -->
 <div *ngIf="isLoading" class="loading-state">
-  <svg fill="none" class="spinner" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" class="opacity-25"></circle>
+  <svg class="spinner" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
     <path
+      class="opacity-75"
       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      fill="currentColor"
-      class="opacity-75"></path>
+      fill="currentColor"></path>
   </svg>
   <p>Loading lore entries...</p>
 </div>
@@ -18,11 +18,15 @@
     <div *ngIf="worldSettings" class="category-group world-settings-group">
       <div (click)="toggleWorldSettings()" class="category-header">
         <svg [class.expanded]="showWorldSettings" class="chevron-icon" viewBox="0 0 24 24">
-          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2"></path>
         </svg>
         <span class="category-name">World Settings</span>
-        <svg class="world-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"/>
+        <svg class="world-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path
+            d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
         </svg>
       </div>
       <div *ngIf="showWorldSettings" class="category-entries">
@@ -38,8 +42,10 @@
 
     <!-- Empty state when no entries and no world settings -->
     <div *ngIf="categoryGroups.length === 0 && !worldSettings" class="empty-state">
-      <svg fill="none" stroke="currentColor" class="empty-icon" viewBox="0 0 24 24">
-        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+      <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
       </svg>
       <p>No lore entries found for this adventure.</p>
     </div>
@@ -48,7 +54,8 @@
     <div *ngFor="let group of categoryGroups" class="category-group">
       <div (click)="toggleCategory(group.category)" class="category-header">
         <svg [class.expanded]="group.isExpanded" class="chevron-icon" viewBox="0 0 24 24">
-          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2"></path>
         </svg>
         <span class="category-name">{{ group.category }}</span>
         <span class="entry-count">({{ group.entries.length }})</span>
@@ -71,8 +78,10 @@
   <div class="lore-detail">
     <!-- Empty state when no entry selected -->
     <div *ngIf="!selectedEntry && !isWorldSettingsSelected" class="no-selection">
-      <svg fill="none" stroke="currentColor" class="no-selection-icon" viewBox="0 0 24 24">
-        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+      <svg class="no-selection-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
       </svg>
       <p>Select a lore entry to view details</p>
     </div>
@@ -80,12 +89,15 @@
     <!-- World Settings Details -->
     <div *ngIf="isWorldSettingsSelected" class="entry-detail world-settings-detail">
       <h3 class="detail-title">
-        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"/>
+        <svg class="title-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path
+            d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 003 12c0-1.605.42-3.113 1.157-4.418"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
         </svg>
         World Settings
       </h3>
-      <div class="world-settings-content markdown-content" [innerHTML]="worldSettings | markdown"></div>
+      <div [innerHTML]="worldSettings | markdown" class="world-settings-content markdown-content"></div>
     </div>
 
     <!-- Entry details -->
@@ -95,19 +107,24 @@
       <div class="entry-meta">
         <span class="meta-item">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path
+              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
           </svg>
           {{ selectedEntry.category }}
         </span>
         <span class="meta-item">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"></path>
           </svg>
           Priority: {{ selectedEntry.priority }}
         </span>
         <span *ngIf="selectedEntry.sceneId" class="meta-item scene-specific">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
           </svg>
           Scene-specific
         </span>
@@ -115,7 +132,7 @@
 
       <div *ngIf="selectedEntry.title && selectedEntry.description" class="entry-description">
         <strong>Description:</strong>
-        <div class="markdown-content" [innerHTML]="selectedEntry.description | markdown"></div>
+        <div [innerHTML]="selectedEntry.description | markdown" class="markdown-content"></div>
       </div>
 
       <!-- Content Section -->
@@ -131,7 +148,9 @@
         <div *ngIf="selectedEntry.contentType === 'json' && jsonParseError" class="json-error">
           <div class="error-message">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              <path
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
             </svg>
             <span>Invalid JSON - showing raw content</span>
           </div>

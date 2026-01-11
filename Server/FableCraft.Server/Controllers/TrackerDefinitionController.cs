@@ -27,7 +27,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Get all tracker definitions
+    ///     Get all tracker definitions
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<TrackerDefinitionResponseDto>), StatusCodes.Status200OK)]
@@ -73,7 +73,7 @@ public class TrackerDefinitionController : ControllerBase
         {
             var dict = new Dictionary<string, object>();
 
-            foreach (FieldDefinition field in fields)
+            foreach (var field in fields)
             {
                 if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
                 {
@@ -90,7 +90,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single tracker definition by ID
+    ///     Get a single tracker definition by ID
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(TrackerDefinitionResponseDto), StatusCodes.Status200OK)]
@@ -117,7 +117,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Get the default tracker structure with framework fields pre-populated
+    ///     Get the default tracker structure with framework fields pre-populated
     /// </summary>
     [HttpGet("default-structure")]
     [ProducesResponseType(typeof(TrackerStructure), StatusCodes.Status200OK)]
@@ -128,7 +128,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new tracker definition
+    ///     Create a new tracker definition
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(TrackerDefinitionResponseDto), StatusCodes.Status201Created)]
@@ -189,7 +189,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Update an existing tracker definition
+    ///     Update an existing tracker definition
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -246,7 +246,7 @@ public class TrackerDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a tracker definition
+    ///     Delete a tracker definition
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -17,8 +17,6 @@ using Serilog;
 using Serilog.Context;
 using Serilog.Core.Enrichers;
 
-using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
-
 namespace FableCraft.Infrastructure.Llm;
 
 public static class Telemetry
@@ -77,8 +75,8 @@ internal sealed class AgentKernel : IAgentKernel
         Kernel kernel,
         CancellationToken cancellationToken)
     {
-        IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
-                                                       ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
+        var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
+                                    ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
         try
         {
             return await GetResponse();
@@ -113,7 +111,7 @@ internal sealed class AgentKernel : IAgentKernel
                                          llmActivity?.SetTag("llm.model", chatCompletionService.GetModelId());
 
                                          var stopwatch = Stopwatch.StartNew();
-                                         ChatMessageContent result =
+                                         var result =
                                              await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
                                          _logger.Information("Generated response: {response}", JsonSerializer.Serialize(result));
                                          var replyInnerContent = result.InnerContent as ChatCompletion;
@@ -121,7 +119,7 @@ internal sealed class AgentKernel : IAgentKernel
                                              replyInnerContent?.Usage.InputTokenCount,
                                              replyInnerContent?.Usage.OutputTokenCount,
                                              replyInnerContent?.Usage.TotalTokenCount);
-                                         
+
                                          var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
                                          await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
                                              {

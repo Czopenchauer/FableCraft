@@ -4,7 +4,7 @@ import {LlmPresetDto, LlmPresetResponseDto} from '../../models/llm-preset.model'
 import {LlmPresetService} from '../../services/llm-preset.service';
 import {AdventureService} from '../../services/adventure.service';
 import {AdventureListItemDto} from '../../models/adventure.model';
-import {catchError, forkJoin, of} from 'rxjs';
+import {forkJoin} from 'rxjs';
 
 interface PresetWithUsage extends LlmPresetResponseDto {
   adventuresUsing: AdventureListItemDto[];
@@ -61,22 +61,6 @@ export class LlmPresetManagerComponent implements OnInit {
     }
   }
 
-  private initializeForm(): void {
-    this.presetForm = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(100)]],
-      provider: ['', [Validators.required, Validators.maxLength(50)]],
-      model: ['', [Validators.required, Validators.maxLength(200)]],
-      baseUrl: ['', [Validators.maxLength(500)]],
-      apiKey: ['', [Validators.required, Validators.maxLength(500)]],
-      maxTokens: [2000, [Validators.required, Validators.min(1)]],
-      temperature: [1, [Validators.min(0), Validators.max(2)]],
-      topP: [1.0, [Validators.min(0), Validators.max(1)]],
-      topK: [50, [Validators.min(1), Validators.max(100)]],
-      frequencyPenalty: [0, [Validators.min(-2), Validators.max(2)]],
-      presencePenalty: [0, [Validators.min(-2), Validators.max(2)]]
-    });
-  }
-
   loadData(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -99,12 +83,6 @@ export class LlmPresetManagerComponent implements OnInit {
         console.error('Error loading presets:', error);
       }
     });
-  }
-
-  private getAdventuresUsingPreset(presetId: string, adventures: AdventureListItemDto[]): AdventureListItemDto[] {
-    // Note: We need to check if adventures have fastPresetId or complexPresetId
-    // This will require updating the AdventureListItemDto model to include these fields
-    return [];
   }
 
   onBackdropClick(event: MouseEvent): void {
@@ -325,5 +303,27 @@ export class LlmPresetManagerComponent implements OnInit {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.presetForm.get(fieldName);
     return !!(field && field.invalid && field.touched);
+  }
+
+  private initializeForm(): void {
+    this.presetForm = this.fb.group({
+      name: ['', [Validators.required, Validators.maxLength(100)]],
+      provider: ['', [Validators.required, Validators.maxLength(50)]],
+      model: ['', [Validators.required, Validators.maxLength(200)]],
+      baseUrl: ['', [Validators.maxLength(500)]],
+      apiKey: ['', [Validators.required, Validators.maxLength(500)]],
+      maxTokens: [2000, [Validators.required, Validators.min(1)]],
+      temperature: [1, [Validators.min(0), Validators.max(2)]],
+      topP: [1.0, [Validators.min(0), Validators.max(1)]],
+      topK: [50, [Validators.min(1), Validators.max(100)]],
+      frequencyPenalty: [0, [Validators.min(-2), Validators.max(2)]],
+      presencePenalty: [0, [Validators.min(-2), Validators.max(2)]]
+    });
+  }
+
+  private getAdventuresUsingPreset(presetId: string, adventures: AdventureListItemDto[]): AdventureListItemDto[] {
+    // Note: We need to check if adventures have fastPresetId or complexPresetId
+    // This will require updating the AdventureListItemDto model to include these fields
+    return [];
   }
 }

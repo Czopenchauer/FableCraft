@@ -64,7 +64,7 @@ public static class Extensions
             .WriteTo.OpenTelemetry()
             //.WriteTo.Seq(seqLogUrl)
             .WriteTo.File(
-                path: Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
+                Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
                 rollingInterval: RollingInterval.Hour));
 
         // Uncomment the following to restrict the allowed schemes for service discovery.
@@ -161,8 +161,7 @@ public static class Extensions
     }
 
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder)
-        where TBuilder : IHostApplicationBuilder
-    {
+        where TBuilder : IHostApplicationBuilder =>
         // Signal-specific AddOtlpExporter methods and the cross-cutting UseOtlpExporter method being invoked on the same IServiceCollection is not supported.
         // var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
         //
@@ -170,7 +169,6 @@ public static class Extensions
         // {
         //     builder.Services.AddOpenTelemetry().UseOtlpExporter();
         // }
-        
         // var seqExporter = builder.Configuration["FABLECRAFT_EXPORTER_SEQ_OTLP_ENDPOINT"];
         // if (!string.IsNullOrEmpty(seqExporter))
         // {
@@ -186,16 +184,13 @@ public static class Extensions
         //         });
         //     }));
         // }
-
         // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
         //if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
         //{
         //    builder.Services.AddOpenTelemetry()
         //       .UseAzureMonitor();
         //}
-
-        return builder;
-    }
+        builder;
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder

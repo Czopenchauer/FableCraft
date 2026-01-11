@@ -1,5 +1,5 @@
 import {Component, Input, OnChanges, SimpleChanges} from '@angular/core';
-import {LorebookEntryResponseDto, LorebookCategoryGroup} from '../../models/lorebook-entry.model';
+import {LorebookCategoryGroup, LorebookEntryResponseDto} from '../../models/lorebook-entry.model';
 import {LorebookEntryService} from '../../services/lorebook-entry.service';
 import {ToastService} from '../../../../core/services/toast.service';
 
@@ -27,13 +27,44 @@ export class LoreContentComponent implements OnChanges {
   constructor(
     private lorebookEntryService: LorebookEntryService,
     private toastService: ToastService
-  ) {}
+  ) {
+  }
+
+  get isWorldSettingsSelected(): boolean {
+    return this.selectedEntry === null && this.worldSettings !== null;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Load entries when becoming active for the first time
     if (changes['isActive'] && this.isActive && this.adventureId && !this.hasLoaded) {
       this.loadEntries();
     }
+  }
+
+  toggleCategory(category: string): void {
+    const group = this.categoryGroups.find(g => g.category === category);
+    if (group) {
+      group.isExpanded = !group.isExpanded;
+    }
+  }
+
+  selectEntry(entry: LorebookEntryResponseDto): void {
+    this.selectedEntry = entry;
+    this.parseContent(entry);
+  }
+
+  getDisplayTitle(entry: LorebookEntryResponseDto): string {
+    return entry.title || entry.description || 'Untitled';
+  }
+
+  toggleWorldSettings(): void {
+    this.showWorldSettings = !this.showWorldSettings;
+  }
+
+  selectWorldSettings(): void {
+    this.selectedEntry = null;
+    this.parsedJsonContent = null;
+    this.jsonParseError = false;
   }
 
   private loadEntries(): void {
@@ -77,18 +108,6 @@ export class LoreContentComponent implements OnChanges {
       .sort((a, b) => a.category.localeCompare(b.category));
   }
 
-  toggleCategory(category: string): void {
-    const group = this.categoryGroups.find(g => g.category === category);
-    if (group) {
-      group.isExpanded = !group.isExpanded;
-    }
-  }
-
-  selectEntry(entry: LorebookEntryResponseDto): void {
-    this.selectedEntry = entry;
-    this.parseContent(entry);
-  }
-
   private parseContent(entry: LorebookEntryResponseDto): void {
     this.jsonParseError = false;
     this.parsedJsonContent = null;
@@ -101,23 +120,5 @@ export class LoreContentComponent implements OnChanges {
         this.jsonParseError = true;
       }
     }
-  }
-
-  getDisplayTitle(entry: LorebookEntryResponseDto): string {
-    return entry.title || entry.description || 'Untitled';
-  }
-
-  toggleWorldSettings(): void {
-    this.showWorldSettings = !this.showWorldSettings;
-  }
-
-  selectWorldSettings(): void {
-    this.selectedEntry = null;
-    this.parsedJsonContent = null;
-    this.jsonParseError = false;
-  }
-
-  get isWorldSettingsSelected(): boolean {
-    return this.selectedEntry === null && this.worldSettings !== null;
   }
 }

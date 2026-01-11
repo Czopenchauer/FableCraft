@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { WorldbookDto, WorldbookUpdateDto, WorldbookResponseDto } from '../models/worldbook.model';
-import { environment } from '../../../../environments/environment';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
+import {WorldbookDto, WorldbookResponseDto, WorldbookUpdateDto} from '../models/worldbook.model';
+import {environment} from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +10,8 @@ import { environment } from '../../../../environments/environment';
 export class WorldbookService {
   private readonly apiUrl = `${environment.apiUrl}/api/Worldbook`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+  }
 
   /**
    * Get all worldbooks

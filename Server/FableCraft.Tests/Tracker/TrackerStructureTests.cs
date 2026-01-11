@@ -19,6 +19,7 @@ public class TrackerStructureTests
         {
             throw new InvalidOperationException("Failed to deserialize TrackerStructure");
         }
+
         return structure;
     }
 
@@ -69,7 +70,7 @@ public class TrackerStructureTests
         var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        foreach (FieldDefinition field in structure.Story)
+        foreach (var field in structure.Story)
         {
             await AssertStringField(field);
             await Assert.That(field.ExampleValues!.Count).IsEqualTo(3)
@@ -82,7 +83,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition timeField = structure.Story.First(f => f.Name == "Time");
+        var timeField = structure.Story.First(f => f.Name == "Time");
 
         // Assert
         await Assert.That(timeField.DefaultValue?.ToString()).IsEqualTo("2024-10-16T09:15:30");
@@ -95,7 +96,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition locationField = structure.Story.First(f => f.Name == "Location");
+        var locationField = structure.Story.First(f => f.Name == "Location");
 
         // Assert
         await Assert.That(locationField.DefaultValue?.ToString() ?? string.Empty).Contains("Conference Room B");
@@ -136,7 +137,7 @@ public class TrackerStructureTests
         var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        foreach (FieldDefinition field in structure.MainCharacter)
+        foreach (var field in structure.MainCharacter)
         {
             await AssertFieldIsValid(field);
         }
@@ -152,7 +153,7 @@ public class TrackerStructureTests
         // Assert
         await Assert.That(stringFields.Length).IsEqualTo(10);
 
-        foreach (FieldDefinition field in stringFields)
+        foreach (var field in stringFields)
         {
             await AssertStringField(field);
         }
@@ -163,7 +164,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+        var inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
 
         // Assert
         await Assert.That(inventoryField.Type).IsEqualTo(FieldType.ForEachObject);
@@ -177,7 +178,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+        var inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
 
         // Assert
         await Assert.That(inventoryField.NestedFields).IsNotNull();
@@ -189,7 +190,7 @@ public class TrackerStructureTests
         await Assert.That(nestedFieldNames).Contains("Quantity");
         await Assert.That(nestedFieldNames).Contains("Location");
 
-        foreach (FieldDefinition field in inventoryField.NestedFields)
+        foreach (var field in inventoryField.NestedFields)
         {
             await AssertStringField(field);
         }
@@ -200,14 +201,14 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
+        var inventoryField = structure.MainCharacter.First(f => f.Name == "Inventory");
 
         // Assert
-        FieldDefinition itemNameField = inventoryField.NestedFields!.First(f => f.Name == "ItemName");
+        var itemNameField = inventoryField.NestedFields!.First(f => f.Name == "ItemName");
         await Assert.That(itemNameField.DefaultValue?.ToString()).IsEqualTo("Smartphone");
         await Assert.That(itemNameField.ExampleValues?.Count).IsEqualTo(4);
 
-        FieldDefinition locationNestedField = inventoryField.NestedFields!.First(f => f.Name == "Location");
+        var locationNestedField = inventoryField.NestedFields!.First(f => f.Name == "Location");
         await Assert.That(locationNestedField.DefaultValue?.ToString()).IsEqualTo("Right pocket");
     }
 
@@ -216,7 +217,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition genderField = structure.MainCharacter.First(f => f.Name == "Gender");
+        var genderField = structure.MainCharacter.First(f => f.Name == "Gender");
 
         // Assert
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Female");
@@ -228,7 +229,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition outfitField = structure.MainCharacter.First(f => f.Name == "Outfit");
+        var outfitField = structure.MainCharacter.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
 
         // Assert
@@ -281,7 +282,7 @@ public class TrackerStructureTests
         var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        foreach (FieldDefinition field in structure.Characters)
+        foreach (var field in structure.Characters)
         {
             await AssertStringField(field);
         }
@@ -292,7 +293,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition genderField = structure.Characters.First(f => f.Name == "Gender");
+        var genderField = structure.Characters.First(f => f.Name == "Gender");
 
         // Assert - Characters default to Male (different from MainCharacter which defaults to Female)
         await Assert.That(genderField.DefaultValue?.ToString()).IsEqualTo("Male");
@@ -307,13 +308,13 @@ public class TrackerStructureTests
         var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
-        FieldDefinition ageField = structure.Characters.First(f => f.Name == "Age");
+        var ageField = structure.Characters.First(f => f.Name == "Age");
         await Assert.That(ageField.DefaultValue?.ToString()).IsEqualTo("28");
 
-        FieldDefinition hairField = structure.Characters.First(f => f.Name == "Hair");
+        var hairField = structure.Characters.First(f => f.Name == "Hair");
         await Assert.That(hairField.DefaultValue?.ToString()).IsEqualTo("Short black hair, neatly combed");
 
-        FieldDefinition makeupField = structure.Characters.First(f => f.Name == "Makeup");
+        var makeupField = structure.Characters.First(f => f.Name == "Makeup");
         await Assert.That(makeupField.DefaultValue?.ToString()).IsEqualTo("None");
     }
 
@@ -322,7 +323,7 @@ public class TrackerStructureTests
     {
         // Act
         var structure = DeserializeStructure(TestTracker.InputJson);
-        FieldDefinition outfitField = structure.Characters.First(f => f.Name == "Outfit");
+        var outfitField = structure.Characters.First(f => f.Name == "Outfit");
         var defaultOutfit = outfitField.DefaultValue?.ToString();
 
         // Assert

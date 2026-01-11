@@ -6,6 +6,7 @@ namespace FableCraft.Application.NarrativeEngine.Plugins;
 internal abstract class PluginBase
 {
     protected GenerationContext? Context { get; private set; }
+
     protected CallerContext? CallerContext { get; private set; }
 
     public virtual Task SetupAsync(GenerationContext context, CallerContext callerContext)
@@ -17,8 +18,8 @@ internal abstract class PluginBase
 }
 
 /// <summary>
-/// Base class for plugins that need a specific character ID in addition to context.
-/// E.g. CharacterNarrativePlugin and CharacterRelationshipPlugin.
+///     Base class for plugins that need a specific character ID in addition to context.
+///     E.g. CharacterNarrativePlugin and CharacterRelationshipPlugin.
 /// </summary>
 internal abstract class CharacterPluginBase : PluginBase
 {

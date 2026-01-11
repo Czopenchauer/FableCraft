@@ -7,6 +7,86 @@ namespace FableCraft.Tests.Persistence;
 
 public class JsonExtensionsTests
 {
+    #region Array Value Tests
+
+    [Test]
+    public async Task PatchWith_ArrayValue_ReplacesArray()
+    {
+        // Arrange
+        var original = CreateTestCharacter();
+        var newPlan = new Routine
+        {
+            DailyPattern = "escape",
+            Activities = ["disable alarm", "exit through back", "meet contact", "leave city"]
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["behavioral_defaults.routine"] = newPlan
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        await Assert.That(result.BehavioralDefaults!.Routine!.Activities!.Count).IsEqualTo(4);
+        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("leave city");
+    }
+
+    #endregion
+
+    #region ADR Char.md Example Tests
+
+    [Test]
+    public async Task PatchWith_CharacterReflectionAgentOutput_AppliesCorrectly()
+    {
+        // Arrange
+        var original = CreateTestCharacter();
+
+        // Simulates CharacterReflectionAgent output from ADR
+        var updates = new Dictionary<string, object>
+        {
+            ["psychology.triggers"] = new Triggers
+            {
+                PrimaryTrigger = "anxious",
+                SecondaryTriggers = ["calculating", "defensive"],
+                Intensity = 0.7,
+                Response = "protagonist getting too close"
+            },
+            ["motivations.goals_current"] = "gather intelligence before next confrontation",
+            ["behavioral_defaults.routine"] = new Routine
+            {
+                DailyPattern = "assess damage",
+                Activities = ["talk to dockmaster", "check records", "prepare alibi"]
+            }
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Volatile state updated as per ADR
+        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("anxious");
+        await Assert.That(result.Psychology.Triggers.SecondaryTriggers).Contains("defensive");
+        await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.7);
+        await Assert.That(result.Psychology.Triggers.Response).IsEqualTo("protagonist getting too close");
+
+        await Assert.That(result.Motivations!.GoalsCurrent)
+            .IsEqualTo("gather intelligence before next confrontation");
+
+        await Assert.That(result.BehavioralDefaults!.Routine!.DailyPattern).IsEqualTo("assess damage");
+        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("prepare alibi");
+
+        // Assert - Core profile (stable) unchanged as per ADR
+        await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
+        await Assert.That(result.CharacterIdentity.Role).IsEqualTo("Antagonist");
+
+        // Assert - Sibling properties preserved
+        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("stoic");
+        await Assert.That(result.Motivations.Needs).IsEqualTo("Expand territory");
+        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
+    }
+
+    #endregion
+
     #region Test Models
 
     private sealed class CharacterStats
@@ -99,44 +179,45 @@ public class JsonExtensionsTests
         public int Progress { get; set; }
     }
 
-    private static CharacterStats CreateTestCharacter() => new()
-    {
-        CharacterIdentity = new CharacterIdentity
+    private static CharacterStats CreateTestCharacter() =>
+        new()
         {
-            Name = "Viktor Volkov",
-            Role = "Antagonist"
-        },
-        Psychology = new Psychology
-        {
-            Triggers = new Triggers
+            CharacterIdentity = new CharacterIdentity
             {
-                PrimaryTrigger = "calm",
-                SecondaryTriggers = ["calculating"],
-                Intensity = 0.3,
-                Response = "routine business"
+                Name = "Viktor Volkov",
+                Role = "Antagonist"
             },
-            EmotionalBaseline = "stoic"
-        },
-        Motivations = new Motivations
-        {
-            Needs = "Expand territory",
-            GoalsCurrent = "Monitor competitors"
-        },
-        BehavioralDefaults = new BehavioralDefaults
-        {
-            ConflictStyle = "methodical",
-            Routine = new Routine
+            Psychology = new Psychology
             {
-                DailyPattern = "gather information",
-                Activities = ["observe", "report", "plan"]
+                Triggers = new Triggers
+                {
+                    PrimaryTrigger = "calm",
+                    SecondaryTriggers = ["calculating"],
+                    Intensity = 0.3,
+                    Response = "routine business"
+                },
+                EmotionalBaseline = "stoic"
+            },
+            Motivations = new Motivations
+            {
+                Needs = "Expand territory",
+                GoalsCurrent = "Monitor competitors"
+            },
+            BehavioralDefaults = new BehavioralDefaults
+            {
+                ConflictStyle = "methodical",
+                Routine = new Routine
+                {
+                    DailyPattern = "gather information",
+                    Activities = ["observe", "report", "plan"]
+                }
+            },
+            InDevelopment = new InDevelopment
+            {
+                Aspect = "rising_action",
+                Progress = 25
             }
-        },
-        InDevelopment = new InDevelopment
-        {
-            Aspect = "rising_action",
-            Progress = 25
-        }
-    };
+        };
 
     #endregion
 
@@ -367,33 +448,6 @@ public class JsonExtensionsTests
 
     #endregion
 
-    #region Array Value Tests
-
-    [Test]
-    public async Task PatchWith_ArrayValue_ReplacesArray()
-    {
-        // Arrange
-        var original = CreateTestCharacter();
-        var newPlan = new Routine
-        {
-            DailyPattern = "escape",
-            Activities = ["disable alarm", "exit through back", "meet contact", "leave city"]
-        };
-        var updates = new Dictionary<string, object>
-        {
-            ["behavioral_defaults.routine"] = newPlan
-        };
-
-        // Act
-        var result = original.PatchWith(updates);
-
-        // Assert
-        await Assert.That(result.BehavioralDefaults!.Routine!.Activities!.Count).IsEqualTo(4);
-        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("leave city");
-    }
-
-    #endregion
-
     #region Edge Cases
 
     [Test]
@@ -444,13 +498,13 @@ public class JsonExtensionsTests
         // Arrange - Simulates receiving updates from JSON deserialization
         var original = CreateTestCharacter();
         var updateJson = """
-        {
-            "primary_trigger": "terrified",
-            "secondary_triggers": ["panicked"],
-            "intensity": 0.9,
-            "response": "ambush"
-        }
-        """;
+                         {
+                             "primary_trigger": "terrified",
+                             "secondary_triggers": ["panicked"],
+                             "intensity": 0.9,
+                             "response": "ambush"
+                         }
+                         """;
         var jsonElement = JsonSerializer.Deserialize<JsonElement>(updateJson);
         var updates = new Dictionary<string, object>
         {
@@ -463,59 +517,6 @@ public class JsonExtensionsTests
         // Assert
         await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("terrified");
         await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.9);
-    }
-
-    #endregion
-
-    #region ADR Char.md Example Tests
-
-    [Test]
-    public async Task PatchWith_CharacterReflectionAgentOutput_AppliesCorrectly()
-    {
-        // Arrange
-        var original = CreateTestCharacter();
-
-        // Simulates CharacterReflectionAgent output from ADR
-        var updates = new Dictionary<string, object>
-        {
-            ["psychology.triggers"] = new Triggers
-            {
-                PrimaryTrigger = "anxious",
-                SecondaryTriggers = ["calculating", "defensive"],
-                Intensity = 0.7,
-                Response = "protagonist getting too close"
-            },
-            ["motivations.goals_current"] = "gather intelligence before next confrontation",
-            ["behavioral_defaults.routine"] = new Routine
-            {
-                DailyPattern = "assess damage",
-                Activities = ["talk to dockmaster", "check records", "prepare alibi"]
-            }
-        };
-
-        // Act
-        var result = original.PatchWith(updates);
-
-        // Assert - Volatile state updated as per ADR
-        await Assert.That(result.Psychology!.Triggers!.PrimaryTrigger).IsEqualTo("anxious");
-        await Assert.That(result.Psychology.Triggers.SecondaryTriggers).Contains("defensive");
-        await Assert.That(result.Psychology.Triggers.Intensity).IsEqualTo(0.7);
-        await Assert.That(result.Psychology.Triggers.Response).IsEqualTo("protagonist getting too close");
-
-        await Assert.That(result.Motivations!.GoalsCurrent)
-            .IsEqualTo("gather intelligence before next confrontation");
-
-        await Assert.That(result.BehavioralDefaults!.Routine!.DailyPattern).IsEqualTo("assess damage");
-        await Assert.That(result.BehavioralDefaults.Routine.Activities).Contains("prepare alibi");
-
-        // Assert - Core profile (stable) unchanged as per ADR
-        await Assert.That(result.CharacterIdentity.Name).IsEqualTo("Viktor Volkov");
-        await Assert.That(result.CharacterIdentity.Role).IsEqualTo("Antagonist");
-
-        // Assert - Sibling properties preserved
-        await Assert.That(result.Psychology.EmotionalBaseline).IsEqualTo("stoic");
-        await Assert.That(result.Motivations.Needs).IsEqualTo("Expand territory");
-        await Assert.That(result.BehavioralDefaults.ConflictStyle).IsEqualTo("methodical");
     }
 
     #endregion
@@ -570,43 +571,44 @@ public class JsonExtensionsTests
         public string? ToNext { get; set; }
     }
 
-    private static CharacterWithSkills CreateCharacterWithSkills() => new()
-    {
-        Name = "Test Character",
-        Skills =
-        [
-            new Skill
-            {
-                SkillName = "Consciousness Analysis",
-                Category = "Transcendent",
-                Proficiency = "Transcendent",
-                XP = new SkillXP
+    private static CharacterWithSkills CreateCharacterWithSkills() =>
+        new()
+        {
+            Name = "Test Character",
+            Skills =
+            [
+                new Skill
                 {
-                    Current = "Beyond measurement",
-                    NextThreshold = "MAX",
-                    ToNext = "N/A"
+                    SkillName = "Consciousness Analysis",
+                    Category = "Transcendent",
+                    Proficiency = "Transcendent",
+                    XP = new SkillXP
+                    {
+                        Current = "Beyond measurement",
+                        NextThreshold = "MAX",
+                        ToNext = "N/A"
+                    },
+                    ChallengeFloor = "Transcendent",
+                    Development = "Always existed",
+                    RecentGains = "Constant"
                 },
-                ChallengeFloor = "Transcendent",
-                Development = "Always existed",
-                RecentGains = "Constant"
-            },
-            new Skill
-            {
-                SkillName = "Reality Manipulation",
-                Category = "Transcendent",
-                Proficiency = "Transcendent",
-                XP = new SkillXP
+                new Skill
                 {
-                    Current = "Beyond measurement",
-                    NextThreshold = "MAX",
-                    ToNext = "N/A"
-                },
-                ChallengeFloor = "Transcendent",
-                Development = "Always existed",
-                RecentGains = "Constant"
-            }
-        ]
-    };
+                    SkillName = "Reality Manipulation",
+                    Category = "Transcendent",
+                    Proficiency = "Transcendent",
+                    XP = new SkillXP
+                    {
+                        Current = "Beyond measurement",
+                        NextThreshold = "MAX",
+                        ToNext = "N/A"
+                    },
+                    ChallengeFloor = "Transcendent",
+                    Development = "Always existed",
+                    RecentGains = "Constant"
+                }
+            ]
+        };
 
     [Test]
     public async Task PatchWith_ArrayItemByIdentifier_ReplacesSingleItem()
@@ -890,44 +892,45 @@ public class JsonExtensionsTests
         public string? Description { get; set; }
     }
 
-    private static CharacterWithMagic CreateCharacterWithMagic() => new()
-    {
-        Name = "Dragon Character",
-        MagicAndAbilities = new MagicAndAbilities
+    private static CharacterWithMagic CreateCharacterWithMagic() =>
+        new()
         {
-            ManaPool = "1000/1000",
-            InstinctiveAbilities =
-            [
-                new Ability
-                {
-                    AbilityName = "Fire Breath",
-                    Type = "Fire",
-                    Power = 150,
-                    CooldownSeconds = 30,
-                    Description = "Breathes a cone of fire"
-                },
-                new Ability
-                {
-                    AbilityName = "Tail Swipe",
-                    Type = "Physical",
-                    Power = 80,
-                    CooldownSeconds = 5,
-                    Description = "Sweeps tail in an arc"
-                }
-            ],
-            LearnedAbilities =
-            [
-                new Ability
-                {
-                    AbilityName = "Ice Storm",
-                    Type = "Ice",
-                    Power = 200,
-                    CooldownSeconds = 60,
-                    Description = "Creates a devastating ice storm"
-                }
-            ]
-        }
-    };
+            Name = "Dragon Character",
+            MagicAndAbilities = new MagicAndAbilities
+            {
+                ManaPool = "1000/1000",
+                InstinctiveAbilities =
+                [
+                    new Ability
+                    {
+                        AbilityName = "Fire Breath",
+                        Type = "Fire",
+                        Power = 150,
+                        CooldownSeconds = 30,
+                        Description = "Breathes a cone of fire"
+                    },
+                    new Ability
+                    {
+                        AbilityName = "Tail Swipe",
+                        Type = "Physical",
+                        Power = 80,
+                        CooldownSeconds = 5,
+                        Description = "Sweeps tail in an arc"
+                    }
+                ],
+                LearnedAbilities =
+                [
+                    new Ability
+                    {
+                        AbilityName = "Ice Storm",
+                        Type = "Ice",
+                        Power = 200,
+                        CooldownSeconds = 60,
+                        Description = "Creates a devastating ice storm"
+                    }
+                ]
+            }
+        };
 
     [Test]
     public async Task PatchWith_NestedPathWithArrayAccess_ReplacesItem()
@@ -1235,31 +1238,32 @@ public class JsonExtensionsTests
         public string? Intensity { get; set; }
     }
 
-    private static CharacterWithInDevelopment CreateCharacterWithInDevelopment() => new()
-    {
-        Name = "Test Character",
-        InDevelopment =
-        [
-            new DevelopmentAspect
-            {
-                Aspect = "Curiosity vs. Discipline",
-                From = "Standard patrol assessment",
-                Toward = "Following protocol",
-                Pressure = "Nothing unusual",
-                Resistance = "None",
-                Intensity = "Low"
-            },
-            new DevelopmentAspect
-            {
-                Aspect = "Trust vs. Suspicion",
-                From = "Neutral stance",
-                Toward = "Building trust",
-                Pressure = "New encounters",
-                Resistance = "Past experiences",
-                Intensity = "Medium"
-            }
-        ]
-    };
+    private static CharacterWithInDevelopment CreateCharacterWithInDevelopment() =>
+        new()
+        {
+            Name = "Test Character",
+            InDevelopment =
+            [
+                new DevelopmentAspect
+                {
+                    Aspect = "Curiosity vs. Discipline",
+                    From = "Standard patrol assessment",
+                    Toward = "Following protocol",
+                    Pressure = "Nothing unusual",
+                    Resistance = "None",
+                    Intensity = "Low"
+                },
+                new DevelopmentAspect
+                {
+                    Aspect = "Trust vs. Suspicion",
+                    From = "Neutral stance",
+                    Toward = "Building trust",
+                    Pressure = "New encounters",
+                    Resistance = "Past experiences",
+                    Intensity = "Medium"
+                }
+            ]
+        };
 
     [Test]
     public async Task PatchWith_InDevelopmentArrayItem_WithoutQuotes_ReplacesItem()

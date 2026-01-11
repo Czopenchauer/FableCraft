@@ -24,15 +24,15 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger log
         logger.Error(exception, "An unhandled exception occurred: {Message}", exception.Message);
 
         var statusCode = exception switch
-        {
-            ArgumentNullException => HttpStatusCode.BadRequest,
-            ArgumentException => HttpStatusCode.BadRequest,
-            UnauthorizedAccessException => HttpStatusCode.Unauthorized,
-            KeyNotFoundException => HttpStatusCode.NotFound,
-            InvalidOperationException => HttpStatusCode.BadRequest,
-            NotImplementedException => HttpStatusCode.NotImplemented,
-            _ => HttpStatusCode.InternalServerError
-        };
+                         {
+                             ArgumentNullException => HttpStatusCode.BadRequest,
+                             ArgumentException => HttpStatusCode.BadRequest,
+                             UnauthorizedAccessException => HttpStatusCode.Unauthorized,
+                             KeyNotFoundException => HttpStatusCode.NotFound,
+                             InvalidOperationException => HttpStatusCode.BadRequest,
+                             NotImplementedException => HttpStatusCode.NotImplemented,
+                             _ => HttpStatusCode.InternalServerError
+                         };
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
@@ -46,10 +46,11 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger log
                 : null
         };
 
-        var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+        var jsonResponse = JsonSerializer.Serialize(response,
+            new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
 
         await context.Response.WriteAsync(jsonResponse);
     }
@@ -57,22 +58,18 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger log
     private static string GetUserFriendlyMessage(HttpStatusCode statusCode)
     {
         return statusCode switch
-        {
-            HttpStatusCode.BadRequest => "The request was invalid.",
-            HttpStatusCode.Unauthorized => "You are not authorized to access this resource.",
-            HttpStatusCode.NotFound => "The requested resource was not found.",
-            HttpStatusCode.NotImplemented => "This feature is not implemented.",
-            HttpStatusCode.InternalServerError => "An internal server error occurred.",
-            _ => "An error occurred while processing your request."
-        };
+               {
+                   HttpStatusCode.BadRequest => "The request was invalid.",
+                   HttpStatusCode.Unauthorized => "You are not authorized to access this resource.",
+                   HttpStatusCode.NotFound => "The requested resource was not found.",
+                   HttpStatusCode.NotImplemented => "This feature is not implemented.",
+                   HttpStatusCode.InternalServerError => "An internal server error occurred.",
+                   _ => "An error occurred while processing your request."
+               };
     }
 }
 
 public static class GlobalExceptionHandlingMiddlewareExtensions
 {
-    public static IApplicationBuilder UseGlobalExceptionHandling(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-    }
+    public static IApplicationBuilder UseGlobalExceptionHandling(this IApplicationBuilder app) => app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 }
-

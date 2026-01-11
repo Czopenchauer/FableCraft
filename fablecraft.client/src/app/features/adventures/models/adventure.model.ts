@@ -143,6 +143,7 @@ export interface SceneTracker {
   location: string;
   weather: string;
   charactersPresent: string[];
+
   [key: string]: any;
 }
 

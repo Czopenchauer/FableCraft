@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { JsonRendererComponent } from '../../json-renderer/json-renderer.component';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {JsonRendererComponent} from '../../json-renderer/json-renderer.component';
 
 @Component({
   selector: 'app-tracker-preview-modal',

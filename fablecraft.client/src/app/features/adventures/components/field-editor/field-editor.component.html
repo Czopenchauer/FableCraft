@@ -2,10 +2,10 @@
   <div class="field-row">
     <label>Name</label>
     <input
-      type="text"
       [(ngModel)]="field.name"
       [disabled]="isFrameworkField"
       class="field-input"
+      type="text"
     />
   </div>
 
@@ -35,9 +35,9 @@
   <div class="field-row">
     <label>Default</label>
     <input
-      type="text"
       [(ngModel)]="field.defaultValue"
       class="field-input"
+      type="text"
     />
   </div>
 
@@ -46,13 +46,13 @@
     <div class="example-values">
       <div *ngFor="let example of field.exampleValues; let j = index; trackBy: trackByIndex" class="example-value-row">
         <input
-          type="text"
           [(ngModel)]="field.exampleValues![j]"
           class="field-input"
+          type="text"
         />
-        <button class="btn-remove-small" (click)="removeExampleValue(j)">×</button>
+        <button (click)="removeExampleValue(j)" class="btn-remove-small">×</button>
       </div>
-      <button class="btn-add-small" (click)="addExampleValue()">+ Example</button>
+      <button (click)="addExampleValue()" class="btn-add-small">+ Example</button>
     </div>
   </div>
 
@@ -62,11 +62,11 @@
       <label>Nested Fields</label>
     </div>
     <div *ngFor="let nested of field.nestedFields; let k = index; trackBy: trackByIndex"
-         class="nested-field-card"
-         [style.margin-left.px]="nestingLevel * 10">
+         [style.margin-left.px]="nestingLevel * 10"
+         class="nested-field-card">
       <div class="nested-field-header">
         <span class="nested-field-name">{{ nested.name }}</span>
-        <button class="btn-remove-small" (click)="removeNestedField(k)">×</button>
+        <button (click)="removeNestedField(k)" class="btn-remove-small">×</button>
       </div>
       <!-- Recursive field editor -->
       <app-field-editor
@@ -75,6 +75,6 @@
         [nestingLevel]="nestingLevel + 1">
       </app-field-editor>
     </div>
-    <button class="btn-add-small" (click)="addNestedField()">+ Add Nested Field</button>
+    <button (click)="addNestedField()" class="btn-add-small">+ Add Nested Field</button>
   </div>
 </div>

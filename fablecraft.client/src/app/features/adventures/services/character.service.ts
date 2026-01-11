@@ -3,11 +3,11 @@ import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {
-  CharacterListItem,
   CharacterDetail,
+  CharacterImportance,
+  CharacterListItem,
   CharacterMemory,
   CharacterSceneRewrite,
-  CharacterImportance,
   CharacterTracker,
   PaginatedResponse
 } from '../models/character.model';

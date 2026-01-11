@@ -5,8 +5,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 /// <summary>
-/// Processor responsible for updating the scene tracker (time, location, weather, characters present).
-/// This must run before other processors that depend on context.NewTracker.Scene.
+///     Processor responsible for updating the scene tracker (time, location, weather, characters present).
+///     This must run before other processors that depend on context.NewTracker.Scene.
 /// </summary>
 internal sealed class SceneTrackerProcessor(SceneTrackerAgent sceneTracker) : IProcessor
 {

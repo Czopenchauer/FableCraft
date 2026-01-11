@@ -393,7 +393,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Empty State */
@@ -733,6 +735,7 @@
   .form-grid {
     grid-template-columns: 1fr;
   }
+
   .preset-header {
     flex-direction: column;
   }

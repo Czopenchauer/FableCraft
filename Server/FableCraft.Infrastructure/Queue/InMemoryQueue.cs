@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
 using System.Threading.Channels;
 
 using FableCraft.Infrastructure.Llm;
@@ -20,9 +19,9 @@ internal class InMemoryMessageDispatcher(Channel<MessageWithContext> channel) : 
     public async Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
         where TMessage : IMessage
     {
-        ILogEventEnricher context = LogContext.Clone();
-        Activity? currentActivity = Activity.Current;
-        IMessage actualMessage = (message as IMessageWithEnrichment) ?? (IMessage)message;
+        var context = LogContext.Clone();
+        var currentActivity = Activity.Current;
+        var actualMessage = message as IMessageWithEnrichment ?? (IMessage)message;
         var messageWithContext = new MessageWithContext(actualMessage, context, currentActivity);
         await channel.Writer.WriteAsync(messageWithContext, cancellationToken);
     }
@@ -39,12 +38,12 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
             {
                 while (await channel.Reader.WaitToReadAsync(stoppingToken))
                 {
-                    while (channel.Reader.TryRead(out MessageWithContext? messageWithContext))
+                    while (channel.Reader.TryRead(out var messageWithContext))
                     {
                         ArgumentNullException.ThrowIfNull(messageWithContext);
                         _ = Task.Run(async () =>
                             {
-                                IMessage message = messageWithContext.Message;
+                                var message = messageWithContext.Message;
                                 try
                                 {
                                     using var linkedActivity = new Activity("ProcessMessage")
@@ -57,11 +56,11 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
                                                : null)
                                     {
                                         ProcessExecutionContext.AdventureId.Value = message.AdventureId;
-                                        Type messageType = message.GetType();
-                                        Type handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
-                                        await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
+                                        var messageType = message.GetType();
+                                        var handlerType = typeof(IMessageHandler<>).MakeGenericType(messageType);
+                                        await using var scope = serviceProvider.CreateAsyncScope();
                                         var handler = scope.ServiceProvider.GetRequiredService(handlerType);
-                                        MethodInfo? handleMethod =
+                                        var handleMethod =
                                             handlerType.GetMethod(nameof(IMessageHandler<>.HandleAsync));
                                         await (Task)handleMethod!.Invoke(handler, [message, stoppingToken])!;
                                     }

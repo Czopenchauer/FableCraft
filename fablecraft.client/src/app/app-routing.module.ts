@@ -7,8 +7,12 @@ import {AdventureStatusComponent} from './features/adventures/components/adventu
 import {GamePanelComponent} from './features/adventures/components/game-panel/game-panel.component';
 import {WorldbookListComponent} from './features/adventures/components/worldbook-list/worldbook-list.component';
 import {WorldbookFormComponent} from './features/adventures/components/worldbook-form/worldbook-form.component';
-import {TrackerDefinitionManagerComponent} from './features/adventures/components/tracker-definition-manager/tracker-definition-manager.component';
-import {TrackerDefinitionBuilderComponent} from './features/adventures/components/tracker-definition-builder/tracker-definition-builder.component';
+import {
+  TrackerDefinitionManagerComponent
+} from './features/adventures/components/tracker-definition-manager/tracker-definition-manager.component';
+import {
+  TrackerDefinitionBuilderComponent
+} from './features/adventures/components/tracker-definition-builder/tracker-definition-builder.component';
 
 const routes: Routes = [
   {path: '', component: HomeComponent},

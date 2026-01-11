@@ -20,14 +20,11 @@ internal class MigratorApplier : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.Information("Starting database migration...");
-        using IServiceScope scope = _serviceProvider.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await dbContext.Database.MigrateAsync(cancellationToken);
         _logger.Information("Database migration completed.");
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
+import {environment} from '../../../../environments/environment';
 
 export type RagDatasetType = 'world' | 'main_character';
 
@@ -35,12 +35,13 @@ export interface RagChatMessage {
 export class RagChatService {
   private readonly apiUrl = `${environment.apiUrl}/api/Character`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+  }
 
   search(adventureId: string, query: string, datasetType: RagDatasetType): Observable<RagChatResponse> {
     return this.http.post<RagChatResponse>(
       `${this.apiUrl}/${adventureId}/rag-chat`,
-      { query, datasetType } as RagChatRequest
+      {query, datasetType} as RagChatRequest
     );
   }
 }

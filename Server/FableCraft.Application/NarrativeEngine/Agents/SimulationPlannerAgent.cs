@@ -15,14 +15,12 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// The SimulationPlanner determines which characters need off-screen simulation after a scene ends,
-/// grouping them into cohorts or standalone simulations, and identifying significant characters
-/// that need OffscreenInference.
+///     The SimulationPlanner determines which characters need off-screen simulation after a scene ends,
+///     grouping them into cohorts or standalone simulations, and identifying significant characters
+///     that need OffscreenInference.
 /// </summary>
 internal sealed class SimulationPlannerAgent(
     IAgentKernel agentKernel,
@@ -43,7 +41,7 @@ internal sealed class SimulationPlannerAgent(
             return context.SimulationPlan;
         }
 
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
 
@@ -54,13 +52,13 @@ internal sealed class SimulationPlannerAgent(
         var contextPrompt = BuildContextPrompt(input);
         chatHistory.AddUserMessage(contextPrompt);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernelBuilderSk = kernelBuilder.Create();
+        var kernelBuilderSk = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<IntentCheckPlugin>(kernelBuilderSk, context, callerContext);
-        Kernel kernel = kernelBuilderSk.Build();
+        var kernel = kernelBuilderSk.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<SimulationPlannerOutput>("simulation_plan", ignoreNull: true);
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var outputParser = ResponseParser.CreateJsonParser<SimulationPlannerOutput>("simulation_plan", true);
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         var plan = await agentKernel.SendRequestAsync(
             chatHistory,
@@ -198,7 +196,7 @@ internal sealed class SimulationPlannerAgent(
             sections.Add($"""
                           ### Narrative Direction
                           <narrative_direction>
-                          {input.NarrativeDirection.ToJsonString(PromptSections.GetJsonOptions(ignoreNull: true))}
+                          {input.NarrativeDirection.ToJsonString(PromptSections.GetJsonOptions(true))}
                           </narrative_direction>
                           """);
         }
@@ -236,15 +234,12 @@ internal sealed class SimulationPlannerAgent(
             }));
     }
 
-    private static string FormatWorldEvents(object events)
-    {
-        return string.Join("\n", events.ToJsonString());
-    }
+    private static string FormatWorldEvents(object events) => string.Join("\n", events.ToJsonString());
 
     /// <summary>
-    /// Validates that cohorts are independent groups with no character overlaps.
-    /// Characters should only appear in one cohort - if they overlap, parallel execution
-    /// could cause race conditions or inconsistent state.
+    ///     Validates that cohorts are independent groups with no character overlaps.
+    ///     Characters should only appear in one cohort - if they overlap, parallel execution
+    ///     could cause race conditions or inconsistent state.
     /// </summary>
     private string? ValidateCohortIndependence(SimulationPlannerOutput plan)
     {

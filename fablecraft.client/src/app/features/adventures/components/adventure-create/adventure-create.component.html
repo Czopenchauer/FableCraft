@@ -170,9 +170,9 @@
         <div class="form-group">
           <label class="form-label">Prompt Path *</label>
           <app-directory-browser
+            (pathSelected)="onPromptPathSelected($event)"
             [currentPath]="currentPromptPath"
             [disabled]="isSubmitting"
-            (pathSelected)="onPromptPathSelected($event)"
           ></app-directory-browser>
           <span class="help-text">Path to the directory containing agent prompt templates. You can customize your world by adding StoryBible.md and WorldSettings.md files to this directory.</span>
           <span *ngIf="isFieldInvalid('promptPath')" class="error-text">
@@ -208,12 +208,12 @@
 
         <div class="agents-grid" formGroupName="agentPresets">
           <div *ngFor="let agentName of agentNames" class="agent-preset-row">
-            <label class="agent-label" [for]="'agent-' + agentName">{{ formatAgentName(agentName) }} *</label>
+            <label [for]="'agent-' + agentName" class="agent-label">{{ formatAgentName(agentName) }} *</label>
             <select
               [class.input-error]="isFieldInvalid(agentName, agentPresetsGroup)"
-              class="form-select agent-select"
               [formControlName]="agentName"
               [id]="'agent-' + agentName"
+              class="form-select agent-select"
             >
               <option value="">-- Select LLM --</option>
               <option *ngFor="let preset of llmPresets" [ngValue]="preset.id">
@@ -244,7 +244,8 @@
         >
           <span *ngIf="!isSubmitting">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"></path>
             </svg>
             Create Adventure
           </span>

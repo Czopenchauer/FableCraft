@@ -1,8 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { WorldbookService } from '../../services/worldbook.service';
-import { WorldbookDto, WorldbookUpdateDto, WorldbookResponseDto, UpdateLorebookDto, CreateLorebookDto, ContentType } from '../../models/worldbook.model';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {WorldbookService} from '../../services/worldbook.service';
+import {
+  CreateLorebookDto,
+  UpdateLorebookDto,
+  WorldbookDto,
+  WorldbookResponseDto,
+  WorldbookUpdateDto
+} from '../../models/worldbook.model';
 
 @Component({
   selector: 'app-worldbook-form',
@@ -36,6 +42,14 @@ export class WorldbookFormComponent implements OnInit {
     });
   }
 
+  get lorebooks(): FormArray {
+    return this.worldbookForm.get('lorebooks') as FormArray;
+  }
+
+  get nameControl() {
+    return this.worldbookForm.get('name');
+  }
+
   ngOnInit(): void {
     this.worldbookId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.worldbookId;
@@ -43,14 +57,6 @@ export class WorldbookFormComponent implements OnInit {
     if (this.isEditMode && this.worldbookId) {
       this.loadWorldbook(this.worldbookId);
     }
-  }
-
-  get lorebooks(): FormArray {
-    return this.worldbookForm.get('lorebooks') as FormArray;
-  }
-
-  get nameControl() {
-    return this.worldbookForm.get('name');
   }
 
   /**

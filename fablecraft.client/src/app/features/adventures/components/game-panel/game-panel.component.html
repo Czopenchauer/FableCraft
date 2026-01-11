@@ -35,7 +35,8 @@
           title="Jump to current scene"
         >
           <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-            <path [attr.d]="'M13 5l7 7-7 7M5 5l7 7-7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+            <path [attr.d]="'M13 5l7 7-7 7M5 5l7 7-7 7'" [attr.stroke-linecap]="'round'"
+                  [attr.stroke-linejoin]="'round'"
                   [attr.stroke-width]="2"></path>
           </svg>
           <span>Current</span>
@@ -55,8 +56,8 @@
 
         <!-- Action buttons -->
         <button
-          *ngIf="currentScene.canDelete"
           (click)="onRegenerateScene()"
+          *ngIf="currentScene.canDelete"
           class="btn-action btn-regenerate"
           title="Regenerate this scene"
         >
@@ -69,8 +70,8 @@
           <span>Regenerate</span>
         </button>
         <button
-          *ngIf="currentScene.canDelete"
           (click)="onDeleteLastScene()"
+          *ngIf="currentScene.canDelete"
           class="btn-action btn-delete"
           title="Delete this scene"
         >
@@ -131,7 +132,9 @@
     </div>
 
     <!-- Story Tracker (above scene) - Scene and Characters Present only -->
-    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker" class="story-tracker-panel" [class.regenerating]="isRegenerating" [class.regenerating-enrichment]="isRegeneratingEnrichment">
+    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker"
+         [class.regenerating-enrichment]="isRegeneratingEnrichment"
+         [class.regenerating]="isRegenerating" class="story-tracker-panel">
       <div *ngIf="currentScene.tracker.scene" class="story-tracker-section">
         <app-json-renderer [data]="{scene: currentScene.tracker.scene}"></app-json-renderer>
       </div>
@@ -155,7 +158,7 @@
       <!-- Columns: left character tracker, right main content -->
       <div class="game-columns">
         <!-- Character Tracker panel (Protagonist and Characters) -->
-        <div class="tracker-panel" [class.regenerating-enrichment]="isRegeneratingEnrichment">
+        <div [class.regenerating-enrichment]="isRegeneratingEnrichment" class="tracker-panel">
           <!-- Regenerating enrichment overlay -->
           <div *ngIf="isRegeneratingEnrichment" class="regenerating-enrichment-overlay">
             <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
@@ -177,8 +180,8 @@
             <div *ngIf="canRegenerateEnrichment()" class="regenerate-dropdown-container">
               <button
                 (click)="toggleRegenerateDropdown()"
-                class="btn-regenerate-enrichment"
                 [class.active]="showRegenerateDropdown"
+                class="btn-regenerate-enrichment"
                 title="Regenerate tracker data"
               >
                 <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
@@ -194,16 +197,17 @@
                   <span>Select agents to regenerate</span>
                   <button (click)="closeRegenerateDropdown()" class="dropdown-close" title="Close">
                     <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                      <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                      <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'"
+                            [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                     </svg>
                   </button>
                 </div>
                 <div class="dropdown-options">
                   <label *ngFor="let agent of availableAgents" class="dropdown-option">
                     <input
-                      type="checkbox"
-                      [checked]="isAgentSelected(agent.id)"
                       (change)="toggleAgentSelection(agent.id)"
+                      [checked]="isAgentSelected(agent.id)"
+                      type="checkbox"
                     />
                     <div class="option-content">
                       <span class="option-label">{{ agent.label }}</span>
@@ -216,8 +220,8 @@
                   <button (click)="deselectAllAgents()" class="btn-dropdown-action" type="button">None</button>
                   <button
                     (click)="regenerateSelectedAgents()"
-                    class="btn-dropdown-regenerate"
                     [disabled]="selectedAgents.size === 0"
+                    class="btn-dropdown-regenerate"
                     type="button"
                   >
                     Regenerate
@@ -286,7 +290,8 @@
             <!-- Tab Content -->
             <div class="character-tabs-content">
               <!-- Protagonist Content -->
-              <div *ngIf="isActiveCharacterTab('protagonist') && currentScene.tracker.mainCharacter" class="character-tab-panel">
+              <div *ngIf="isActiveCharacterTab('protagonist') && currentScene.tracker.mainCharacter"
+                   class="character-tab-panel">
                 <!-- Nested tabs for protagonist -->
                 <div class="nested-tabs-header">
                   <button
@@ -311,7 +316,8 @@
                     <app-json-renderer [data]="currentScene.tracker.mainCharacter.tracker"></app-json-renderer>
                   </div>
                   <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
-                    <app-json-renderer [data]="{description: currentScene.tracker.mainCharacter.description}"></app-json-renderer>
+                    <app-json-renderer
+                      [data]="{description: currentScene.tracker.mainCharacter.description}"></app-json-renderer>
                   </div>
                 </div>
               </div>
@@ -352,7 +358,8 @@
           </div>
 
           <!-- Display lore data (from enrichment or loaded scene) -->
-          <div *ngIf="!isEnriching && (enrichmentData?.newLore?.length || currentScene.newLore?.length)" class="enrichment-info">
+          <div *ngIf="!isEnriching && (enrichmentData?.newLore?.length || currentScene.newLore?.length)"
+               class="enrichment-info">
             <div class="enrichment-section">
               <h4>New Lore:</h4>
               <div *ngFor="let lore of (enrichmentData?.newLore || currentScene.newLore)" class="enrichment-item">
@@ -367,7 +374,7 @@
           <!-- Scene Narrative -->
           <div class="scene-container">
             <div class="scene-narrative">
-              <div class="narrative-text markdown-content" [innerHTML]="currentScene.text | markdown"></div>
+              <div [innerHTML]="currentScene.text | markdown" class="narrative-text markdown-content"></div>
             </div>
           </div>
 
@@ -393,9 +400,12 @@
             <h2 *ngIf="!isCurrentScene()" class="choices-title">Available choices were:</h2>
 
             <!-- Blocked message for current scene when tracker is missing (but not during enrichment) -->
-            <div *ngIf="isCurrentScene() && !isEnriching && !currentScene.tracker && enrichmentFailed" class="choices-blocked-message">
+            <div *ngIf="isCurrentScene() && !isEnriching && !currentScene.tracker && enrichmentFailed"
+                 class="choices-blocked-message">
               <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="blocked-icon" viewBox="0 0 24 24">
-                <path [attr.d]="'M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V7a2 2 0 10-4 0v4m-4 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                <path
+                  [attr.d]="'M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V7a2 2 0 10-4 0v4m-4 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z'"
+                  [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
               </svg>
               <p class="blocked-text">
                 Tracker data required. Please retry enrichment.
@@ -460,8 +470,10 @@
                 type="button"
               >
                 <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                  <path *ngIf="!showEmulationBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-                  <path *ngIf="showEmulationBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="!showEmulationBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="showEmulationBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                 </svg>
                 <span>Character Voice</span>
               </button>
@@ -484,11 +496,15 @@
                     type="button"
                   >
                     <svg *ngIf="!isEmulating" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                      <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                      <path [attr.d]="'M13 7l5 5m0 0l-5 5m5-5H6'" [attr.stroke-linecap]="'round'"
+                            [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                     </svg>
                     <svg *ngIf="isEmulating" [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
-                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
-                      <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4"
+                              [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                      <path
+                        [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                        [attr.fill]="'currentColor'" class="opacity-75"></path>
                     </svg>
                   </button>
                 </div>
@@ -503,7 +519,8 @@
                       type="button"
                     >
                       <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                        <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                        <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'"
+                              [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                       </svg>
                     </button>
                   </div>
@@ -520,8 +537,10 @@
                 type="button"
               >
                 <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                  <path *ngIf="!showRagChatBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-                  <path *ngIf="showRagChatBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="!showRagChatBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="showRagChatBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                 </svg>
                 <span>Knowledge Search</span>
               </button>
@@ -540,25 +559,28 @@
                 </div>
 
                 <!-- Chat Messages -->
-                <div class="rag-chat-messages" *ngIf="ragChatMessages.length > 0">
+                <div *ngIf="ragChatMessages.length > 0" class="rag-chat-messages">
                   <div *ngFor="let message of ragChatMessages" class="rag-chat-message">
                     <div class="rag-chat-query">
                       <span class="message-label">Q:</span>
                       <span class="message-text">{{ message.query }}</span>
                       <span class="dataset-badge">{{ message.datasetType === 'world' ? 'World' : 'Character' }}</span>
                     </div>
-                    <div class="rag-chat-response" *ngIf="!message.isLoading && message.response">
+                    <div *ngIf="!message.isLoading && message.response" class="rag-chat-response">
                       <span class="message-label">A:</span>
                       <p class="response-text">{{ message.response.answer }}</p>
                     </div>
-                    <div class="rag-chat-loading" *ngIf="message.isLoading">
+                    <div *ngIf="message.isLoading" class="rag-chat-loading">
                       <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
-                        <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
-                        <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                        <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4"
+                                [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                        <path
+                          [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                          [attr.fill]="'currentColor'" class="opacity-75"></path>
                       </svg>
                       <span>Searching...</span>
                     </div>
-                    <div class="rag-chat-error" *ngIf="!message.isLoading && message.error">
+                    <div *ngIf="!message.isLoading && message.error" class="rag-chat-error">
                       <span class="error-text">{{ message.error }}</span>
                     </div>
                   </div>
@@ -581,20 +603,25 @@
                     title="Search knowledge"
                     type="button"
                   >
-                    <svg *ngIf="!isRagChatLoading" [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-                      <path [attr.d]="'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                    <svg *ngIf="!isRagChatLoading" [attr.fill]="'none'" [attr.stroke]="'currentColor'"
+                         viewBox="0 0 24 24">
+                      <path [attr.d]="'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'" [attr.stroke-linecap]="'round'"
+                            [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
                     </svg>
                     <svg *ngIf="isRagChatLoading" [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
-                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'" class="opacity-25"></circle>
-                      <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'" [attr.fill]="'currentColor'" class="opacity-75"></path>
+                      <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4"
+                              [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                      <path
+                        [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                        [attr.fill]="'currentColor'" class="opacity-75"></path>
                     </svg>
                   </button>
                 </div>
 
                 <!-- Clear Button -->
                 <button
-                  *ngIf="ragChatMessages.length > 0"
                   (click)="clearRagChatMessages()"
+                  *ngIf="ragChatMessages.length > 0"
                   class="rag-chat-clear-btn"
                   type="button"
                 >

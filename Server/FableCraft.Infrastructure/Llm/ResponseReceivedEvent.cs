@@ -24,9 +24,9 @@ public sealed class ResponseReceivedEvent : IMessage
 
     public required long Duration { get; init; }
 
-    public Guid AdventureId { get; set; }
-
     public Guid? SceneId { get; set; }
+
+    public Guid AdventureId { get; set; }
 }
 
 internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IMessageHandler<ResponseReceivedEvent>
@@ -46,7 +46,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
             TotalToken = message.TotalToken,
             Duration = message.Duration
         };
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         dbContext.LlmCallLogs.Add(llmCallLog);
         await dbContext.SaveChangesAsync(cancellationToken);
     }

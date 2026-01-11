@@ -16,12 +16,13 @@ internal static class ResponseParser
     public static T ExtractJson<T>(string response, string tag, bool ignoreNull = false)
     {
         var content = ExtractTagContent(response, tag);
-        JsonSerializerOptions options = PromptSections.GetJsonOptions(ignoreNull);
+        var options = PromptSections.GetJsonOptions(ignoreNull);
         if (content == null)
         {
             var santized = response.RemoveThinkingBlock().ExtractJsonFromMarkdown();
             return JsonSerializer.Deserialize<T>(santized, options)
-                   ?? throw new InvalidOperationException($"Failed to extract JSON from response: <{tag}> tag not found and deserialization returned null. Place the json in correct tag.");
+                   ?? throw new InvalidOperationException(
+                       $"Failed to extract JSON from response: <{tag}> tag not found and deserialization returned null. Place the json in correct tag.");
         }
 
         return JsonSerializer.Deserialize<T>(content.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
@@ -60,7 +61,7 @@ internal static class ResponseParser
 
     private static string? ExtractTagContent(string response, string tag)
     {
-        Match match = Regex.Match(response, $"<{tag}>(.*?)</{tag}>", RegexOptions.Singleline);
+        var match = Regex.Match(response, $"<{tag}>(.*?)</{tag}>", RegexOptions.Singleline);
         return match.Success ? match.Groups[1].Value.RemoveThinkingBlock().ExtractJsonFromMarkdown() : null;
     }
 }

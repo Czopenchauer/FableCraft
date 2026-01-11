@@ -10,13 +10,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Agent that determines a character's intentions for an upcoming period.
-/// Used as a plugin by SimulationPlanner to understand what characters plan to do.
+///     Agent that determines a character's intentions for an upcoming period.
+///     Used as a plugin by SimulationPlanner to understand what characters plan to do.
 /// </summary>
 internal sealed class IntentCheckAgent(
     IAgentKernel agentKernel,
@@ -30,7 +28,7 @@ internal sealed class IntentCheckAgent(
         IntentCheckInput input,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
         systemPrompt = PopulatePlaceholders(systemPrompt, input);
@@ -44,10 +42,10 @@ internal sealed class IntentCheckAgent(
                                     """
         );
 
-        Kernel kernel = kernelBuilder.Create().Build();
+        var kernel = kernelBuilder.Create().Build();
 
         var outputParser = ResponseParser.CreateTextParser("intent");
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -60,7 +58,7 @@ internal sealed class IntentCheckAgent(
 
     private string PopulatePlaceholders(string prompt, IntentCheckInput input)
     {
-        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var jsonOptions = PromptSections.GetJsonOptions(true);
         var character = input.Character;
 
         prompt = prompt.Replace(PlaceholderNames.CharacterName, character.Name);

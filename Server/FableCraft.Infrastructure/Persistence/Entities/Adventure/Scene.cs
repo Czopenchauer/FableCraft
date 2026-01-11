@@ -57,7 +57,7 @@ public class Scene : IEntity
 
     public string GetSceneWithSelectedAction()
     {
-        MainCharacterAction? selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
+        var selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
         return selectedAction != null
             ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
             : NarrativeText;
@@ -67,36 +67,36 @@ public class Scene : IEntity
 public sealed class Metadata
 {
     /// <summary>
-    /// Resolution output from ResolutionAgent (raw JSON string).
+    ///     Resolution output from ResolutionAgent (raw JSON string).
     /// </summary>
     public string? ResolutionOutput { get; set; }
 
     public Tracker? Tracker { get; set; }
 
     /// <summary>
-    /// Context gathered from RAG after this scene was generated.
-    /// Used as extra context for generating the next scene.
+    ///     Context gathered from RAG after this scene was generated.
+    ///     Used as extra context for generating the next scene.
     /// </summary>
     public GatheredContext? GatheredContext { get; set; }
 
     /// <summary>
-    /// Extra context from writer that will be used in the next scene generation.
+    ///     Extra context from writer that will be used in the next scene generation.
     /// </summary>
     public Dictionary<string, object>? WriterObservation { get; set; }
 
     /// <summary>
-    /// Chronicler story state (dramatic questions, promises, threads, stakes, windows, world momentum).
+    ///     Chronicler story state (dramatic questions, promises, threads, stakes, windows, world momentum).
     /// </summary>
     public ChroniclerStoryState? ChroniclerState { get; set; }
 
     /// <summary>
-    /// Writer guidance from the Chronicler for the next scene (stored as JSON string).
+    ///     Writer guidance from the Chronicler for the next scene (stored as JSON string).
     /// </summary>
     public string? WriterGuidance { get; set; }
 }
 
 /// <summary>
-/// Context gathered from RAG (knowledge graph) to be used in the next scene generation.
+///     Context gathered from RAG (knowledge graph) to be used in the next scene generation.
 /// </summary>
 public sealed class GatheredContext
 {
@@ -109,7 +109,7 @@ public sealed class GatheredContext
 }
 
 /// <summary>
-/// A single item of gathered context from the knowledge graph.
+///     A single item of gathered context from the knowledge graph.
 /// </summary>
 public sealed class GatheredContextItem
 {
@@ -119,7 +119,8 @@ public sealed class GatheredContextItem
 }
 
 /// <summary>
-/// Tracker for story and main character progress within the adventure. Characters other than the main character are tracked separately - <see cref="Character"/>
+///     Tracker for story and main character progress within the adventure. Characters other than the main character are
+///     tracked separately - <see cref="Character" />
 /// </summary>
 public sealed class Tracker
 {

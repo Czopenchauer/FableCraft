@@ -2,7 +2,7 @@ using FableCraft.AppHost;
 
 using Projects;
 
-IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
+var builder = DistributedApplication.CreateBuilder(args);
 
 var serverDatabase = builder
     .AddPostgres("fablecraftdb-npgsql", port: 6999)
@@ -86,7 +86,6 @@ builder.AddNpmApp("fablecraft-client", "../FableCraft.Client")
 
 builder.Build().Run();
 
-
 static DirectoryInfo TryGetSolutionDirectoryInfo()
 {
     var currentPath = Directory.GetCurrentDirectory();
@@ -95,5 +94,6 @@ static DirectoryInfo TryGetSolutionDirectoryInfo()
     {
         directory = directory.Parent;
     }
+
     return directory!;
 }

@@ -13,8 +13,8 @@ namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 /// </summary>
 internal class MainCharacterNarrativePlugin : PluginBase
 {
-    private readonly IRagSearch _ragSearch;
     private const int MaxQueries = 10;
+    private readonly IRagSearch _ragSearch;
     private int _queryCount;
 
     public MainCharacterNarrativePlugin(IRagSearch ragSearch)

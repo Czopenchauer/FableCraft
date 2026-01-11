@@ -24,25 +24,25 @@ public sealed class CharacterState
 }
 
 /// <summary>
-/// Tracks simulation-related data for a character.
+///     Tracks simulation-related data for a character.
 /// </summary>
 public class SimulationMetadata
 {
     /// <summary>
-    /// In-world timestamp of last simulation (e.g., "14:00 05-06-845").
+    ///     In-world timestamp of last simulation (e.g., "14:00 05-06-845").
     /// </summary>
     [JsonPropertyName("last_simulated")]
     public required string? LastSimulated { get; set; }
 
     /// <summary>
-    /// If the character has decided to seek out the MC.
+    ///     If the character has decided to seek out the MC.
     /// </summary>
     [JsonPropertyName("pending_mc_interaction")]
     public required PendingMcInteraction? PendingMcInteraction { get; set; }
 }
 
 /// <summary>
-/// Information about a character's intent to seek out the MC.
+///     Information about a character's intent to seek out the MC.
 /// </summary>
 public class PendingMcInteraction
 {

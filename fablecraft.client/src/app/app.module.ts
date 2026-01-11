@@ -18,18 +18,24 @@ import {
 } from './features/adventures/components/adventure-settings-modal/adventure-settings-modal.component';
 import {JsonRendererComponent} from './features/adventures/components/json-renderer/json-renderer.component';
 import {ToastComponent} from './shared/components/toast/toast.component';
-import { WorldbookListComponent } from './features/adventures/components/worldbook-list/worldbook-list.component';
-import { WorldbookFormComponent } from './features/adventures/components/worldbook-form/worldbook-form.component';
-import { MenubarComponent } from './shared/components/menubar/menubar.component';
-import { LlmPresetManagerComponent } from './features/adventures/components/llm-preset-manager/llm-preset-manager.component';
-import { DirectoryBrowserComponent } from './shared/components/directory-browser/directory-browser.component';
-import { LoreManagementModalComponent } from './features/adventures/components/lore-management-modal/lore-management-modal.component';
-import { AdventureStateModalComponent } from './features/adventures/components/adventure-state-modal/adventure-state-modal.component';
-import { LoreContentComponent } from './features/adventures/components/lore-content/lore-content.component';
-import { CharactersTabComponent } from './features/adventures/components/characters-tab/characters-tab.component';
-import { CharacterDetailComponent } from './features/adventures/components/character-detail/character-detail.component';
-import { JsonEditorModalComponent } from './features/adventures/components/json-editor-modal/json-editor-modal.component';
-import { MarkdownPipe } from './shared/pipes/markdown.pipe';
+import {WorldbookListComponent} from './features/adventures/components/worldbook-list/worldbook-list.component';
+import {WorldbookFormComponent} from './features/adventures/components/worldbook-form/worldbook-form.component';
+import {MenubarComponent} from './shared/components/menubar/menubar.component';
+import {
+  LlmPresetManagerComponent
+} from './features/adventures/components/llm-preset-manager/llm-preset-manager.component';
+import {DirectoryBrowserComponent} from './shared/components/directory-browser/directory-browser.component';
+import {
+  LoreManagementModalComponent
+} from './features/adventures/components/lore-management-modal/lore-management-modal.component';
+import {
+  AdventureStateModalComponent
+} from './features/adventures/components/adventure-state-modal/adventure-state-modal.component';
+import {LoreContentComponent} from './features/adventures/components/lore-content/lore-content.component';
+import {CharactersTabComponent} from './features/adventures/components/characters-tab/characters-tab.component';
+import {CharacterDetailComponent} from './features/adventures/components/character-detail/character-detail.component';
+import {JsonEditorModalComponent} from './features/adventures/components/json-editor-modal/json-editor-modal.component';
+import {MarkdownPipe} from './shared/pipes/markdown.pipe';
 
 @NgModule({
   declarations: [

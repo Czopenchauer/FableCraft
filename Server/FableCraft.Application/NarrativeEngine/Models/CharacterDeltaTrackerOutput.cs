@@ -8,7 +8,7 @@ internal sealed class CharacterDeltaTrackerOutput
 
     [JsonPropertyName("changes")]
     public TrackerChanges TrackerChanges { get; set; } = null!;
-    
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }

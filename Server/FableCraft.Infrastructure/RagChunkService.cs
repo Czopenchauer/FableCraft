@@ -45,12 +45,10 @@ public interface IRagChunkService
 
 internal sealed class RagChunkService : IRagChunkService
 {
-    private static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
-
-    private readonly IRagBuilder _ragBuilder;
-
     private readonly ResiliencePipeline _httpResiliencePipeline;
     private readonly ResiliencePipeline _ioResiliencePipeline;
+
+    private readonly IRagBuilder _ragBuilder;
 
     public RagChunkService(IRagBuilder ragBuilder)
     {
@@ -85,6 +83,8 @@ internal sealed class RagChunkService : IRagChunkService
             })
             .Build();
     }
+
+    private static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
 
     public void EnsureDirectoryExists(Guid adventureId)
     {

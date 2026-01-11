@@ -12,14 +12,12 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Performs lightweight inference about a significant character's current state.
-/// This is NOT full simulation - it answers: "Given who this person is and what's happened,
-/// where are they now and what state are they in?"
+///     Performs lightweight inference about a significant character's current state.
+///     This is NOT full simulation - it answers: "Given who this person is and what's happened,
+///     where are they now and what state are they in?"
 /// </summary>
 internal sealed class OffscreenInferenceAgent(
     IAgentKernel agentKernel,
@@ -179,7 +177,7 @@ internal sealed class OffscreenInferenceAgent(
 
     private async Task<OffscreenInferenceOutput> Simulate(GenerationContext context, OffscreenInferenceInput input, CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
         systemPrompt = PopulatePlaceholders(systemPrompt, input);
@@ -187,13 +185,13 @@ internal sealed class OffscreenInferenceAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        Kernel kernel = kernelBuilder.Create().Build();
+        var kernel = kernelBuilder.Create().Build();
 
         var outputParser = ResponseParser.CreateJsonParser<OffscreenInferenceOutput>(
             "offscreen_inference",
-            ignoreNull: true);
+            true);
 
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -206,7 +204,7 @@ internal sealed class OffscreenInferenceAgent(
 
     private string PopulatePlaceholders(string prompt, OffscreenInferenceInput input)
     {
-        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var jsonOptions = PromptSections.GetJsonOptions(true);
 
         prompt = prompt.Replace(PlaceholderNames.CharacterName, input.Character.Name);
 

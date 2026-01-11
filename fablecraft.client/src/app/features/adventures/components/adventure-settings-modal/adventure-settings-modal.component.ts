@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
-import {AdventureSettingsResponseDto, AgentLlmPresetDto, UpdateAdventureSettingsDto} from '../../models/adventure-settings.model';
+import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../../models/adventure-settings.model';
 import {LlmPresetResponseDto} from '../../models/llm-preset.model';
 import {AdventureService} from '../../services/adventure.service';
 import {LlmPresetService} from '../../services/llm-preset.service';
@@ -34,7 +34,8 @@ export class AdventureSettingsModalComponent implements OnChanges {
     private adventureService: AdventureService,
     private llmPresetService: LlmPresetService,
     private toastService: ToastService
-  ) {}
+  ) {
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen && this.adventureId) {
@@ -43,46 +44,6 @@ export class AdventureSettingsModalComponent implements OnChanges {
     if (changes['isOpen'] && !this.isOpen) {
       this.resetState();
     }
-  }
-
-  private loadData(): void {
-    if (!this.adventureId) return;
-
-    this.isLoading = true;
-
-    // Load both settings and available presets
-    Promise.all([
-      this.adventureService.getAdventureSettings(this.adventureId).toPromise(),
-      this.llmPresetService.getAllPresets().toPromise()
-    ]).then(([settings, presets]) => {
-      this.settings = settings!;
-      this.availablePresets = presets || [];
-      this.initializeForm();
-      this.isLoading = false;
-    }).catch(err => {
-      console.error('Error loading adventure settings:', err);
-      this.toastService.error('Failed to load adventure settings.');
-      this.isLoading = false;
-      this.onClose();
-    });
-  }
-
-  private initializeForm(): void {
-    if (!this.settings) return;
-
-    this.promptPath = this.settings.promptPath;
-    this.agentPresets = this.settings.agentLlmPresets.map(preset => ({
-      agentName: preset.agentName,
-      llmPresetId: preset.llmPresetId || null
-    }));
-  }
-
-  private resetState(): void {
-    this.settings = null;
-    this.promptPath = '';
-    this.agentPresets = [];
-    this.editingPreset = null;
-    this.isCreatingPreset = false;
   }
 
   onClose(): void {
@@ -160,7 +121,7 @@ export class AdventureSettingsModalComponent implements OnChanges {
     if (!presetId) return;
     const preset = this.availablePresets.find(p => p.id === presetId);
     if (preset) {
-      this.editingPreset = { ...preset };
+      this.editingPreset = {...preset};
     }
   }
 
@@ -235,5 +196,45 @@ export class AdventureSettingsModalComponent implements OnChanges {
         }
       });
     }
+  }
+
+  private loadData(): void {
+    if (!this.adventureId) return;
+
+    this.isLoading = true;
+
+    // Load both settings and available presets
+    Promise.all([
+      this.adventureService.getAdventureSettings(this.adventureId).toPromise(),
+      this.llmPresetService.getAllPresets().toPromise()
+    ]).then(([settings, presets]) => {
+      this.settings = settings!;
+      this.availablePresets = presets || [];
+      this.initializeForm();
+      this.isLoading = false;
+    }).catch(err => {
+      console.error('Error loading adventure settings:', err);
+      this.toastService.error('Failed to load adventure settings.');
+      this.isLoading = false;
+      this.onClose();
+    });
+  }
+
+  private initializeForm(): void {
+    if (!this.settings) return;
+
+    this.promptPath = this.settings.promptPath;
+    this.agentPresets = this.settings.agentLlmPresets.map(preset => ({
+      agentName: preset.agentName,
+      llmPresetId: preset.llmPresetId || null
+    }));
+  }
+
+  private resetState(): void {
+    this.settings = null;
+    this.promptPath = '';
+    this.agentPresets = [];
+    this.editingPreset = null;
+    this.isCreatingPreset = false;
   }
 }

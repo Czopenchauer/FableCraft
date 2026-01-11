@@ -8,7 +8,7 @@ public static class TrackerExtensions
     {
         var dict = new Dictionary<string, object>();
 
-        foreach (FieldDefinition field in fields)
+        foreach (var field in fields)
         {
             if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
             {
@@ -36,7 +36,7 @@ public static class TrackerExtensions
     {
         var dict = new Dictionary<string, object>();
 
-        foreach (FieldDefinition field in fields)
+        foreach (var field in fields)
         {
             if (field is { Type: FieldType.ForEachObject, HasNestedFields: true })
             {

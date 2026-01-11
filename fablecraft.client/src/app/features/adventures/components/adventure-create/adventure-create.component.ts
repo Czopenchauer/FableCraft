@@ -3,7 +3,7 @@ import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {AdventureService} from '../../services/adventure.service';
 import {AdventureAgentLlmPresetDto, AdventureDto} from '../../models/adventure.model';
-import {Subject, takeUntil, forkJoin} from 'rxjs';
+import {forkJoin, Subject, takeUntil} from 'rxjs';
 import {LlmPresetService} from '../../services/llm-preset.service';
 import {WorldbookService} from '../../services/worldbook.service';
 import {TrackerDefinitionService} from '../../services/tracker-definition.service';
@@ -51,6 +51,10 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
 
   get mainCharacterGroup(): FormGroup {
     return this.adventureForm.get('mainCharacter') as FormGroup;
+  }
+
+  get agentPresetsGroup(): FormGroup {
+    return this.adventureForm.get('agentPresets') as FormGroup;
   }
 
   ngOnInit(): void {
@@ -126,6 +130,30 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  applyPresetToAll(presetId: string): void {
+    if (!presetId) return;
+
+    const patchValue: { [key: string]: string } = {};
+    for (const agentName of this.agentNames) {
+      patchValue[agentName] = presetId;
+    }
+    this.agentPresetsGroup.patchValue(patchValue);
+  }
+
+  formatAgentName(agentName: string): string {
+    return agentName
+      .replace(/Agent$/, '')
+      .replace(/([A-Z])/g, ' $1')
+      .trim();
+  }
+
+  onPromptPathSelected(path: string): void {
+    this.currentPromptPath = path;
+    this.adventureForm.patchValue({
+      promptPath: path
+    });
+  }
+
   private initializeForm(): void {
     // Build agent presets form group dynamically
     const agentPresetsGroup: { [key: string]: any } = {};
@@ -146,27 +174,6 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       promptPath: ['', Validators.required],
       agentPresets: this.fb.group(agentPresetsGroup)
     });
-  }
-
-  get agentPresetsGroup(): FormGroup {
-    return this.adventureForm.get('agentPresets') as FormGroup;
-  }
-
-  applyPresetToAll(presetId: string): void {
-    if (!presetId) return;
-
-    const patchValue: { [key: string]: string } = {};
-    for (const agentName of this.agentNames) {
-      patchValue[agentName] = presetId;
-    }
-    this.agentPresetsGroup.patchValue(patchValue);
-  }
-
-  formatAgentName(agentName: string): string {
-    return agentName
-      .replace(/Agent$/, '')
-      .replace(/([A-Z])/g, ' $1')
-      .trim();
   }
 
   private loadDropdownData(): void {
@@ -204,13 +211,6 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
-  }
-
-  onPromptPathSelected(path: string): void {
-    this.currentPromptPath = path;
-    this.adventureForm.patchValue({
-      promptPath: path
-    });
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {

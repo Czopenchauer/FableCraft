@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Output from the Character Reflection Agent, processed post-scene.
-/// Only sections that changed are included in the output.
+///     Output from the Character Reflection Agent, processed post-scene.
+///     Only sections that changed are included in the output.
 /// </summary>
 public sealed class CharacterReflectionOutput
 {

@@ -6,7 +6,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
-using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,8 +17,8 @@ namespace FableCraft.Server.Controllers;
 public class AdventureController : ControllerBase
 {
     private readonly IAdventureCreationService _adventureCreationService;
-    private readonly IMessageDispatcher _messageDispatcher;
     private readonly ApplicationDbContext _dbContext;
+    private readonly IMessageDispatcher _messageDispatcher;
 
     public AdventureController(
         IAdventureCreationService adventureCreationService,
@@ -46,7 +45,7 @@ public class AdventureController : ControllerBase
     public async Task<IActionResult> Create([FromBody] AdventureDto adventure,
         [FromServices] IValidator<AdventureDto> validator, CancellationToken cancellationToken)
     {
-        ValidationResult? validationResult = await validator.ValidateAsync(adventure, cancellationToken);
+        var validationResult = await validator.ValidateAsync(adventure, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -54,7 +53,7 @@ public class AdventureController : ControllerBase
         }
 
         var errors = new Dictionary<string, string[]>();
-        foreach (AgentName agentName in Enum.GetValues<AgentName>())
+        foreach (var agentName in Enum.GetValues<AgentName>())
         {
             var exists = System.IO.File.Exists(Path.Combine(
                 adventure.PromptPath,
@@ -70,7 +69,7 @@ public class AdventureController : ControllerBase
             return BadRequest(Results.ValidationProblem(errors));
         }
 
-        AdventureCreationStatus result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);
+        var result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);
 
         return Ok(result);
     }
@@ -94,7 +93,7 @@ public class AdventureController : ControllerBase
     {
         try
         {
-            AdventureCreationStatus result = await _adventureCreationService.GetAdventureCreationStatusAsync(adventure, cancellationToken);
+            var result = await _adventureCreationService.GetAdventureCreationStatusAsync(adventure, cancellationToken);
 
             return Ok(result);
         }
@@ -237,7 +236,7 @@ public class AdventureController : ControllerBase
         [FromServices] IValidator<UpdateAdventureSettingsDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -258,7 +257,7 @@ public class AdventureController : ControllerBase
 
         foreach (var presetDto in dto.AgentLlmPresets)
         {
-            if (!Enum.TryParse<AgentName>(presetDto.AgentName, out var agentName))
+            if (!Enum.TryParse(presetDto.AgentName, out AgentName agentName))
             {
                 continue;
             }

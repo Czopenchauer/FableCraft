@@ -27,10 +27,7 @@ internal static class PromptSections
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public static JsonSerializerOptions GetJsonOptions(bool ignoreNull = false)
-    {
-        return ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
-    }
+    public static JsonSerializerOptions GetJsonOptions(bool ignoreNull = false) => ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
 
     public static string SceneTracker(GenerationContext context, SceneTracker sceneTracker)
     {
@@ -47,16 +44,14 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CurrentSceneTracker(GenerationContext context)
-    {
-        return context.LatestTracker()?.Scene != null
+    public static string CurrentSceneTracker(GenerationContext context) =>
+        context.LatestTracker()?.Scene != null
             ? $"""
                <current_scene_tracker>
                {context.LatestTracker()?.Scene.ToJsonString(GetJsonOptions())}
                </current_scene_tracker>
                """
             : string.Empty;
-    }
 
     public static string LastScenes(SceneContext[] sceneContext, int count)
     {
@@ -107,20 +102,17 @@ internal static class PromptSections
                 """;
     }
 
-    public static string SceneContent(string? content)
-    {
-        return string.IsNullOrEmpty(content)
+    public static string SceneContent(string? content) =>
+        string.IsNullOrEmpty(content)
             ? string.Empty
             : $"""
                <scene_content>
                {content}
                </scene_content>
                """;
-    }
 
-    public static string CurrentScene(GenerationContext context)
-    {
-        return string.IsNullOrEmpty(context.NewScene?.Scene)
+    public static string CurrentScene(GenerationContext context) =>
+        string.IsNullOrEmpty(context.NewScene?.Scene)
             ? string.Empty
             : $"""
                Here's the current narrative scene written from {context.MainCharacter.Name}'s perspective:
@@ -128,27 +120,22 @@ internal static class PromptSections
                {context.NewScene.Scene}
                </current_scene>
                """;
-    }
 
-    public static string PreviousScene(string? content)
-    {
-        return string.IsNullOrEmpty(content)
+    public static string PreviousScene(string? content) =>
+        string.IsNullOrEmpty(content)
             ? string.Empty
             : $"""
                <previous_scene>
                {content}
                </previous_scene>
                """;
-    }
 
-    public static string PlayerAction(string action)
-    {
-        return $"""
-                <player_action>
-                {action}
-                </player_action>
-                """;
-    }
+    public static string PlayerAction(string action) =>
+        $"""
+         <player_action>
+         {action}
+         </player_action>
+         """;
 
     public static string MainCharacter(GenerationContext context)
     {
@@ -170,11 +157,11 @@ internal static class PromptSections
             return string.Empty;
         }
 
-        Tracker? tracker = sceneContext
+        var tracker = sceneContext
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault(x => x.Metadata.Tracker != null)?.Metadata.Tracker;
 
-        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        var options = GetJsonOptions(ignoreNull);
         return $"""
                 Set of trackers for the main character, describing their current state in the previous scene:
                 <main_character_tracker>
@@ -247,7 +234,7 @@ internal static class PromptSections
 
     public static string CharacterStateContext(CharacterContext context, bool ignoreNull = true)
     {
-        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        var options = GetJsonOptions(ignoreNull);
         return $"""
                 Current state tracker for the character {context.Name}:
                 <previous_character_state>
@@ -307,14 +294,12 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CharacterCreationContext<T>(T context, bool ignoreNull = false)
-    {
-        return $"""
-                <character_creation_context>
-                {context.ToJsonString(GetJsonOptions(ignoreNull))}
-                </character_creation_context>
-                """;
-    }
+    public static string CharacterCreationContext<T>(T context, bool ignoreNull = false) =>
+        $"""
+         <character_creation_context>
+         {context.ToJsonString(GetJsonOptions(ignoreNull))}
+         </character_creation_context>
+         """;
 
     public static string NewCharacterRequests<T>(IEnumerable<T>? requests, bool ignoreNull = false)
     {
@@ -331,14 +316,12 @@ internal static class PromptSections
                 """;
     }
 
-    public static string ActionResolution(GenerationContext context)
-    {
-        return $"""
-                <action_resolution>
-                {context.NewResolution.ToJsonString()}
-                </action_resolution>
-                """;
-    }
+    public static string ActionResolution(GenerationContext context) =>
+        $"""
+         <action_resolution>
+         {context.NewResolution.ToJsonString()}
+         </action_resolution>
+         """;
 
     public static string ResolutionOutput(string? resolution)
     {
@@ -351,17 +334,15 @@ internal static class PromptSections
                 """;
     }
 
-    public static string InitialInstruction(string guidance)
-    {
-        return $"""
-                This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup. Here's what the player provided as guidance for the first scene:
-                <initial_instruction>
-                {guidance}
-                </initial_instruction>
+    public static string InitialInstruction(string guidance) =>
+        $"""
+         This is the first scene of the adventure. Create the initial narrative direction based on the main character and adventure setup. Here's what the player provided as guidance for the first scene:
+         <initial_instruction>
+         {guidance}
+         </initial_instruction>
 
-                Generate the first narrative direction for the story based on the above information.
-                """;
-    }
+         Generate the first narrative direction for the story based on the above information.
+         """;
 
     public static string NewLocations<T>(T[]? locations, bool ignoreNull = false)
     {
@@ -374,32 +355,26 @@ internal static class PromptSections
                 """;
     }
 
-    public static string LocationRequest<T>(T request, bool ignoreNull = false)
-    {
-        return $"""
-                <location_request>
-                {request.ToJsonString(GetJsonOptions(ignoreNull))}
-                </location_request>
-                """;
-    }
+    public static string LocationRequest<T>(T request, bool ignoreNull = false) =>
+        $"""
+         <location_request>
+         {request.ToJsonString(GetJsonOptions(ignoreNull))}
+         </location_request>
+         """;
 
-    public static string LoreCreationContext<T>(T context, bool ignoreNull = false)
-    {
-        return $"""
-                <lore_creation_context>
-                {context.ToJsonString(GetJsonOptions(ignoreNull))}
-                </lore_creation_context>
-                """;
-    }
+    public static string LoreCreationContext<T>(T context, bool ignoreNull = false) =>
+        $"""
+         <lore_creation_context>
+         {context.ToJsonString(GetJsonOptions(ignoreNull))}
+         </lore_creation_context>
+         """;
 
-    public static string ItemRequest<T>(T request, bool ignoreNull = false)
-    {
-        return $"""
-                <item_request>
-                {request.ToJsonString(GetJsonOptions(ignoreNull))}
-                </item_request>
-                """;
-    }
+    public static string ItemRequest<T>(T request, bool ignoreNull = false) =>
+        $"""
+         <item_request>
+         {request.ToJsonString(GetJsonOptions(ignoreNull))}
+         </item_request>
+         """;
 
     public static string NewItems(GeneratedItem[]? items, bool ignoreNull = false)
     {
@@ -440,12 +415,12 @@ internal static class PromptSections
     }
 
     /// <summary>
-    /// Gets the gathered context from the previous scene's metadata.
-    /// Used when ContextGatherer runs after scene generation.
+    ///     Gets the gathered context from the previous scene's metadata.
+    ///     Used when ContextGatherer runs after scene generation.
     /// </summary>
     public static string PreviousSceneGatheredContext(GenerationContext generationContext)
     {
-        GatheredContext? gatheredContext = generationContext.SceneContext
+        var gatheredContext = generationContext.SceneContext
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.GatheredContext;
 
@@ -478,7 +453,7 @@ internal static class PromptSections
 
     public static string PreviousSceneTrackers(SceneContext[] sceneContext, int count = 1, bool ignoreNull = true)
     {
-        JsonSerializerOptions options = GetJsonOptions(ignoreNull);
+        var options = GetJsonOptions(ignoreNull);
         var formatted = string.Join("\n\n",
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
@@ -493,15 +468,13 @@ internal static class PromptSections
                 """;
     }
 
-    public static string AdventureStartTime(string startTime)
-    {
-        return $"""
-                Set the initial time to:
-                <adventure_start_time>
-                {startTime}
-                </adventure_start_time>
-                """;
-    }
+    public static string AdventureStartTime(string startTime) =>
+        $"""
+         Set the initial time to:
+         <adventure_start_time>
+         {startTime}
+         </adventure_start_time>
+         """;
 
     public static string WorldSettings(string promptPath)
     {
@@ -541,8 +514,8 @@ internal static class PromptSections
     }
 
     /// <summary>
-    /// Formats writer guidance from the Chronicler agent for the Writer agent.
-    /// Retrieves the guidance from the previous scene's metadata.
+    ///     Formats writer guidance from the Chronicler agent for the Writer agent.
+    ///     Retrieves the guidance from the previous scene's metadata.
     /// </summary>
     public static string ChroniclerGuidance(SceneContext[] sceneContext)
     {

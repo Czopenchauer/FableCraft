@@ -24,7 +24,7 @@ public sealed class MaintenanceController(
             return NotFound();
         }
 
-        await messageDispatcher.PublishAsync(new SceneGeneratedEvent()
+        await messageDispatcher.PublishAsync(new SceneGeneratedEvent
         {
             AdventureId = adventureId,
             SceneId = lastScene.Id

@@ -6,35 +6,35 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Anthropic" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" />
+        <PackageReference Include="Anthropic"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-        <PackageReference Include="Microsoft.Extensions.Http" />
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
-        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
-        <PackageReference Include="Microsoft.SemanticKernel" />
-        <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" />
-        <PackageReference Include="Microsoft.SemanticKernel.Agents.Orchestration" />
-        <PackageReference Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" />
-        <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-        <PackageReference Include="Polly" />
-        <PackageReference Include="Polly.RateLimiting" />
-        <PackageReference Include="System.IO.Hashing" />
+        <PackageReference Include="Microsoft.Extensions.Hosting"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Http"/>
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience"/>
+        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery"/>
+        <PackageReference Include="Microsoft.SemanticKernel"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Agents.Core"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Agents.Orchestration"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google"/>
+        <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
+        <PackageReference Include="Polly"/>
+        <PackageReference Include="Polly.RateLimiting"/>
+        <PackageReference Include="System.IO.Hashing"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Persistence\Migrations\" />
+        <Folder Include="Persistence\Migrations\"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj"/>
     </ItemGroup>
 
 </Project>

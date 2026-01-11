@@ -15,7 +15,7 @@ public class LorebookDto
     public required string Content { get; init; } = string.Empty;
 
     public required string Category { get; init; } = string.Empty;
-    
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; set; }
 }

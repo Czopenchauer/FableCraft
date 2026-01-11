@@ -1,16 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { TrackerDefinitionService } from '../../services/tracker-definition.service';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {TrackerDefinitionService} from '../../services/tracker-definition.service';
 import {
-  TrackerDefinitionDto,
-  TrackerStructure,
   FieldDefinition,
-  FieldType
+  FieldType,
+  TrackerDefinitionDto,
+  TrackerStructure
 } from '../../models/tracker-definition.model';
-import { FieldEditorComponent } from '../field-editor/field-editor.component';
-import { TrackerPreviewModalComponent } from './tracker-preview-modal/tracker-preview-modal.component';
+import {FieldEditorComponent} from '../field-editor/field-editor.component';
+import {TrackerPreviewModalComponent} from './tracker-preview-modal/tracker-preview-modal.component';
 
 @Component({
   selector: 'app-tracker-definition-builder',
@@ -35,7 +35,7 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
   isPreviewModalOpen = false;
   visualizationData: any = null;
   isLoadingVisualization = false;
-
+  FieldType = FieldType;
   // Framework field names that are locked
   private readonly frameworkFields = {
     story: ['Time', 'Weather', 'Location', 'CharactersPresent'],
@@ -43,13 +43,12 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     characters: ['Name', 'Location']
   };
 
-  FieldType = FieldType;
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private trackerDefinitionService: TrackerDefinitionService
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
@@ -265,17 +264,6 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     }
   }
 
-  private handleSaveError(err: any): void {
-    if (err.status === 409) {
-      this.error = 'A tracker definition with this name already exists';
-    } else if (err.status === 400) {
-      this.error = 'Validation failed. Please check that all required framework fields are present';
-    } else {
-      this.error = 'Failed to save tracker definition';
-    }
-    console.error('Error saving tracker definition:', err);
-  }
-
   onCancel(): void {
     this.router.navigate(['/adventures/tracker-definitions']);
   }
@@ -322,6 +310,43 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     reader.readAsText(file);
   }
 
+  onDelete(): void {
+    if (!this.definitionId) return;
+
+    if (!confirm(`Are you sure you want to delete this tracker definition?`)) {
+      return;
+    }
+
+    this.trackerDefinitionService.deleteDefinition(this.definitionId).subscribe({
+      next: () => {
+        this.router.navigate(['/adventures/tracker-definitions']);
+      },
+      error: (err) => {
+        if (err.status === 409) {
+          alert('Cannot delete this tracker definition because it is currently in use by one or more adventures.');
+        } else {
+          alert('Failed to delete tracker definition');
+        }
+        console.error('Error deleting tracker definition:', err);
+      }
+    });
+  }
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  private handleSaveError(err: any): void {
+    if (err.status === 409) {
+      this.error = 'A tracker definition with this name already exists';
+    } else if (err.status === 400) {
+      this.error = 'Validation failed. Please check that all required framework fields are present';
+    } else {
+      this.error = 'Failed to save tracker definition';
+    }
+    console.error('Error saving tracker definition:', err);
+  }
+
   private normalizeTrackerStructure(data: any): TrackerStructure {
     // Helper function to normalize a field definition
     const normalizeField = (field: any): FieldDefinition => {
@@ -364,7 +389,12 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     if (charsPresentData && !normalized.story.some((f: FieldDefinition) => f.name === 'CharactersPresent')) {
       const charsPresentField = typeof charsPresentData === 'object' && !Array.isArray(charsPresentData)
         ? normalizeField(charsPresentData)
-        : { name: 'CharactersPresent', type: FieldType.Array, prompt: 'List of all characters present in the scene.', defaultValue: ['No Characters'] };
+        : {
+          name: 'CharactersPresent',
+          type: FieldType.Array,
+          prompt: 'List of all characters present in the scene.',
+          defaultValue: ['No Characters']
+        };
       normalized.story.push(charsPresentField);
     }
 
@@ -411,31 +441,5 @@ export class TrackerDefinitionBuilderComponent implements OnInit {
     );
 
     return hasStoryFramework && hasMainCharFramework && hasCharFramework;
-  }
-
-  onDelete(): void {
-    if (!this.definitionId) return;
-
-    if (!confirm(`Are you sure you want to delete this tracker definition?`)) {
-      return;
-    }
-
-    this.trackerDefinitionService.deleteDefinition(this.definitionId).subscribe({
-      next: () => {
-        this.router.navigate(['/adventures/tracker-definitions']);
-      },
-      error: (err) => {
-        if (err.status === 409) {
-          alert('Cannot delete this tracker definition because it is currently in use by one or more adventures.');
-        } else {
-          alert('Failed to delete tracker definition');
-        }
-        console.error('Error deleting tracker definition:', err);
-      }
-    });
-  }
-
-  trackByIndex(index: number): number {
-    return index;
   }
 }

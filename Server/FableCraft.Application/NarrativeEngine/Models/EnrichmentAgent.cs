@@ -1,7 +1,7 @@
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Represents the agents that can be regenerated during enrichment.
+///     Represents the agents that can be regenerated during enrichment.
 /// </summary>
 public enum EnrichmentAgent
 {

@@ -13,8 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class InitMainCharacterTrackerAgent(
@@ -30,7 +28,7 @@ internal sealed class InitMainCharacterTrackerAgent(
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await BuildInstruction(context);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
@@ -40,7 +38,7 @@ internal sealed class InitMainCharacterTrackerAgent(
 
         var contextPrompt = $"""
                              {PromptSections.WorldSettings(context.PromptPath)}
-                             
+
                              {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.MainCharacter(context)}
@@ -52,23 +50,23 @@ internal sealed class InitMainCharacterTrackerAgent(
         var instruction = await dbContext.Adventures
             .Select(x => new { x.Id, x.FirstSceneGuidance })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-        string requestPrompt = $"""
-                                            {PromptSections.SceneContent(context.NewScene?.Scene)}
-                                            
-                                            {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
+        var requestPrompt = $"""
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
 
-                                            It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
-                                            """;
+                             {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
+
+                             It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
+                             """;
 
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = CreateOutputParser();
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -91,7 +89,7 @@ internal sealed class InitMainCharacterTrackerAgent(
                 throw new InvalidCastException("Failed to parse character description from response due to empty description.");
             }
 
-            return new MainCharacterState()
+            return new MainCharacterState
             {
                 MainCharacter = tracker,
                 MainCharacterDescription = description
@@ -101,30 +99,25 @@ internal sealed class InitMainCharacterTrackerAgent(
 
     private async Task<string> BuildInstruction(GenerationContext context)
     {
-        JsonSerializerOptions options = PromptSections.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
         var trackerPrompt = GetSystemPrompt(structure);
 
         var storyBible = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "StoryBible.md"));
         var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
-        
+
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
             (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerPrompt, options)),
             (PlaceholderNames.MainCharacterTrackerOutput, JsonSerializer.Serialize(GetOutputJson(structure), options)),
-            ("{{world_setting}}", File.Exists(Path.Combine(context.PromptPath, "WorldSettings.md")) ? File.ReadAllText(Path.Combine(context.PromptPath, "WorldSettings.md")) : string.Empty),
+            ("{{world_setting}}",
+             File.Exists(Path.Combine(context.PromptPath, "WorldSettings.md")) ? File.ReadAllText(Path.Combine(context.PromptPath, "WorldSettings.md")) : string.Empty),
             ("{{character_definition}}", context.MainCharacter.Description),
             ("{{progression_system}}", progressionSystem),
             ("{{story_bible}}", storyBible)!);
     }
 
-    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
-    }
+    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure) => TrackerExtensions.ConvertToOutputJson(structure.MainCharacter);
 
-    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
-    }
+    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure) => TrackerExtensions.ConvertToSystemJson(structure.MainCharacter);
 }

@@ -1,12 +1,13 @@
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Clients;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 
 namespace FableCraft.Application.NarrativeEngine.Plugins;
 
 /// <summary>
-/// Factory implementation that resolves plugins from DI and initializes them with runtime context.
+///     Factory implementation that resolves plugins from DI and initializes them with runtime context.
 /// </summary>
 internal sealed class PluginFactory : IPluginFactory
 {

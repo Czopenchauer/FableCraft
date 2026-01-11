@@ -1,9 +1,9 @@
 <div class="toast-container">
   <div
     *ngFor="let toast of toasts"
-    class="toast toast-{{ toast.type }}"
-    [attr.role]="'alert'"
     [attr.aria-live]="toast.type === 'error' ? 'assertive' : 'polite'"
+    [attr.role]="'alert'"
+    class="toast toast-{{ toast.type }}"
   >
     <div class="toast-content">
       <svg
@@ -23,9 +23,9 @@
     </div>
     <button
       (click)="removeToast(toast.id)"
+      aria-label="Close notification"
       class="toast-close"
       type="button"
-      aria-label="Close notification"
     >
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path

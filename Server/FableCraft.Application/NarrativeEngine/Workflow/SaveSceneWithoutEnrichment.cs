@@ -3,7 +3,6 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
@@ -36,13 +35,13 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             EnrichmentStatus = EnrichmentStatus.NotEnriched,
             CommitStatus = CommitStatus.Uncommited
         };
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        Scene? lastScene = await dbContext.Scenes
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var lastScene = await dbContext.Scenes
             .Where(x => x.AdventureId == context.AdventureId)
             .Include(x => x.CharacterActions)
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefaultAsync(cancellationToken);
-        MainCharacterAction? selectedAction = lastScene?.CharacterActions.FirstOrDefault(x => x.Selected);
+        var selectedAction = lastScene?.CharacterActions.FirstOrDefault(x => x.Selected);
         if (lastScene != null)
         {
             if (selectedAction != null)
@@ -62,10 +61,10 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             dbContext.Scenes.Update(lastScene);
         }
 
-        IExecutionStrategy strategy = dbContext.Database.CreateExecutionStrategy();
+        var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
-            await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 await dbContext.Scenes.AddAsync(newScene, cancellationToken);

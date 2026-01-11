@@ -4,16 +4,16 @@
       <h2>{{ isEditMode ? 'Edit Tracker Definition' : 'Create Tracker Definition' }}</h2>
       <div class="header-actions">
         <input
-          type="file"
-          accept=".json"
-          (change)="onImportFromJson($event)"
           #fileInput
+          (change)="onImportFromJson($event)"
+          accept=".json"
           style="display: none;"
+          type="file"
         />
-        <button class="btn-import" (click)="fileInput.click()">
+        <button (click)="fileInput.click()" class="btn-import">
           Import from JSON
         </button>
-        <button class="btn-preview" (click)="openPreviewModal()">
+        <button (click)="openPreviewModal()" class="btn-preview">
           Preview
         </button>
       </div>
@@ -32,31 +32,31 @@
         <div class="form-group">
           <label class="form-label">Definition Name *</label>
           <input
-            type="text"
             [(ngModel)]="definitionName"
             class="form-input"
             placeholder="Enter tracker definition name"
+            type="text"
           />
         </div>
 
         <!-- Tab Navigation -->
         <div class="tabs-header">
           <button
-            class="tab-button"
+            (click)="switchTab('story')"
             [class.active]="activeTab === 'story'"
-            (click)="switchTab('story')">
+            class="tab-button">
             Story Tracker
           </button>
           <button
-            class="tab-button"
+            (click)="switchTab('mainCharacter')"
             [class.active]="activeTab === 'mainCharacter'"
-            (click)="switchTab('mainCharacter')">
+            class="tab-button">
             Main Character
           </button>
           <button
-            class="tab-button"
+            (click)="switchTab('characters')"
             [class.active]="activeTab === 'characters'"
-            (click)="switchTab('characters')">
+            class="tab-button">
             Characters
           </button>
         </div>
@@ -69,17 +69,18 @@
               Define the story context fields including time, location, weather, and characters present in the scene.
             </div>
             <div class="fields-container">
-              <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex" class="field-card"
-                   [class.framework-field]="isFrameworkField('story', field.name)">
+              <div *ngFor="let field of structure.story; let i = index; trackBy: trackByIndex"
+                   [class.framework-field]="isFrameworkField('story', field.name)"
+                   class="field-card">
                 <div class="field-header">
                   <span class="field-name">
                     <span *ngIf="isFrameworkField('story', field.name)" class="lock-icon">🔒</span>
                     {{ field.name }}
                   </span>
                   <button
+                    (click)="removeField('story', i)"
                     *ngIf="!isFrameworkField('story', field.name)"
                     class="btn-remove"
-                    (click)="removeField('story', i)"
                   >
                     Remove
                   </button>
@@ -92,7 +93,7 @@
                 </app-field-editor>
               </div>
 
-              <button class="btn-add-field" (click)="addCustomField('story')">+ Add Field</button>
+              <button (click)="addCustomField('story')" class="btn-add-field">+ Add Field</button>
             </div>
           </div>
 
@@ -102,22 +103,23 @@
               Define the main character's attributes and stats that will be tracked throughout the adventure.
             </div>
             <div class="tab-actions">
-              <button class="btn-copy" (click)="copyMainCharacterToCharacters()">
+              <button (click)="copyMainCharacterToCharacters()" class="btn-copy">
                 Copy to Characters Tab
               </button>
             </div>
             <div class="fields-container">
-              <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex" class="field-card"
-                   [class.framework-field]="isFrameworkField('mainCharacter', field.name)">
+              <div *ngFor="let field of structure.mainCharacter; let i = index; trackBy: trackByIndex"
+                   [class.framework-field]="isFrameworkField('mainCharacter', field.name)"
+                   class="field-card">
                 <div class="field-header">
                   <span class="field-name">
                     <span *ngIf="isFrameworkField('mainCharacter', field.name)" class="lock-icon">🔒</span>
                     {{ field.name }}
                   </span>
                   <button
+                    (click)="removeField('mainCharacter', i)"
                     *ngIf="!isFrameworkField('mainCharacter', field.name)"
                     class="btn-remove"
-                    (click)="removeField('mainCharacter', i)"
                   >
                     Remove
                   </button>
@@ -130,7 +132,7 @@
                 </app-field-editor>
               </div>
 
-              <button class="btn-add-field" (click)="addCustomField('mainCharacter')">+ Add Field</button>
+              <button (click)="addCustomField('mainCharacter')" class="btn-add-field">+ Add Field</button>
             </div>
           </div>
 
@@ -140,17 +142,18 @@
               Define the template for NPC characters that will appear in the adventure.
             </div>
             <div class="fields-container">
-              <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex" class="field-card"
-                   [class.framework-field]="isFrameworkField('characters', field.name)">
+              <div *ngFor="let field of structure.characters; let i = index; trackBy: trackByIndex"
+                   [class.framework-field]="isFrameworkField('characters', field.name)"
+                   class="field-card">
                 <div class="field-header">
                   <span class="field-name">
                     <span *ngIf="isFrameworkField('characters', field.name)" class="lock-icon">🔒</span>
                     {{ field.name }}
                   </span>
                   <button
+                    (click)="removeField('characters', i)"
                     *ngIf="!isFrameworkField('characters', field.name)"
                     class="btn-remove"
-                    (click)="removeField('characters', i)"
                   >
                     Remove
                   </button>
@@ -163,18 +166,18 @@
                 </app-field-editor>
               </div>
 
-              <button class="btn-add-field" (click)="addCustomField('characters')">+ Add Field</button>
+              <button (click)="addCustomField('characters')" class="btn-add-field">+ Add Field</button>
             </div>
           </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button class="btn-save" (click)="onSave()" [disabled]="isSaving">
+          <button (click)="onSave()" [disabled]="isSaving" class="btn-save">
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
-          <button class="btn-cancel" (click)="onCancel()">Cancel</button>
-          <button *ngIf="isEditMode" class="btn-delete" (click)="onDelete()">Delete</button>
+          <button (click)="onCancel()" class="btn-cancel">Cancel</button>
+          <button (click)="onDelete()" *ngIf="isEditMode" class="btn-delete">Delete</button>
         </div>
       </div>
     </div>
@@ -182,10 +185,10 @@
 
   <!-- Preview Modal -->
   <app-tracker-preview-modal
-    [isOpen]="isPreviewModalOpen"
-    [visualizationData]="visualizationData"
-    [isLoading]="isLoadingVisualization"
     (close)="closePreviewModal()"
-    (refresh)="onRefreshPreview()">
+    (refresh)="onRefreshPreview()"
+    [isLoading]="isLoadingVisualization"
+    [isOpen]="isPreviewModalOpen"
+    [visualizationData]="visualizationData">
   </app-tracker-preview-modal>
 </div>

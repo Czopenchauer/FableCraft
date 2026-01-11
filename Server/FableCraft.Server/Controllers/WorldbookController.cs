@@ -3,7 +3,6 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using FluentValidation;
-using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +21,7 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    /// Get all worldbooks
+    ///     Get all worldbooks
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<WorldbookResponseDto>), StatusCodes.Status200OK)]
@@ -51,7 +50,7 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single worldbook by ID
+    ///     Get a single worldbook by ID
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status200OK)]
@@ -87,7 +86,7 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new worldbook
+    ///     Create a new worldbook
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status201Created)]
@@ -98,14 +97,14 @@ public class WorldbookController : ControllerBase
         [FromServices] IValidator<WorldbookDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
             return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
         }
 
-        bool nameExists = await _dbContext.Worldbooks
+        var nameExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Name == dto.Name, cancellationToken);
 
         if (nameExists)
@@ -168,7 +167,7 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    /// Update an existing worldbook
+    ///     Update an existing worldbook
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status200OK)]
@@ -181,7 +180,7 @@ public class WorldbookController : ControllerBase
         [FromServices] IValidator<WorldbookUpdateDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -197,7 +196,7 @@ public class WorldbookController : ControllerBase
             return NotFound();
         }
 
-        bool nameExists = await _dbContext.Worldbooks
+        var nameExists = await _dbContext.Worldbooks
             .AnyAsync(w => w.Name == dto.Name && w.Id != id, cancellationToken);
 
         if (nameExists)
@@ -292,7 +291,7 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a worldbook (cascades to delete all lorebooks)
+    ///     Delete a worldbook (cascades to delete all lorebooks)
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -312,4 +311,3 @@ public class WorldbookController : ControllerBase
         return NoContent();
     }
 }
-

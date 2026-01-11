@@ -2,8 +2,6 @@
 
 public class Lorebook : IEntity
 {
-    public Guid Id { get; set; }
-
     public Guid WorldbookId { get; set; }
 
     public Worldbook Worldbook { get; set; } = null!;
@@ -15,4 +13,6 @@ public class Lorebook : IEntity
     public required string Category { get; set; }
 
     public required ContentType ContentType { get; set; }
+
+    public Guid Id { get; set; }
 }

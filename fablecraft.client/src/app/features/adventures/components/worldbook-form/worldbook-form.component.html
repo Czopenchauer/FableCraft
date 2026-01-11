@@ -42,21 +42,21 @@
     </div>
 
     <!-- Form -->
-    <form *ngIf="!loading" [formGroup]="worldbookForm" (ngSubmit)="onSubmit()" class="worldbook-form">
+    <form (ngSubmit)="onSubmit()" *ngIf="!loading" [formGroup]="worldbookForm" class="worldbook-form">
       <div class="form-card">
         <!-- Name Field -->
         <div class="form-group">
-          <label for="name" class="form-label">
+          <label class="form-label" for="name">
             Worldbook Name
             <span class="required">*</span>
           </label>
           <input
-            id="name"
-            type="text"
-            formControlName="name"
-            class="form-input"
-            placeholder="Enter worldbook name"
             [class.error]="nameControl?.invalid && nameControl?.touched"
+            class="form-input"
+            formControlName="name"
+            id="name"
+            placeholder="Enter worldbook name"
+            type="text"
           />
           <div *ngIf="nameControl?.invalid && nameControl?.touched" class="field-error">
             <span *ngIf="nameControl?.errors?.['required']">Worldbook name is required</span>
@@ -69,13 +69,16 @@
           <div class="section-header">
             <h3 class="section-title">Lorebooks</h3>
             <div class="section-actions">
-              <button type="button" class="btn-import-json" (click)="triggerFileInput()" [disabled]="saving" title="Import lorebooks from JSON">
+              <button (click)="triggerFileInput()" [disabled]="saving" class="btn-import-json"
+                      title="Import lorebooks from JSON"
+                      type="button">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2"/>
                 </svg>
                 Import JSON
               </button>
-              <button type="button" class="btn-add-lorebook" (click)="addLorebook()" [disabled]="saving">
+              <button (click)="addLorebook()" [disabled]="saving" class="btn-add-lorebook" type="button">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
@@ -86,20 +89,21 @@
 
           <!-- Hidden file input for JSON import -->
           <input
-            type="file"
-            id="json-file-input"
-            accept=".json"
             (change)="onFileSelected($event)"
+            accept=".json"
+            id="json-file-input"
             style="display: none;"
+            type="file"
           />
 
           <!-- Import Error Message -->
           <div *ngIf="importError" class="import-error">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"/>
             </svg>
             <span>{{ importError }}</span>
-            <button type="button" (click)="importError = null" class="btn-close-error">
+            <button (click)="importError = null" class="btn-close-error" type="button">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
               </svg>
@@ -109,7 +113,9 @@
           <!-- Empty State -->
           <div *ngIf="lorebooks.length === 0" class="lorebooks-empty">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              <path
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
             </svg>
             <p>No lorebooks yet. Click "Add Lorebook" to get started.</p>
           </div>
@@ -121,23 +127,26 @@
                  class="lorebook-panel">
 
               <!-- Panel Header (clickable) -->
-              <div class="lorebook-panel-header"
-                   [class.expanded]="isPanelExpanded(i)"
-                   [class.has-errors]="hasLorebookErrors(i)"
-                   role="button"
+              <div (click)="togglePanel(i)"
+                   (keydown)="onKeyDown($event, i)"
                    [attr.aria-expanded]="isPanelExpanded(i)"
                    [attr.aria-label]="'Toggle ' + getLorebookTitle(i) + ' panel'"
-                   tabindex="0"
-                   (click)="togglePanel(i)"
-                   (keydown)="onKeyDown($event, i)">
+                   [class.expanded]="isPanelExpanded(i)"
+                   [class.has-errors]="hasLorebookErrors(i)"
+                   class="lorebook-panel-header"
+                   role="button"
+                   tabindex="0">
 
                 <!-- Chevron icon (rotates when expanded) -->
-                <svg class="chevron-icon" [class.expanded]="isPanelExpanded(i)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg [class.expanded]="isPanelExpanded(i)" class="chevron-icon" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
                   <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
 
                 <!-- Title -->
-                <span class="panel-title" [class.placeholder]="!lorebookCtrl.get('title')?.value || lorebookCtrl.get('title')?.value === '' || getLorebookTitle(i) === 'New Lorebook'">
+                <span
+                  [class.placeholder]="!lorebookCtrl.get('title')?.value || lorebookCtrl.get('title')?.value === '' || getLorebookTitle(i) === 'New Lorebook'"
+                  class="panel-title">
                   {{ getLorebookTitle(i) }}
                 </span>
 
@@ -147,13 +156,15 @@
                 </span>
 
                 <!-- Delete button -->
-                <button type="button"
-                        class="btn-delete-lorebook"
-                        (click)="deleteLorebook(i); $event.stopPropagation()"
+                <button (click)="deleteLorebook(i); $event.stopPropagation()"
                         [attr.aria-label]="'Delete ' + getLorebookTitle(i)"
-                        title="Delete lorebook">
+                        class="btn-delete-lorebook"
+                        title="Delete lorebook"
+                        type="button">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    <path
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                   </svg>
                 </button>
               </div>
@@ -169,14 +180,15 @@
                       <span class="required">*</span>
                     </label>
                     <input
-                      [id]="'lorebook-' + i + '-title'"
-                      type="text"
-                      formControlName="title"
-                      class="form-input"
-                      placeholder="Enter lorebook title"
                       [class.error]="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched"
+                      [id]="'lorebook-' + i + '-title'"
+                      class="form-input"
+                      formControlName="title"
+                      placeholder="Enter lorebook title"
+                      type="text"
                     />
-                    <div *ngIf="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched" class="field-error">
+                    <div *ngIf="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched"
+                         class="field-error">
                       <span *ngIf="lorebookCtrl.get('title')?.errors?.['required']">Title is required</span>
                       <span *ngIf="lorebookCtrl.get('title')?.errors?.['maxlength']">Title must not exceed 200 characters</span>
                     </div>
@@ -189,14 +201,15 @@
                       <span class="required">*</span>
                     </label>
                     <input
-                      [id]="'lorebook-' + i + '-category'"
-                      type="text"
-                      formControlName="category"
-                      class="form-input"
-                      placeholder="e.g., Characters, Locations, History"
                       [class.error]="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched"
+                      [id]="'lorebook-' + i + '-category'"
+                      class="form-input"
+                      formControlName="category"
+                      placeholder="e.g., Characters, Locations, History"
+                      type="text"
                     />
-                    <div *ngIf="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched" class="field-error">
+                    <div *ngIf="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched"
+                         class="field-error">
                       <span *ngIf="lorebookCtrl.get('category')?.errors?.['required']">Category is required</span>
                       <span *ngIf="lorebookCtrl.get('category')?.errors?.['maxlength']">Category must not exceed 100 characters</span>
                     </div>
@@ -209,16 +222,18 @@
                       <span class="required">*</span>
                     </label>
                     <select
-                      [id]="'lorebook-' + i + '-contentType'"
-                      formControlName="contentType"
-                      class="form-input"
                       [class.error]="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched"
+                      [id]="'lorebook-' + i + '-contentType'"
+                      class="form-input"
+                      formControlName="contentType"
                     >
                       <option value="txt">Text</option>
                       <option value="json">JSON</option>
                     </select>
-                    <div *ngIf="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched" class="field-error">
-                      <span *ngIf="lorebookCtrl.get('contentType')?.errors?.['required']">Content type is required</span>
+                    <div *ngIf="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched"
+                         class="field-error">
+                      <span
+                        *ngIf="lorebookCtrl.get('contentType')?.errors?.['required']">Content type is required</span>
                     </div>
                   </div>
 
@@ -229,14 +244,15 @@
                       <span class="required">*</span>
                     </label>
                     <textarea
-                      [id]="'lorebook-' + i + '-content'"
-                      formControlName="content"
-                      class="form-textarea"
-                      rows="6"
-                      placeholder="Enter lorebook content..."
                       [class.error]="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched"
+                      [id]="'lorebook-' + i + '-content'"
+                      class="form-textarea"
+                      formControlName="content"
+                      placeholder="Enter lorebook content..."
+                      rows="6"
                     ></textarea>
-                    <div *ngIf="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched" class="field-error">
+                    <div *ngIf="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched"
+                         class="field-error">
                       <span *ngIf="lorebookCtrl.get('content')?.errors?.['required']">Content is required</span>
                       <span *ngIf="lorebookCtrl.get('content')?.errors?.['minlength']">Content must be at least 10 characters</span>
                     </div>
@@ -250,10 +266,10 @@
 
         <!-- Action Buttons -->
         <div class="form-actions">
-          <button type="button" (click)="cancel()" class="btn-cancel" [disabled]="saving">
+          <button (click)="cancel()" [disabled]="saving" class="btn-cancel" type="button">
             Cancel
           </button>
-          <button type="submit" class="btn-submit" [disabled]="saving || worldbookForm.invalid">
+          <button [disabled]="saving || worldbookForm.invalid" class="btn-submit" type="submit">
             <svg *ngIf="saving" [attr.fill]="'none'" class="btn-spinner" viewBox="0 0 24 24">
               <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
                       class="opacity-25"></circle>

@@ -10,8 +10,8 @@ using Serilog;
 namespace FableCraft.Application.NarrativeEngine.Workflow;
 
 /// <summary>
-/// Processor responsible for character tracking: main character tracker, character reflection,
-/// character tracker updates, and chronicler. Depends on SceneTrackerProcessor having run first.
+///     Processor responsible for character tracking: main character tracker, character reflection,
+///     character tracker updates, and chronicler. Depends on SceneTrackerProcessor having run first.
 /// </summary>
 internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
@@ -70,14 +70,15 @@ internal sealed class CharacterTrackersProcessor(
                     }
 
                     var characterRelationships = new List<CharacterRelationshipContext>();
-                    foreach (CharacterRelationshipOutput reflectionOutputRelationshipUpdate in reflectionOutput.RelationshipUpdates)
+                    foreach (var reflectionOutputRelationshipUpdate in reflectionOutput.RelationshipUpdates)
                     {
                         if (reflectionOutputRelationshipUpdate.ExtensionData?.Count == 0)
                         {
                             logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
                         }
 
-                        var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Toward);
+                        var relationship =
+                            character.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Toward);
                         if (relationship == null)
                         {
                             characterRelationships.Add(new CharacterRelationshipContext
@@ -86,7 +87,7 @@ internal sealed class CharacterTrackersProcessor(
                                 Data = reflectionOutputRelationshipUpdate.ExtensionData!,
                                 UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = 0,
-                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic!,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic!
                             });
                         }
                         else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
@@ -98,7 +99,7 @@ internal sealed class CharacterTrackersProcessor(
                                 Data = updatedRelationship,
                                 UpdateTime = storyTrackerResult.Time,
                                 SequenceNumber = relationship.SequenceNumber + 1,
-                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? relationship.Dynamic,
+                                Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? relationship.Dynamic
                             };
                             characterRelationships.Add(newRelationship);
                         }
@@ -112,7 +113,7 @@ internal sealed class CharacterTrackersProcessor(
                             Salience = reflectionOutput.Memory!.Salience,
                             Data = reflectionOutput.Memory.ExtensionData!,
                             MemoryContent = reflectionOutput.Memory.Summary,
-                            SceneTracker = storyTrackerResult,
+                            SceneTracker = storyTrackerResult
                         });
                     }
 
@@ -134,7 +135,7 @@ internal sealed class CharacterTrackersProcessor(
                                 SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
                                                      ?.SequenceNumber
                                                  + 1
-                                                 ?? 0,
+                                                 ?? 0
                             }
                         ],
                         Importance = character.Importance,
@@ -157,10 +158,7 @@ internal sealed class CharacterTrackersProcessor(
         await chroniclerTask;
     }
 
-    private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req)
-    {
-        return JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
-    }
+    private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req) => JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
 
     private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
     {
@@ -204,7 +202,7 @@ internal sealed class CharacterTrackersProcessor(
             logger.Information("Chronicler produced {Count} world events", chroniclerOutput.WorldEvents);
             lock (context)
             {
-                foreach (WorldEvent chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
+                foreach (var chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
                 {
                     context.NewWorldEvents.Add(chroniclerOutputWorldEvent);
                 }

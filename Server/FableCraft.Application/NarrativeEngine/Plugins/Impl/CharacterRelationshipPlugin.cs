@@ -38,9 +38,11 @@ internal sealed class CharacterRelationshipPlugin : CharacterPluginBase
         }
 
         _logger.Information("Getting relationship for {CharacterName} -> {TargetCharacterName}",
-            _characterContext.Name, targetCharacterName);
+            _characterContext.Name,
+            targetCharacterName);
 
-        var relationship = _characterContext.Relationships.SingleOrDefault(x => string.Compare(x.TargetCharacterName, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
+        var relationship = _characterContext.Relationships.SingleOrDefault(x =>
+            string.Compare(x.TargetCharacterName, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
 
         if (relationship == null)
         {

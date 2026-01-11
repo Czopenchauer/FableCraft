@@ -5,8 +5,11 @@
       <div class="modal-header">
         <div class="header-icon">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"></path>
           </svg>
         </div>
         <h2>LLM Presets</h2>
@@ -20,7 +23,9 @@
       <!-- Error Message -->
       <div *ngIf="errorMessage" class="error-banner">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          <path
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
         </svg>
         <span>{{ errorMessage }}</span>
       </div>
@@ -36,7 +41,9 @@
         <!-- Empty State -->
         <div *ngIf="!isLoading && presets.length === 0" class="empty-state">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            <path
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
           </svg>
           <h3>No Presets Yet</h3>
           <p>Create your first LLM preset to get started</p>
@@ -59,17 +66,23 @@
               <div class="preset-actions">
                 <button (click)="copyPreset(preset)" class="btn-icon btn-copy" title="Copy preset" type="button">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                   </svg>
                 </button>
                 <button (click)="openEditForm(preset)" class="btn-icon btn-edit" title="Edit preset" type="button">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                   </svg>
                 </button>
                 <button (click)="confirmDelete(preset)" class="btn-icon btn-delete" title="Delete preset" type="button">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                   </svg>
                 </button>
               </div>
@@ -80,7 +93,7 @@
                 <span class="detail-label">Model:</span>
                 <span class="detail-value">{{ preset.model }}</span>
               </div>
-              <div class="detail-row" *ngIf="preset.baseUrl">
+              <div *ngIf="preset.baseUrl" class="detail-row">
                 <span class="detail-label">Base URL:</span>
                 <span class="detail-value">{{ preset.baseUrl }}</span>
               </div>
@@ -88,7 +101,7 @@
                 <span class="detail-label">Max Tokens:</span>
                 <span class="detail-value">{{ preset.maxTokens }}</span>
               </div>
-              <div class="detail-row" *ngIf="preset.temperature !== null && preset.temperature !== undefined">
+              <div *ngIf="preset.temperature !== null && preset.temperature !== undefined" class="detail-row">
                 <span class="detail-label">Temperature:</span>
                 <span class="detail-value">{{ preset.temperature }}</span>
               </div>
@@ -97,7 +110,9 @@
             <div *ngIf="preset.adventuresUsing.length > 0" class="adventures-using">
               <div class="adventures-header">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                  <path
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
                 <span>Used by {{ preset.adventuresUsing.length }} adventure(s):</span>
               </div>
@@ -117,31 +132,36 @@
             <div class="form-grid">
               <div class="form-group">
                 <label for="name">Preset Name *</label>
-                <input [class.invalid]="isFieldInvalid('name')" formControlName="name" id="name" placeholder="e.g., GPT-4 Turbo" type="text">
+                <input [class.invalid]="isFieldInvalid('name')" formControlName="name" id="name"
+                       placeholder="e.g., GPT-4 Turbo" type="text">
                 <span *ngIf="isFieldInvalid('name')" class="error-text">{{ getFieldError('name') }}</span>
               </div>
 
               <div class="form-group">
                 <label for="provider">Provider *</label>
-                <input [class.invalid]="isFieldInvalid('provider')" formControlName="provider" id="provider" placeholder="e.g., OpenAI, Anthropic" type="text">
+                <input [class.invalid]="isFieldInvalid('provider')" formControlName="provider" id="provider"
+                       placeholder="e.g., OpenAI, Anthropic" type="text">
                 <span *ngIf="isFieldInvalid('provider')" class="error-text">{{ getFieldError('provider') }}</span>
               </div>
 
               <div class="form-group full-width">
                 <label for="model">Model *</label>
-                <input [class.invalid]="isFieldInvalid('model')" formControlName="model" id="model" placeholder="e.g., gpt-4-turbo-preview" type="text">
+                <input [class.invalid]="isFieldInvalid('model')" formControlName="model" id="model"
+                       placeholder="e.g., gpt-4-turbo-preview" type="text">
                 <span *ngIf="isFieldInvalid('model')" class="error-text">{{ getFieldError('model') }}</span>
               </div>
 
               <div class="form-group full-width">
                 <label for="baseUrl">Base URL</label>
-                <input [class.invalid]="isFieldInvalid('baseUrl')" formControlName="baseUrl" id="baseUrl" placeholder="e.g., https://api.openai.com/v1" type="text">
+                <input [class.invalid]="isFieldInvalid('baseUrl')" formControlName="baseUrl" id="baseUrl"
+                       placeholder="e.g., https://api.openai.com/v1" type="text">
                 <span *ngIf="isFieldInvalid('baseUrl')" class="error-text">{{ getFieldError('baseUrl') }}</span>
               </div>
 
               <div class="form-group full-width">
                 <label for="apiKey">API Key *</label>
-                <input [class.invalid]="isFieldInvalid('apiKey')" formControlName="apiKey" id="apiKey" placeholder="Your API key" type="password">
+                <input [class.invalid]="isFieldInvalid('apiKey')" formControlName="apiKey" id="apiKey"
+                       placeholder="Your API key" type="password">
                 <span *ngIf="isFieldInvalid('apiKey')" class="error-text">{{ getFieldError('apiKey') }}</span>
               </div>
             </div>
@@ -152,7 +172,8 @@
             <div class="form-grid">
               <div class="form-group">
                 <label for="maxTokens">Max Tokens *</label>
-                <input [class.invalid]="isFieldInvalid('maxTokens')" formControlName="maxTokens" id="maxTokens" min="1" type="number">
+                <input [class.invalid]="isFieldInvalid('maxTokens')" formControlName="maxTokens" id="maxTokens" min="1"
+                       type="number">
                 <span *ngIf="isFieldInvalid('maxTokens')" class="error-text">{{ getFieldError('maxTokens') }}</span>
               </div>
 
@@ -161,7 +182,8 @@
                   Temperature
                   <span class="slider-value">{{ presetForm.get('temperature')?.value }}</span>
                 </label>
-                <input [class.invalid]="isFieldInvalid('temperature')" class="slider" formControlName="temperature" id="temperature" max="2" min="0" step="0.1" type="range">
+                <input [class.invalid]="isFieldInvalid('temperature')" class="slider" formControlName="temperature"
+                       id="temperature" max="2" min="0" step="0.1" type="range">
                 <div class="slider-labels">
                   <span>0</span>
                   <span>2</span>
@@ -174,7 +196,8 @@
                   Top P
                   <span class="slider-value">{{ presetForm.get('topP')?.value }}</span>
                 </label>
-                <input [class.invalid]="isFieldInvalid('topP')" class="slider" formControlName="topP" id="topP" max="1" min="0" step="0.01" type="range">
+                <input [class.invalid]="isFieldInvalid('topP')" class="slider" formControlName="topP" id="topP" max="1"
+                       min="0" step="0.01" type="range">
                 <div class="slider-labels">
                   <span>0</span>
                   <span>1</span>
@@ -187,7 +210,8 @@
                   Top K
                   <span class="slider-value">{{ presetForm.get('topK')?.value || 'Not set' }}</span>
                 </label>
-                <input [class.invalid]="isFieldInvalid('topK')" class="slider" formControlName="topK" id="topK" max="100" min="1" step="1" type="range">
+                <input [class.invalid]="isFieldInvalid('topK')" class="slider" formControlName="topK" id="topK"
+                       max="100" min="1" step="1" type="range">
                 <div class="slider-labels">
                   <span>1</span>
                   <span>100</span>
@@ -200,12 +224,15 @@
                   Frequency Penalty
                   <span class="slider-value">{{ presetForm.get('frequencyPenalty')?.value }}</span>
                 </label>
-                <input [class.invalid]="isFieldInvalid('frequencyPenalty')" class="slider" formControlName="frequencyPenalty" id="frequencyPenalty" max="2" min="-2" step="0.1" type="range">
+                <input [class.invalid]="isFieldInvalid('frequencyPenalty')" class="slider"
+                       formControlName="frequencyPenalty" id="frequencyPenalty" max="2" min="-2" step="0.1"
+                       type="range">
                 <div class="slider-labels">
                   <span>-2</span>
                   <span>2</span>
                 </div>
-                <span *ngIf="isFieldInvalid('frequencyPenalty')" class="error-text">{{ getFieldError('frequencyPenalty') }}</span>
+                <span *ngIf="isFieldInvalid('frequencyPenalty')"
+                      class="error-text">{{ getFieldError('frequencyPenalty') }}</span>
               </div>
 
               <div class="form-group slider-group">
@@ -213,12 +240,14 @@
                   Presence Penalty
                   <span class="slider-value">{{ presetForm.get('presencePenalty')?.value }}</span>
                 </label>
-                <input [class.invalid]="isFieldInvalid('presencePenalty')" class="slider" formControlName="presencePenalty" id="presencePenalty" max="2" min="-2" step="0.1" type="range">
+                <input [class.invalid]="isFieldInvalid('presencePenalty')" class="slider"
+                       formControlName="presencePenalty" id="presencePenalty" max="2" min="-2" step="0.1" type="range">
                 <div class="slider-labels">
                   <span>-2</span>
                   <span>2</span>
                 </div>
-                <span *ngIf="isFieldInvalid('presencePenalty')" class="error-text">{{ getFieldError('presencePenalty') }}</span>
+                <span *ngIf="isFieldInvalid('presencePenalty')"
+                      class="error-text">{{ getFieldError('presencePenalty') }}</span>
               </div>
             </div>
           </div>
@@ -235,7 +264,8 @@
                 type="button">
                 <span *ngIf="!isTesting" class="test-btn-content">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"></path>
                   </svg>
                   Test Connection
                 </span>
@@ -246,17 +276,19 @@
               </button>
 
               <!-- Test Result -->
-              <div *ngIf="testResult" class="test-result" [class.success]="testSuccess" [class.error]="!testSuccess">
+              <div *ngIf="testResult" [class.error]="!testSuccess" [class.success]="testSuccess" class="test-result">
                 <div class="test-result-icon">
                   <svg *ngIf="testSuccess" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                   </svg>
                   <svg *ngIf="!testSuccess" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"></path>
                   </svg>
                 </div>
                 <div class="test-result-content">
-                  <span class="test-result-status">{{ testSuccess ? 'Connection Successful' : 'Connection Failed' }}</span>
+                  <span
+                    class="test-result-status">{{ testSuccess ? 'Connection Successful' : 'Connection Failed' }}</span>
                   <span class="test-result-message">{{ testResult }}</span>
                 </div>
               </div>
@@ -320,7 +352,8 @@
         <button (click)="cancelDelete()" [disabled]="isDeleting" class="btn btn-secondary" type="button">
           Cancel
         </button>
-        <button (click)="deletePreset()" *ngIf="presetToDelete && presetToDelete.adventuresUsing.length === 0" [disabled]="isDeleting" class="btn btn-danger" type="button">
+        <button (click)="deletePreset()" *ngIf="presetToDelete && presetToDelete.adventuresUsing.length === 0"
+                [disabled]="isDeleting" class="btn btn-danger" type="button">
           <span *ngIf="!isDeleting">Delete</span>
           <span *ngIf="isDeleting" class="deleting-content">
             <span class="spinner"></span>

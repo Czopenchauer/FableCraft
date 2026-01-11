@@ -26,11 +26,13 @@ export interface CharacterStats {
   character_identity?: CharacterIdentity;
   motivations?: any;
   routine?: any;
+
   [key: string]: any;
 }
 
 export interface CharacterIdentity {
   name?: string;
+
   [key: string]: any;
 }
 
@@ -39,6 +41,7 @@ export interface CharacterTracker {
   location: string;
   appearance?: string;
   generalBuild?: string;
+
   [key: string]: any;
 }
 
@@ -71,6 +74,7 @@ export interface SceneTracker {
   location: string;
   weather: string;
   charactersPresent: string[];
+
   [key: string]: any;
 }
 

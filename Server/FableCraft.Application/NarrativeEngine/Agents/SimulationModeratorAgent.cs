@@ -15,13 +15,11 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Orchestrates cohort simulation by querying characters via tools.
-/// Manages time, facilitates interactions, and ensures all characters produce reflection output.
+///     Orchestrates cohort simulation by querying characters via tools.
+///     Manages time, facilitates interactions, and ensures all characters produce reflection output.
 /// </summary>
 internal sealed class SimulationModeratorAgent(
     IAgentKernel agentKernel,
@@ -33,14 +31,14 @@ internal sealed class SimulationModeratorAgent(
     protected override AgentName GetAgentName() => AgentName.SimulationModeratorAgent;
 
     /// <summary>
-    /// Run cohort simulation and return results.
+    ///     Run cohort simulation and return results.
     /// </summary>
     public async Task<CohortSimulationResult> Invoke(
         GenerationContext context,
         CohortSimulationInput input,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
 
@@ -49,15 +47,15 @@ internal sealed class SimulationModeratorAgent(
         chatHistory.AddUserMessage(BuildContextMessage(input));
         chatHistory.AddUserMessage(BuildRequestMessage(input));
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
 
         var queryPlugin = new QueryCharacterPlugin(characterAgent, logger);
         await queryPlugin.SetupAsync(context, callerContext, input);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(queryPlugin));
 
-        Kernel builtKernel = kernel.Build();
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var builtKernel = kernel.Build();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         logger.Information(
             "Starting cohort simulation for characters: {Characters}",
@@ -65,7 +63,7 @@ internal sealed class SimulationModeratorAgent(
 
         var output = ResponseParser.CreateJsonParser<CohortSimulationOutput>(
             "simulation",
-            ignoreNull: true);
+            true);
         var response = await agentKernel.SendRequestAsync(
             chatHistory,
             output,
@@ -186,8 +184,5 @@ internal sealed class SimulationModeratorAgent(
                 """;
     }
 
-    private static string ExtractPrimaryGoal(CharacterContext character)
-    {
-        return character.CharacterState.Motivations.ToJsonString();
-    }
+    private static string ExtractPrimaryGoal(CharacterContext character) => character.CharacterState.Motivations.ToJsonString();
 }

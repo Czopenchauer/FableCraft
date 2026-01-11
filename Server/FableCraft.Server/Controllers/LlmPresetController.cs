@@ -4,7 +4,6 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using FluentValidation;
-using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +30,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Get all LLM presets
+    ///     Get all LLM presets
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<LlmPresetResponseDto>), StatusCodes.Status200OK)]
@@ -62,7 +61,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Get a single LLM preset by ID
+    ///     Get a single LLM preset by ID
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(LlmPresetResponseDto), StatusCodes.Status200OK)]
@@ -100,7 +99,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new LLM preset
+    ///     Create a new LLM preset
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(LlmPresetResponseDto), StatusCodes.Status201Created)]
@@ -110,7 +109,7 @@ public class LlmPresetController : ControllerBase
         [FromServices] IValidator<LlmPresetDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -160,7 +159,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Update an existing LLM preset
+    ///     Update an existing LLM preset
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(LlmPresetResponseDto), StatusCodes.Status200OK)]
@@ -172,7 +171,7 @@ public class LlmPresetController : ControllerBase
         [FromServices] IValidator<LlmPresetDto> validator,
         CancellationToken cancellationToken)
     {
-        ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
+        var validationResult = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!validationResult.IsValid)
         {
@@ -223,7 +222,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Delete an LLM preset
+    ///     Delete an LLM preset
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -258,7 +257,7 @@ public class LlmPresetController : ControllerBase
     }
 
     /// <summary>
-    /// Test connection to an LLM preset
+    ///     Test connection to an LLM preset
     /// </summary>
     [HttpPost("test")]
     [ProducesResponseType(typeof(TestConnectionResponseDto), StatusCodes.Status200OK)]
@@ -286,8 +285,8 @@ public class LlmPresetController : ControllerBase
                 CreatedAt = DateTimeOffset.UtcNow
             };
 
-            Infrastructure.Llm.IKernelBuilder kernelBuilder = _kernelBuilderFactory.Create(preset);
-            Kernel kernel = kernelBuilder.Create().Build();
+            var kernelBuilder = _kernelBuilderFactory.Create(preset);
+            var kernel = kernelBuilder.Create().Build();
 
             var chatService = kernel.GetRequiredService<IChatCompletionService>();
             var settings = kernelBuilder.GetDefaultPromptExecutionSettings();
@@ -321,5 +320,6 @@ public class LlmPresetController : ControllerBase
 public record TestConnectionResponseDto
 {
     public bool Success { get; init; }
+
     public required string Message { get; init; }
 }

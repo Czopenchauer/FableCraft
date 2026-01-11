@@ -14,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterCrafter : BaseAgent
@@ -38,8 +36,8 @@ internal sealed class CharacterCrafter : BaseAgent
         CharacterRequest request,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        var kernelBuilder = await GetKernelBuilder(context);
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var systemPrompt = await BuildInstruction(context);
         var chatHistory = new ChatHistory();
@@ -48,7 +46,7 @@ internal sealed class CharacterCrafter : BaseAgent
                              {PromptSections.WorldSettings(context.PromptPath)}
 
                              {PromptSections.Context(context)}
-                             
+
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.LastScenes(context.SceneContext, 3)}
@@ -61,10 +59,10 @@ internal sealed class CharacterCrafter : BaseAgent
                                      {PromptSections.CharacterCreationContext(request)}
                                      """;
         chatHistory.AddUserMessage(creationRequestPrompt);
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
-        Kernel kernelWithKg = kernel.Build();
+        var kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();
 
@@ -122,7 +120,7 @@ internal sealed class CharacterCrafter : BaseAgent
 
     private async Task<string> BuildInstruction(GenerationContext context)
     {
-        JsonSerializerOptions options = PromptSections.GetJsonOptions();
+        var options = PromptSections.GetJsonOptions();
         var structure = context.TrackerStructure;
         var prompt = await GetPromptAsync(context);
         var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
@@ -132,15 +130,9 @@ internal sealed class CharacterCrafter : BaseAgent
             ("{{progression_system}}", progressionSystem));
     }
 
-    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToOutputJson(structure.Characters);
-    }
+    private static Dictionary<string, object> GetOutputJson(TrackerStructure structure) => TrackerExtensions.ConvertToOutputJson(structure.Characters);
 
-    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure)
-    {
-        return TrackerExtensions.ConvertToSystemJson(structure.Characters);
-    }
+    private static Dictionary<string, object> GetSystemPrompt(TrackerStructure structure) => TrackerExtensions.ConvertToSystemJson(structure.Characters);
 
     protected override AgentName GetAgentName() => AgentName.CharacterCrafter;
 
@@ -151,6 +143,6 @@ internal sealed class CharacterCrafter : BaseAgent
         public required object Dynamic { get; set; }
 
         [JsonExtensionData]
-        public Dictionary<string, object> ExtensionData { get; set; } = new();
+        public Dictionary<string, object> ExtensionData { get; } = new();
     }
 }

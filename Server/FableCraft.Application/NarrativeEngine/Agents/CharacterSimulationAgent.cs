@@ -15,14 +15,12 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using IKernelBuilder = FableCraft.Infrastructure.Llm.IKernelBuilder;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-/// Agent for simulating a character during cohort simulation.
-/// Responds to Moderator queries (intention, response, reflection).
-/// Maintains accumulated ChatHistory across multiple queries.
+///     Agent for simulating a character during cohort simulation.
+///     Responds to Moderator queries (intention, response, reflection).
+///     Maintains accumulated ChatHistory across multiple queries.
 /// </summary>
 internal sealed class CharacterSimulationAgent(
     IAgentKernel agentKernel,
@@ -35,23 +33,6 @@ internal sealed class CharacterSimulationAgent(
 
     protected override AgentName GetAgentName() => AgentName.CharacterSimulation;
 
-    /// <summary>
-    /// Response from a character query.
-    /// </summary>
-    internal sealed class CharacterQueryResponse
-    {
-        /// <summary>
-        /// The character's prose response to the query.
-        /// </summary>
-        public required string ProseResponse { get; init; }
-
-        /// <summary>
-        /// The submitted reflection (if character called submit_reflection).
-        /// Only populated during reflection queries.
-        /// </summary>
-        public StandaloneSimulationOutput? SubmittedReflection { get; init; }
-    }
-
     public async Task<CharacterQueryResponse> InvokeQuery(
         GenerationContext context,
         CharacterContext character,
@@ -62,7 +43,7 @@ internal sealed class CharacterSimulationAgent(
         CohortSimulationInput cohortInput,
         CancellationToken cancellationToken)
     {
-        IKernelBuilder kernelBuilder = await GetKernelBuilder(context);
+        var kernelBuilder = await GetKernelBuilder(context);
 
         if (chatHistory.Count == 0)
         {
@@ -74,7 +55,7 @@ internal sealed class CharacterSimulationAgent(
         var userMessage = BuildUserMessage(queryType, stimulus, query);
         chatHistory.AddUserMessage(userMessage);
 
-        Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
+        var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
 
         var toolsPlugin = await pluginFactory.CreateCharacterPluginAsync<CharacterSimulationToolsPlugin>(
@@ -83,8 +64,8 @@ internal sealed class CharacterSimulationAgent(
             character.CharacterId);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(toolsPlugin));
 
-        Kernel builtKernel = kernel.Build();
-        PromptExecutionSettings promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var builtKernel = kernel.Build();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         var response = await agentKernel.SendRequestAsync(
             chatHistory,
@@ -115,7 +96,7 @@ internal sealed class CharacterSimulationAgent(
         CohortSimulationInput cohortInput,
         GenerationContext context)
     {
-        var jsonOptions = PromptSections.GetJsonOptions(ignoreNull: true);
+        var jsonOptions = PromptSections.GetJsonOptions(true);
 
         // CHARACTER_NAME
         prompt = prompt.Replace(PlaceholderNames.CharacterName, character.Name);
@@ -190,7 +171,7 @@ internal sealed class CharacterSimulationAgent(
             sb.AppendLine($"**Dynamic:** {rel.Dynamic}");
             if (rel.Data.Count > 0)
             {
-                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(ignoreNull: true))}");
+                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(true))}");
             }
 
             sb.AppendLine();
@@ -244,7 +225,7 @@ internal sealed class CharacterSimulationAgent(
         return string.Join(", ", names);
     }
 
-    private static async Task<string> ReplaceInjectableReference(string prompt, string placeholder, string fileName, string promptPath)
+    private async static Task<string> ReplaceInjectableReference(string prompt, string placeholder, string fileName, string promptPath)
     {
         if (!prompt.Contains(placeholder))
         {
@@ -259,5 +240,22 @@ internal sealed class CharacterSimulationAgent(
         }
 
         return prompt;
+    }
+
+    /// <summary>
+    ///     Response from a character query.
+    /// </summary>
+    internal sealed class CharacterQueryResponse
+    {
+        /// <summary>
+        ///     The character's prose response to the query.
+        /// </summary>
+        public required string ProseResponse { get; init; }
+
+        /// <summary>
+        ///     The submitted reflection (if character called submit_reflection).
+        ///     Only populated during reflection queries.
+        /// </summary>
+        public StandaloneSimulationOutput? SubmittedReflection { get; init; }
     }
 }

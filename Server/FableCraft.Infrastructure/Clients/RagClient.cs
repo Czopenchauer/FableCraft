@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
@@ -12,20 +13,11 @@ namespace FableCraft.Infrastructure.Clients;
 
 public static class RagClientExtensions
 {
-    public static string GetCharacterDatasetName(Guid adventureId, Guid characterId)
-    {
-        return $"{adventureId}_{characterId}";
-    }
+    public static string GetCharacterDatasetName(Guid adventureId, Guid characterId) => $"{adventureId}_{characterId}";
 
-    public static string GetWorldDatasetName(Guid adventureId)
-    {
-        return $"{adventureId}_world";
-    }
+    public static string GetWorldDatasetName(Guid adventureId) => $"{adventureId}_world";
 
-    public static string GetMainCharacterDatasetName(Guid adventureId)
-    {
-        return $"{adventureId}_main_character";
-    }
+    public static string GetMainCharacterDatasetName(Guid adventureId) => $"{adventureId}_main_character";
 }
 
 public readonly struct SearchType : IEquatable<SearchType>
@@ -48,7 +40,10 @@ public readonly struct SearchType : IEquatable<SearchType>
 
     public string Value { get; }
 
-    private SearchType(string value) => Value = value;
+    private SearchType(string value)
+    {
+        Value = value;
+    }
 
     public override string ToString() => Value;
 
@@ -95,8 +90,8 @@ public interface IRagSearch
 internal class RagClient : IRagBuilder, IRagSearch
 {
     private readonly HttpClient _httpClient;
-    private readonly IMessageDispatcher _messageDispatcher;
     private readonly ILogger _logger;
+    private readonly IMessageDispatcher _messageDispatcher;
 
     public RagClient(HttpClient httpClient, IMessageDispatcher messageDispatcher, ILogger logger)
     {
@@ -113,7 +108,7 @@ internal class RagClient : IRagBuilder, IRagSearch
             datasets = datasets
         };
 
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("/add", request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>(cancellationToken)
@@ -123,20 +118,20 @@ internal class RagClient : IRagBuilder, IRagSearch
     public async Task CognifyAsync(List<string> datasets, bool temporal = false, CancellationToken cancellationToken = default)
     {
         var request = new CognifyRequest { Datasets = datasets, Temporal = temporal };
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/cognify", request, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("/cognify", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task MemifyAsync(List<string> datasets, CancellationToken cancellationToken = default)
     {
         var request = new MemifyRequest { datasets = datasets };
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/memify", request, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("/memify", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<List<DatasetData>> GetDatasetsAsync(string dataset, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.GetAsync($"/datasets/{Uri.EscapeDataString(dataset)}", cancellationToken);
+        var response = await _httpClient.GetAsync($"/datasets/{Uri.EscapeDataString(dataset)}", cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<List<DatasetData>>(cancellationToken)
@@ -152,7 +147,7 @@ internal class RagClient : IRagBuilder, IRagSearch
             Content = content
         };
 
-        HttpResponseMessage response = await _httpClient.PutAsJsonAsync("/update", request, cancellationToken);
+        var response = await _httpClient.PutAsJsonAsync("/update", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -160,7 +155,7 @@ internal class RagClient : IRagBuilder, IRagSearch
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetName)}/{dataId}", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"/delete/node/{Uri.EscapeDataString(datasetName)}/{dataId}", cancellationToken);
             response.EnsureSuccessStatusCode();
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -172,7 +167,7 @@ internal class RagClient : IRagBuilder, IRagSearch
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(dataset)}", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"/delete/{Uri.EscapeDataString(dataset)}", cancellationToken);
             response.EnsureSuccessStatusCode();
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -182,7 +177,7 @@ internal class RagClient : IRagBuilder, IRagSearch
 
     public async Task CleanAsync(CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage response = await _httpClient.DeleteAsync("/nuke", cancellationToken);
+        var response = await _httpClient.DeleteAsync("/nuke", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -194,7 +189,7 @@ internal class RagClient : IRagBuilder, IRagSearch
         {
             try
             {
-                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/search",
+                var response = await _httpClient.PostAsJsonAsync("/search",
                     new SearchRequest
                     {
                         Datasets = datasets.ToList(),
@@ -210,22 +205,25 @@ internal class RagClient : IRagBuilder, IRagSearch
             catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
                 _logger.Information("RAG search for datasets '{datasets}' returned Not Found.", string.Join(",", datasets));
-                return (query, new SearchResponse { Results = new List<SearchResultItem>
+                return (query, new SearchResponse
                 {
-                    new()
+                    Results = new List<SearchResultItem>
                     {
-                        Text = "Knowledge graph does not contain any data yet. It might be because it's newly introduced character to the story.",
+                        new()
+                        {
+                            Text = "Knowledge graph does not contain any data yet. It might be because it's newly introduced character to the story."
+                        }
                     }
-                } });
+                });
             }
         }).ToArray();
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         var results = await Task.WhenAll(request);
         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
             {
                 CallerName = $"{nameof(IRagSearch)}:{context.CallerType.Name}",
-                AdventureId =  context.AdventureId,
+                AdventureId = context.AdventureId,
                 RequestContent = queries.ToJsonString(),
                 ResponseContent = results.Select(x => new { x.query, response = x.Item2 }).ToJsonString(),
                 InputToken = null,

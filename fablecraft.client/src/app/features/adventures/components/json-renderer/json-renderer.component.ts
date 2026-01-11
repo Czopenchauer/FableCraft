@@ -1,6 +1,6 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ValueType, RenderNode, ConstantFieldConfig, JsonValue } from './json-renderer.types';
+import {Component, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ConstantFieldConfig, RenderNode, ValueType} from './json-renderer.types';
 
 @Component({
   selector: 'app-json-renderer',
@@ -219,7 +219,7 @@ export class JsonRendererComponent implements OnInit, OnChanges {
 
     // Expand objects/arrays that contain constant children
     if (node.type === ValueType.OBJECT ||
-        node.type === ValueType.ARRAY_OF_OBJECTS) {
+      node.type === ValueType.ARRAY_OF_OBJECTS) {
       return this.hasConstantChildren(node.value, this.buildPath(node.key));
     }
 

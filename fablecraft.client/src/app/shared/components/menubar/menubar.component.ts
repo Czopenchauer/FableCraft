@@ -1,8 +1,8 @@
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { Theme, ThemeService } from '../../../core/services/theme.service';
+import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
+import {Theme, ThemeService} from '../../../core/services/theme.service';
 
 interface MenuItem {
   label: string;
@@ -27,8 +27,6 @@ interface SubMenuItem {
 export class MenubarComponent implements OnInit, OnDestroy {
   showLlmPresetModal = false;
   currentTheme: Theme = 'medieval-fantasy';
-  private destroy$ = new Subject<void>();
-
   menuItems: MenuItem[] = [
     {
       label: 'Adventures',
@@ -68,13 +66,14 @@ export class MenubarComponent implements OnInit, OnDestroy {
       ]
     }
   ];
-
   activeMenu: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     public router: Router,
     private themeService: ThemeService
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.themeService.currentTheme$

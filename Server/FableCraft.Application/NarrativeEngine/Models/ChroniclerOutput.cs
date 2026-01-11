@@ -5,7 +5,7 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
-/// Complete output from the ChroniclerAgent.
+///     Complete output from the ChroniclerAgent.
 /// </summary>
 internal sealed class ChroniclerOutput
 {
@@ -23,7 +23,7 @@ internal sealed class ChroniclerOutput
 }
 
 /// <summary>
-/// Narrative-aware guidance for the Writer agent.
+///     Narrative-aware guidance for the Writer agent.
 /// </summary>
 internal sealed class WriterGuidance
 {
@@ -32,7 +32,7 @@ internal sealed class WriterGuidance
 }
 
 /// <summary>
-/// A world event to be recorded as a discoverable fact.
+///     A world event to be recorded as a discoverable fact.
 /// </summary>
 internal sealed class WorldEvent
 {
@@ -47,7 +47,7 @@ internal sealed class WorldEvent
 }
 
 /// <summary>
-/// A request from the Chronicler to create lore when world momentum implies missing knowledge.
+///     A request from the Chronicler to create lore when world momentum implies missing knowledge.
 /// </summary>
 internal sealed class ChroniclerLoreRequest
 {

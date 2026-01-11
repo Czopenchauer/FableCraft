@@ -4,7 +4,7 @@ import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
-import {RagChatService, RagDatasetType, RagChatMessage} from '../../services/rag-chat.service';
+import {RagChatMessage, RagChatService, RagDatasetType} from '../../services/rag-chat.service';
 import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 
@@ -26,45 +26,37 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   enrichmentFailed = false;
   enrichmentData: SceneEnrichmentResult | null = null;
   customAction = '';
-  private previousTrackerData: any = null;
-
   // Character tracker tabs
   activeCharacterTab: string = 'protagonist';
   // Nested tabs for character details (state, development, description)
   activeNestedTab: string = 'state';
-
   // Settings modal state
   showSettingsModal = false;
-
   // Adventure State modal state (Lore + Characters)
   showAdventureStateModal = false;
-
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
   selectedAgents: Set<string> = new Set(['SceneTracker', 'MainCharacterTracker', 'CharacterTracker']);
-
   // Available agents for regeneration
   readonly availableAgents = [
-    { id: 'SceneTracker', label: 'Scene Tracker', description: 'Time, location, weather, characters present' },
-    { id: 'MainCharacterTracker', label: 'Protagonist State', description: 'Main character tracker & description' },
-    { id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers' }
+    {id: 'SceneTracker', label: 'Scene Tracker', description: 'Time, location, weather, characters present'},
+    {id: 'MainCharacterTracker', label: 'Protagonist State', description: 'Main character tracker & description'},
+    {id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers'}
   ];
-
-  // Character emulation state
-  private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
   showEmulationBox = false;
   emulationInstruction = '';
   emulationResponse = '';
   isEmulating = false;
-
-  // RAG Knowledge Chat state
-  private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
   showRagChatBox = false;
   ragChatQuery = '';
   ragChatDataset: RagDatasetType = 'world';
   ragChatMessages: RagChatMessage[] = [];
   isRagChatLoading = false;
-
+  private previousTrackerData: any = null;
+  // Character emulation state
+  private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
+  // RAG Knowledge Chat state
+  private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -185,43 +177,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           console.error('Error submitting action:', err);
           this.toastService.error('Failed to submit your choice. Please try again.');
           this.cdr.detectChanges();
-        }
-      });
-  }
-
-  /**
-   * Enrich the scene with tracker and additional content
-   */
-  private enrichSceneData(sceneId: string): void {
-    if (!this.adventureId) return;
-
-    this.isEnriching = true;
-    this.enrichmentFailed = false;
-
-    this.adventureService.enrichScene(this.adventureId, sceneId)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => {
-          this.isEnriching = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: (enrichment) => {
-          console.log('Scene enrichment received:', enrichment);
-          this.enrichmentData = enrichment;
-
-          // Update the current scene's tracker with enriched data
-          if (this.currentScene) {
-            this.currentScene.tracker = enrichment.tracker;
-          }
-
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error enriching scene:', err);
-          this.enrichmentFailed = true;
-          this.toastService.warning('Scene enrichment failed. The scene is still playable.');
         }
       });
   }
@@ -488,43 +443,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load a specific scene by ID
-   */
-  private loadScene(sceneId: string): void {
-    if (!this.adventureId) return;
-
-    this.isLoading = true;
-    this.enrichmentData = null;
-    this.enrichmentFailed = false;
-
-    this.adventureService.getScene(this.adventureId, sceneId)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => {
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: (scene) => {
-          this.currentScene = scene || null;
-          this.resetCharacterTab(); // Reset to protagonist tab
-
-          // Check if tracker is missing and trigger enrichment if needed
-          if (this.currentScene && !this.currentScene.tracker) {
-            this.enrichSceneData(this.currentScene.sceneId);
-          }
-
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error loading scene:', err);
-          this.toastService.error('Failed to load the scene. Please try again.');
-        }
-      });
-  }
-
-  /**
    * Check if currently viewing the latest scene
    */
   isCurrentScene(): boolean {
@@ -578,14 +496,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Reset to protagonist tab when scene changes
-   */
-  private resetCharacterTab(): void {
-    this.activeCharacterTab = 'protagonist';
-    this.activeNestedTab = 'state';
-  }
-
-  /**
    * Open the settings modal
    */
   openSettingsModal(): void {
@@ -619,14 +529,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   closeAdventureStateModal(): void {
     this.showAdventureStateModal = false;
-  }
-
-  /**
-   * Load emulation box visibility from localStorage
-   */
-  private loadEmulationVisibility(): void {
-    const stored = localStorage.getItem(this.EMULATION_VISIBLE_KEY);
-    this.showEmulationBox = stored === 'true';
   }
 
   /**
@@ -682,14 +584,6 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   clearEmulationResponse(): void {
     this.emulationResponse = '';
-  }
-
-  /**
-   * Load RAG chat box visibility from localStorage
-   */
-  private loadRagChatVisibility(): void {
-    const stored = localStorage.getItem(this.RAG_CHAT_VISIBLE_KEY);
-    this.showRagChatBox = stored === 'true';
   }
 
   /**
@@ -777,5 +671,103 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   clearRagChatMessages(): void {
     this.ragChatMessages = [];
+  }
+
+  /**
+   * Enrich the scene with tracker and additional content
+   */
+  private enrichSceneData(sceneId: string): void {
+    if (!this.adventureId) return;
+
+    this.isEnriching = true;
+    this.enrichmentFailed = false;
+
+    this.adventureService.enrichScene(this.adventureId, sceneId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isEnriching = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (enrichment) => {
+          console.log('Scene enrichment received:', enrichment);
+          this.enrichmentData = enrichment;
+
+          // Update the current scene's tracker with enriched data
+          if (this.currentScene) {
+            this.currentScene.tracker = enrichment.tracker;
+          }
+
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error enriching scene:', err);
+          this.enrichmentFailed = true;
+          this.toastService.warning('Scene enrichment failed. The scene is still playable.');
+        }
+      });
+  }
+
+  /**
+   * Load a specific scene by ID
+   */
+  private loadScene(sceneId: string): void {
+    if (!this.adventureId) return;
+
+    this.isLoading = true;
+    this.enrichmentData = null;
+    this.enrichmentFailed = false;
+
+    this.adventureService.getScene(this.adventureId, sceneId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (scene) => {
+          this.currentScene = scene || null;
+          this.resetCharacterTab(); // Reset to protagonist tab
+
+          // Check if tracker is missing and trigger enrichment if needed
+          if (this.currentScene && !this.currentScene.tracker) {
+            this.enrichSceneData(this.currentScene.sceneId);
+          }
+
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error loading scene:', err);
+          this.toastService.error('Failed to load the scene. Please try again.');
+        }
+      });
+  }
+
+  /**
+   * Reset to protagonist tab when scene changes
+   */
+  private resetCharacterTab(): void {
+    this.activeCharacterTab = 'protagonist';
+    this.activeNestedTab = 'state';
+  }
+
+  /**
+   * Load emulation box visibility from localStorage
+   */
+  private loadEmulationVisibility(): void {
+    const stored = localStorage.getItem(this.EMULATION_VISIBLE_KEY);
+    this.showEmulationBox = stored === 'true';
+  }
+
+  /**
+   * Load RAG chat box visibility from localStorage
+   */
+  private loadRagChatVisibility(): void {
+    const stored = localStorage.getItem(this.RAG_CHAT_VISIBLE_KEY);
+    this.showRagChatBox = stored === 'true';
   }
 }

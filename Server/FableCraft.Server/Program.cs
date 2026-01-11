@@ -7,7 +7,7 @@ using FableCraft.ServiceDefaults;
 using Serilog;
 using Serilog.Events;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<FileUploadOperationFilter>();
 });
 
-WebApplication app = builder.Build();
+var app = builder.Build();
 
 app.UseSerilogRequestLogging(options =>
 {

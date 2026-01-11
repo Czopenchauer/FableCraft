@@ -11,8 +11,8 @@ using Microsoft.SemanticKernel;
 namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
-/// Plugin that exposes character intent checking as a Semantic Kernel function.
-/// Used by SimulationPlanner to understand what characters intend to do.
+///     Plugin that exposes character intent checking as a Semantic Kernel function.
+///     Used by SimulationPlanner to understand what characters intend to do.
 /// </summary>
 internal sealed class IntentCheckPlugin : PluginBase
 {
@@ -44,8 +44,8 @@ internal sealed class IntentCheckPlugin : PluginBase
 
     [KernelFunction("get_character_intent")]
     [Description(
-        "Get a character's intentions for the upcoming simulation period. Returns what they plan to do, " +
-        "who they're seeking out, who they're avoiding, and what their primary focus is.")]
+        "Get a character's intentions for the upcoming simulation period. Returns what they plan to do, "
+        + "who they're seeking out, who they're avoiding, and what their primary focus is.")]
     public async Task<string> GetCharacterIntentAsync(
         [Description("The name of the character to check intentions for. Must match exactly.")]
         string characterName,
