@@ -99,7 +99,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<GeneratedScene>("scene_output");
+        var outputParser = CreateOutputParser();
 
         var newScene = await _agentKernel.SendRequestAsync(
             chatHistory,
@@ -113,6 +113,28 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
     }
 
     protected override AgentName GetAgentName() => AgentName.WriterAgent;
+
+    private static Func<string, GeneratedScene> CreateOutputParser()
+    {
+        return response =>
+        {
+            var scene = ResponseParser.ExtractText(response, "scene");
+            var choicesText = ResponseParser.ExtractText(response, "choices");
+            var choices = choicesText
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var creationRequests = ResponseParser.ExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
+            var importanceFlags = ResponseParser.ExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
+
+            return new GeneratedScene
+            {
+                Scene = scene,
+                Choices = choices,
+                CreationRequests = creationRequests,
+                ImportanceFlags = importanceFlags
+            };
+        };
+    }
 
     /// <summary>
     ///     Builds a prompt section for pending MC interactions from characters who want to seek the MC.

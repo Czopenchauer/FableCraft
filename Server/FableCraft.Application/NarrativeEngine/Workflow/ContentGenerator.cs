@@ -103,7 +103,7 @@ internal class ContentGenerator(
             hasBackgroundCharacters = context.NewBackgroundCharacters.Count > 0;
         }
 
-        if (backgroundCharacterRequests.Count > 0 && hasBackgroundCharacters)
+        if (backgroundCharacterRequests.Count > 0 && !hasBackgroundCharacters)
         {
             backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
                 .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());

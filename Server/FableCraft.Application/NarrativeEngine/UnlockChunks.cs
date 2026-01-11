@@ -18,6 +18,10 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
             .Where(x => x.CommitStatus == CommitStatus.Lock)
             .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Uncommited), cancellationToken);
 
+        await dbContext.Scenes
+            .Where(x => x.EnrichmentStatus == EnrichmentStatus.Enriching)
+            .ExecuteUpdateAsync(x => x.SetProperty(s => s.EnrichmentStatus, EnrichmentStatus.NotEnriched), cancellationToken);
+
         var processes = await dbContext.GenerationProcesses
             .Where(x => x.Step == GenerationProcessStep.GeneratingScene)
             .ToArrayAsync(cancellationToken);

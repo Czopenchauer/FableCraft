@@ -87,7 +87,7 @@ internal sealed class CharacterCrafter : BaseAgent
                 {
                     Data = r.ExtensionData,
                     TargetCharacterName = r.Toward,
-                    UpdateTime = null,
+                    UpdateTime = context.NewTracker!.Scene!.Time,
                     SequenceNumber = 0,
                     Dynamic = r.Dynamic
                 })
