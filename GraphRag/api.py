@@ -173,12 +173,18 @@ async def add_data(data: AddDataRequest):
 async def cognify_dataset(request: CognifyRequest):
     """Run cognify processing on multiple datasets"""
     try:
+        # Process all datasets in a single cognify call to avoid race conditions
+        logger.info("Running cognify for datasets %s (temporal=%s)", request.adventure_ids, request.temporal)
+        result = await cognee.cognify(datasets=request.adventure_ids, temporal_cognify=request.temporal)
+        logger.info("Cognify result: %s", result)
+
+        # Generate visualizations for each dataset
+        path = os.environ.get('VISUALISATION_PATH', './visualization')
         for adventure_id in request.adventure_ids:
-            logger.info("Running cognify for dataset %s (temporal=%s)", adventure_id, request.temporal)
-            result = await cognee.cognify(datasets=[adventure_id], temporal_cognify=request.temporal)
-            logger.info("Cognify result for %s: %s", adventure_id, result)
-            path = os.environ.get('VISUALISATION_PATH', './visualization')
-            await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
+            try:
+                await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
+            except Exception as viz_error:
+                logger.warning("Failed to generate visualization for %s: %s", adventure_id, viz_error)
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during cognify: {str(e)}")
@@ -192,12 +198,20 @@ async def cognify_dataset(request: CognifyRequest):
 async def memify_dataset(request: MemifyRequest):
     """Run memify processing on multiple datasets"""
     try:
+        # Process all datasets - memify may need to be called per dataset
+        # depending on cognee's API, but we batch where possible
         for adventure_id in request.adventure_ids:
             logger.info("Running memify for dataset %s", adventure_id)
             mem_result = await cognee.memify(dataset=adventure_id)
             logger.info("Memify result for %s: %s", adventure_id, mem_result)
-            path = os.environ.get('VISUALISATION_PATH', './visualization')
-            await cognee.visualize_graph(f"{path}/{adventure_id}/memify_graph_visualization.html")
+
+        # Generate visualizations for each dataset
+        path = os.environ.get('VISUALISATION_PATH', './visualization')
+        for adventure_id in request.adventure_ids:
+            try:
+                await cognee.visualize_graph(f"{path}/{adventure_id}/memify_graph_visualization.html")
+            except Exception as viz_error:
+                logger.warning("Failed to generate visualization for %s: %s", adventure_id, viz_error)
 
     except Exception as e:
         logger.error(f"{type(e).__name__}: Error during memify: {str(e)}")

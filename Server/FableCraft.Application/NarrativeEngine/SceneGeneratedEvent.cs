@@ -48,19 +48,42 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 })
             .SingleAsync(x => x.Id == message.SceneId, cancellationToken);
 
+        var candidateSceneIds = await _dbContext.Scenes
+            .Where(x => x.AdventureId == message.AdventureId
+                && x.SequenceNumber < currentScene.SequenceNumber
+                && x.CommitStatus == CommitStatus.Uncommited)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        if (candidateSceneIds.Count < MinScenesToCommit)
+        {
+            _logger.Information("Not enough scenes to commit for adventure {AdventureId}. Current uncommitted scenes count: {ScenesCount}",
+                message.AdventureId,
+                candidateSceneIds.Count);
+            return;
+        }
+
+        var lockedCount = await _dbContext.Scenes
+            .Where(x => candidateSceneIds.Contains(x.Id) && x.CommitStatus == CommitStatus.Uncommited)
+            .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Lock), cancellationToken);
+
+        if (lockedCount == 0)
+        {
+            _logger.Information("Scenes already locked by another process for adventure {AdventureId}", message.AdventureId);
+            return;
+        }
+
         var scenesToCommit = await _dbContext.Scenes
             .Include(x => x.Lorebooks)
             .Include(x => x.CharacterActions)
             .Include(x => x.CharacterStates)
             .Include(x => x.CharacterSceneRewrites)
-            .Where(x => x.AdventureId == message.AdventureId && x.SequenceNumber < currentScene.SequenceNumber && x.CommitStatus == CommitStatus.Uncommited)
+            .Where(x => candidateSceneIds.Contains(x.Id) && x.CommitStatus == CommitStatus.Lock)
             .ToListAsync(cancellationToken);
 
-        if (scenesToCommit.Count < MinScenesToCommit)
+        if (scenesToCommit.Count == 0)
         {
-            _logger.Information("Not enough scenes to commit for adventure {AdventureId}. Current committed scenes count: {ScenesCount}",
-                message.AdventureId,
-                scenesToCommit.Count);
+            _logger.Warning("No scenes to commit after locking for adventure {AdventureId}.", message.AdventureId);
             return;
         }
 
@@ -70,9 +93,6 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
         var fileToCommit = new List<FileToWrite>();
         try
         {
-            await _dbContext.Scenes
-                .Where(x => scenesToCommit.Select(y => y.Id).Contains(x.Id))
-                .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Lock), cancellationToken);
 
             var existingSceneChunks = await _dbContext.Chunks
                 .AsNoTracking()
@@ -166,7 +186,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                         if (rewriteChunk == null)
                         {
                             var chunk = _ragChunkService.CreateChunk(
-                                scene.Id,
+                                x.Id,
                                 message.AdventureId,
                                 content,
                                 ContentType.txt);
@@ -244,19 +264,16 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 await _ragChunkService.WriteFilesAsync(fileToCommit, cancellationToken);
                 await _ragChunkService.UpdateExistingChunksAsync(fileToCommit, cancellationToken);
                 await _ragChunkService.CommitChunksToRagAsync(fileToCommit, cancellationToken);
-                await _ragChunkService.CognifyDatasetsAsync(
-                    [RagClientExtensions.GetWorldDatasetName(message.AdventureId)],
-                    cancellationToken: cancellationToken);
-                await _ragChunkService.CognifyDatasetsAsync(
-                    [RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)],
-                    cancellationToken: cancellationToken);
-
+                var datasetsToCognify = new HashSet<string>
+                {
+                    RagClientExtensions.GetWorldDatasetName(message.AdventureId),
+                    RagClientExtensions.GetMainCharacterDatasetName(message.AdventureId)
+                };
                 foreach (var character in characters)
                 {
-                    await _ragChunkService.CognifyDatasetsAsync(
-                        [RagClientExtensions.GetCharacterDatasetName(message.AdventureId, character.Id)],
-                        cancellationToken: cancellationToken);
+                    datasetsToCognify.Add(RagClientExtensions.GetCharacterDatasetName(message.AdventureId, character.Id));
                 }
+                await _ragChunkService.CognifyDatasetsAsync(datasetsToCognify, cancellationToken: cancellationToken);
 
                 foreach (var scene in scenesToCommit)
                 {
@@ -319,7 +336,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
 
             var chunk = new Chunk
             {
-                EntityId = latestState.Id,
+                EntityId = characterId,
                 Name = name,
                 Path = path,
                 ContentType = contentType.ToString(),

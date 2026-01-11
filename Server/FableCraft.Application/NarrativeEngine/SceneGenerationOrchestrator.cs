@@ -705,7 +705,8 @@ internal sealed class SceneGenerationOrchestrator(
             var process = new GenerationProcess
             {
                 AdventureId = adventureId,
-                Context = newContext.ToJsonString()
+                Context = newContext.ToJsonString(),
+                Step = GenerationProcessStep.NotStarted
             };
             await dbContext.GenerationProcesses.AddAsync(process,
                 cancellationToken);

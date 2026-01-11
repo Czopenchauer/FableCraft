@@ -13,7 +13,7 @@ public class GenerationProcess : IEntity
 {
     public Guid AdventureId { get; set; }
 
-    public GenerationProcessStep Step { get; set; }
+    public required GenerationProcessStep Step { get; set; }
 
     public required string Context { get; set; }
 
