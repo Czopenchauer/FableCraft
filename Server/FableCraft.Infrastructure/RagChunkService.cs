@@ -45,7 +45,7 @@ public interface IRagChunkService
 
 internal sealed class RagChunkService : IRagChunkService
 {
-    public static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
+    private static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
 
     private readonly IRagBuilder _ragBuilder;
 

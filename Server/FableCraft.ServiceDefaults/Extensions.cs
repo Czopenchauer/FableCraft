@@ -4,15 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
-using Microsoft.Extensions.Logging;
 
 using Npgsql;
 
-using OpenTelemetry;
 using OpenTelemetry.Exporter;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 using Serilog;
@@ -95,7 +91,7 @@ public static class Extensions
                 Timeout = TimeSpan.FromMinutes(20)
             };
 
-            options.Retry.MaxRetryAttempts = 3;
+            options.Retry.MaxRetryAttempts = 2;
             options.Retry.Delay = TimeSpan.FromSeconds(5);
             options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(20);
         });

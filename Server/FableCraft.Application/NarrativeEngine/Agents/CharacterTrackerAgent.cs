@@ -59,7 +59,7 @@ internal sealed class CharacterTrackerAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
+        var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         Kernel kernelWithKg = kernel.Build();

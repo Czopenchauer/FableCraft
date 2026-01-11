@@ -13,13 +13,18 @@ public class AdventureContextMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.RouteValues.TryGetValue("adventureId", out var adventureIdValue) 
+        if (context.Request.RouteValues.TryGetValue("adventureId", out var adventureIdValue)
             && Guid.TryParse(adventureIdValue?.ToString(), out var adventureId))
         {
             ProcessExecutionContext.AdventureId.Value = adventureId;
         }
 
+        if (context.Request.RouteValues.TryGetValue("sceneId", out var sceneIdValue)
+            && Guid.TryParse(sceneIdValue?.ToString(), out var sceneId))
+        {
+            ProcessExecutionContext.SceneId.Value = sceneId;
+        }
+
         await _next(context);
     }
 }
-

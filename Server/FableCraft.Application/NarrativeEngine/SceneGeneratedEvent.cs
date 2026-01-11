@@ -115,8 +115,7 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 }
 
                 var sceneContent = $"""
-                                    Scene Sequence Number: {scene.SequenceNumber}
-                                    Main character is: {scene.Metadata.Tracker!.MainCharacter!.MainCharacter!.Name}
+                                    Character is: {scene.Metadata.Tracker!.MainCharacter!.MainCharacter!.Name}
                                     Time: {scene.Metadata.Tracker.Scene!.Time}
                                     Location: {scene.Metadata.Tracker.Scene!.Location}
                                     Weather: {scene.Metadata.Tracker.Scene!.Weather}
@@ -153,7 +152,6 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     .ForEach(x =>
                     {
                         var content = $"""
-                                       Scene Sequence Number: {x.SequenceNumber}
                                        Character: {characters.Single(y => y.Id == x.CharacterId).Name}
                                        Time: {x.SceneTracker.Time}
                                        Location: {x.SceneTracker.Location}
@@ -311,7 +309,8 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
         string[] datasets =
         [
             RagClientExtensions.GetCharacterDatasetName(adventureId, characterId),
-            RagClientExtensions.GetMainCharacterDatasetName(adventureId)
+            RagClientExtensions.GetMainCharacterDatasetName(adventureId),
+            RagClientExtensions.GetWorldDatasetName(adventureId)
         ];
 
         if (existingChunk == null)

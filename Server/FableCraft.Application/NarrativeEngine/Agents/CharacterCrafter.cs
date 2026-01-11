@@ -62,7 +62,7 @@ internal sealed class CharacterCrafter : BaseAgent
                                      """;
         chatHistory.AddUserMessage(creationRequestPrompt);
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         Kernel kernelWithKg = kernel.Build();
 

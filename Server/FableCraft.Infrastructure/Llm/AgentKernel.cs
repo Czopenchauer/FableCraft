@@ -2,7 +2,6 @@
 using System.Net;
 using System.Text.Json;
 
-using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;

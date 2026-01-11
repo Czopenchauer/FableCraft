@@ -33,6 +33,7 @@ public static partial class JsonExtensions
     /// is the complete object to replace at that path.
     /// Supports array item access by identifier e.g.: "Skills[Consciousness Analysis]" or
     /// "MagicAndAbilities.InstinctiveAbilities[Fire Breath].Power"
+    /// Dots inside brackets are preserved (e.g., "in_development[Curiosity vs. Discipline]")
     /// </summary>
     public static T PatchWith<T>(this T original, IDictionary<string, object> updates)
     {
@@ -46,11 +47,51 @@ public static partial class JsonExtensions
 
         foreach (var kvp in updates)
         {
-            var pathSegments = kvp.Key.Split('.');
+            var pathSegments = SplitPathRespectingBrackets(kvp.Key);
             SetValueAtPath(root, pathSegments, kvp.Value);
         }
 
         return root.Deserialize<T>(JsonSerializerOptions)!;
+    }
+
+    private static string[] SplitPathRespectingBrackets(string path)
+    {
+        var segments = new List<string>();
+        var currentSegment = new System.Text.StringBuilder();
+        var bracketDepth = 0;
+
+        foreach (var c in path)
+        {
+            if (c == '[')
+            {
+                bracketDepth++;
+                currentSegment.Append(c);
+            }
+            else if (c == ']')
+            {
+                bracketDepth--;
+                currentSegment.Append(c);
+            }
+            else if (c == '.' && bracketDepth == 0)
+            {
+                if (currentSegment.Length > 0)
+                {
+                    segments.Add(currentSegment.ToString());
+                    currentSegment.Clear();
+                }
+            }
+            else
+            {
+                currentSegment.Append(c);
+            }
+        }
+
+        if (currentSegment.Length > 0)
+        {
+            segments.Add(currentSegment.ToString());
+        }
+
+        return segments.ToArray();
     }
 
     private static void SetValueAtPath(JsonNode root, string[] pathSegments, object? value)

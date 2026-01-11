@@ -50,7 +50,7 @@ internal sealed class SimulationModeratorAgent(
         chatHistory.AddUserMessage(BuildRequestMessage(input));
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
 
         var queryPlugin = new QueryCharacterPlugin(characterAgent, logger);
         await queryPlugin.SetupAsync(context, callerContext, input);

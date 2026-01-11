@@ -1199,4 +1199,206 @@ public class JsonExtensionsTests
     }
 
     #endregion
+
+    #region In Development Array Tests
+
+    private sealed class CharacterWithInDevelopment
+    {
+        [JsonPropertyName("Name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("in_development")]
+        public List<DevelopmentAspect>? InDevelopment { get; set; }
+
+        [JsonExtensionData]
+        public IDictionary<string, object>? ExtensionData { get; set; }
+    }
+
+    private sealed class DevelopmentAspect
+    {
+        [JsonPropertyName("aspect")]
+        public string? Aspect { get; set; }
+
+        [JsonPropertyName("from")]
+        public string? From { get; set; }
+
+        [JsonPropertyName("toward")]
+        public string? Toward { get; set; }
+
+        [JsonPropertyName("pressure")]
+        public string? Pressure { get; set; }
+
+        [JsonPropertyName("resistance")]
+        public string? Resistance { get; set; }
+
+        [JsonPropertyName("intensity")]
+        public string? Intensity { get; set; }
+    }
+
+    private static CharacterWithInDevelopment CreateCharacterWithInDevelopment() => new()
+    {
+        Name = "Test Character",
+        InDevelopment =
+        [
+            new DevelopmentAspect
+            {
+                Aspect = "Curiosity vs. Discipline",
+                From = "Standard patrol assessment",
+                Toward = "Following protocol",
+                Pressure = "Nothing unusual",
+                Resistance = "None",
+                Intensity = "Low"
+            },
+            new DevelopmentAspect
+            {
+                Aspect = "Trust vs. Suspicion",
+                From = "Neutral stance",
+                Toward = "Building trust",
+                Pressure = "New encounters",
+                Resistance = "Past experiences",
+                Intensity = "Medium"
+            }
+        ]
+    };
+
+    [Test]
+    public async Task PatchWith_InDevelopmentArrayItem_WithoutQuotes_ReplacesItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithInDevelopment();
+        var updatedAspect = new DevelopmentAspect
+        {
+            Aspect = "Curiosity vs. Discipline",
+            From = "Standard patrol assessment",
+            Toward = "Pushing boundaries for answers",
+            Pressure = "The human doesn't fit any known pattern—no trail, wrong scent, impossible story",
+            Resistance = "Patrol protocol, Varek's authority, the reality that containment has begun",
+            Intensity = "Noticing. Not yet acting on it, but circling one too many times."
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path WITHOUT quotes around the identifier - this is the supported format
+            ["in_development[Curiosity vs. Discipline]"] = updatedAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - The aspect should be updated
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity vs. Discipline");
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Pushing boundaries for answers");
+        await Assert.That(curiosityAspect.Pressure).Contains("human doesn't fit any known pattern");
+        await Assert.That(curiosityAspect.Resistance).Contains("Patrol protocol");
+        await Assert.That(curiosityAspect.Intensity).Contains("circling one too many times");
+
+        // Assert - Other aspects should remain unchanged
+        var trustAspect = result.InDevelopment!.Single(a => a.Aspect == "Trust vs. Suspicion");
+        await Assert.That(trustAspect.Toward).IsEqualTo("Building trust");
+
+        // Assert - Array length should remain the same
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task PatchWith_InDevelopmentArrayItem_WithDotInIdentifier_ReplacesItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithInDevelopment();
+        var updatedAspect = new DevelopmentAspect
+        {
+            Aspect = "Curiosity vs. Discipline",
+            From = "Standard patrol assessment",
+            Toward = "Pushing boundaries for answers",
+            Pressure = "The human doesn't fit any known pattern",
+            Resistance = "Patrol protocol",
+            Intensity = "High"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // The identifier contains a dot (vs.) - this must be handled correctly
+            // The dot inside brackets should NOT be treated as a path separator
+            ["in_development[Curiosity vs. Discipline]"] = updatedAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - The aspect should be updated (not added as new)
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity vs. Discipline");
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Pushing boundaries for answers");
+    }
+
+    [Test]
+    public async Task PatchWith_InDevelopmentArrayItem_WithDotInIdentifier_AndNestedProperty_UpdatesCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithInDevelopment();
+        var updates = new Dictionary<string, object>
+        {
+            // Path: array access with dot in identifier, then property access
+            // in_development[Curiosity vs. Discipline].intensity
+            // The "vs." dot should NOT split the path
+            ["in_development[Curiosity vs. Discipline].intensity"] = "Very high"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity vs. Discipline");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Very high");
+        await Assert.That(curiosityAspect.From).IsEqualTo("Standard patrol assessment"); // unchanged
+    }
+
+    [Test]
+    public async Task PatchWith_InDevelopmentArrayItem_UpdateNestedProperty_WorksCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithInDevelopment();
+        var updates = new Dictionary<string, object>
+        {
+            ["in_development[Curiosity vs. Discipline].intensity"] = "Very high - actively investigating"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only the intensity should be updated
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity vs. Discipline");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Very high - actively investigating");
+        await Assert.That(curiosityAspect.From).IsEqualTo("Standard patrol assessment");
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Following protocol");
+    }
+
+    [Test]
+    public async Task PatchWith_InDevelopmentArrayItem_AddNewAspect_AddsToArray()
+    {
+        // Arrange
+        var original = CreateCharacterWithInDevelopment();
+        var newAspect = new DevelopmentAspect
+        {
+            Aspect = "Loyalty vs. Independence",
+            From = "Pack mentality",
+            Toward = "Individual choice",
+            Pressure = "Conflicting orders",
+            Resistance = "Years of training",
+            Intensity = "Rising"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            ["in_development[Loyalty vs. Independence]"] = newAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - New aspect should be added
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(3);
+        var addedAspect = result.InDevelopment!.SingleOrDefault(a => a.Aspect == "Loyalty vs. Independence");
+        await Assert.That(addedAspect).IsNotNull();
+        await Assert.That(addedAspect!.From).IsEqualTo("Pack mentality");
+    }
+
+    #endregion
 }

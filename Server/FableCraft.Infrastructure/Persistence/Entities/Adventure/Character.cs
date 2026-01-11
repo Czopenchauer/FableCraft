@@ -32,12 +32,12 @@ public readonly struct CharacterImportance : IEquatable<CharacterImportance>
 public static class CharacterImportanceConverter
 {
     public static CharacterImportance FromString(string value) => value switch
-    {
-        "arc_important" => CharacterImportance.ArcImportance,
-        "significant" => CharacterImportance.Significant,
-        "background" => CharacterImportance.Background,
-        _ => throw new ArgumentException($"Unknown CharacterImportance value: {value}", nameof(value))
-    };
+                                                                  {
+                                                                      "arc_important" => CharacterImportance.ArcImportance,
+                                                                      "significant" => CharacterImportance.Significant,
+                                                                      "background" => CharacterImportance.Background,
+                                                                      _ => throw new ArgumentException($"Unknown CharacterImportance value: {value}", nameof(value))
+                                                                  };
 }
 
 public class CharacterImportanceJsonConverter : JsonConverter<CharacterImportance>
@@ -59,6 +59,10 @@ public sealed class Character : IEntity
     public Guid Id { get; set; }
 
     public Guid AdventureId { get; set; }
+
+    public required Guid IntroductionScene { get; set; }
+
+    public Scene Scene { get; set; } = null!;
 
     public required string Name { get; set; }
 

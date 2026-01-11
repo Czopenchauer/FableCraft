@@ -55,7 +55,7 @@ internal sealed class SimulationPlannerAgent(
         chatHistory.AddUserMessage(contextPrompt);
 
         Microsoft.SemanticKernel.IKernelBuilder kernelBuilderSk = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<IntentCheckPlugin>(kernelBuilderSk, context, callerContext);
         Kernel kernel = kernelBuilderSk.Build();
 

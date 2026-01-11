@@ -103,7 +103,7 @@ internal sealed class CharacterTrackersProcessor(
                             characterRelationships.Add(newRelationship);
                         }
                     }
-                    
+
                     var memory = new List<MemoryContext>();
                     if (reflectionOutput.Memory is not null)
                     {

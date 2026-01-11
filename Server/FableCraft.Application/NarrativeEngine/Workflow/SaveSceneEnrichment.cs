@@ -292,6 +292,7 @@ internal sealed class SaveSceneEnrichment(
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
                         Importance = contextNewCharacter.Importance,
+                        IntroductionScene = scene.Id,
                     };
                     dbContext.Characters.Add(newChar);
                 }

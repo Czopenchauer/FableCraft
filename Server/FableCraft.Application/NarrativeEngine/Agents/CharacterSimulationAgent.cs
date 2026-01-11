@@ -75,7 +75,7 @@ internal sealed class CharacterSimulationAgent(
         chatHistory.AddUserMessage(userMessage);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
 
         var toolsPlugin = await pluginFactory.CreateCharacterPluginAsync<CharacterSimulationToolsPlugin>(
             context,

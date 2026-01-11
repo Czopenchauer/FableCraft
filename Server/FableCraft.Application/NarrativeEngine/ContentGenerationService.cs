@@ -13,14 +13,23 @@ namespace FableCraft.Application.NarrativeEngine;
 public class ContentGenerationResult
 {
     public required Guid SceneId { get; init; }
+
     public required int SequenceNumber { get; init; }
+
     public required int NewCharactersCount { get; init; }
+
     public required int NewLocationsCount { get; init; }
+
     public required int NewLoreCount { get; init; }
+
     public required int NewItemsCount { get; init; }
+
     public required string[] NewCharacterNames { get; init; }
+
     public required string[] NewLocationNames { get; init; }
+
     public required string[] NewLoreTitles { get; init; }
+
     public required string[] NewItemNames { get; init; }
 }
 
@@ -135,7 +144,6 @@ public sealed class ContentGenerationService(
         {
             AdventureId = adventureId,
             PlayerAction = lastScene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription ?? string.Empty,
-            GenerationProcessStep = GenerationProcessStep.SceneGenerated,
             NewSceneId = lastScene.Id,
             NewResolution = lastScene.Metadata.ResolutionOutput,
             NewScene = new GeneratedScene

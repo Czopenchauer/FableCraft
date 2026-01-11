@@ -5,7 +5,6 @@ using System.Text.Json;
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Clients;
-using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.SemanticKernel;
 

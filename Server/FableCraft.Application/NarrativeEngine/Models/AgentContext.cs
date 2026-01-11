@@ -4,13 +4,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-internal enum GenerationProcessStep
-{
-    NotStarted,
-    SceneGenerated,
-    EnrichmentCompleted
-}
-
 internal sealed class GenerationContext
 {
     public void SetupRequiredFields(
@@ -89,8 +82,6 @@ internal sealed class GenerationContext
     public Tracker? NewTracker { get; set; }
 
     public Guid? NewSceneId { get; set; }
-
-    public GenerationProcessStep GenerationProcessStep { get; set; }
 
     public Tracker? LatestTracker() => SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
 

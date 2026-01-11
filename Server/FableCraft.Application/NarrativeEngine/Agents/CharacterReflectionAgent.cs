@@ -87,7 +87,7 @@ internal sealed class CharacterReflectionAgent(
         var outputParser = ResponseParser.CreateJsonParser<CharacterReflectionOutput>("character_reflection", true);
 
         Microsoft.SemanticKernel.IKernelBuilder kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), generationContext.AdventureId);
+        var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
         await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, generationContext, callerContext, context.CharacterId);

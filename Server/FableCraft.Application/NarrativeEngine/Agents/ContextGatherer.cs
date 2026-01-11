@@ -86,7 +86,7 @@ internal sealed class ContextGatherer(
             kernel,
             cancellationToken);
 
-        var callerContext = new CallerContext(GetType(), context.AdventureId);
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         try
         {
             var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);

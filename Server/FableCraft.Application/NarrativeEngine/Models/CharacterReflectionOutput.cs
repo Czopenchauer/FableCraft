@@ -37,7 +37,7 @@ public sealed class CharacterRelationshipOutput
 {
     public required string Toward { get; set; }
 
-    public required object? Dynamic { get; set; }
+    public object? Dynamic { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }

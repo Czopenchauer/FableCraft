@@ -2,9 +2,18 @@
 
 namespace FableCraft.Infrastructure.Persistence.Entities;
 
+public enum GenerationProcessStep
+{
+    NotStarted,
+    GeneratingScene,
+    SceneGenerated
+}
+
 public class GenerationProcess : IEntity
 {
     public Guid AdventureId { get; set; }
+
+    public GenerationProcessStep Step { get; set; }
 
     public required string Context { get; set; }
 
