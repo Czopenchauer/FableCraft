@@ -14,8 +14,6 @@ public sealed class CharacterState
 
     public int SequenceNumber { get; set; }
 
-    public required string Description { get; set; }
-
     public CharacterStats CharacterStats { get; set; } = null!;
 
     public CharacterTracker Tracker { get; set; } = null!;

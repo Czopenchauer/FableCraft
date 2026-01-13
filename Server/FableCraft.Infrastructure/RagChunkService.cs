@@ -4,43 +4,33 @@ using System.Text;
 using System.Threading.RateLimiting;
 
 using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+
+using Microsoft.EntityFrameworkCore;
 
 using Polly;
 using Polly.Retry;
 
 namespace FableCraft.Infrastructure;
 
-public record FileToWrite(Chunk Chunk, string Content, string[] Datasets);
+public record ChunkCreationRequest(Guid EntityId, string Content, ContentType ContentType, string[] DatasetName);
 
 public interface IRagChunkService
 {
-    Chunk CreateChunk(
-        Guid entityId,
+    Task<List<Chunk>> CreateChunk(
+        IEnumerable<ChunkCreationRequest> request,
         Guid adventureId,
-        string content,
-        ContentType contentType);
-
-    Task WriteFilesAsync(IEnumerable<FileToWrite> files, CancellationToken cancellationToken);
-
-    Task CommitChunksToRagAsync(
-        List<FileToWrite> files,
         CancellationToken cancellationToken);
 
-    Task UpdateExistingChunksAsync(
-        List<FileToWrite> files,
+    Task CommitChunksToRagAsync(
+        List<Chunk> chunks,
         CancellationToken cancellationToken);
 
     Task CognifyDatasetsAsync(
-        IEnumerable<string> datasets,
+        string[] datasets,
         bool temporal = false,
         CancellationToken cancellationToken = default);
-
-    void EnsureDirectoryExists(Guid adventureId);
-
-    ulong ComputeHash(string content);
-
-    string GetChunkPath(Guid adventureId, ulong hash, ContentType contentType);
 }
 
 internal sealed class RagChunkService : IRagChunkService
@@ -49,10 +39,12 @@ internal sealed class RagChunkService : IRagChunkService
     private readonly ResiliencePipeline _ioResiliencePipeline;
 
     private readonly IRagBuilder _ragBuilder;
+    private readonly ApplicationDbContext _dbContext;
 
-    public RagChunkService(IRagBuilder ragBuilder)
+    public RagChunkService(IRagBuilder ragBuilder, ApplicationDbContext dbContext)
     {
         _ragBuilder = ragBuilder;
+        _dbContext = dbContext;
 
         _httpResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
@@ -64,7 +56,7 @@ internal sealed class RagChunkService : IRagChunkService
             }))
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = 3,
+                MaxRetryAttempts = 2,
                 Delay = TimeSpan.FromSeconds(2),
                 BackoffType = DelayBackoffType.Exponential,
                 ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
@@ -86,103 +78,73 @@ internal sealed class RagChunkService : IRagChunkService
 
     private static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
 
-    public void EnsureDirectoryExists(Guid adventureId)
+
+    readonly struct ChunkKey(Guid entityId, string datasetName)
     {
-        var path = Path.Combine(DataDirectory, adventureId.ToString());
-        if (!Directory.Exists(path))
-        {
-            Directory.CreateDirectory(path);
-        }
+        public Guid EntityId { get; } = entityId;
+
+        public string DatasetName { get; } = datasetName;
     }
 
-    public ulong ComputeHash(string content)
-    {
-        var bytes = Encoding.UTF8.GetBytes(content);
-        return XxHash64.HashToUInt64(bytes);
-    }
-
-    public string GetChunkPath(Guid adventureId, ulong hash, ContentType contentType)
-    {
-        var name = $"{hash:x16}";
-        return Path.Combine(DataDirectory, adventureId.ToString(), $"{name}.{contentType}");
-    }
-
-    public Chunk CreateChunk(
-        Guid entityId,
+    public async Task<List<Chunk>> CreateChunk(
+        IEnumerable<ChunkCreationRequest> request,
         Guid adventureId,
-        string content,
-        ContentType contentType)
-    {
-        var hash = ComputeHash(content);
-        var name = $"{hash:x16}";
-        var path = GetChunkPath(adventureId, hash, contentType);
-
-        return new Chunk
-        {
-            EntityId = entityId,
-            Name = name,
-            Path = path,
-            ContentType = contentType.ToString(),
-            ContentHash = hash,
-            AdventureId = adventureId,
-            ChunkLocation = null
-        };
-    }
-
-    public async Task WriteFilesAsync(IEnumerable<FileToWrite> files, CancellationToken cancellationToken)
-    {
-        await _ioResiliencePipeline.ExecuteAsync(async ct =>
-            {
-                await Task.WhenAll(files.Select(x =>
-                    File.WriteAllTextAsync(x.Chunk.Path, x.Content, ct)).ToList());
-            },
-            cancellationToken);
-    }
-
-    public async Task UpdateExistingChunksAsync(
-        List<FileToWrite> files,
         CancellationToken cancellationToken)
     {
-        var updateTasks = files
-            .Where(file => file.Chunk.ChunkLocation != null)
-            .SelectMany(file => file.Datasets.Select(dataset => (File: file, Dataset: dataset)))
-            .Select(async item =>
-            {
-                var chunkLocation = item.File.Chunk.ChunkLocation!.FirstOrDefault(x => x.DatasetName == item.Dataset);
-                if (string.IsNullOrEmpty(chunkLocation?.KnowledgeGraphNodeId))
-                {
-                    return;
-                }
+        var existingChunks = await _dbContext.Chunks
+            .AsNoTracking()
+            .Where(x => request.Select(z => z.EntityId).Contains(x.EntityId))
+            .ToDictionaryAsync(x => new ChunkKey(x.EntityId, x.DatasetName), cancellationToken: cancellationToken);
 
-                try
+        var chunks = new List<Chunk>();
+        foreach (var creationRequest in request)
+        {
+            foreach (var datasetName in creationRequest.DatasetName)
+            {
+                if (!existingChunks.ContainsKey(new ChunkKey(creationRequest.EntityId, datasetName)))
                 {
-                    await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                        {
-                            await _ragBuilder.UpdateDataAsync(item.Dataset, chunkLocation.KnowledgeGraphNodeId, item.File.Chunk.Path, ct);
-                        },
-                        cancellationToken);
+                    var bytes = Encoding.UTF8.GetBytes(creationRequest.Content);
+                    var hash = XxHash64.HashToUInt64(bytes);
+                    var name = $"{hash:x16}";
+                    var path = Path.Combine(DataDirectory, adventureId.ToString(), $"{name}.{creationRequest.ContentType}");
+
+                    var chunk = new Chunk
+                    {
+                        EntityId = creationRequest.EntityId,
+                        Name = name,
+                        Path = path,
+                        ContentType = creationRequest.ContentType.ToString(),
+                        ContentHash = hash,
+                        AdventureId = adventureId,
+                        DatasetName = datasetName,
+                        Content = creationRequest.Content,
+                        KnowledgeGraphNodeId = null,
+                    };
+                    chunks.Add(chunk);
                 }
-                catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
-                {
-                    item.File.Chunk.ChunkLocation!.Remove(chunkLocation);
-                }
+            }
+        }
+
+        await Parallel.ForEachAsync(chunks,
+            new ParallelOptions { MaxDegreeOfParallelism = 5, CancellationToken = cancellationToken },
+            (chunk, ct) =>
+            {
+                return _ioResiliencePipeline.ExecuteAsync(async c => await File.WriteAllTextAsync(chunk.Path, chunk.Content, Encoding.UTF8, c), ct);
             });
 
-        await Task.WhenAll(updateTasks);
+        return chunks;
     }
 
     public async Task CommitChunksToRagAsync(
-        List<FileToWrite> files,
+        List<Chunk> chunks,
         CancellationToken cancellationToken)
     {
-        var filesByDatasets = files
-            .SelectMany(f => f.Datasets.Select(d => (File: f, Dataset: d)))
-            .GroupBy(x => x.Dataset);
+        var chunksByDataset = chunks.GroupBy(x => x.DatasetName);
 
-        foreach (var datasetGroup in filesByDatasets)
+        foreach (var datasetGroup in chunksByDataset)
         {
             var datasetName = datasetGroup.Key;
-            var filePaths = datasetGroup.Select(x => x.File.Chunk.Path).Distinct().ToList();
+            var filePaths = datasetGroup.Select(x => x.Path).Distinct().ToList();
 
             var addResult = await _httpResiliencePipeline.ExecuteAsync(async ct =>
                     await _ragBuilder.AddDataAsync(filePaths, [datasetName], ct),
@@ -190,35 +152,18 @@ internal sealed class RagChunkService : IRagChunkService
 
             foreach (var item in datasetGroup)
             {
-                var chunk = item.File.Chunk;
-
-                var newLocation = new ChunkLocation
-                {
-                    DatasetName = datasetName,
-                    KnowledgeGraphNodeId = addResult[datasetName][chunk.Name]
-                };
-                chunk.ChunkLocation ??= [];
-
-                var existingLocation = chunk.ChunkLocation.FirstOrDefault(x => x.DatasetName == datasetName);
-                if (existingLocation != null)
-                {
-                    existingLocation.KnowledgeGraphNodeId = newLocation.KnowledgeGraphNodeId;
-                }
-                else
-                {
-                    chunk.ChunkLocation.Add(newLocation);
-                }
+                item.KnowledgeGraphNodeId = addResult[datasetName][item.Name];
             }
         }
     }
 
     public async Task CognifyDatasetsAsync(
-        IEnumerable<string> datasets,
+        string[] datasets,
         bool temporal = false,
         CancellationToken cancellationToken = default)
     {
         await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                await _ragBuilder.CognifyAsync(datasets.ToList(), temporal, ct),
+                await _ragBuilder.CognifyAsync(datasets, temporal, ct),
             cancellationToken);
     }
 }

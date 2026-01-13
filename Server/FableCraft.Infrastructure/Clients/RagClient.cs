@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
 using Serilog;
@@ -18,6 +19,18 @@ public static class RagClientExtensions
     public static string GetWorldDatasetName(Guid adventureId) => $"{adventureId}_world";
 
     public static string GetMainCharacterDatasetName(Guid adventureId) => $"{adventureId}_main_character";
+
+    public static string GetMainCharacterDescription(MainCharacter mainCharacter) => $"""
+                                                                                      Name: {mainCharacter.Name}
+
+                                                                                      {mainCharacter.Description}
+                                                                                      """;
+
+    public static string GetCharacterDescription(Character character) => $"""
+                                                                          Name: {character.Name}
+
+                                                                          {character.Description}
+                                                                          """;
 }
 
 public readonly struct SearchType : IEquatable<SearchType>
@@ -64,7 +77,7 @@ public interface IRagBuilder
 {
     Task<Dictionary<string, Dictionary<string, string>>> AddDataAsync(List<string> content, List<string> datasets, CancellationToken cancellationToken = default);
 
-    Task CognifyAsync(List<string> datasets, bool temporal = false, CancellationToken cancellationToken = default);
+    Task CognifyAsync(string[] datasets, bool temporal = false, CancellationToken cancellationToken = default);
 
     Task MemifyAsync(List<string> datasets, CancellationToken cancellationToken = default);
 
@@ -115,7 +128,7 @@ internal class RagClient : IRagBuilder, IRagSearch
                ?? throw new InvalidOperationException("Failed to deserialize response");
     }
 
-    public async Task CognifyAsync(List<string> datasets, bool temporal = false, CancellationToken cancellationToken = default)
+    public async Task CognifyAsync(string[] datasets, bool temporal = false, CancellationToken cancellationToken = default)
     {
         var request = new CognifyRequest { Datasets = datasets, Temporal = temporal };
         var response = await _httpClient.PostAsJsonAsync("/cognify", request, cancellationToken);
@@ -248,7 +261,7 @@ public class AddDataRequest
 public class CognifyRequest
 {
     [JsonPropertyName("adventure_ids")]
-    public required List<string> Datasets { get; set; }
+    public required string[] Datasets { get; set; }
 
     [JsonPropertyName("temporal")]
     public bool Temporal { get; set; }

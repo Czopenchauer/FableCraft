@@ -336,34 +336,8 @@ internal class GameService : IGameService
 
         if (scene.EnrichmentStatus == EnrichmentStatus.Enriched)
         {
-            _logger.Warning("Scene {SceneId} is already enriched", scene.Id);
-            return new SceneEnrichmentOutput
-            {
-                SceneId = scene.Id,
-                Tracker = new TrackerDto
-                {
-                    Scene = scene.Metadata.Tracker!.Scene!,
-                    MainCharacter = new MainCharacterTrackerDto
-                    {
-                        Tracker = scene.Metadata.Tracker!.MainCharacter!.MainCharacter!,
-                        Description = scene.Metadata.Tracker!.MainCharacter.MainCharacterDescription!
-                    },
-                    Characters = scene.CharacterStates.Select(x => new CharacterStateDto
-                        {
-                            CharacterId = x.CharacterId,
-                            Name = x.CharacterStats.Name!,
-                            Description = x.Description,
-                            State = x.CharacterStats,
-                            Tracker = x.Tracker
-                        })
-                        .ToList()
-                },
-                NewLore = scene.Lorebooks.Select(x => new LoreDto
-                {
-                    Title = x.Category,
-                    Summary = x.Description
-                }).ToList()
-            };
+            _logger.Information("Scene {sceneId} already enriched", scene.Id);
+            return SceneEnrichmentOutput.CreateFromScene(scene);
         }
 
         try

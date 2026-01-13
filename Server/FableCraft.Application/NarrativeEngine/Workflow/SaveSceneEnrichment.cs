@@ -190,7 +190,6 @@ internal sealed class SaveSceneEnrichment(
                 var update = characterUpdates.Single(x => x.Name == character.Name);
                 character.CharacterStates.Add(new CharacterState
                 {
-                    Description = update.Description,
                     CharacterStats = update.CharacterState,
                     Tracker = update.CharacterTracker!,
                     SequenceNumber = character.Version + 1,
@@ -279,7 +278,6 @@ internal sealed class SaveSceneEnrichment(
                         [
                             new CharacterState
                             {
-                                Description = contextNewCharacter.Description,
                                 CharacterStats = contextNewCharacter.CharacterState,
                                 Tracker = contextNewCharacter.CharacterTracker!,
                                 SequenceNumber = 0,
@@ -292,7 +290,8 @@ internal sealed class SaveSceneEnrichment(
                         CharacterSceneRewrites = sceneRewrites,
                         Importance = contextNewCharacter.Importance,
                         IntroductionScene = scene.Id,
-                        Scene = scene
+                        Scene = scene,
+                        Description = contextNewCharacter.Description
                     };
                     dbContext.Characters.Add(newChar);
                 }

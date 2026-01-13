@@ -12,9 +12,13 @@ public class Chunk : IEntity
 
     public required string Path { get; set; }
 
+    public required string Content { get; set; }
+
     public required string ContentType { get; set; }
 
-    public required List<ChunkLocation>? ChunkLocation { get; set; }
+    public required string DatasetName { get; set; }
+
+    public required string? KnowledgeGraphNodeId { get; set; }
 
     public Guid Id { get; set; }
 }

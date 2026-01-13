@@ -30,7 +30,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
             .Select(x => new CharacterDto(
                 x.Id,
                 x.Name,
-                x.CharacterStates.Single().Description,
+                x.Description,
                 x.CharacterStates.Single().CharacterStats,
                 x.CharacterStates.Single().Tracker,
                 x.CharacterMemories.Select(m => new CharacterMemoryDto(
@@ -235,7 +235,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
             character.Id,
             character.Name,
             character.Importance.Value,
-            latestState.Description,
+            character.Description,
             latestState.CharacterStats,
             latestState.Tracker,
             character.CharacterMemories.Select(m => new CharacterMemoryDetailDto(
@@ -389,7 +389,6 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
             return NotFound(new { error = "Character state not found" });
         }
 
-        latestState.Description = request.Description;
         latestState.CharacterStats = request.CharacterStats;
         await dbContext.SaveChangesAsync(cancellationToken);
 

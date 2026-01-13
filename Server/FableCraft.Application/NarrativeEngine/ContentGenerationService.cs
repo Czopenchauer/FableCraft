@@ -182,7 +182,7 @@ public sealed class ContentGenerationService(
         return existingCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single()
+                Description = x
                     .Description,
                 Name = x.Name,
                 CharacterState = x.CharacterStates.Single()

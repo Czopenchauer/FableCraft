@@ -70,6 +70,8 @@ public sealed class Character : IEntity
 
     public required string Name { get; set; }
 
+    public required string Description { get; set; }
+
     public required CharacterImportance Importance { get; set; }
 
     public int Version { get; set; }

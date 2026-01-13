@@ -67,7 +67,6 @@ public class SceneGenerationOutput
                         {
                             CharacterId = x.CharacterId,
                             Name = x.CharacterStats.Name!,
-                            Description = x.Description,
                             State = x.CharacterStats,
                             Tracker = x.Tracker
                         })
@@ -120,7 +119,6 @@ public class SceneEnrichmentOutput
                     {
                         CharacterId = x.CharacterId,
                         Name = x.CharacterStats.Name!,
-                        Description = x.Description,
                         State = x.CharacterStats,
                         Tracker = x.Tracker
                     })
@@ -163,8 +161,6 @@ public class CharacterStateDto
     public required Guid CharacterId { get; set; }
 
     public required string Name { get; set; } = null!;
-
-    public required string Description { get; set; } = null!;
 
     public required CharacterStats State { get; set; }
 
@@ -511,7 +507,7 @@ internal sealed class SceneGenerationOrchestrator(
             {
                 CharacterId = cs.CharacterId,
                 Name = cs.CharacterStats.Name!,
-                Description = cs.Description,
+                Description = existingCharContext.Single(x => x.CharacterId == cs.CharacterId).Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
                 CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId)
@@ -761,8 +757,7 @@ internal sealed class SceneGenerationOrchestrator(
         return existingCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single()
-                    .Description,
+                Description = x.Description,
                 Name = x.Name,
                 CharacterState = x.CharacterStates.Single()
                     .CharacterStats,
@@ -830,7 +825,7 @@ internal sealed class SceneGenerationOrchestrator(
         var existingCharContext = existingCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single()
+                Description = x
                     .Description,
                 Name = x.Name,
                 CharacterState = x.CharacterStates.Single()
@@ -876,7 +871,7 @@ internal sealed class SceneGenerationOrchestrator(
         var newCharContext = newlyCreatedCharacters
             .Select(x => new CharacterContext
             {
-                Description = x.CharacterStates.Single()
+                Description = x
                     .Description,
                 Name = x.Name,
                 CharacterState = x.CharacterStates.Single()
