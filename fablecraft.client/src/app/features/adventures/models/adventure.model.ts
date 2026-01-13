@@ -121,6 +121,7 @@ export interface SceneGenerationOutput {
   narrativeDirectorOutput: NarrativeDirectorOutput | null;
   tracker: TrackerDto | null;
   newLore: LoreInfo[] | null;
+  metadata: SceneMetadataDto | null;
 }
 
 export interface GeneratedScene {
@@ -178,6 +179,7 @@ export interface GameScene {
   narrativeDirectorOutput: NarrativeDirectorOutput | null;
   enrichmentStatus: EnrichmentStatus;
   newLore: LoreInfo[] | null;
+  metadata: SceneMetadataDto | null;
 }
 
 export enum EnrichmentStatus {
@@ -197,4 +199,28 @@ export interface SceneEnrichmentResult {
 export interface LoreInfo {
   title: string;
   summary: string;
+}
+
+// Scene metadata interfaces
+export interface SceneMetadataDto {
+  resolutionOutput: string | null;
+  gatheredContext: GatheredContextDto | null;
+  writerObservation: { [key: string]: any } | null;
+  chroniclerState: ChroniclerStoryStateDto | null;
+  writerGuidance: string | null;
+}
+
+export interface GatheredContextDto {
+  worldContext: GatheredContextItemDto[];
+  narrativeContext: GatheredContextItemDto[];
+}
+
+export interface GatheredContextItemDto {
+  topic: string;
+  content: string;
+}
+
+export interface ChroniclerStoryStateDto {
+  worldMomentum: any | null;
+  additionalData?: { [key: string]: any };
 }

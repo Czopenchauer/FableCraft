@@ -32,59 +32,110 @@
     </div>
   </div>
 
-  <!-- Character State Section (Description + Stats) -->
-  <section class="detail-section">
-    <div class="section-header">
-      <h4>Character State</h4>
-      <button (click)="editProfile()" class="btn-edit" title="Edit character state">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            stroke-linecap="round"
-            stroke-linejoin="round"/>
-        </svg>
-        Edit
+  <!-- Character Info Tabs -->
+  <section class="detail-section character-info-section">
+    <div class="character-tabs">
+      <button
+        (click)="setActiveTab('description')"
+        [class.active]="activeTab === 'description'"
+        class="character-tab-btn"
+      >
+        Description
+      </button>
+      <button
+        (click)="setActiveTab('state')"
+        [class.active]="activeTab === 'state'"
+        class="character-tab-btn"
+      >
+        State
+      </button>
+      <button
+        *ngIf="character.characterTracker"
+        (click)="setActiveTab('tracker')"
+        [class.active]="activeTab === 'tracker'"
+        class="character-tab-btn"
+      >
+        Tracker
+      </button>
+      <button
+        *ngIf="character.relationships && character.relationships.length > 0"
+        (click)="setActiveTab('relationships')"
+        [class.active]="activeTab === 'relationships'"
+        class="character-tab-btn"
+      >
+        Relationships ({{ character.relationships.length }})
+      </button>
+      <button
+        (click)="setActiveTab('memories')"
+        [class.active]="activeTab === 'memories'"
+        class="character-tab-btn"
+      >
+        Memories ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})
+      </button>
+      <button
+        (click)="setActiveTab('rewrites')"
+        [class.active]="activeTab === 'rewrites'"
+        class="character-tab-btn"
+      >
+        Rewrites ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})
       </button>
     </div>
-    <div class="section-content">
-      <div class="subsection">
-        <h5>Description</h5>
-        <p class="description-text">{{ character.description || 'No description available.' }}</p>
-      </div>
-      <div *ngIf="character.characterState" class="subsection">
-        <h5>Stats</h5>
-        <div class="json-content-inline">
-          <app-json-renderer [data]="character.characterState"></app-json-renderer>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Tracker Section -->
-  <section *ngIf="character.characterTracker" class="detail-section">
-    <div class="section-header">
-      <h4>Tracker</h4>
-      <button (click)="editTracker()" class="btn-edit" title="Edit tracker">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            stroke-linecap="round"
-            stroke-linejoin="round"/>
-        </svg>
-        Edit
-      </button>
+    <!-- Description Tab Content -->
+    <div *ngIf="activeTab === 'description'" class="tab-content">
+      <div class="tab-header">
+        <button (click)="editProfile()" class="btn-edit-inline" title="Edit description">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+          </svg>
+          Edit
+        </button>
+      </div>
+      <p class="description-text">{{ character.description || 'No description available.' }}</p>
     </div>
-    <div class="section-content json-content">
-      <app-json-renderer [data]="character.characterTracker"></app-json-renderer>
-    </div>
-  </section>
 
-  <!-- Relationships Section -->
-  <section *ngIf="character.relationships && character.relationships.length > 0" class="detail-section">
-    <div class="section-header">
-      <h4>Relationships ({{ character.relationships.length }})</h4>
+    <!-- State Tab Content -->
+    <div *ngIf="activeTab === 'state'" class="tab-content">
+      <div class="tab-header">
+        <button (click)="editProfile()" class="btn-edit-inline" title="Edit state">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+          </svg>
+          Edit
+        </button>
+      </div>
+      <div *ngIf="character.characterState" class="json-content-inline">
+        <app-json-renderer [data]="character.characterState"></app-json-renderer>
+      </div>
+      <p *ngIf="!character.characterState" class="empty-state-text">No state data available.</p>
     </div>
-    <div class="section-content relationships-list">
+
+    <!-- Tracker Tab Content -->
+    <div *ngIf="activeTab === 'tracker'" class="tab-content">
+      <div class="tab-header">
+        <button (click)="editTracker()" class="btn-edit-inline" title="Edit tracker">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+          </svg>
+          Edit
+        </button>
+      </div>
+      <div *ngIf="character.characterTracker" class="json-content-inline">
+        <app-json-renderer [data]="character.characterTracker"></app-json-renderer>
+      </div>
+    </div>
+
+    <!-- Relationships Tab Content -->
+    <div *ngIf="activeTab === 'relationships'" class="tab-content">
       <div *ngFor="let rel of character.relationships" class="relationship-item">
         <div class="relationship-header">
           <strong class="relationship-target">{{ rel.targetCharacterName }}</strong>
@@ -102,83 +153,76 @@
           <app-json-renderer [data]="rel.data"></app-json-renderer>
         </div>
       </div>
+      <p *ngIf="!character.relationships || character.relationships.length === 0" class="empty-state-text">
+        No relationships recorded.
+      </p>
     </div>
-  </section>
 
-  <!-- Memories Section -->
-  <section class="detail-section">
-    <div class="section-header">
-      <h4>Memories ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})</h4>
-    </div>
-    <div *ngIf="character.characterMemories.length > 0" class="section-content memories-list">
-      <div *ngFor="let memory of character.characterMemories" class="memory-item">
-        <div class="memory-header">
-          <span class="memory-salience">Salience: {{ memory.salience | number:'1.1-1' }}</span>
-          <button (click)="editMemory(memory)" class="btn-edit-sm" title="Edit memory">
-            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-            </svg>
-          </button>
+    <!-- Memories Tab Content -->
+    <div *ngIf="activeTab === 'memories'" class="tab-content">
+      <div *ngIf="character.characterMemories.length > 0" class="memories-list">
+        <div *ngFor="let memory of character.characterMemories" class="memory-item">
+          <div class="memory-header">
+            <span class="memory-salience">Salience: {{ memory.salience | number:'1.1-1' }}</span>
+            <button (click)="editMemory(memory)" class="btn-edit-sm" title="Edit memory">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <p class="memory-content">{{ memory.memoryContent }}</p>
+          <div *ngIf="memory.sceneTracker" class="memory-context">
+            <span class="context-item">{{ memory.sceneTracker.time }}</span>
+            <span class="context-item">{{ memory.sceneTracker.location }}</span>
+          </div>
         </div>
-        <p class="memory-content">{{ memory.memoryContent }}</p>
-        <div *ngIf="memory.sceneTracker" class="memory-context">
-          <span class="context-item">{{ memory.sceneTracker.time }}</span>
-          <span class="context-item">{{ memory.sceneTracker.location }}</span>
-        </div>
-      </div>
 
-      <!-- Load More Memories Button -->
-      <button
-        (click)="loadMoreMemories()"
-        *ngIf="hasMoreMemories"
-        [disabled]="isLoadingMoreMemories"
-        class="btn-load-more"
-      >
-        <span *ngIf="!isLoadingMoreMemories">
-          Load More ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})
-        </span>
-        <span *ngIf="isLoadingMoreMemories">Loading...</span>
-      </button>
-    </div>
-    <div *ngIf="character.characterMemories.length === 0" class="section-content empty-section">
-      <p>No memories recorded.</p>
-    </div>
-  </section>
-
-  <!-- Scene Rewrites Section (Read-only) -->
-  <section class="detail-section">
-    <div class="section-header">
-      <h4>Scene Rewrites ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})</h4>
-    </div>
-    <div *ngIf="character.sceneRewrites.length > 0" class="section-content rewrites-list">
-      <div *ngFor="let rewrite of character.sceneRewrites" class="rewrite-item">
-        <div class="rewrite-header">
-          <span class="rewrite-scene">Scene #{{ rewrite.sequenceNumber }}</span>
-          <span *ngIf="rewrite.sceneTracker" class="rewrite-context">
-            {{ rewrite.sceneTracker.time }} - {{ rewrite.sceneTracker.location }}
+        <!-- Load More Memories Button -->
+        <button
+          (click)="loadMoreMemories()"
+          *ngIf="hasMoreMemories"
+          [disabled]="isLoadingMoreMemories"
+          class="btn-load-more"
+        >
+          <span *ngIf="!isLoadingMoreMemories">
+            Load More ({{ character.characterMemories.length }}/{{ character.totalMemoriesCount }})
           </span>
-        </div>
-        <p class="rewrite-content">{{ rewrite.content }}</p>
+          <span *ngIf="isLoadingMoreMemories">Loading...</span>
+        </button>
       </div>
-
-      <!-- Load More Rewrites Button -->
-      <button
-        (click)="loadMoreRewrites()"
-        *ngIf="hasMoreRewrites"
-        [disabled]="isLoadingMoreRewrites"
-        class="btn-load-more"
-      >
-        <span *ngIf="!isLoadingMoreRewrites">
-          Load More ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})
-        </span>
-        <span *ngIf="isLoadingMoreRewrites">Loading...</span>
-      </button>
+      <p *ngIf="character.characterMemories.length === 0" class="empty-state-text">No memories recorded.</p>
     </div>
-    <div *ngIf="character.sceneRewrites.length === 0" class="section-content empty-section">
-      <p>No scene rewrites available.</p>
+
+    <!-- Scene Rewrites Tab Content -->
+    <div *ngIf="activeTab === 'rewrites'" class="tab-content">
+      <div *ngIf="character.sceneRewrites.length > 0" class="rewrites-list">
+        <div *ngFor="let rewrite of character.sceneRewrites" class="rewrite-item">
+          <div class="rewrite-header">
+            <span class="rewrite-scene">Scene #{{ rewrite.sequenceNumber }}</span>
+            <span *ngIf="rewrite.sceneTracker" class="rewrite-context">
+              {{ rewrite.sceneTracker.time }} - {{ rewrite.sceneTracker.location }}
+            </span>
+          </div>
+          <p class="rewrite-content">{{ rewrite.content }}</p>
+        </div>
+
+        <!-- Load More Rewrites Button -->
+        <button
+          (click)="loadMoreRewrites()"
+          *ngIf="hasMoreRewrites"
+          [disabled]="isLoadingMoreRewrites"
+          class="btn-load-more"
+        >
+          <span *ngIf="!isLoadingMoreRewrites">
+            Load More ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})
+          </span>
+          <span *ngIf="isLoadingMoreRewrites">Loading...</span>
+        </button>
+      </div>
+      <p *ngIf="character.sceneRewrites.length === 0" class="empty-state-text">No scene rewrites available.</p>
     </div>
   </section>
 </div>

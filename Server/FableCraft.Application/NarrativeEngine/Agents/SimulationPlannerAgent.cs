@@ -125,24 +125,6 @@ internal sealed class SimulationPlannerAgent(
             .ToList();
     }
 
-    private List<PendingMcInteractionEntry>? ExtractPendingMcInteractions(GenerationContext context)
-    {
-        var entries = context.Characters
-            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
-            .Select(c =>
-            {
-                var data = c.SimulationMetadata!.PendingMcInteraction!.ExtensionData!;
-                return new PendingMcInteractionEntry
-                {
-                    Character = c.Name,
-                    ExtensionData = data
-                };
-            })
-            .ToList();
-
-        return entries.Count > 0 ? entries : null;
-    }
-
     private static string? BuildRelationshipNotes(CharacterContext c)
     {
         if (c.Relationships.Count == 0)

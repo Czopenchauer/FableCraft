@@ -245,14 +245,18 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
                 m.Salience,
                 m.Data
             )).ToList(),
-            character.CharacterRelationships.Select(r => new CharacterRelationshipDetailDto(
-                r.Id,
-                r.TargetCharacterName,
-                r.Dynamic,
-                r.Data,
-                r.SequenceNumber,
-                r.UpdateTime
-            )).ToList(),
+            character.CharacterRelationships.GroupBy(x => x.TargetCharacterName).Select(r =>
+            {
+                var rel = r.OrderByDescending(x => x.SequenceNumber).First();
+                return new CharacterRelationshipDetailDto(
+                    rel.Id,
+                    rel.TargetCharacterName,
+                    rel.Dynamic,
+                    rel.Data,
+                    rel.SequenceNumber,
+                    rel.UpdateTime
+                );
+            }).ToList(),
             character.CharacterSceneRewrites.Select(r => new CharacterSceneRewriteDto(
                 r.Id,
                 r.Content,

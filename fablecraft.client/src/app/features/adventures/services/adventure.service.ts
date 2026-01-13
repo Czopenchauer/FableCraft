@@ -219,6 +219,7 @@ function mapApiResponseToGameScene(response: GameSceneApiResponse): GameScene {
     tracker: genOutput?.tracker ?? null,
     narrativeDirectorOutput: genOutput?.narrativeDirectorOutput ?? null,
     enrichmentStatus: response.enrichmentStatus,
-    newLore: genOutput?.newLore ?? null
+    newLore: genOutput?.newLore ?? null,
+    metadata: genOutput?.metadata ?? null
   };
 }

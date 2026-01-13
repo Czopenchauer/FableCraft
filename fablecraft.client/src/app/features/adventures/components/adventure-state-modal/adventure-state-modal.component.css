@@ -28,7 +28,7 @@
   animation: slideIn 0.3s ease-out;
   max-width: 1400px;
   width: 95%;
-  max-height: 90vh;
+  height: 85vh;
   margin: 0 var(--spacing-lg);
 }
 
@@ -52,7 +52,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
+  height: 100%;
 }
 
 [data-theme="medieval-fantasy"] .modal-content {
@@ -156,6 +156,7 @@
 /* Body */
 .modal-body {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -163,7 +164,16 @@
 
 .tab-content {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure child components fill the tab content */
+.tab-content > * {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -174,7 +184,7 @@
     max-width: 100%;
     width: 100%;
     margin: var(--spacing-md);
-    max-height: 95vh;
+    height: 90vh;
   }
 
   .modal-header {

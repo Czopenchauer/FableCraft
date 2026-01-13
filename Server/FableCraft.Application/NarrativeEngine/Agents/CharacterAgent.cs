@@ -113,6 +113,8 @@ internal sealed class CharacterAgent : BaseAgent
                 {string.Join("\n\n---\n\n", previousScenes)}
                 </previous_scenes>
 
+                {_generationContext.PreviouslyGeneratedLore}
+                
                 {memoriesSection}
 
                 <current_time>

@@ -1405,4 +1405,317 @@ public class JsonExtensionsTests
     }
 
     #endregion
+
+    #region Unicode Escape Character Matching Tests
+
+    private sealed class CharacterWithApostropheAspects
+    {
+        [JsonPropertyName("Name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("in_development")]
+        public List<DevelopmentAspect>? InDevelopment { get; set; }
+
+        [JsonExtensionData]
+        public IDictionary<string, object>? ExtensionData { get; set; }
+    }
+
+    private static CharacterWithApostropheAspects CreateCharacterWithApostropheAspects() =>
+        new()
+        {
+            Name = "Test Character",
+            InDevelopment =
+            [
+                new DevelopmentAspect
+                {
+                    Aspect = "Curiosity about Lily's anomaly",
+                    From = "Initial observation",
+                    Toward = "Deep investigation",
+                    Pressure = "Unknown phenomenon",
+                    Resistance = "Standard protocols",
+                    Intensity = "Medium"
+                },
+                new DevelopmentAspect
+                {
+                    Aspect = "Trust in Marcus's judgment",
+                    From = "Skeptical",
+                    Toward = "Accepting",
+                    Pressure = "Evidence mounting",
+                    Resistance = "Past betrayals",
+                    Intensity = "Low"
+                }
+            ]
+        };
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithEscapedApostrophe_MatchesUnescapedApostrophe()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var updatedAspect = new DevelopmentAspect
+        {
+            Aspect = "Curiosity about Lily's anomaly",
+            From = "Initial observation",
+            Toward = "Obsessive pursuit",
+            Pressure = "The anomaly defies all known laws",
+            Resistance = "Fear of the unknown",
+            Intensity = "Very high"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path uses escaped unicode \u0027 for apostrophe
+            // Should match the existing item with unescaped apostrophe
+            ["in_development[Curiosity about Lily\u0027s anomaly]"] = updatedAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Should update existing item, not add new one
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity about Lily's anomaly");
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Obsessive pursuit");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Very high");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithEscapedApostrophe_NestedProperty_UpdatesCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var updates = new Dictionary<string, object>
+        {
+            // Path uses escaped unicode \u0027 for apostrophe with nested property access
+            ["in_development[Curiosity about Lily\u0027s anomaly].intensity"] = "Critical"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only intensity should be updated
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity about Lily's anomaly");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Critical");
+        await Assert.That(curiosityAspect.From).IsEqualTo("Initial observation"); // unchanged
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Deep investigation"); // unchanged
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithMultipleEscapedApostrophes_MatchesCorrectly()
+    {
+        // Arrange
+        var original = new CharacterWithApostropheAspects
+        {
+            Name = "Test Character",
+            InDevelopment =
+            [
+                new DevelopmentAspect
+                {
+                    Aspect = "Sarah's trust in Marcus's plan",
+                    From = "Doubtful",
+                    Toward = "Committed",
+                    Pressure = "Time running out",
+                    Resistance = "Her own instincts",
+                    Intensity = "High"
+                }
+            ]
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path uses escaped unicode \u0027 for both apostrophes
+            ["in_development[Sarah\u0027s trust in Marcus\u0027s plan].intensity"] = "Maximum"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(1);
+        var aspect = result.InDevelopment!.Single();
+        await Assert.That(aspect.Intensity).IsEqualTo("Maximum");
+        await Assert.That(aspect.From).IsEqualTo("Doubtful"); // unchanged
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithMixedEscapedAndUnescapedApostrophes_MatchesCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var updates = new Dictionary<string, object>
+        {
+            // This tests that the identifier matching is normalized
+            // Using the literal apostrophe character (which is what \u0027 represents)
+            ["in_development[Trust in Marcus's judgment].intensity"] = "High"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Should match the existing item
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+        var trustAspect = result.InDevelopment!.Single(a => a.Aspect == "Trust in Marcus's judgment");
+        await Assert.That(trustAspect.Intensity).IsEqualTo("High");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithEscapedQuotes_MatchesUnescapedQuotes()
+    {
+        // Arrange
+        var original = new CharacterWithApostropheAspects
+        {
+            Name = "Test Character",
+            InDevelopment =
+            [
+                new DevelopmentAspect
+                {
+                    Aspect = "Understanding the \"hidden truth\"",
+                    From = "Confused",
+                    Toward = "Enlightened",
+                    Pressure = "Mounting evidence",
+                    Resistance = "Disbelief",
+                    Intensity = "Medium"
+                }
+            ]
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path uses escaped unicode \u0022 for double quotes
+            ["in_development[Understanding the \u0022hidden truth\u0022].intensity"] = "Very high"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(1);
+        var aspect = result.InDevelopment!.Single();
+        await Assert.That(aspect.Intensity).IsEqualTo("Very high");
+    }
+
+    #endregion
+
+    #region Quoted Identifier Tests
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithQuotedIdentifier_MatchesUnquotedData()
+    {
+        // Arrange - This is the real-world case where AI returns quoted identifiers
+        // Data has: "aspect": "Curiosity about Lily's anomaly"
+        // AI returns path: in_development["Curiosity about Lily's anomaly"]
+        var original = CreateCharacterWithApostropheAspects();
+        var updatedAspect = new DevelopmentAspect
+        {
+            Aspect = "Curiosity about Lily's anomaly",
+            From = "Initial observation",
+            Toward = "Obsessive pursuit",
+            Pressure = "The anomaly defies all known laws",
+            Resistance = "Fear of the unknown",
+            Intensity = "Very high"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path has quotes around the identifier (as AI sometimes returns)
+            ["in_development[\"Curiosity about Lily's anomaly\"]"] = updatedAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Should update existing item, not add new one
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity about Lily's anomaly");
+        await Assert.That(curiosityAspect.Toward).IsEqualTo("Obsessive pursuit");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Very high");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithQuotedIdentifier_NestedProperty_UpdatesCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var updates = new Dictionary<string, object>
+        {
+            // Path has quotes around the identifier with nested property access
+            ["in_development[\"Curiosity about Lily's anomaly\"].intensity"] = "Critical"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Only intensity should be updated
+        var curiosityAspect = result.InDevelopment!.Single(a => a.Aspect == "Curiosity about Lily's anomaly");
+        await Assert.That(curiosityAspect.Intensity).IsEqualTo("Critical");
+        await Assert.That(curiosityAspect.From).IsEqualTo("Initial observation"); // unchanged
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemWithSingleQuotedIdentifier_MatchesUnquotedData()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var updates = new Dictionary<string, object>
+        {
+            // Path has single quotes around the identifier
+            ["in_development['Trust in Marcus's judgment'].intensity"] = "High"
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - Should match the existing item
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(2);
+        var trustAspect = result.InDevelopment!.Single(a => a.Aspect == "Trust in Marcus's judgment");
+        await Assert.That(trustAspect.Intensity).IsEqualTo("High");
+    }
+
+    [Test]
+    public async Task PatchWith_ArrayItemNotFound_WithQuotedIdentifier_AddsNewItem()
+    {
+        // Arrange
+        var original = CreateCharacterWithApostropheAspects();
+        var newAspect = new DevelopmentAspect
+        {
+            Aspect = "New development aspect",
+            From = "Starting point",
+            Toward = "Goal",
+            Pressure = "External factors",
+            Resistance = "Internal factors",
+            Intensity = "Medium"
+        };
+        var updates = new Dictionary<string, object>
+        {
+            // Path has quotes around a non-existing identifier
+            ["in_development[\"New development aspect\"]"] = newAspect
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert - New aspect should be added
+        await Assert.That(result.InDevelopment!.Count).IsEqualTo(3);
+        var addedAspect = result.InDevelopment!.SingleOrDefault(a => a.Aspect == "New development aspect");
+        await Assert.That(addedAspect).IsNotNull();
+        await Assert.That(addedAspect!.From).IsEqualTo("Starting point");
+    }
+
+    [Test]
+    public async Task PatchWith_NestedPathWithQuotedArrayAccess_UpdatesCorrectly()
+    {
+        // Arrange
+        var original = CreateCharacterWithMagic();
+        var updates = new Dictionary<string, object>
+        {
+            // Path has quotes around the identifier in nested array access
+            ["MagicAndAbilities.InstinctiveAbilities[\"Fire Breath\"].Power"] = 300
+        };
+
+        // Act
+        var result = original.PatchWith(updates);
+
+        // Assert
+        var fireBreath = result.MagicAndAbilities!.InstinctiveAbilities!.Single(a => a.AbilityName == "Fire Breath");
+        await Assert.That(fireBreath.Power).IsEqualTo(300);
+        await Assert.That(fireBreath.CooldownSeconds).IsEqualTo(30); // unchanged
+    }
+
+    #endregion
 }

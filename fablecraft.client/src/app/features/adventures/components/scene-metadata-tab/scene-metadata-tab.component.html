@@ -1,0 +1,184 @@
+<!-- Empty state when no metadata -->
+<div *ngIf="!metadata" class="empty-state">
+  <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+  </svg>
+  <p>No scene metadata available. Metadata is populated after scene enrichment.</p>
+</div>
+
+<!-- Main content when metadata exists -->
+<div *ngIf="metadata" class="metadata-body">
+  <!-- Left Column: Section Navigation -->
+  <div class="metadata-sidebar">
+    <div class="section-list">
+      <!-- Resolution Section -->
+      <div *ngIf="hasResolution"
+           (click)="setActiveSection('resolution')"
+           [class.selected]="isActiveSection('resolution')"
+           class="section-item">
+        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        <span>Resolution Output</span>
+      </div>
+
+      <!-- Gathered Context Section -->
+      <div *ngIf="hasGatheredContext"
+           (click)="setActiveSection('context')"
+           [class.selected]="isActiveSection('context')"
+           class="section-item">
+        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        <span>Gathered Context (RAG)</span>
+      </div>
+
+      <!-- Writer Observation Section -->
+      <div *ngIf="hasWriterObservation"
+           (click)="setActiveSection('observation')"
+           [class.selected]="isActiveSection('observation')"
+           class="section-item">
+        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        <span>Writer Observation</span>
+      </div>
+
+      <!-- Chronicler State Section -->
+      <div *ngIf="hasChroniclerState"
+           (click)="setActiveSection('chronicler')"
+           [class.selected]="isActiveSection('chronicler')"
+           class="section-item">
+        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        <span>Chronicler State</span>
+      </div>
+
+      <!-- Writer Guidance Section -->
+      <div *ngIf="hasWriterGuidance"
+           (click)="setActiveSection('guidance')"
+           [class.selected]="isActiveSection('guidance')"
+           class="section-item">
+        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        <span>Writer Guidance</span>
+      </div>
+
+      <!-- Empty sidebar state -->
+      <div *ngIf="!hasAnyMetadata" class="empty-sidebar">
+        <p>No metadata sections available.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Content Detail -->
+  <div class="metadata-detail">
+    <!-- Resolution Output -->
+    <div *ngIf="isActiveSection('resolution') && hasResolution" class="section-content">
+      <h3 class="section-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        Resolution Output
+      </h3>
+      <p class="section-description">Action resolution from the ResolutionAgent determining the outcome of player actions.</p>
+      <div class="content-panel">
+        <pre *ngIf="isResolutionString" class="text-content">{{ parsedResolutionOutput }}</pre>
+        <app-json-renderer *ngIf="!isResolutionString" [data]="parsedResolutionOutput"></app-json-renderer>
+      </div>
+    </div>
+
+    <!-- Gathered Context -->
+    <div *ngIf="isActiveSection('context') && hasGatheredContext" class="section-content">
+      <h3 class="section-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        Gathered Context (RAG)
+      </h3>
+      <p class="section-description">Context retrieved from the knowledge graph to inform scene generation.</p>
+
+      <div class="context-scroll-container">
+        <div *ngIf="metadata.gatheredContext?.worldContext?.length" class="context-group">
+          <h4 class="context-group-title">World Context</h4>
+          <div *ngFor="let item of metadata.gatheredContext!.worldContext" class="context-item">
+            <strong class="context-topic">{{ item.topic }}</strong>
+            <div [innerHTML]="item.content | markdown" class="context-content markdown-content"></div>
+          </div>
+        </div>
+
+        <div *ngIf="metadata.gatheredContext?.narrativeContext?.length" class="context-group">
+          <h4 class="context-group-title">Narrative Context</h4>
+          <div *ngFor="let item of metadata.gatheredContext!.narrativeContext" class="context-item">
+            <strong class="context-topic">{{ item.topic }}</strong>
+            <div [innerHTML]="item.content | markdown" class="context-content markdown-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Writer Observation -->
+    <div *ngIf="isActiveSection('observation') && hasWriterObservation" class="section-content">
+      <h3 class="section-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        Writer Observation
+      </h3>
+      <p class="section-description">Extra context and observations from the writer to be used in future scene generation.</p>
+      <div class="content-panel">
+        <app-json-renderer [data]="metadata.writerObservation"></app-json-renderer>
+      </div>
+    </div>
+
+    <!-- Chronicler State -->
+    <div *ngIf="isActiveSection('chronicler') && hasChroniclerState" class="section-content">
+      <h3 class="section-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        Chronicler Story State
+      </h3>
+      <p class="section-description">Story state tracking narrative elements: dramatic questions, promises, threads, stakes, and world momentum.</p>
+      <div class="content-panel">
+        <app-json-renderer [data]="metadata.chroniclerState"></app-json-renderer>
+      </div>
+    </div>
+
+    <!-- Writer Guidance -->
+    <div *ngIf="isActiveSection('guidance') && hasWriterGuidance" class="section-content">
+      <h3 class="section-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+        </svg>
+        Writer Guidance
+      </h3>
+      <p class="section-description">Guidance from the Chronicler to the Writer for the next scene generation.</p>
+      <div class="content-panel">
+        <app-json-renderer [data]="parsedWriterGuidance"></app-json-renderer>
+      </div>
+    </div>
+
+    <!-- No section selected state -->
+    <div *ngIf="!hasAnyMetadata" class="no-selection">
+      <svg class="no-selection-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+      </svg>
+      <p>Scene metadata is empty. This scene may not have been fully enriched.</p>
+    </div>
+  </div>
+</div>

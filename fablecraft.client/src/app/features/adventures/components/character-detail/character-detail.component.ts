@@ -16,6 +16,8 @@ interface EditModalState {
   itemId?: string;
 }
 
+type CharacterTab = 'description' | 'state' | 'tracker' | 'relationships' | 'memories' | 'rewrites';
+
 @Component({
   selector: 'app-character-detail',
   standalone: false,
@@ -27,6 +29,9 @@ export class CharacterDetailComponent {
   @Input() adventureId: string | null = null;
   @Input() canEditImportance = false;
   @Output() characterUpdated = new EventEmitter<void>();
+
+  // Tab state
+  activeTab: CharacterTab = 'description';
 
   // Importance edit state
   pendingImportance: CharacterImportance | null = null;
@@ -55,6 +60,10 @@ export class CharacterDetailComponent {
 
   get hasImportanceChanges(): boolean {
     return this.pendingImportance !== null && this.pendingImportance !== this.character.importance;
+  }
+
+  setActiveTab(tab: CharacterTab): void {
+    this.activeTab = tab;
   }
 
   get hasMoreMemories(): boolean {

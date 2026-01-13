@@ -1,9 +1,18 @@
 /* Character Detail - Theme-aware styling */
 
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .character-detail {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
 }
 
 /* Header */
@@ -113,6 +122,126 @@
 .importance-background {
   background: rgba(107, 114, 128, 0.2);
   color: #9ca3af;
+}
+
+/* Character Info Tabs */
+.character-info-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: 0;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.character-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--border-secondary);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.character-tab-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.character-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.character-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-edit-tab {
+  margin-left: auto;
+  margin-right: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-edit-tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-edit-tab:hover {
+  border-color: var(--border-secondary);
+  color: var(--color-primary);
+}
+
+.tab-content {
+  padding: var(--spacing-md);
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-sm);
+}
+
+.btn-edit-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-edit-inline svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-edit-inline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.relationships-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.empty-state-text {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  margin: 0;
 }
 
 /* Sections */
@@ -248,7 +377,8 @@
 }
 
 .json-content-inline {
-  max-height: 250px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background: rgba(0, 0, 0, 0.15);
   border-radius: var(--radius-sm);
@@ -271,6 +401,9 @@
   padding: 0;
   background: transparent;
   border: none;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .relationship-item {
@@ -320,7 +453,8 @@
   padding: 0;
   background: transparent;
   border: none;
-  max-height: 400px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -372,7 +506,8 @@
   padding: 0;
   background: transparent;
   border: none;
-  max-height: 400px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

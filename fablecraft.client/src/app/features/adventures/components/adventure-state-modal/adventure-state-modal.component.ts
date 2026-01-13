@@ -1,6 +1,7 @@
 import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {SceneMetadataDto} from '../../models/adventure.model';
 
-export type AdventureStateTab = 'lore' | 'characters';
+export type AdventureStateTab = 'lore' | 'characters' | 'metadata';
 
 @Component({
   selector: 'app-adventure-state-modal',
@@ -11,6 +12,7 @@ export type AdventureStateTab = 'lore' | 'characters';
 export class AdventureStateModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() adventureId: string | null = null;
+  @Input() sceneMetadata: SceneMetadataDto | null = null;
   @Output() close = new EventEmitter<void>();
 
   activeTab: AdventureStateTab = 'lore';

@@ -157,7 +157,9 @@ internal sealed class RagChunkService : IRagChunkService
                 try
                 {
                     await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                            await _ragBuilder.UpdateDataAsync(item.Dataset, chunkLocation.KnowledgeGraphNodeId, item.File.Chunk.Path, ct),
+                        {
+                            await _ragBuilder.UpdateDataAsync(item.Dataset, chunkLocation.KnowledgeGraphNodeId, item.File.Chunk.Path, ct);
+                        },
                         cancellationToken);
                 }
                 catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -189,12 +191,12 @@ internal sealed class RagChunkService : IRagChunkService
             foreach (var item in datasetGroup)
             {
                 var chunk = item.File.Chunk;
+
                 var newLocation = new ChunkLocation
                 {
                     DatasetName = datasetName,
                     KnowledgeGraphNodeId = addResult[datasetName][chunk.Name]
                 };
-
                 chunk.ChunkLocation ??= [];
 
                 var existingLocation = chunk.ChunkLocation.FirstOrDefault(x => x.DatasetName == datasetName);

@@ -18,7 +18,7 @@ public sealed class MaintenanceController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResendSceneGeneratedMessages(Guid adventureId)
     {
-        var lastScene = dbContext.Scenes.Where(x => x.AdventureId == adventureId).OrderByDescending(x => x.Id).FirstOrDefault();
+        var lastScene = dbContext.Scenes.Where(x => x.AdventureId == adventureId).OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
         if (lastScene is null)
         {
             return NotFound();

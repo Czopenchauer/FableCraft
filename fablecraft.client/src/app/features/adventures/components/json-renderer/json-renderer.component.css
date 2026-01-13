@@ -32,6 +32,8 @@
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
   user-select: none;
+  position: relative;
+  z-index: 1;
 }
 
 .json-panel-header:hover {
@@ -244,11 +246,6 @@
   .json-field-block .json-value {
     padding-left: var(--spacing-sm);
   }
-}
-
-/* Performance optimization for deep nesting */
-.json-renderer {
-  contain: layout style;
 }
 
 /* Smooth scrolling if content is long */

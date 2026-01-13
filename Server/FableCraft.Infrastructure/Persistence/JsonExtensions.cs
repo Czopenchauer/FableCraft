@@ -1,7 +1,9 @@
 ﻿using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Text.Unicode;
 
 namespace FableCraft.Infrastructure.Persistence;
 
@@ -185,14 +187,39 @@ public static partial class JsonExtensions
 
     private static bool HasMatchingStringProperty(JsonObject obj, string identifier)
     {
+        var normalizedIdentifier = NormalizeIdentifier(identifier);
+
         foreach (var property in obj)
         {
-            if (property.Value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue) && stringValue == identifier)
+            if (property.Value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue))
             {
-                return true;
+                if (stringValue == normalizedIdentifier)
+                {
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     Normalizes an identifier by stripping surrounding quotes if present.
+    ///     Handles cases where AI returns paths like: in_development["Curiosity about Lily's anomaly"]
+    ///     instead of: in_development[Curiosity about Lily's anomaly]
+    /// </summary>
+    private static string NormalizeIdentifier(string identifier)
+    {
+        if (identifier.Length >= 2 && identifier.StartsWith('"') && identifier.EndsWith('"'))
+        {
+            return identifier[1..^1];
+        }
+
+        if (identifier.Length >= 2 && identifier.StartsWith('\'') && identifier.EndsWith('\''))
+        {
+            return identifier[1..^1];
+        }
+
+        return identifier;
     }
 }

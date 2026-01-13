@@ -111,7 +111,7 @@
               [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
               [attr.stroke-width]="2"></path>
           </svg>
-          <span>Lore</span>
+          <span>Adventure</span>
         </button>
       </div>
     </div>
@@ -643,10 +643,11 @@
     [isOpen]="showSettingsModal">
   </app-adventure-settings-modal>
 
-  <!-- Adventure State Modal (Lore + Characters) -->
+  <!-- Adventure State Modal (Lore + Characters + Scene Metadata) -->
   <app-adventure-state-modal
     (close)="closeAdventureStateModal()"
     [adventureId]="adventureId"
+    [sceneMetadata]="currentScene?.metadata ?? null"
     [isOpen]="showAdventureStateModal">
   </app-adventure-state-modal>
 </div>

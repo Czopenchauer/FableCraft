@@ -40,6 +40,8 @@ public class SceneGenerationOutput
 
     public required List<LoreDto>? NewLore { get; set; }
 
+    public SceneMetadataDto? Metadata { get; set; }
+
     public static SceneGenerationOutput CreateFromScene(Scene scene)
     {
         return new SceneGenerationOutput
@@ -78,7 +80,17 @@ public class SceneGenerationOutput
                     Summary = x.Description
                 })
                 .ToList(),
-            SubmittedAction = scene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription
+            SubmittedAction = scene.CharacterActions.FirstOrDefault(x => x.Selected)?.ActionDescription,
+            Metadata = scene.EnrichmentStatus == EnrichmentStatus.Enriched
+                ? new SceneMetadataDto
+                {
+                    ResolutionOutput = scene.Metadata.ResolutionOutput,
+                    GatheredContext = scene.Metadata.GatheredContext,
+                    WriterObservation = scene.Metadata.WriterObservation,
+                    ChroniclerState = scene.Metadata.ChroniclerState,
+                    WriterGuidance = scene.Metadata.WriterGuidance
+                }
+                : null
         };
     }
 }
@@ -157,6 +169,19 @@ public class CharacterStateDto
     public required CharacterStats State { get; set; }
 
     public required CharacterTracker Tracker { get; set; }
+}
+
+public class SceneMetadataDto
+{
+    public string? ResolutionOutput { get; set; }
+
+    public GatheredContext? GatheredContext { get; set; }
+
+    public Dictionary<string, object>? WriterObservation { get; set; }
+
+    public ChroniclerStoryState? ChroniclerState { get; set; }
+
+    public string? WriterGuidance { get; set; }
 }
 
 internal sealed class SceneGenerationOrchestrator(
@@ -651,12 +676,12 @@ internal sealed class SceneGenerationOrchestrator(
             .ToListAsync(cancellationToken);
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
         var generationProcess = await dbContext.GenerationProcesses.Where(x => x.AdventureId == adventureId).FirstOrDefaultAsync(cancellationToken);
-        GenerationContext context;
+        (GenerationContext newContext, GenerationProcess process) context = (null, generationProcess)!;
         if (generationProcess != null)
         {
-            context = generationProcess.GetContextAs<GenerationContext>();
+            context.newContext = generationProcess.GetContextAs<GenerationContext>();
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (context == null || context.PlayerAction != playerAction)
+            if (context.newContext == null || context.newContext.PlayerAction != playerAction)
             {
                 await dbContext.GenerationProcesses
                     .Where(x => x.AdventureId == adventureId)
@@ -669,7 +694,7 @@ internal sealed class SceneGenerationOrchestrator(
             context = await CreateNewProcess();
         }
 
-        if (context == null)
+        if (context.newContext == null)
         {
             throw new InvalidOperationException("Failed to deserialize generation context from the database.");
         }
@@ -683,7 +708,7 @@ internal sealed class SceneGenerationOrchestrator(
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(cancellationToken);
 
-        context.SetupRequiredFields(
+        context.newContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
             adventure.MainCharacter,
@@ -692,9 +717,9 @@ internal sealed class SceneGenerationOrchestrator(
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore);
-        return (context, generationProcess!.Step);
+        return (context.newContext, context.process!.Step);
 
-        async Task<GenerationContext> CreateNewProcess()
+        async Task<(GenerationContext newContext, GenerationProcess process)> CreateNewProcess()
         {
             var newContext = new GenerationContext
             {
@@ -711,7 +736,7 @@ internal sealed class SceneGenerationOrchestrator(
             await dbContext.GenerationProcesses.AddAsync(process,
                 cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
-            return newContext;
+            return (newContext, process);
         }
     }
 

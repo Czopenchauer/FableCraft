@@ -143,6 +143,6 @@ internal sealed class CharacterCrafter : BaseAgent
         public required object Dynamic { get; set; }
 
         [JsonExtensionData]
-        public Dictionary<string, object> ExtensionData { get; } = new();
+        public Dictionary<string, object> ExtensionData { get; set; } = new();
     }
 }
