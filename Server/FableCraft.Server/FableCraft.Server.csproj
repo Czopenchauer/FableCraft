@@ -20,12 +20,4 @@
         <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj"/>
         <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <None Include="..\Prompts\**\*.txt">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-            <Link>Prompts\%(RecursiveDir)%(Filename)%(Extension)</Link>
-        </None>
-    </ItemGroup>
-
 </Project>
