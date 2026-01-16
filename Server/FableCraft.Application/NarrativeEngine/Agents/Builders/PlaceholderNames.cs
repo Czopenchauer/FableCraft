@@ -55,4 +55,6 @@ internal static class PlaceholderNames
     ///     Scene bible with tone, themes, and content calibration.
     /// </summary>
     public const string StoryBible = "{{story_bible}}";
+
+    public const string DotNotation = "{{dot_notation_reference}}";
 }

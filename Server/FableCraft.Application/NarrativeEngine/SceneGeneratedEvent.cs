@@ -166,7 +166,9 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                     scene.CommitStatus = CommitStatus.Commited;
                 }
 
-                _dbContext.AddRange(chunks);
+                var existingChunks = await _dbContext.Chunks.Where(x => x.AdventureId == message.AdventureId).ToListAsync(cancellationToken);
+                var newChunks = chunks.Except(existingChunks, new ChunkComparer()).ToList();
+                _dbContext.AddRange(newChunks);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(CancellationToken.None);
             });
@@ -178,6 +180,43 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 .ExecuteUpdateAsync(x => x.SetProperty(s => s.CommitStatus, CommitStatus.Uncommited), cancellationToken);
             _logger.Error(e, "Error while committing scenes for adventure {AdventureId}", message.AdventureId);
             throw;
+        }
+    }
+
+    private class ChunkComparer : IEqualityComparer<Chunk>
+    {
+        public bool Equals(Chunk? x, Chunk? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
+
+            if (x is null)
+            {
+                return false;
+            }
+
+            if (y is null)
+            {
+                return false;
+            }
+
+            if (x.GetType() != y.GetType())
+            {
+                return false;
+            }
+
+            return Nullable.Equals(x.AdventureId, y.AdventureId)
+                   && x.Name == y.Name
+                   && x.ContentHash == y.ContentHash
+                   && x.DatasetName == y.DatasetName
+                   && x.KnowledgeGraphNodeId == y.KnowledgeGraphNodeId;
+        }
+
+        public int GetHashCode(Chunk obj)
+        {
+            return HashCode.Combine(obj.AdventureId, obj.Name, obj.ContentHash, obj.DatasetName, obj.KnowledgeGraphNodeId);
         }
     }
 }

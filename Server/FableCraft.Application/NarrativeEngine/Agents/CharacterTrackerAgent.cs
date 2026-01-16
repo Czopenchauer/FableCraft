@@ -23,7 +23,7 @@ internal sealed class CharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
-    public async Task<CharacterDeltaTrackerOutput> Invoke(
+    public async Task<CharacterTracker?> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
         SceneTracker sceneTrackerResult,
@@ -54,7 +54,7 @@ internal sealed class CharacterTrackerAgent(
                              """;
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput>("tracker");
+        var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<CharacterTracker>>("tracker");
 
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
@@ -65,13 +65,17 @@ internal sealed class CharacterTrackerAgent(
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
 
-        return await agentKernel.SendRequestAsync(
+        var trackerDelta = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             nameof(CharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
+
+        context.CharacterTracker = trackerDelta.Tracker;
+
+        return null;
     }
 
     private async Task<string> BuildInstruction(GenerationContext context, string characterName)

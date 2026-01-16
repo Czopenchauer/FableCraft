@@ -69,29 +69,8 @@ internal class ContentGenerator(
                     }
 
                     var reflection = await characterReflectionAgent.Invoke(context, character, context.NewTracker!.Scene!, cancellationToken);
-                    character.SceneRewrites =
-                    [
-                        new CharacterSceneContext
-                        {
-                            Content = reflection.SceneRewrite,
-                            SceneTracker = context.NewTracker!.Scene!,
-                            SequenceNumber = 0
-                        }
-                    ];
-
-                    var memory = new List<MemoryContext>();
-                    if (reflection.Memory is not null)
-                    {
-                        memory.Add(new MemoryContext
-                        {
-                            Salience = reflection.Memory!.Salience,
-                            Data = reflection.Memory.ExtensionData!,
-                            MemoryContent = reflection.Memory.Summary,
-                            SceneTracker = context.NewTracker!.Scene!
-                        });
-                    }
-
-                    character.CharacterMemories = memory;
+                    character.SceneRewrites = reflection.SceneRewrites;
+                    character.CharacterMemories = reflection.CharacterMemories;
 
                     return character;
                 }).ToArray());

@@ -87,7 +87,7 @@ internal sealed class StandaloneSimulationAgent(
         return prompt;
     }
 
-    private async static Task<string> ReplaceInjectableReference(string prompt, string placeholder, string fileName, string promptPath)
+    private static async Task<string> ReplaceInjectableReference(string prompt, string placeholder, string fileName, string promptPath)
     {
         if (!prompt.Contains(placeholder))
         {

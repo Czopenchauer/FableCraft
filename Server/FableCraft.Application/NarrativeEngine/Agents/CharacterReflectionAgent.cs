@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
@@ -25,11 +27,12 @@ internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
+    ILogger logger,
     IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterReflectionAgent;
 
-    public async Task<CharacterReflectionOutput> Invoke(
+    public async Task<CharacterContext> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
         SceneTracker sceneTrackerResult,
@@ -91,13 +94,135 @@ internal sealed class CharacterReflectionAgent(
         var kernelWithKg = kernel.Build();
 
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-        return await agentKernel.SendRequestAsync(
+        var output = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             nameof(CharacterReflectionAgent),
             kernelWithKg,
             cancellationToken);
+
+        var characterState = context.CharacterState;
+
+        if (output.ProfileUpdates.Count > 0)
+        {
+            try
+            {
+                characterState = characterState.PatchWith(output.ProfileUpdates);
+            }
+            catch (Exception e)
+            {
+                var error = $"""
+                             Fix the output. I encountered an error:
+                             {e.Message}
+                             """;
+                chatHistory.AddUserMessage(error);
+                output = await agentKernel.SendRequestAsync(
+                    chatHistory,
+                    outputParser,
+                    promptExecutionSettings,
+                    nameof(CharacterReflectionAgent),
+                    kernelWithKg,
+                    cancellationToken);
+                characterState = characterState.PatchWith(output.ProfileUpdates);
+            }
+        }
+        else
+        {
+            logger.Warning("Character reflection output for character {CharacterName} has no update for character state.", context.Name);
+        }
+
+        var characterRelationships = new List<CharacterRelationshipContext>();
+        foreach (var reflectionOutputRelationshipUpdate in output.RelationshipUpdates)
+        {
+            if (reflectionOutputRelationshipUpdate.ExtensionData?.Count == 0)
+            {
+                logger.Warning("Character {CharacterName} has no relationships update!", context.Name);
+            }
+
+            var matchedRelationship =
+                context.Relationships.SingleOrDefault(x => x.TargetCharacterName == reflectionOutputRelationshipUpdate.Toward);
+            if (matchedRelationship == null)
+            {
+                characterRelationships.Add(new CharacterRelationshipContext
+                {
+                    TargetCharacterName = reflectionOutputRelationshipUpdate.Toward,
+                    Data = reflectionOutputRelationshipUpdate.ExtensionData!,
+                    UpdateTime = sceneTrackerResult.Time,
+                    SequenceNumber = 0,
+                    Dynamic = reflectionOutputRelationshipUpdate.Dynamic!
+                });
+            }
+            else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
+            {
+                try
+                {
+                    var updatedRelationship = matchedRelationship.Data.PatchWith(reflectionOutputRelationshipUpdate.ExtensionData);
+                    var newRelationship = new CharacterRelationshipContext
+                    {
+                        TargetCharacterName = matchedRelationship.TargetCharacterName,
+                        Data = updatedRelationship,
+                        UpdateTime = sceneTrackerResult.Time,
+                        SequenceNumber = matchedRelationship.SequenceNumber + 1,
+                        Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? matchedRelationship.Dynamic
+                    };
+                    characterRelationships.Add(newRelationship);
+                }
+                catch (Exception e)
+                {
+                    var error = $"""
+                                 Fix the output. I encountered an error:
+                                 {e.Message}
+                                 """;
+                    chatHistory.AddUserMessage(error);
+                    output = await agentKernel.SendRequestAsync(
+                        chatHistory,
+                        outputParser,
+                        promptExecutionSettings,
+                        nameof(CharacterReflectionAgent),
+                        kernelWithKg,
+                        cancellationToken);
+                    characterState = characterState.PatchWith(output.ProfileUpdates);
+                }
+            }
+        }
+
+        var memory = new List<MemoryContext>();
+        if (output.Memory is not null)
+        {
+            memory.Add(new MemoryContext
+            {
+                Salience = output.Memory!.Salience,
+                Data = output.Memory.ExtensionData!,
+                MemoryContent = output.Memory.Summary,
+                SceneTracker = sceneTrackerResult
+            });
+        }
+
+        return new CharacterContext
+        {
+            CharacterId = context.CharacterId,
+            CharacterState = characterState,
+            CharacterTracker = context.CharacterTracker,
+            Name = context.Name,
+            Description = context.Description,
+            CharacterMemories = memory,
+            Relationships = characterRelationships,
+            SceneRewrites =
+            [
+                new CharacterSceneContext
+                {
+                    Content = output.SceneRewrite,
+                    SceneTracker = sceneTrackerResult,
+                    SequenceNumber = context.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                         ?.SequenceNumber
+                                     + 1
+                                     ?? 0
+                }
+            ],
+            Importance = context.Importance,
+            SimulationMetadata = null
+        };
     }
 
     private async Task<string> BuildInstruction(GenerationContext context, string characterName)

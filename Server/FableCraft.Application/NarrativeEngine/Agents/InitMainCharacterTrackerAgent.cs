@@ -23,15 +23,12 @@ internal sealed class InitMainCharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.InitMainCharacterTrackerAgent;
 
-    public async Task<MainCharacterState> Invoke(
-        GenerationContext context,
-        SceneTracker sceneTrackerResult,
+    public async Task Invoke(GenerationContext context,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await BuildInstruction(context);
-        var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -68,13 +65,14 @@ internal sealed class InitMainCharacterTrackerAgent(
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
-        return await agentKernel.SendRequestAsync(
+        var tracker = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             nameof(InitMainCharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
+        context.NewTracker!.MainCharacter = tracker;
     }
 
     private static Func<string, MainCharacterState>
@@ -83,16 +81,11 @@ internal sealed class InitMainCharacterTrackerAgent(
         return response =>
         {
             var tracker = ResponseParser.ExtractJson<MainCharacterTracker>(response, "main_character_tracker");
-            var description = ResponseParser.ExtractText(response, "character_description");
-            if (string.IsNullOrEmpty(description))
-            {
-                throw new InvalidCastException("Failed to parse character description from response due to empty description.");
-            }
 
             return new MainCharacterState
             {
                 MainCharacter = tracker,
-                MainCharacterDescription = description
+                MainCharacterDescription = null!
             };
         };
     }

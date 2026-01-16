@@ -10,14 +10,14 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal abstract class BaseAgent
 {
-    protected readonly IDbContextFactory<ApplicationDbContext> DbContextFactory;
-    protected readonly KernelBuilderFactory KernelBuilderFactory;
+    protected IDbContextFactory<ApplicationDbContext> DbContextFactory { get; }
+    private readonly KernelBuilderFactory _kernelBuilderFactory;
 
     protected BaseAgent(IDbContextFactory<ApplicationDbContext> dbContextFactory,
         KernelBuilderFactory kernelBuilderFactory)
     {
         DbContextFactory = dbContextFactory;
-        KernelBuilderFactory = kernelBuilderFactory;
+        _kernelBuilderFactory = kernelBuilderFactory;
     }
 
     protected abstract AgentName GetAgentName();
@@ -33,15 +33,16 @@ internal abstract class BaseAgent
             $"{agentName}.md"
         );
         var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
+        var dotNotation = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "DotNotation.md"));
         var worldSettingsPath = Path.Combine(generationContext.PromptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
         var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
-        return promp.Replace(PlaceholderNames.StoryBible, storyBible).Replace(PlaceholderNames.WorldSetting, worldSettings);
+        return promp.Replace(PlaceholderNames.StoryBible, storyBible).Replace(PlaceholderNames.WorldSetting, worldSettings).Replace(PlaceholderNames.DotNotation, dotNotation);
     }
 
-    private async static Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
+    private static async Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
     {
         if (!promptTemplate.Contains(PlaceholderNames.Jailbreak))
         {
@@ -68,6 +69,6 @@ internal abstract class BaseAgent
         var agentName = GetAgentName();
         var adventureAgentLlmPreset = generationContext.AgentLlmPreset.Single(x => x.AgentName == agentName);
 
-        return KernelBuilderFactory.Create(adventureAgentLlmPreset.LlmPreset);
+        return _kernelBuilderFactory.Create(adventureAgentLlmPreset.LlmPreset);
     }
 }

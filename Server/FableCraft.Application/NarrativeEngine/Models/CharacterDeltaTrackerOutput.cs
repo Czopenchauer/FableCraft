@@ -2,15 +2,15 @@
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-internal sealed class CharacterDeltaTrackerOutput
+internal sealed class CharacterDeltaTrackerOutput<TTracker> where TTracker : class
 {
     public string Description { get; set; } = null!;
 
-    [JsonPropertyName("changes")]
+    [JsonPropertyName("changes_summary")]
     public TrackerChanges TrackerChanges { get; set; } = null!;
 
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
+    [JsonPropertyName("tracker")]
+    public TTracker Tracker { get; set; } = null!;
 }
 
 internal sealed class TrackerChanges

@@ -91,6 +91,11 @@ internal sealed class RagChunkService : IRagChunkService
         Guid adventureId,
         CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(Path.Combine(DataDirectory, adventureId.ToString())))
+        {
+            Directory.CreateDirectory(Path.Combine(DataDirectory, adventureId.ToString()));
+        }
+
         var existingChunks = await _dbContext.Chunks
             .AsNoTracking()
             .Where(x => request.Select(z => z.EntityId).Contains(x.EntityId))
