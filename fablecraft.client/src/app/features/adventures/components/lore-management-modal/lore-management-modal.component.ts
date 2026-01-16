@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {LorebookCategoryGroup, LorebookEntryResponseDto} from '../../models/lorebook-entry.model';
 import {LorebookEntryService} from '../../services/lorebook-entry.service';
 import {ToastService} from '../../../../core/services/toast.service';
@@ -9,7 +9,7 @@ import {ToastService} from '../../../../core/services/toast.service';
   templateUrl: './lore-management-modal.component.html',
   styleUrl: './lore-management-modal.component.css'
 })
-export class LoreManagementModalComponent implements OnChanges {
+export class LoreManagementModalComponent implements OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() adventureId: string | null = null;
   @Output() close = new EventEmitter<void>();
@@ -34,12 +34,19 @@ export class LoreManagementModalComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen && this.adventureId) {
-      this.loadEntries();
+    if (changes['isOpen']) {
+      document.body.style.overflow = this.isOpen ? 'hidden' : '';
+      if (this.isOpen && this.adventureId) {
+        this.loadEntries();
+      }
+      if (!this.isOpen) {
+        this.resetState();
+      }
     }
-    if (changes['isOpen'] && !this.isOpen) {
-      this.resetState();
-    }
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
   }
 
   toggleCategory(category: string): void {

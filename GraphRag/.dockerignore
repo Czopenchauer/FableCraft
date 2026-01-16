@@ -1,0 +1,20 @@
+# Python virtual environments
+.venv
+venv
+__pycache__
+*.pyo
+
+# IDE
+.idea
+.vscode
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Data directories (mounted as volumes)
+data
+system
+
+# Misc

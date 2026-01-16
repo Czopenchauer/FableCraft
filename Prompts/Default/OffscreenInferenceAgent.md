@@ -23,16 +23,6 @@ This agent is called when:
 
 The character's stable identity, personality, goals, and behavioral patterns.
 
-### Character Routine
-{{routine}}
-
-Their occupation, typical day, regular locations, recurring commitments.
-
-### Active Projects
-{{active_projects}}
-
-What they're currently working toward, where they are in those efforts.
-
 ### Last Known State
 {{last_state}}
 
@@ -46,17 +36,12 @@ Events that happened TO this character during the elapsed period. These come fro
 ### Time Elapsed
 {{time_elapsed}}
 
-How long since last update (e.g., "3 days", "1 week").
+How long since last update.
 
 ### World Events
 {{world_events}}
 
 Significant events during the elapsed period that might affect them.
-
-### Current DateTime
-{{current_datetime}}
-
-The in-world time right now.
 
 ---
 
@@ -158,12 +143,6 @@ Wrap output in `<offscreen_inference>` tags as JSON:
     }
   ],
   
-  "current_situation": {
-    "location": "Where they are right now",
-    "activity": "What they're doing when found/contacted",
-    "ready_for_interaction": "Context — busy? distracted? expecting trouble? receptive?"
-  },
-  
   "profile_updates": {},
   
   "tracker_updates": {}
@@ -190,72 +169,13 @@ Significant characters' offscreen experiences are inherently lower-stakes than a
 
 For psychological state that changed, use dot-notation keys with complete objects at each path:
 
-```json
-{
-  "profile_updates": {
-    "emotional_landscape.current_state": {
-      "primary_emotion": "Current mood",
-      "secondary_emotions": ["Other feelings"],
-      "intensity": "How strong — faint, mild, moderate, strong",
-      "cause": "What's driving this"
-    },
-    
-    "goals_and_motivations.active_projects.current_focus": {
-      "what": "Current focus",
-      "current_step": "Where they are now",
-      "next_actions": ["Planned next steps"],
-      "timeline": "When they expect progress"
-    }
-  }
-}
-```
-
-### Common Profile Paths
-
-| To Update | Key Path |
-|-----------|----------|
-| Current emotional state | `emotional_landscape.current_state` |
-| Baseline mood shift | `emotional_landscape.baseline` |
-| Active project focus | `goals_and_motivations.active_projects.current_focus` |
-| Primary goal progress | `goals_and_motivations.primary_goal.progress` |
-
-**Rules:**
-- Only include paths that actually changed
-- Output complete object at each path (no partial updates)
-- Use the deepest specific path possible
-- Empty `{}` if nothing changed
+{{dot_notation_reference}}
 
 ---
 
 ## Tracker Updates (Dot Notation)
 
 For physical state that changed, use dot-notation keys:
-
-```json
-{
-  "tracker_updates": {
-    "State.Fatigue.Level": 3,
-    "State.Needs.Hunger": 2,
-    "State.Mental": "Alert and focused, routine day"
-  }
-}
-```
-
-### Common Tracker Paths
-
-| To Update | Key Path |
-|-----------|----------|
-| Fatigue level | `State.Fatigue.Level` |
-| Hunger | `State.Needs.Hunger` |
-| Mental state | `State.Mental` |
-| Health | `State.Health` |
-| Current location | `Situation` |
-
-**Rules:**
-- Only include paths that actually changed
-- For simple values, just the value
-- For objects, output complete object
-- Empty `{}` if nothing changed
 
 ---
 
@@ -356,25 +276,13 @@ This isn't full simulation. Capture the essential experience, don't elaborate.
       }
     }
   ],
-  
-  "current_situation": {
-    "location": "Tam's Office, Portside District",
-    "activity": "Reviewing shipping records, end of day paperwork",
-    "ready_for_interaction": "Available but wary — it's been a day of unexpected visitors"
-  },
-  
+
   "profile_updates": {
-    "emotional_landscape.current_state": {
-      "primary_emotion": "cautious",
-      "secondary_emotions": ["satisfied", "curious"],
-      "intensity": "mild",
-      "cause": "Productive but unusual day, sensing shifts in the usual order"
-    }
+    // updates
   },
   
   "tracker_updates": {
-    "State.Fatigue.Level": 4,
-    "State.Needs.Hunger": 3
+    // updates
   }
 }
 ```

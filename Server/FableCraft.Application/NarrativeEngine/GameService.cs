@@ -140,7 +140,7 @@ internal class GameService : IGameService
             NextScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)
                 ?.Id,
             GenerationOutput = sceneGenerationOutput,
-            CanDelete = scene.CommitStatus == CommitStatus.Uncommited
+            CanDelete = scene.CommitStatus == CommitStatus.Uncommited,
         };
     }
 
@@ -322,11 +322,9 @@ internal class GameService : IGameService
         CancellationToken cancellationToken)
     {
         var scene = await _dbContext.Scenes
+            .AsNoTracking()
             .Where(s => s.AdventureId == adventureId)
             .OrderByDescending(s => s.SequenceNumber)
-            .Include(x => x.CharacterStates)
-            .Include(x => x.CharacterActions)
-            .Include(x => x.Lorebooks)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (scene == null)

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
@@ -32,6 +33,8 @@ internal sealed class CharacterRelationshipPlugin : CharacterPluginBase
         [Description("The name of the other character (the target of the relationship)")]
         string targetCharacterName)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         if (_characterContext == null)
         {
             return $"Character with ID '{CharacterId}' not found.";

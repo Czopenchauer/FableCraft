@@ -42,7 +42,7 @@ What is the player actually trying to DO?
 
 **FORCE_CONTESTED**: Sword strikes, grapples, offensive spells (fireball, dominate, fear). You resolve whether the force successfully applies—hit/miss, damage, spell penetration. You do NOT resolve how the NPC behaviorally responds.
 
-**SOCIAL_CONTESTED**: Persuasion, deception, intimidation, negotiation. You assess ONLY how well MC executed their attempt. The outcome emerges from NPC emulation downstream.
+**SOCIAL_CONTESTED**: Persuasion, deception, intimidation, seduction, negotiation. You assess ONLY how well MC executed their attempt. The outcome emerges from NPC emulation downstream.
 
 ### Step 3: Identify Required Capabilities
 
@@ -106,6 +106,10 @@ For multi-step actions:
 
 ## Output Format
 
+<think>
+Output your thinking here
+</think>
+
 <resolution>
 ```json
 {
@@ -139,16 +143,6 @@ You output MC's execution quality only:
 ```json
 {
   "action_type": "SOCIAL_CONTESTED",
-  "validation": {
-    "relevant_skill": "Persuasion (Amateur)",
-    "difficulty": "N/A - NPC determines reception",
-    "modifiers": {
-      "advantages": ["Prepared argument", "NPC owes MC a favor"],
-      "disadvantages": ["MC visibly exhausted", "Interrupted NPC's meal"]
-    },
-    "effective_skill": "Amateur",
-    "execution_quality": "ADEQUATE - coherent delivery despite fatigue"
-  },
   "outcome": {
     "result": null,
     "physical_result": null

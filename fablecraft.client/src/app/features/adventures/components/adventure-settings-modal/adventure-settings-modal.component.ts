@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../../models/adventure-settings.model';
 import {LlmPresetResponseDto} from '../../models/llm-preset.model';
 import {AdventureService} from '../../services/adventure.service';
@@ -11,7 +11,7 @@ import {ToastService} from '../../../../core/services/toast.service';
   templateUrl: './adventure-settings-modal.component.html',
   styleUrl: './adventure-settings-modal.component.css'
 })
-export class AdventureSettingsModalComponent implements OnChanges {
+export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() adventureId: string | null = null;
   @Output() close = new EventEmitter<void>();
@@ -38,12 +38,19 @@ export class AdventureSettingsModalComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen && this.adventureId) {
-      this.loadData();
+    if (changes['isOpen']) {
+      document.body.style.overflow = this.isOpen ? 'hidden' : '';
+      if (this.isOpen && this.adventureId) {
+        this.loadData();
+      }
+      if (!this.isOpen) {
+        this.resetState();
+      }
     }
-    if (changes['isOpen'] && !this.isOpen) {
-      this.resetState();
-    }
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
   }
 
   onClose(): void {

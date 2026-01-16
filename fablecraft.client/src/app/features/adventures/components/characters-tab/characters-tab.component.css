@@ -75,6 +75,85 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
+/* Main Character Graph Button */
+.main-character-graph-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.main-character-graph-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.main-character-graph-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+[data-theme="modern-dark"] .main-character-graph-btn:hover {
+  background: #a855f7;
+  border-color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .main-character-graph-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Character Graph Button (inline) */
+.character-graph-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin-left: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.character-graph-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.character-graph-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+[data-theme="modern-dark"] .character-graph-btn:hover {
+  background: #a855f7;
+  border-color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .character-graph-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 /* Empty State */
 .empty-state,
 .no-selection {

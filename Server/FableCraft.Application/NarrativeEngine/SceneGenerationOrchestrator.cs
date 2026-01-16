@@ -7,6 +7,7 @@ using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -194,6 +195,7 @@ internal sealed class SceneGenerationOrchestrator(
         CancellationToken cancellationToken)
     {
         var (context, step) = await GetOrCreateGenerationContext(adventureId, playerAction, cancellationToken);
+        ProcessExecutionContext.SceneId.Value = context.NewSceneId;
 
         if (step == GenerationProcessStep.SceneGenerated)
         {
@@ -205,12 +207,7 @@ internal sealed class SceneGenerationOrchestrator(
             throw new SceneGenerationConcurrencyException(adventureId);
         }
 
-        var workflow = new[]
-        {
-            processors.First(p => p is ResolutionAgent),
-            processors.First(p => p is WriterAgent),
-            processors.First(p => p is SaveSceneWithoutEnrichment)
-        };
+        var workflow = new[] { processors.First(p => p is ResolutionAgent), processors.First(p => p is WriterAgent), processors.First(p => p is SaveSceneWithoutEnrichment) };
 
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
@@ -311,9 +308,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         var parallelProcessors = new[]
         {
-            processors.First(p => p is ContentGenerator),
-            processors.First(p => p is CharacterTrackersProcessor),
-            processors.First(p => p is SimulationOrchestrator),
+            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
             processors.First(p => p is ContextGatherer)
         };
 
@@ -334,11 +329,11 @@ internal sealed class SceneGenerationOrchestrator(
                     await dbContext.GenerationProcesses
                         .Where(x => x.AdventureId == adventureId)
                         .ExecuteUpdateAsync(x => x.SetProperty(y => y.Context, context.ToJsonString()),
-                            cancellationToken);
+                            CancellationToken.None);
                     await dbContext.Scenes
                         .Where(s => s.Id == sceneId)
                         .ExecuteUpdateAsync(s => s.SetProperty(x => x.EnrichmentStatus, EnrichmentStatus.EnrichmentFailed),
-                            cancellationToken);
+                            CancellationToken.None);
                     logger.Error(ex,
                         "Error during scene Enrichment for adventure {AdventureId}",
                         adventureId);
@@ -400,9 +395,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         var parallelProcessors = new[]
         {
-            processors.First(p => p is ContentGenerator),
-            processors.First(p => p is CharacterTrackersProcessor),
-            processors.First(p => p is SimulationOrchestrator)
+            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator)
         };
 
         stopwatch.Restart();
@@ -456,8 +449,11 @@ internal sealed class SceneGenerationOrchestrator(
             .ThenInclude(x => x.LlmPreset)
             .Select(x => new
             {
-                x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                x.TrackerStructure,
+                x.MainCharacter,
+                x.AgentLlmPresets,
+                PromptPaths = x.PromptPath,
+                x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -611,8 +607,11 @@ internal sealed class SceneGenerationOrchestrator(
             .ThenInclude(x => x.LlmPreset)
             .Select(x => new
             {
-                x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                x.TrackerStructure,
+                x.MainCharacter,
+                x.AgentLlmPresets,
+                PromptPaths = x.PromptPath,
+                x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 
@@ -658,8 +657,11 @@ internal sealed class SceneGenerationOrchestrator(
             .ThenInclude(x => x.LlmPreset)
             .Select(x => new
             {
-                x.TrackerStructure, x.MainCharacter, x.AgentLlmPresets,
-                PromptPaths = x.PromptPath, x.AdventureStartTime
+                x.TrackerStructure,
+                x.MainCharacter,
+                x.AgentLlmPresets,
+                PromptPaths = x.PromptPath,
+                x.AdventureStartTime
             })
             .SingleAsync(cancellationToken);
 

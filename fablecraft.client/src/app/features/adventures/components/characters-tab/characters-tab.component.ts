@@ -87,6 +87,18 @@ export class CharactersTabComponent implements OnChanges {
     }
   }
 
+  openMainCharacterGraph(): void {
+    if (this.adventureId) {
+      window.open(`/visualization/${this.adventureId}_main_character/cognify_graph_visualization.html`, '_blank');
+    }
+  }
+
+  openCharacterGraph(characterId: string): void {
+    if (this.adventureId) {
+      window.open(`/visualization/${this.adventureId}_${characterId}/cognify_graph_visualization.html`, '_blank');
+    }
+  }
+
   private loadCharacters(): void {
     if (!this.adventureId) return;
 

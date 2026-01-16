@@ -14,7 +14,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\fablecraft.client\fablecraft.client.esproj">
+        <!-- Only include client in local dev builds, not Docker/CI -->
+        <ProjectReference Include="..\fablecraft.client\fablecraft.client.esproj" Condition="'$(BuildingInDocker)' != 'true'">
             <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
         <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj"/>

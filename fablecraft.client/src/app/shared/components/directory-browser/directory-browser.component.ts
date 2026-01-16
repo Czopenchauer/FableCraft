@@ -19,6 +19,10 @@ export class DirectoryBrowserComponent implements OnChanges {
   listing: DirectoryListingDto | null = null;
   errorMessage = '';
 
+  // Manual input mode
+  isManualMode = false;
+  manualPath = '';
+
   constructor(private adventureService: AdventureService) {
   }
 
@@ -112,5 +116,25 @@ export class DirectoryBrowserComponent implements OnChanges {
 
   navigateToPath(path: string): void {
     this.loadDirectories(path);
+  }
+
+  toggleManualMode(): void {
+    this.isManualMode = !this.isManualMode;
+    if (this.isManualMode) {
+      this.manualPath = this.currentPath;
+    }
+  }
+
+  applyManualPath(): void {
+    if (this.manualPath.trim()) {
+      this.pathSelected.emit(this.manualPath.trim());
+      this.closeDropdown();
+    }
+  }
+
+  onManualPathKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      this.applyManualPath();
+    }
   }
 }

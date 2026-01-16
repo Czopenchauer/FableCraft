@@ -43,6 +43,19 @@
             </svg>
             <span>Scene Metadata</span>
           </button>
+          <button
+            (click)="setActiveTab('llm-logs')"
+            [class.active]="activeTab === 'llm-logs'"
+            class="tab-btn"
+          >
+            <svg class="tab-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path
+                d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+            </svg>
+            <span>LLM Logs</span>
+          </button>
         </div>
         <button
           (click)="onClose()"
@@ -79,6 +92,14 @@
             [metadata]="sceneMetadata"
             [isActive]="activeTab === 'metadata'">
           </app-scene-metadata-tab>
+        </div>
+
+        <!-- LLM Logs Tab -->
+        <div *ngIf="activeTab === 'llm-logs'" class="tab-content">
+          <app-llm-logs-tab
+            [sceneId]="sceneId"
+            [isActive]="activeTab === 'llm-logs'">
+          </app-llm-logs-tab>
         </div>
       </div>
     </div>

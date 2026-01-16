@@ -643,10 +643,11 @@
     [isOpen]="showSettingsModal">
   </app-adventure-settings-modal>
 
-  <!-- Adventure State Modal (Lore + Characters + Scene Metadata) -->
+  <!-- Adventure State Modal (Lore + Characters + Scene Metadata + LLM Logs) -->
   <app-adventure-state-modal
     (close)="closeAdventureStateModal()"
     [adventureId]="adventureId"
+    [sceneId]="currentScene?.sceneId ?? null"
     [sceneMetadata]="currentScene?.metadata ?? null"
     [isOpen]="showAdventureStateModal">
   </app-adventure-state-modal>

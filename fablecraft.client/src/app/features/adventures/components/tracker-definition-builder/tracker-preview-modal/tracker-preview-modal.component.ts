@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {JsonRendererComponent} from '../../json-renderer/json-renderer.component';
 
@@ -9,12 +9,22 @@ import {JsonRendererComponent} from '../../json-renderer/json-renderer.component
   templateUrl: './tracker-preview-modal.component.html',
   styleUrls: ['./tracker-preview-modal.component.css']
 })
-export class TrackerPreviewModalComponent {
+export class TrackerPreviewModalComponent implements OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() visualizationData: any = null;
   @Input() isLoading = false;
   @Output() close = new EventEmitter<void>();
   @Output() refresh = new EventEmitter<void>();
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']) {
+      document.body.style.overflow = this.isOpen ? 'hidden' : '';
+    }
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
+  }
 
   onClose(): void {
     if (!this.isLoading) {

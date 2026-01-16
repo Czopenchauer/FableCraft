@@ -18,8 +18,8 @@ Your thinking MUST address each of these in order:
 - Who was involved?
 - What actions did the character take or experience?
 
-#### Step 2: Current State Changes
-For each state category in the tracker schema, ask:
+#### Step 2: State Changes
+For each state field in the tracker schema, ask:
 - Did this aspect change? By how much and why?
 - What narrative event caused the change?
 
@@ -31,7 +31,9 @@ For each state category in the tracker schema, ask:
 #### Step 4: Development Changes
 For each development category, ask:
 - Was any skill meaningfully used? Calculate XP using the progression system.
+- Did character demonstrate a NEW skill not yet tracked? Create the entry.
 - Was any ability used? Calculate XP same as skills.
+- Did character learn or awaken a NEW ability? Create the entry.
 - Did any experience warrant trait acquisition or development progress?
 - Any new permanent marks or modifications?
 
@@ -51,10 +53,10 @@ Before finalizing, verify:
 - Are development changes justified by narrative events?
 - Did any trait effects apply that should modify outcomes?
 
-#### Step 7: Output Determination
-- Identify which key paths need updating
-- For each update: determine the most specific key path
-- Prepare changes_summary from all identified changes
+#### Step 7: Output Preparation
+- Review the previous tracker state
+- Apply all identified changes to produce the new complete state
+- Verify the full tracker is internally consistent
 
 ---
 
@@ -82,6 +84,58 @@ The narrative that just occurred. Extract all relevant changes from this.
 
 ---
 
+## DYNAMIC SKILL & ABILITY CREATION
+
+Skills and Abilities are tracked using arrays—entries are created dynamically as the character develops. You must create new entries when appropriate, not just update existing ones.
+
+### When to Create a New Skill Entry
+
+Create a new skill when the character:
+- Uses a skill for the first time in a meaningful way
+- Begins formal training in a new area
+- Demonstrates competence in something not yet tracked
+- Narrative establishes they have a skill not currently in tracker
+
+**Initial Skill Values:**
+```json
+{
+  "Name": "[Skill name]",
+  "Category": "[Combat/Social/Survival/Craft/Physical/Mental/Subterfuge/Knowledge]",
+  "Proficiency": "Novice",
+  "XP": {
+    "Current": 0,
+    "NextThreshold": 100,
+    "ToNext": 100
+  },
+  "Description": "[What this skill represents and how the character uses it]"
+}
+```
+
+If the character demonstrates existing competence (backstory skill, established expertise), set Proficiency and XP appropriately rather than starting at Novice/0.
+
+### When to Create a New Ability Entry
+
+Create a new ability when the character:
+- Learns a new spell or magical technique
+- Awakens or discovers a new power
+- Develops a new instinctive ability through racial traits or transformation
+- Is taught or granted a new capability
+
+**Initial Ability Values:**
+```json
+{
+  "Name": "[Ability name]",
+  "Tier": "[Cantrip/Minor/Standard/Major/Grand/Legendary]",
+  "School": "[Magic school or ability type]",
+  "ManaCost": "[Cost to use]",
+  "RelatedSkill": "[Skill this scales with]",
+  "Description": "[What the ability does]",
+  "Mastery": "Newly learned - requires full incantation"
+}
+```
+
+---
+
 ## CORE TRACKING RULES
 
 ### General Principles
@@ -90,12 +144,13 @@ The narrative that just occurred. Extract all relevant changes from this.
 3. **Show your math**: For any calculated change, include the calculation
 4. **Internal consistency**: Related fields must align logically
 5. **Narrative justification**: Every change needs a reason from the scene content
+6. **Complete output**: Always output the entire tracker state, not partial updates
 
 ---
 
 ## OUTPUT FORMAT
 
-Your output is a single JSON object with four required fields.
+Your output is a single JSON object with three required fields.
 
 ### Required Fields
 ```json
@@ -105,65 +160,69 @@ Your output is a single JSON object with four required fields.
     "current": "[Current time]",
     "elapsed": "[Time passed]"
   },
-  
+
   "changes_summary": {
-    "current_state": [
-      { "field": "[Field path]", "previous": "[Old value]", "new": "[New value]", "reason": "[Why it changed]" }
+    "state": [
+      { "field": "[Field name]", "aspect": "[What changed]", "previous": "[Old]", "new": "[New]", "reason": "[Why]" }
     ],
     "development": [
-      { "field": "[Field path]", "change": "[Change description]", "reason": "[Why]" }
+      { "field": "[Field name]", "change": "[Description]", "reason": "[Why]" }
     ],
     "resources": [
-      { "field": "[Field path]", "change": "[Change description]", "reason": "[Why]" }
+      { "field": "[Field name]", "change": "[Description]", "reason": "[Why]" }
     ],
     "active_effects": ["[Current temporary effects]"]
   },
-  
-  "description": "Wiki-style character description...",
-  
-  "changes": { }
+
+  "tracker":
+    {{character_tracker_output}}
+
 }
 ```
 
-### Description Field
-
-The `description` is a **generic, wiki-style** character summary—how you would describe this character in a reference document. This is NOT a moment-to-moment state description, but their enduring identity.
-
-**Include:**
-- Name, gender, age (actual and apparent)
-- Physical appearance (height, build, distinguishing features)
-- Power level and notable abilities
-- Personality overview
-- Background summary
-- Key relationships or affiliations
-- Permanent marks, scars, or modifications
-- Social status
-
-**Style:** Third person, encyclopedic tone. Like a character bio in a wiki.
-
-**Update when:** Permanent changes occur (new scars, revealed backstory, acquired titles, significant growth, new permanent marks).
-
-### State Updates (Dot-Notation Keys)
-
-All state updates go inside the `changes` object using dot-notation keys wrapped in `<tracker>` tags. Output the **complete object** at each path.
-
 ### Output Rules
 
-1. **time_update is always required.** Every scene has time progression.
+1. **time_update is always required.** Use scene content and previous time to determine progression.
 
-2. **changes_summary is always required.** Document what changed and why.
+2. **changes_summary is always required.** Document what changed and why. This is your audit trail. If nothing changed in a category, use an empty array `[]`.
 
-3. **description is always required.** Update content when permanent changes occur.
+3. **tracker is always required.** This is the **complete, updated character tracker**. Not a diff. Not partial. The entire state.
 
-4. **changes object is always required.** Contains all state updates. Can be empty `{}` if nothing changed.
+### Full Tracker Output
 
-5. **Full replacement at each key path.** Whatever you output at a key path replaces the entire object there.
+The `tracker` field must contain the **entire character tracker** with all changes applied. This means:
 
-6. **Use the deepest specific path.** If only one nested field changed, use the specific path.
+- **Every field from the schema must be present**, even if unchanged
+- **Copy unchanged fields exactly** from the previous tracker state
+- **Apply all changes** identified in your reasoning to produce the new state
+- **The output must be valid JSON** matching the schema structure
 
-7. **Arrays need bracket notation.** For skills, abilities, etc.: `Skills[SkillName]`
+**Why full output?**
+- No merge logic needed—the tracker you output IS the new state
+- No drift from partial updates
+- Complete snapshot at each point in time
+- Eliminates array mutation bugs
 
-8. **Include full progression objects when updating.** Always include Current, NextThreshold, and ToNext when updating XP tracking.
+**Process:**
+1. Start with the previous tracker state as your base
+2. Apply each change identified in your thinking steps
+3. Output the complete result
+
+### Skill and Ability Arrays
+
+When adding new skills or abilities:
+- Add the new entry to the appropriate array
+- Keep all existing entries in the array
+- Output the complete array with both old and new entries
+
+Example - adding a new skill:
+```json
+"Skills": [
+  { "Name": "Swordsmanship", "Category": "Combat", ... },  // existing
+  { "Name": "Stealth", "Category": "Subterfuge", ... },    // existing
+  { "Name": "Herbalism", "Category": "Knowledge", ... }    // NEW - just added
+]
+```
 
 ---
 
@@ -174,57 +233,61 @@ Key relationships to maintain:
 ### Physical Consistency
 | If This... | Then This... |
 |------------|--------------|
-| Pain present | Mental state may show distress |
-| Gagged/restrained | Voice/movement should note impairment |
-| Significant time passed | Needs increase appropriately |
+| Pain present in State | Mental may show distress, voice may be strained |
+| Gagged (in Accessories) | Voice should note impairment |
+| Significant time passed | Needs increase in State field |
 | Health shows injury | Pain should be appropriate |
-| High fatigue | Mental may show exhaustion effects |
+| High fatigue | Mental may show exhaustion |
 
 ### Resource Consistency
 | If This... | Then This... |
 |------------|--------------|
-| Resource below threshold | Exhaustion effects should show |
-| Resource at 0% | Collapse/inability state |
-| Ability used | Deduct from appropriate resource |
+| Resource below threshold | Show exhaustion/strain effects |
+| Resource at 0% | Collapse state, inability to use |
+| Ability used | Deduct from resource pool |
 | Time passed resting | Resources regenerate |
 | Skill used meaningfully | Calculate and award XP |
 
 ### Equipment Consistency
 | If This... | Then This... |
 |------------|--------------|
-| Clothing removed | Update worn AND state of dress |
-| Restrained | Update restraints AND position/situation |
-| Item added/removed | Update relevant equipment AND body fields if applicable |
+| Clothing removed | Update Worn field |
+| Restrained | Update Accessories AND Situation |
+| Permanent item added | Update Accessories and possibly PermanentMarks |
 
 ---
 
 ## CRITICAL REMINDERS
 
-1. **ALWAYS complete thinking steps** - No shortcuts
-2. **VALID JSON** - Syntax errors break everything
-3. **CALCULATE EXACTLY** - Show math for XP, resources, time-based changes
-4. **JUSTIFY CHANGES** - Every update needs narrative reason
-5. **CHECK CONSISTENCY** - Related fields must align
-6. **RESPECT CONTINUITY** - Build on previous state
-7. **USE CORRECT PATHS** - Match schema field names exactly
-8. **FULL OBJECTS AT PATHS** - No partial updates
-9. **CORRECT JSON** - Output is correctly formatted with escaped characters
+1. **ALWAYS complete thinking steps** — No shortcuts
+2. **VALID JSON** — Syntax errors break everything
+3. **CALCULATE EXACTLY** — Show math for XP, resources, time-based changes
+4. **JUSTIFY CHANGES** — Every update needs narrative reason
+5. **CHECK CONSISTENCY** — Related fields must align
+6. **RESPECT CONTINUITY** — Build on previous state
+7. **OUTPUT COMPLETE TRACKER** — The `tracker` field must contain the ENTIRE state, not just changes
+8. **PRESERVE UNCHANGED FIELDS** — Copy them exactly from previous state
+9. **CORRECT JSON** — Output is correctly formatted with escaped characters
+10. **CREATE SKILLS/ABILITIES DYNAMICALLY** — Add new entries to arrays when character learns/develops
 
 ---
 
 ## OUTPUT WRAPPER
 
-Wrap your changes object in `<tracker>` tags:
+Wrap your output in `<tracker>` tags:
 
 <tracker>
 ```json
 {
   "time_update": { ... },
   "changes_summary": { ... },
-  "description": "...",
-  "changes": { ... }
+  "tracker": {
+    // COMPLETE CHARACTER TRACKER STATE
+    // Every field, every value
+    // This IS the character's current state
+  }
 }
 ```
 </tracker>
 
-Remember: You are the source of truth. Accuracy, consistency, and completeness are your core responsibilities.
+Remember: You are the source of truth. The `tracker` you output becomes the canonical state. Accuracy, consistency, and completeness are your core responsibilities.

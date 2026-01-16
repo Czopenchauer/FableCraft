@@ -92,8 +92,7 @@
       </h3>
       <p class="section-description">Action resolution from the ResolutionAgent determining the outcome of player actions.</p>
       <div class="content-panel">
-        <pre *ngIf="isResolutionString" class="text-content">{{ parsedResolutionOutput }}</pre>
-        <app-json-renderer *ngIf="!isResolutionString" [data]="parsedResolutionOutput"></app-json-renderer>
+        <pre class="text-content json-content">{{ formattedResolutionOutput }}</pre>
       </div>
     </div>
 

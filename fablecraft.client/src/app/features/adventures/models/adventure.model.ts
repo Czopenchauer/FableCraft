@@ -220,7 +220,48 @@ export interface GatheredContextItemDto {
   content: string;
 }
 
+// ChroniclerStoryState uses snake_case from backend JsonPropertyName attributes
+// and JsonExtensionData which flattens additional properties
 export interface ChroniclerStoryStateDto {
-  worldMomentum: any | null;
-  additionalData?: { [key: string]: any };
+  world_momentum?: any[];
+  dramatic_questions?: DramaticQuestionDto[];
+  promises?: PromiseDto[];
+  active_threads?: ActiveThreadDto[];
+  stakes?: StakeDto[];
+  windows?: WindowDto[];
+  [key: string]: any; // Allow additional properties
+}
+
+export interface DramaticQuestionDto {
+  question: string;
+  introduced: string;
+  tension_level: string;
+  resolution_proximity: string;
+}
+
+export interface PromiseDto {
+  setup: string;
+  introduced: string;
+  time_since: string;
+  payoff_readiness: string;
+}
+
+export interface ActiveThreadDto {
+  name: string;
+  status: string;
+  momentum: string;
+  last_touched: string;
+}
+
+export interface StakeDto {
+  what: string;
+  condition: string;
+  deadline: string;
+  failure_consequence: string;
+}
+
+export interface WindowDto {
+  opportunity: string;
+  closes: string;
+  if_missed: string;
 }

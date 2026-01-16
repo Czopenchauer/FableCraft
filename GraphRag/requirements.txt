@@ -2,6 +2,9 @@
 cognee[all]
 cognee[monitoring]
 
+# NLP dependencies
+transformers
+
 # FastAPI and server
 uvicorn
 fastapi

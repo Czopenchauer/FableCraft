@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
@@ -32,6 +33,8 @@ internal class CharacterNarrativePlugin : CharacterPluginBase
         [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
         string levelOfDetails)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         if (_queryCount >= MaxQueries)
         {
             return $"Maximum number of character narrative queries ({MaxQueries}) reached. You cannot perform more searches!";

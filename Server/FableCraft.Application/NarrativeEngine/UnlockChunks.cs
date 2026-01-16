@@ -1,6 +1,8 @@
-﻿using FableCraft.Infrastructure.Persistence;
+﻿using FableCraft.Application.AdventureGeneration;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace FableCraft.Application.NarrativeEngine;
 
-internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedService
+internal sealed class UnlockChunks(IServiceProvider serviceProvider, IMessageDispatcher messageDispatcher) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -27,7 +29,11 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
             .ToArrayAsync(cancellationToken);
 
         var adventures = await dbContext.Adventures
-            .Where(x => x.RagProcessingStatus == ProcessingStatus.InProgress || x.SceneGenerationStatus == ProcessingStatus.InProgress)
+            .Where(x =>
+                x.RagProcessingStatus == ProcessingStatus.InProgress
+                || x.SceneGenerationStatus == ProcessingStatus.InProgress
+                || x.RagProcessingStatus == ProcessingStatus.Pending
+                || x.SceneGenerationStatus == ProcessingStatus.Pending)
             .ToArrayAsync(cancellationToken);
 
         foreach (var adventure in adventures)
@@ -52,6 +58,15 @@ internal sealed class UnlockChunks(IServiceProvider serviceProvider) : IHostedSe
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var adventure in adventures)
+        {
+            await messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand
+                {
+                    AdventureId = adventure.Id,
+                },
+                cancellationToken);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

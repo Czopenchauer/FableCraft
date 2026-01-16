@@ -1,0 +1,160 @@
+<!-- Loading State -->
+<div *ngIf="isLoading && logs.length === 0" class="loading-state">
+  <svg class="spinner" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path
+      class="opacity-75"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      fill="currentColor"></path>
+  </svg>
+  <p>Loading LLM logs...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="hasError && logs.length === 0" class="loading-state">
+  <svg class="error-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+    <path
+      d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+  </svg>
+  <p>{{ errorMessage }}</p>
+  <button (click)="loadLogs()" class="retry-btn">Retry</button>
+</div>
+
+<!-- Main Content - Two Column Layout -->
+<div *ngIf="!isLoading || logs.length > 0" class="logs-body">
+  <!-- Left Column: Sidebar with Agent Groups -->
+  <div class="logs-sidebar">
+    <!-- No scene selected -->
+    <div *ngIf="!sceneId" class="empty-state">
+      <svg class="empty-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path
+          d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+      </svg>
+      <p>No scene selected</p>
+    </div>
+
+    <!-- Empty state when no logs -->
+    <div *ngIf="sceneId && logGroups.length === 0 && !isLoading" class="empty-state">
+      <svg class="empty-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path
+          d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+      </svg>
+      <p>No LLM logs found for this scene</p>
+    </div>
+
+    <!-- Agent groups -->
+    <div *ngFor="let group of logGroups" class="category-group">
+      <div (click)="toggleGroup(group.callerName)" class="category-header">
+        <svg [class.expanded]="group.isExpanded" class="chevron-icon" viewBox="0 0 24 24">
+          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2"></path>
+        </svg>
+        <span class="category-name">{{ group.callerName }}</span>
+        <span class="entry-count">({{ group.logs.length }})</span>
+      </div>
+      <div *ngIf="group.isExpanded" class="category-entries">
+        <div
+          (click)="selectLog(log)"
+          *ngFor="let log of group.logs"
+          [class.selected]="selectedLog?.id === log.id"
+          class="entry-item"
+        >
+          <span class="entry-title">{{ formatShortTimestamp(log.receivedAt) }}</span>
+          <span class="entry-badge duration-badge">{{ formatDuration(log.duration) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load more button -->
+    <div *ngIf="hasMoreLogs" class="load-more-container">
+      <button (click)="loadMore()" [disabled]="isLoading" class="load-more-btn">
+        <span *ngIf="!isLoading">Load More ({{ logs.length }}/{{ totalCount }})</span>
+        <span *ngIf="isLoading">Loading...</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Right Column: Log Details -->
+  <div class="logs-detail">
+    <!-- Empty state when no log selected -->
+    <div *ngIf="!selectedLog" class="no-selection">
+      <svg class="no-selection-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"></path>
+      </svg>
+      <p>Select a log entry to view details</p>
+    </div>
+
+    <!-- Log details -->
+    <div *ngIf="selectedLog" class="log-detail">
+      <h3 class="detail-title">
+        <svg class="title-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path
+            d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+        </svg>
+        {{ selectedLog.callerName || 'Unknown' }}
+      </h3>
+
+      <div class="log-meta">
+        <span class="meta-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          {{ formatTimestamp(selectedLog.receivedAt) }}
+        </span>
+        <span class="meta-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Duration: {{ formatDuration(selectedLog.duration) }}
+        </span>
+        <span class="meta-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Input: {{ formatTokens(selectedLog.inputToken) }}
+        </span>
+        <span class="meta-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Output: {{ formatTokens(selectedLog.outputToken) }}
+        </span>
+        <span class="meta-item total-tokens">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Total: {{ formatTokens(selectedLog.totalToken) }}
+        </span>
+      </div>
+
+      <!-- Content sections -->
+      <div class="log-content-sections">
+        <div class="content-section">
+          <h4>Request</h4>
+          <div class="content-scroll-wrapper">
+            <pre class="text-content">{{ selectedLog.requestContent }}</pre>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h4>Response</h4>
+          <div class="content-scroll-wrapper">
+            <pre class="text-content">{{ selectedLog.responseContent }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

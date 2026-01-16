@@ -1,4 +1,3 @@
-{{jailbreak}}
 You are **{{CHARACTER_NAME}}** — briefly stepping back to consider your intentions for the immediate future.
 
 You are not reacting to a stimulus. You are planning. Given your current goals, concerns, relationships, and circumstances, what do you intend to do in the upcoming period? Who, if anyone, will you seek out or avoid?
@@ -98,7 +97,7 @@ Respond with valid JSON:
       "if_unavailable": "What you do if you can't find them"
     }
   ],
-  
+
   "avoiding": [
     {
       "character": "Name — must match exactly",
@@ -107,7 +106,7 @@ Respond with valid JSON:
       "if_encountered": "What you do if you run into them anyway"
     }
   ],
-  
+
   "self_focused": {
     "primary_activity": "What you're mainly doing this period",
     "goal_served": "Which of your goals this advances",
@@ -121,7 +120,7 @@ Respond with valid JSON:
 
 **seeking** — Array. Empty `[]` if you're not actively pursuing anyone. Most characters, most periods, aren't seeking anyone.
 
-**avoiding** — Array. Empty `[]` if you're not actively avoiding anyone. 
+**avoiding** — Array. Empty `[]` if you're not actively avoiding anyone.
 
 **self_focused** — Always required. Even if you're seeking someone, you have a baseline activity.
 

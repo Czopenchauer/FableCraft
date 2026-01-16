@@ -132,38 +132,6 @@ Only include fields that changed. For significant shifts, you may add:
 
 For psychological state that changed, use dot-notation keys:
 
-```json
-{
-  "emotional_landscape.current_state": {
-    "primary_emotion": "anxious",
-    "secondary_emotions": ["calculating", "wary"],
-    "intensity": "strong",
-    "cause": "what's driving this"
-  },
-  "goals_and_motivations.active_projects.current_focus": {
-    "what": "current focus",
-    "current_step": "where I am now",
-    "next_actions": ["concrete next steps"],
-    "timeline": "when I expect progress"
-  }
-}
-```
-
-For physical state, same approach:
-
-```json
-{
-  "State.Fatigue.Level": 4,
-  "State.Needs.Hunger": 2
-}
-```
-
-**Rules:**
-- Only include what actually changed
-- Output complete object at each path
-- Use the deepest specific path possible
-- Empty `{}` if nothing changed
-
 {{dot_notation_reference}}
 
 ---

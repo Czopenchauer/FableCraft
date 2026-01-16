@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
@@ -44,6 +45,8 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
         [Description("List of queries to execute (batch multiple related queries together)")]
         string[] queries)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         if (_queryCount >= MaxQueries)
         {
             _logger.Warning(

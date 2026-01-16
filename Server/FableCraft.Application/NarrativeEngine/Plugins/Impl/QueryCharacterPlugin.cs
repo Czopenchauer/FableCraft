@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
@@ -82,6 +83,8 @@ internal sealed class QueryCharacterPlugin : PluginBase
         string query,
         CancellationToken cancellationToken = default)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         if (!_sessions.TryGetValue(character, out var session))
         {
             var availableCharacters = string.Join(", ", _sessions.Keys);

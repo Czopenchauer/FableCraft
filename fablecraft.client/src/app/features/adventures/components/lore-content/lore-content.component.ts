@@ -67,6 +67,15 @@ export class LoreContentComponent implements OnChanges {
     this.jsonParseError = false;
   }
 
+  openWorldGraph(): void {
+    console.log('openWorldGraph called, adventureId:', this.adventureId);
+    if (this.adventureId) {
+      const url = `/visualization/${this.adventureId}_world/cognify_graph_visualization.html`;
+      console.log('Opening URL:', url);
+      window.open(url, '_blank');
+    }
+  }
+
   private loadEntries(): void {
     if (!this.adventureId) return;
 

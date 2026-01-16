@@ -1,4 +1,4 @@
-{{jailbreak}}
+﻿{{jailbreak}}
 You are responsible for maintaining a tracker that records the current state of the narrative environment. The
 output tracker should reflect the current scene!.
 This tracker must be updated whenever relevant changes occur during the scene.
@@ -112,6 +112,46 @@ THEN location = "Portside District > Ironhaven > The Rusty Anchor Tavern > Cella
 - Main Character is never included (always assumed present)
 - Update when: Characters enter or exit the scene
 - List ALL characters/ enemies on scene. For generic NPC use generic term: "guard", "goblin", etc..
+
+# Calendar Context Summary
+
+## Format
+**DD-MM-YYYY** (day-month-year)
+Year 0 = Athenaeum founding. Current year: **516**.
+
+## Months (30 days each)
+| # | Name | Season | Key Events |
+|---|------|--------|------------|
+| 01 | Frost's End | Late Winter | Thaws begin |
+| 02 | Mudmarch | Early Spring | Roads difficult |
+| 03 | Bloom's Rise | Mid Spring | Planting, fertility festivals |
+| 04 | Bright Sky | Late Spring | Peak travel season |
+| 05 | Long Sun | Early Summer | Summer recess starts |
+| 06 | High Summer | Mid Summer | Peak heat, Peaks expeditions |
+| 07 | Grain Gold | Late Summer | Early harvests |
+| 08 | Harvest Moon | Early Autumn | Main harvest, Arrival Week |
+| 09 | Amber Fall | Mid Autumn | Harvest Festival |
+| 10 | Grey Veil | Late Autumn | Rains, days shorten |
+| 11 | Deep Winter | Early Winter | First snow, Long Dark |
+| 12 | Bitter Cold | Mid Winter | Midwinter Recess, Kindling Day |
+
+## Weekdays
+Firstday, Seconday, Thirday, Fourthday, Fifthday, Sixthday, Restday
+
+## Academic Calendar (Athenaeum)
+- **Arrival Week:** 01-08 to 07-08 (first week of Harvest Moon)
+- **Harvest Festival:** Late Month 09 (one week break)
+- **Long Dark:** ~21-11 (solstice)
+- **Midwinter Recess:** Month 12 into early Month 01 (two weeks)
+- **Kindling Day:** Late Month 12
+- **Tournament Week:** Late Month 04
+- **Summer Recess:** Months 05-07
+
+## Quick Reference
+- Spring: Months 02-04
+- Summer: Months 05-07
+- Autumn: Months 08-10
+- Winter: Months 11-12, 01
 
 ### Character Matching Protocol (CRITICAL)
 1. **Identification Step**: When a character appears in the narrative, extract identifying features:

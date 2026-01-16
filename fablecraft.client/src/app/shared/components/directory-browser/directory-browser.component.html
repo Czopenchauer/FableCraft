@@ -19,8 +19,58 @@
 
   <!-- Dropdown panel -->
   <div *ngIf="isOpen" class="browser-dropdown">
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <button
+        (click)="toggleManualMode()"
+        [class.active]="!isManualMode"
+        class="mode-btn"
+        type="button"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        Browse
+      </button>
+      <button
+        (click)="toggleManualMode()"
+        [class.active]="isManualMode"
+        class="mode-btn"
+        type="button"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        Manual
+      </button>
+    </div>
+
+    <!-- Manual input mode -->
+    <div *ngIf="isManualMode" class="manual-input-section">
+      <div class="manual-input-wrapper">
+        <input
+          [(ngModel)]="manualPath"
+          (keydown)="onManualPathKeydown($event)"
+          class="manual-input"
+          placeholder="Enter path (e.g., /app/prompts-root/Default or C:\Prompts\Default)"
+          type="text"
+        />
+        <button
+          (click)="applyManualPath()"
+          [disabled]="!manualPath.trim()"
+          class="apply-btn"
+          type="button"
+        >
+          Apply
+        </button>
+      </div>
+      <span class="manual-help-text">Enter the full path to your prompts directory</span>
+    </div>
+
     <!-- Breadcrumb navigation -->
-    <div *ngIf="listing" class="breadcrumb">
+    <div *ngIf="listing && !isManualMode" class="breadcrumb">
       <button
         (click)="navigateUp()"
         [disabled]="!listing.parentPath"
@@ -40,18 +90,18 @@
     </div>
 
     <!-- Loading state -->
-    <div *ngIf="isLoading" class="browser-loading">
+    <div *ngIf="isLoading && !isManualMode" class="browser-loading">
       <div class="spinner-small"></div>
       <span>Loading...</span>
     </div>
 
     <!-- Error state -->
-    <div *ngIf="errorMessage && !isLoading" class="browser-error">
+    <div *ngIf="errorMessage && !isLoading && !isManualMode" class="browser-error">
       {{ errorMessage }}
     </div>
 
     <!-- Directory list -->
-    <div *ngIf="!isLoading && listing" class="directory-list">
+    <div *ngIf="!isLoading && listing && !isManualMode" class="directory-list">
       <!-- Select current directory button -->
       <button
         (click)="selectCurrentPath()"

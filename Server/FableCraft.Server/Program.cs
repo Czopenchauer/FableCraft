@@ -4,6 +4,8 @@ using FableCraft.Server;
 using FableCraft.Server.Middleware;
 using FableCraft.ServiceDefaults;
 
+using Microsoft.Extensions.FileProviders;
+
 using Serilog;
 using Serilog.Events;
 
@@ -49,6 +51,33 @@ app.MapDefaultEndpoints();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+// Serve visualization files if path is configured
+var visualizationPath = app.Configuration["VisualizationPath"];
+if (!string.IsNullOrEmpty(visualizationPath))
+{
+    var logger = app.Services.GetRequiredService<Serilog.ILogger>();
+
+    // Resolve relative paths based on content root
+    if (!Path.IsPathRooted(visualizationPath))
+    {
+        visualizationPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, visualizationPath));
+    }
+
+    if (Directory.Exists(visualizationPath))
+    {
+        logger.Information("Serving visualization files from: {Path}", visualizationPath);
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(visualizationPath),
+            RequestPath = "/visualization"
+        });
+    }
+    else
+    {
+        logger.Warning("Configured visualization path does not exist: {Path}", visualizationPath);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

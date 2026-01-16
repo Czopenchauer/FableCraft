@@ -197,6 +197,8 @@ internal class RagClient : IRagBuilder, IRagSearch
     public async Task<SearchResult[]> SearchAsync(CallerContext context, IEnumerable<string> datasets, string[] queries, SearchType? searchType = null,
         CancellationToken cancellationToken = default)
     {
+        ProcessExecutionContext.SceneId.Value = context.SceneId;
+        ProcessExecutionContext.AdventureId.Value = context.AdventureId;
         var type = searchType ?? SearchType.GraphCompletion;
         var request = queries.Select(async query =>
         {
@@ -237,6 +239,7 @@ internal class RagClient : IRagBuilder, IRagSearch
             {
                 CallerName = $"{nameof(IRagSearch)}:{context.CallerType.Name}",
                 AdventureId = context.AdventureId,
+                SceneId = context.SceneId,
                 RequestContent = queries.ToJsonString(),
                 ResponseContent = results.Select(x => new { x.query, response = x.Item2 }).ToJsonString(),
                 InputToken = null,

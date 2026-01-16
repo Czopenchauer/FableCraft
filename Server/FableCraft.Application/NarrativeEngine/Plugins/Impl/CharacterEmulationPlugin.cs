@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
 using Microsoft.SemanticKernel;
@@ -37,6 +38,11 @@ internal sealed class CharacterEmulationPlugin : PluginBase
         string stimulus,
         [Description("\"What do they do?\" / \"What do they say?\" / \"How do they react?\"")]
         string query
-    ) =>
-        await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
+    )
+    {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
+
+        return await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
+    }
 }

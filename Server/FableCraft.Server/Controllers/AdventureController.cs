@@ -10,6 +10,8 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using ILogger = Serilog.ILogger;
+
 namespace FableCraft.Server.Controllers;
 
 [ApiController]
@@ -19,15 +21,17 @@ public class AdventureController : ControllerBase
     private readonly IAdventureCreationService _adventureCreationService;
     private readonly ApplicationDbContext _dbContext;
     private readonly IMessageDispatcher _messageDispatcher;
+    private readonly ILogger  _logger;
 
     public AdventureController(
         IAdventureCreationService adventureCreationService,
         IMessageDispatcher messageDispatcher,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext, ILogger logger)
     {
         _adventureCreationService = adventureCreationService;
         _messageDispatcher = messageDispatcher;
         _dbContext = dbContext;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -66,6 +70,7 @@ public class AdventureController : ControllerBase
 
         if (errors.Count > 0)
         {
+            _logger.Error("There were {ErrorsCount} validation errors: {StringsMap}", errors.Count, string.Join("\n", string.Join("\n", errors.Values)));
             return BadRequest(Results.ValidationProblem(errors));
         }
 
@@ -144,6 +149,8 @@ public class AdventureController : ControllerBase
         if (string.IsNullOrEmpty(basePath))
         {
             var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
+            // Trim trailing slashes before getting parent directory
+            defaultPromptPath = defaultPromptPath.TrimEnd('/', '\\');
             basePath = Path.GetDirectoryName(defaultPromptPath) ?? "";
         }
 

@@ -4,11 +4,26 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var serverDatabase = builder
-    .AddPostgres("fablecraftdb-npgsql", port: 6999)
-    .WithImage("postgres", "18.0")
-    .WithDataVolumeForV18()
-    .AddDatabase("fablecraftdb", "fablecraftdb");
+// Check if we should use an external PostgreSQL (e.g., from Docker Compose)
+var useExternalDb = builder.Configuration["FableCraft:UseExternalDatabase"] == "true";
+var externalDbConnectionString = builder.Configuration["ConnectionStrings:fablecraftdb"];
+
+IResourceBuilder<IResourceWithConnectionString> serverDatabase;
+
+if (useExternalDb && !string.IsNullOrEmpty(externalDbConnectionString))
+{
+    // Use external database (e.g., Docker Compose PostgreSQL)
+    serverDatabase = builder.AddConnectionString("fablecraftdb");
+}
+else
+{
+    // Aspire manages its own PostgreSQL container
+    serverDatabase = builder
+        .AddPostgres("fablecraftdb-npgsql", port: 6999)
+        .WithImage("postgres", "18.0")
+        .WithDataVolumeForV18("fablecraft-postgres-data")
+        .AddDatabase("fablecraftdb", "fablecraftdb");
+}
 
 var graphRagLlmMaxTokens = builder.Configuration["FableCraft:Server:GraphRag:MaxTokens"] ?? "16384";
 var graphRagLlmApiKey = builder.Configuration["FableCraft:GraphRag:LLM:ApiKey"]!;
@@ -65,7 +80,7 @@ var graphRagApi = builder
 
 var promptPath = @$"{TryGetSolutionDirectoryInfo().FullName}\Prompts\Default\";
 
-var server = builder
+var serverBuilder = builder
     .AddProject<FableCraft_Server>("fablecraft-server")
     .WithReference(graphRagApi)
     .WithReference(serverDatabase)
@@ -74,8 +89,15 @@ var server = builder
     .WithEnvironment("FABLECRAFT_DATA_STORE", @$"{TryGetSolutionDirectoryInfo().FullName}\data-store")
     .WithEnvironment("FABLECRAFT_LOG_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\logs\")
     .WithEnvironment("DEFAULT_PROMPT_PATH", promptPath)
-    .WaitFor(graphRagApi)
-    .WaitFor(serverDatabase);
+    .WaitFor(graphRagApi);
+
+// Only wait for database if Aspire is managing it (not external)
+if (!useExternalDb)
+{
+    serverBuilder.WaitFor(serverDatabase);
+}
+
+var server = serverBuilder;
 
 builder.AddNpmApp("fablecraft-client", "../FableCraft.Client")
     .WithHttpEndpoint(env: "PORT", port: 4211)

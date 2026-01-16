@@ -1,0 +1,451 @@
+/* LLM Logs Tab - Theme-aware styling (matching Lore tab) */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-md);
+  flex: 1;
+  min-height: 0;
+}
+
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-error, #ef4444);
+  margin-bottom: var(--spacing-md);
+}
+
+.retry-btn {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.retry-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--color-primary);
+}
+
+/* Body - Two Column Layout */
+.logs-body {
+  display: flex;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left Column: Sidebar */
+.logs-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-secondary);
+  padding: var(--spacing-md);
+  margin: calc(-1 * var(--spacing-xl));
+  margin-right: 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+[data-theme="modern-dark"] .logs-sidebar {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="medieval-fantasy"] .logs-sidebar {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Empty State */
+.empty-state,
+.no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  flex: 1;
+  min-height: 0;
+}
+
+.empty-icon,
+.no-selection-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-state p,
+.no-selection p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* Category Groups */
+.category-group {
+  margin-bottom: var(--spacing-sm);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  user-select: none;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.category-header:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="modern-dark"] .category-header:hover {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+[data-theme="medieval-fantasy"] .category-header:hover {
+  background: rgba(184, 134, 11, 0.1);
+}
+
+.chevron-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.category-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="modern-dark"] .category-name {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .category-name {
+  color: var(--color-primary);
+}
+
+.entry-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* Category Entries */
+.category-entries {
+  padding-left: var(--spacing-lg);
+  margin-top: var(--spacing-xs);
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+}
+
+[data-theme="modern-dark"] .entry-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="medieval-fantasy"] .entry-item {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.entry-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .entry-item:hover {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="medieval-fantasy"] .entry-item:hover {
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.entry-item.selected {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--color-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="modern-dark"] .entry-item.selected {
+  background: rgba(168, 85, 247, 0.15);
+  border-left-color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .entry-item.selected {
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.entry-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-family: var(--font-family-mono, monospace);
+}
+
+.duration-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .duration-badge {
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--color-primary);
+}
+
+/* Load More */
+.load-more-container {
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: center;
+}
+
+.load-more-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--color-primary);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Right Column: Detail Pane */
+.logs-detail {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+[data-theme="medieval-fantasy"] .detail-title {
+  color: var(--color-primary);
+}
+
+.title-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+}
+
+/* Log Meta */
+.log-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.meta-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.meta-item.total-tokens {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+[data-theme="medieval-fantasy"] .meta-item.total-tokens {
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--color-primary);
+}
+
+/* Content Sections */
+.log-content-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.content-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.content-section h4 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.content-scroll-wrapper {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.text-content {
+  margin: 0;
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .logs-body {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .logs-sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-secondary);
+    padding: var(--spacing-md);
+    margin: calc(-1 * var(--spacing-xl));
+    margin-bottom: 0;
+    max-height: 200px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .logs-detail {
+    min-height: 300px;
+  }
+
+  .log-meta {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .meta-item {
+    width: fit-content;
+  }
+
+  .content-scroll-wrapper {
+    max-height: 250px;
+  }
+}

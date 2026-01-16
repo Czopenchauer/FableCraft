@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Persistence;
 
 using Microsoft.SemanticKernel;
@@ -27,6 +28,8 @@ internal sealed class CharacterStatePlugin : PluginBase
         [Description("The name of the character")]
         string targetCharacterName)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         _logger.Information("Getting state for {CharacterName}", targetCharacterName);
 
         var characterContext = Characters.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);

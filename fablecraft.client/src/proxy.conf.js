@@ -12,7 +12,8 @@ console.log('===========================================');
 const PROXY_CONFIG = [
   {
     context: [
-      "/api"
+      "/api",
+      "/visualization"
     ],
     target,
     secure: false,

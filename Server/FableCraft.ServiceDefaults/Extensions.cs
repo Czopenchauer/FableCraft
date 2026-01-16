@@ -59,13 +59,14 @@ public static class Extensions
             .MinimumLevel.Information()
             .Enrich.FromLogContext()
             .Enrich.WithProperty("ApplicationName", "FableCraft.Server")
-            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {CorrelationId}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
             // Aspire dashboard
             .WriteTo.OpenTelemetry()
             //.WriteTo.Seq(seqLogUrl)
             .WriteTo.File(
                 Environment.GetEnvironmentVariable("FABLECRAFT_LOG_PATH") ?? "./logs/log-.txt",
-                rollingInterval: RollingInterval.Hour));
+                rollingInterval: RollingInterval.Hour,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
         // Uncomment the following to restrict the allowed schemes for service discovery.
         // builder.Services.Configure<ServiceDiscoveryOptions>(options =>

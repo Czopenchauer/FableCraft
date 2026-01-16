@@ -54,14 +54,6 @@ public class Scene : IEntity
 
     [Key]
     public Guid Id { get; set; }
-
-    public string GetSceneWithSelectedAction()
-    {
-        var selectedAction = CharacterActions.FirstOrDefault(x => x.Selected);
-        return selectedAction != null
-            ? $"{NarrativeText}\n{selectedAction.ActionDescription}".Trim()
-            : NarrativeText;
-    }
 }
 
 public sealed class Metadata

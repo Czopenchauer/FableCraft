@@ -47,7 +47,7 @@ internal class InMemoryMessageReader(IServiceProvider serviceProvider, Channel<M
                                 try
                                 {
                                     using var linkedActivity = new Activity("ProcessMessage")
-                                        .SetParentId(messageWithContext.Activity!.Id!)
+                                        .SetParentId(messageWithContext.Activity?.Id ?? Guid.NewGuid().ToString())
                                         .Start();
                                     using var llmActivity = Telemetry.LlmActivitySource.StartActivity(message.GetType().Name);
 

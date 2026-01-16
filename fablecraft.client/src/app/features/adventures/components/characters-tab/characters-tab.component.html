@@ -14,6 +14,21 @@
 <div *ngIf="!isLoading" class="characters-body">
   <!-- Left Column: Character List Sidebar -->
   <div class="character-sidebar">
+    <!-- Main Character Graph Button -->
+    <button
+      (click)="openMainCharacterGraph()"
+      class="main-character-graph-btn"
+      title="View Main Character Knowledge Graph"
+    >
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path
+          d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+      </svg>
+      <span>Main Character Graph</span>
+    </button>
+
     <!-- Empty state when no characters -->
     <div *ngIf="characters.length === 0" class="empty-state">
       <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,6 +52,18 @@
         <span [ngClass]="getImportanceBadgeClass(char)" class="importance-badge">
           {{ getImportanceLabel(char.importance) }}
         </span>
+        <button
+          (click)="openCharacterGraph(char.characterId); $event.stopPropagation()"
+          class="character-graph-btn"
+          title="View {{ char.name }}'s Knowledge Graph"
+        >
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path
+              d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>

@@ -24,11 +24,9 @@ Your thinking MUST address each of these in order:
 #### Step 2: Physical Profile Construction
 From the character concept, determine:
 - **Appearance**: Height, build, hair, eyes, skin, distinguishing features
-- **Body**: Physical characteristics appropriate to the world's tone and content calibration
+- **Body**: Physical characteristics appropriate to the world's tone
 - **Voice**: Typical voice quality and speech patterns
 - **Permanent Marks**: Any pre-existing scars, tattoos, piercings, brands from backstory
-
-Consult the Story Bible's content calibration for how explicit physical descriptions should be.
 
 #### Step 3: Starting State Determination
 For each state category in the tracker schema, establish baseline:
@@ -37,7 +35,7 @@ For each state category in the tracker schema, establish baseline:
 - **Resources**: Starting resource pools based on character type and world setting
 - **Appearance**: Initial clothing, hair style, grooming state
 - **Situation**: Starting position, location context, freedom status, sensory state
-- **Equipment**: Starting clothing, weapons, inventory items, restraints (if any)
+- **Equipment**: Starting clothing, weapons, inventory items
 - **Other categories**: As defined by the tracker schema
 
 #### Step 4: Development Profile Construction
@@ -82,7 +80,7 @@ You receive character creation information:
 ### 5. Progression System
 {{progression_system}}
 
-### 6. Story Bible (Content Calibration)
+### 6. Story Bible
 {{story_bible}}
 
 ---
@@ -104,6 +102,20 @@ Skills, traits, and abilities should reflect the character's history:
 - Consider what their background has taught them
 - Use the progression system's proficiency scale for skill levels
 
+**Creating Skills from Backstory:**
+- Identify all skills the character would have developed
+- Assign proficiency levels based on training duration and intensity
+- A few years of casual practice → Novice to Competent
+- Professional training/career → Competent to Skilled
+- Exceptional background focus → Expert or higher
+- Include both obvious skills (a mage's magic) and implied skills (a noble's etiquette)
+
+**Creating Abilities from Backstory:**
+- List all spells, techniques, or special abilities the character knows
+- Assign appropriate tiers based on their skill level
+- A Journeyman fire mage knows Cantrip through Standard fire spells
+- Include any unique or signature abilities mentioned in backstory
+
 ### 3. Situation Awareness
 The starting state should reflect their immediate circumstances:
 - Clothing appropriate to their situation
@@ -116,13 +128,6 @@ All values must fit the world setting:
 - Resource pools match what the world defines
 - Technology/magic level affects available items
 - Social structure affects resources and equipment
-- Content calibration affects description explicitness
-
-### 5. Content Calibration
-Physical descriptions and certain tracker fields should match the Story Bible's content calibration:
-- **Detailed worlds**: Full physical detail where narratively relevant
-- **Moderate worlds**: Standard descriptive detail
-- **Reserved worlds**: Minimal physical description
 
 ---
 
@@ -165,7 +170,7 @@ Output the full initial tracker JSON matching the schema structure:
 
 ## OUTPUT RULES
 
-1. **All three sections are required.** Context, description, and full tracker state.
+1. **Both sections are required.** Description and full tracker state.
 
 2. **Complete state output.** Initialize ALL fields from the schema—don't leave gaps.
 
@@ -203,9 +208,9 @@ If no resource system is defined in the world:
 3. **COMPLETE STATE** — Initialize ALL fields, don't leave gaps
 4. **BACKSTORY COHERENCE** — Skills and traits must match the character's history
 5. **WORLD CONSISTENCY** — All values must fit the setting
-6. **CONTENT CALIBRATION** — Match description explicitness to Story Bible
-7. **REASONABLE DEFAULTS** — When not specified, use sensible starting values
-8. **THREE OUTPUT SECTIONS** — Context, description, and tracker in their XML tags
+6. **REASONABLE DEFAULTS** — When not specified, use sensible starting values
+7. **TWO OUTPUT SECTIONS** — Description and tracker in their XML tags
+8. **Fill traits** - fill traits with known personality
 
 ---
 

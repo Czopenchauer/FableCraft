@@ -8,6 +8,8 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.EntityFrameworkCore;
 
+using Serilog;
+
 namespace FableCraft.Application.AdventureGeneration;
 
 public class AddAdventureToKnowledgeGraphCommand : IMessage
@@ -18,7 +20,8 @@ public class AddAdventureToKnowledgeGraphCommand : IMessage
 internal class AddAdventureToKnowledgeGraphCommandHandler(
     ApplicationDbContext dbContext,
     IRagChunkService ragChunkService,
-    SceneGenerationOrchestrator sceneGenerationOrchestrator)
+    SceneGenerationOrchestrator sceneGenerationOrchestrator,
+    ILogger logger)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
     public async Task HandleAsync(AddAdventureToKnowledgeGraphCommand message, CancellationToken cancellationToken)
@@ -27,10 +30,18 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == message.AdventureId, cancellationToken);
 
-        if (adventure is null
-            || (adventure.RagProcessingStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)
-                && adventure.SceneGenerationStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)))
+        if (adventure is null)
         {
+            logger.Information("Adventure not found");
+            return;
+        }
+
+        if ((adventure.RagProcessingStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)
+             && adventure.SceneGenerationStatus is not (ProcessingStatus.Pending or ProcessingStatus.Failed)))
+        {
+            logger.Information("Skipping adding adventure due to it being in {ragState} RagState and scene state {sceneState}",
+                adventure.RagProcessingStatus,
+                adventure.SceneGenerationStatus);
             return;
         }
 

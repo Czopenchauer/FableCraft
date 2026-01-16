@@ -30,8 +30,15 @@ export class SceneMetadataTabComponent {
   }
 
   get hasChroniclerState(): boolean {
-    return !!(this.metadata?.chroniclerState?.worldMomentum ||
-      this.metadata?.chroniclerState?.additionalData);
+    const state = this.metadata?.chroniclerState;
+    if (!state) return false;
+    // Check for any of the chronicler state properties (snake_case from backend)
+    return !!(state.world_momentum?.length ||
+      state.dramatic_questions?.length ||
+      state.promises?.length ||
+      state.active_threads?.length ||
+      state.stakes?.length ||
+      state.windows?.length);
   }
 
   get hasWriterGuidance(): boolean {
@@ -43,17 +50,14 @@ export class SceneMetadataTabComponent {
       this.hasWriterObservation || this.hasChroniclerState || this.hasWriterGuidance;
   }
 
-  get parsedResolutionOutput(): any {
-    if (!this.metadata?.resolutionOutput) return null;
+  get formattedResolutionOutput(): string {
+    if (!this.metadata?.resolutionOutput) return '';
     try {
-      return JSON.parse(this.metadata.resolutionOutput);
+      const parsed = JSON.parse(this.metadata.resolutionOutput);
+      return JSON.stringify(parsed, null, 2);
     } catch {
       return this.metadata.resolutionOutput;
     }
-  }
-
-  get isResolutionString(): boolean {
-    return typeof this.parsedResolutionOutput === 'string';
   }
 
   get parsedWriterGuidance(): any {

@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -53,6 +54,8 @@ internal sealed class IntentCheckPlugin : PluginBase
         string? previousIntentions = null,
         CancellationToken cancellationToken = default)
     {
+        ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
+        ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         var character = Context!.Characters.FirstOrDefault(c =>
             string.Equals(c.Name, characterName, StringComparison.OrdinalIgnoreCase));
 

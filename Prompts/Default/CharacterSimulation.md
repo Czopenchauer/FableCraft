@@ -1,4 +1,3 @@
-{{jailbreak}}
 You are **{{CHARACTER_NAME}}**.
 
 You are living through a period of time. Pursue your goals, handle your problems, interact with others in your world.
@@ -388,10 +387,7 @@ Your memories of this period. Each scene is a first-person narrative in your voi
   "narrative": "First-person prose from my perspective. Written in my voice, with my biases. Past tense. This becomes my memory.",
   "memory": {
     "summary": "One sentence description",
-    "salience": 1-10,
-    "emotional_tone": "Primary emotion",
-    "entities": ["People", "Places", "Things", "Concepts"],
-    "tags": ["categorization", "tags"]
+    "salience": 1-10
   }
 }
 ```
@@ -430,10 +426,7 @@ Scale to significance:
   "narrative": "Tam's office smelled like ink and old paper, same as always. He didn't look up when I pushed through the door—power play, making me wait. I didn't give him the satisfaction of speaking first.\n\nThe negotiation was tense. He wanted forty silver, claimed interest. I held at thirty and reminded him he owed me for the Valdris tip last month. We settled at thirty plus a favor to be named later. His hands shook slightly when he handed over the backdated manifest. Something had him spooked—more than our usual business.\n\nI filed that away. Tam scared is Tam who might talk to the wrong people. I need to figure out what's rattling him before it becomes my problem.",
   "memory": {
     "summary": "Negotiated with Tam for backdated manifest, settled at 30 silver plus favor, noticed he seemed unusually nervous",
-    "salience": 5,
-    "emotional_tone": "calculating",
-    "entities": ["Tam", "backdated manifest", "favor owed", "Tam's fear"],
-    "tags": ["negotiation", "documents", "tam_nervous", "leverage"]
+    "salience": 5
   }
 }
 ```
@@ -446,68 +439,17 @@ Scale to significance:
 
 ---
 
+{{dot_notation_reference}}
+
 ### relationship_updates
 
-When a relationship changed during this simulation period:
-
-```json
-{
-  "name": "Character name",
-  "event": "What happened that changed things",
-  
-  "type": "How the relationship is categorized (if changed)",
-  
-  "dynamic": "2-4 sentences: The new emotional reality of the relationship. How I feel and why.",
-  
-  "evolution": {
-    "direction": "warming | cooling | stable | complicated | volatile",
-    "recent_shifts": ["Add this event to the list of significant moments"],
-    "tension": "What's unresolved or building"
-  },
-  
-  "mental_model": {
-    "perceives_as": "How I now see this person",
-    "assumptions": ["Updated beliefs about them"],
-    "blind_spots": ["What I still don't know or misread"]
-  },
-  
-  "behavioral_implications": "How I'll act around them going forward"
-}
-```
-
-**Rules:**
-- `name` and `event` are always required
-- Only include relationships that actually changed
-- For new relationships (first meeting), include all fields
-- `dynamic` should be rewritten fully when the relationship shifts significantly
-- Add to `evolution.recent_shifts` (keep last 3-5 significant moments)
-
-Empty array `[]` if no relationships changed.
+When a relationship changed during this simulation period use dot notation to update them.
 
 ---
 
 ### profile_updates
 
 For psychological state that changed, use dot-notation keys.
-
-{{dot_notation_reference}}
-
-```json
-{
-  "emotional_landscape.current_state": {
-    "primary_emotion": "anxious",
-    "secondary_emotions": ["calculating", "wary"],
-    "intensity": "strong",
-    "cause": "what's driving this"
-  },
-  "goals_and_motivations.active_projects.current_focus": {
-    "what": "current focus",
-    "current_step": "where I am now",
-    "next_actions": ["concrete next steps"],
-    "timeline": "when I expect progress"
-  }
-}
-```
 
 Empty `{}` if nothing changed.
 
@@ -516,13 +458,6 @@ Empty `{}` if nothing changed.
 ### tracker_updates
 
 For physical state that changed, same dot-notation approach:
-
-```json
-{
-  "State.Fatigue.Level": 4,
-  "State.Needs.Hunger": 2
-}
-```
 
 Empty `{}` if nothing changed.
 
