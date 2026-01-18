@@ -10,8 +10,7 @@ namespace FableCraft.Tests.Integration.SceneRegeneration.Fixtures;
 
 public class PostgresContainerFixture : IAsyncInitializer, IAsyncDisposable
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("fablecraft_test")
         .WithUsername("test")
         .WithPassword("test")
