@@ -37,6 +37,11 @@ services:
     container_name: graph-rag-api
     ports:
       - "8111:8111"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     env_file:
       - ./GraphRag/.env.docker
     # These override env_file values and read from root .env
@@ -102,6 +107,11 @@ services:
     container_name: fablecraft-client
     ports:
       - "4200:80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - fablecraft-server
     networks:

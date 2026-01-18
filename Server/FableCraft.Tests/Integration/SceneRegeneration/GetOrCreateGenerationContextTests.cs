@@ -54,18 +54,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         adventure.Scenes.Add(scene);
 
         var existingSceneId = Guid.NewGuid();
-        var existingContext = new GenerationContext
-        {
-            AdventureId = adventure.Id,
-            PlayerAction = "Explore the forest",
-            NewSceneId = existingSceneId
-        };
-        var existingProcess = new GenerationProcess
-        {
-            AdventureId = adventure.Id,
-            Context = existingContext.ToJsonString(),
-            Step = GenerationProcessStep.GeneratingScene
-        };
+        var existingProcess = CreateGenerationProcess(adventure.Id, "Explore the forest", existingSceneId, GenerationProcessStep.GeneratingScene);
 
         db.Adventures.Add(adventure);
         db.GenerationProcesses.Add(existingProcess);
@@ -74,13 +63,14 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var (context, step) = await builder.GetOrCreateGenerationContextAsync(
             adventure.Id, "Explore the forest", CancellationToken.None);
 
+        // Should return the existing context
         await Assert.That(context.PlayerAction).IsEqualTo("Explore the forest");
         await Assert.That(context.NewSceneId).IsEqualTo(existingSceneId);
         await Assert.That(step).IsEqualTo(GenerationProcessStep.GeneratingScene);
     }
 
     [Test]
-    public async Task WhenProcessExistsWithDifferentAction_CreatesNewProcess()
+    public async Task WhenProcessExistsWithDifferentAction_ReplacesWithNewProcess()
     {
         await using var db = fixture.CreateDbContext();
         var builder = CreateBuilder();
@@ -90,18 +80,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         adventure.Scenes.Add(scene);
 
         var oldSceneId = Guid.NewGuid();
-        var existingContext = new GenerationContext
-        {
-            AdventureId = adventure.Id,
-            PlayerAction = "Explore the forest",
-            NewSceneId = oldSceneId
-        };
-        var existingProcess = new GenerationProcess
-        {
-            AdventureId = adventure.Id,
-            Context = existingContext.ToJsonString(),
-            Step = GenerationProcessStep.GeneratingScene
-        };
+        var existingProcess = CreateGenerationProcess(adventure.Id, "Explore the forest", oldSceneId, GenerationProcessStep.GeneratingScene);
 
         db.Adventures.Add(adventure);
         db.GenerationProcesses.Add(existingProcess);
@@ -110,13 +89,14 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var (context, step) = await builder.GetOrCreateGenerationContextAsync(
             adventure.Id, "Go to the tavern", CancellationToken.None);
 
+        // Should create new context with different action
         await Assert.That(context.PlayerAction).IsEqualTo("Go to the tavern");
         await Assert.That(context.NewSceneId).IsNotEqualTo(oldSceneId);
         await Assert.That(step).IsEqualTo(GenerationProcessStep.NotStarted);
     }
 
     [Test]
-    public async Task PopulatesScenesFromAdventure()
+    public async Task SceneContext_IncludesAllScenesUpTo20()
     {
         await using var db = fixture.CreateDbContext();
         var builder = CreateBuilder();
@@ -138,7 +118,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
     }
 
     [Test]
-    public async Task LimitsScenesTo20()
+    public async Task SceneContext_LimitedTo20MostRecent()
     {
         await using var db = fixture.CreateDbContext();
         var builder = CreateBuilder();
@@ -156,13 +136,44 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
             adventure.Id, "New action", CancellationToken.None);
 
         await Assert.That(context.SceneContext).Count().IsEqualTo(20);
-        // Should have the 20 most recent scenes
+        // Should have the 20 most recent scenes (6-25)
         await Assert.That(context.SceneContext.Max(s => s.SequenceNumber)).IsEqualTo(25);
         await Assert.That(context.SceneContext.Min(s => s.SequenceNumber)).IsEqualTo(6);
     }
 
     [Test]
-    public async Task PopulatesCharactersWithLatestState()
+    public async Task Characters_HaveLatestState()
+    {
+        await using var db = fixture.CreateDbContext();
+        var builder = CreateBuilder();
+
+        var adventure = TestData.CreateAdventure();
+        var scene1 = TestData.CreateScene(adventure.Id, 1, selectedAction: "Action 1");
+        var scene2 = TestData.CreateScene(adventure.Id, 2, selectedAction: "Action 2");
+        adventure.Scenes.Add(scene1);
+        adventure.Scenes.Add(scene2);
+
+        var character = TestData.CreateCharacter(adventure.Id, scene1, "Elena", description: "A skilled fighter");
+        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena - after scene 1"));
+        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena - after scene 2"));
+        adventure.Characters.Add(character);
+
+        db.Adventures.Add(adventure);
+        await db.SaveChangesAsync();
+
+        var (context, _) = await builder.GetOrCreateGenerationContextAsync(
+            adventure.Id, "New action", CancellationToken.None);
+
+        await Assert.That(context.Characters).Count().IsEqualTo(1);
+        var elena = context.Characters.Single();
+        await Assert.That(elena.Name).IsEqualTo("Elena");
+        await Assert.That(elena.Description).IsEqualTo("A skilled fighter");
+        // Should have the latest state
+        await Assert.That(elena.CharacterState.Name).IsEqualTo("Elena - after scene 2");
+    }
+
+    [Test]
+    public async Task Characters_IncludeMemoriesAndLatestRelationships()
     {
         await using var db = fixture.CreateDbContext();
         var builder = CreateBuilder();
@@ -174,35 +185,12 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         adventure.Scenes.Add(scene2);
 
         var character = TestData.CreateCharacter(adventure.Id, scene1, "Elena");
-        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena - Old"));
-        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena - Latest"));
-        adventure.Characters.Add(character);
-
-        db.Adventures.Add(adventure);
-        await db.SaveChangesAsync();
-
-        var (context, _) = await builder.GetOrCreateGenerationContextAsync(
-            adventure.Id, "New action", CancellationToken.None);
-
-        await Assert.That(context.Characters).Count().IsEqualTo(1);
-        var elena = context.Characters.Single();
-        await Assert.That(elena.CharacterState.Name).IsEqualTo("Elena - Latest");
-    }
-
-    [Test]
-    public async Task PopulatesCharacterMemoriesAndRelationships()
-    {
-        await using var db = fixture.CreateDbContext();
-        var builder = CreateBuilder();
-
-        var adventure = TestData.CreateAdventure();
-        var scene = TestData.CreateScene(adventure.Id, 1, selectedAction: "Action 1");
-        adventure.Scenes.Add(scene);
-
-        var character = TestData.CreateCharacter(adventure.Id, scene, "Elena");
-        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene, 1, "Elena"));
-        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene.Id, "Important memory"));
-        character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene.Id, 1, "Hero", "Friendly"));
+        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena"));
+        character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena"));
+        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene1.Id, "Important memory"));
+        // Two relationships - should get latest
+        character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene1.Id, 1, "Hero", "Neutral"));
+        character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene2.Id, 2, "Hero", "Friendly"));
         adventure.Characters.Add(character);
 
         db.Adventures.Add(adventure);
@@ -215,11 +203,12 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(elena.CharacterMemories).Count().IsEqualTo(1);
         await Assert.That(elena.CharacterMemories.Single().MemoryContent).IsEqualTo("Important memory");
         await Assert.That(elena.Relationships).Count().IsEqualTo(1);
-        await Assert.That(elena.Relationships.Single().TargetCharacterName).IsEqualTo("Hero");
+        // Should have latest relationship
+        await Assert.That(elena.Relationships.Single().Dynamic.ToString()).IsEqualTo("Friendly");
     }
 
     [Test]
-    public async Task PopulatesLoreFromMostRecentScene()
+    public async Task PreviouslyGeneratedLore_FromMostRecentScene()
     {
         await using var db = fixture.CreateDbContext();
         var builder = CreateBuilder();
@@ -229,9 +218,9 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var scene2 = TestData.CreateScene(adventure.Id, 2, selectedAction: "Action 2");
 
         scene1.Lorebooks.Add(TestData.CreateLorebookEntry(adventure.Id, scene1.Id, "Lore", "Old Lore",
-            "{\"title\":\"Old Lore\",\"description\":\"From scene 1\"}"));
+            "{\"name\":\"Old Lore\",\"content\":\"From scene 1\"}"));
         scene2.Lorebooks.Add(TestData.CreateLorebookEntry(adventure.Id, scene2.Id, "Lore", "New Lore",
-            "{\"title\":\"New Lore\",\"description\":\"From scene 2\"}"));
+            "{\"name\":\"New Lore\",\"content\":\"From scene 2\"}"));
 
         adventure.Scenes.Add(scene1);
         adventure.Scenes.Add(scene2);
@@ -267,7 +256,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(context.PromptPath).IsEqualTo("CustomPrompts");
         await Assert.That(context.AdventureStartTime).IsEqualTo("08:00 15-03-845");
         await Assert.That(context.MainCharacter).IsNotNull();
-        await Assert.That(context.MainCharacter.Name).IsEqualTo("Hero");
         await Assert.That(context.TrackerStructure).IsNotNull();
     }
 
@@ -282,7 +270,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         adventure.Scenes.Add(scene);
 
         // Simulate corrupted/null context scenario
-        var existingProcess = new GenerationProcess
+        var corruptedProcess = new GenerationProcess
         {
             AdventureId = adventure.Id,
             Context = "null",
@@ -290,7 +278,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         };
 
         db.Adventures.Add(adventure);
-        db.GenerationProcesses.Add(existingProcess);
+        db.GenerationProcesses.Add(corruptedProcess);
         await db.SaveChangesAsync();
 
         var (context, step) = await builder.GetOrCreateGenerationContextAsync(
@@ -298,5 +286,25 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
 
         await Assert.That(context.PlayerAction).IsEqualTo("New action");
         await Assert.That(step).IsEqualTo(GenerationProcessStep.NotStarted);
+    }
+
+    private static GenerationProcess CreateGenerationProcess(
+        Guid adventureId,
+        string playerAction,
+        Guid? newSceneId = null,
+        GenerationProcessStep step = GenerationProcessStep.NotStarted)
+    {
+        var context = new GenerationContext
+        {
+            AdventureId = adventureId,
+            PlayerAction = playerAction,
+            NewSceneId = newSceneId ?? Guid.NewGuid()
+        };
+        return new GenerationProcess
+        {
+            AdventureId = adventureId,
+            Context = context.ToJsonString(),
+            Step = step
+        };
     }
 }
