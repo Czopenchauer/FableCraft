@@ -60,7 +60,7 @@ internal sealed class PartialProfileCrafter(
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
-        var outputParser = ResponseParser.CreateJsonParser<GeneratedPartialProfile>("partial_profile");
+        var outputParser = CreateOutputParser();
 
         return await agentKernel.SendRequestAsync(
             chatHistory,
@@ -69,5 +69,22 @@ internal sealed class PartialProfileCrafter(
             nameof(PartialProfileCrafter),
             kernelWithKg,
             cancellationToken);
+    }
+
+    private static Func<string, GeneratedPartialProfile>
+        CreateOutputParser()
+    {
+        return response =>
+        {
+            var profile = ResponseParser.ExtractJson<GeneratedPartialProfile>(response, "partial_profile");
+            profile.Description = ResponseParser.ExtractText(response, "description");
+
+            if (string.IsNullOrEmpty(profile.Description))
+            {
+                throw new InvalidCastException("Failed to parse character description from response due to empty description.");
+            }
+
+            return profile;
+        };
     }
 }

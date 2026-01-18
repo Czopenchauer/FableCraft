@@ -111,7 +111,7 @@ Output in `<partial_profile>` tags as valid JSON:
 {
   "name": "[Full name]",
   
-  "identity": "[One sentence: who they are, what they do, their place in the world]",
+  "identity": "[Two-three sentence: who they are, what they do, their place in the world]",
   
   "appearance": "[2-3 sentences: physical description with sensory details. What someone would notice and remember.]",
   

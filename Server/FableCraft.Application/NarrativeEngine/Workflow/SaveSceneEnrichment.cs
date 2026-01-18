@@ -51,6 +51,7 @@ internal sealed class SaveSceneEnrichment(
                     Topic = x.Topic,
                     Content = x.Content
                 }).ToArray(),
+                BackgroundRoster = context.ContextGathered.BackgroundRoster,
                 AdditionalProperties = context.ContextGathered.AdditionalData
             };
         }
@@ -88,7 +89,7 @@ internal sealed class SaveSceneEnrichment(
                                                   Title = x.Name,
                                                   Description = x.Description,
                                                   Category = nameof(LorebookCategory.BackgroundCharacter),
-                                                  Content = x.ToJsonString(),
+                                                  Content = x.Description,
                                                   ContentType = ContentType.json
                                               }).ToList()
                                               ?? new List<LorebookEntry>();
@@ -175,6 +176,46 @@ internal sealed class SaveSceneEnrichment(
         {
             characterUpdates = context.CharacterUpdates?.ToList() ?? [];
             newCharacters = context.NewCharacters?.ToList() ?? [];
+        }
+
+        if (context.NewBackgroundCharacters.Count > 0)
+        {
+            var backgroundCharacterEntities = context.NewBackgroundCharacters.Select(x => new BackgroundCharacter
+            {
+                AdventureId = context.AdventureId,
+                Description = x.Description,
+                SceneId = scene.Id,
+                Scene = scene,
+                Name = x.Name,
+                Identity = x.Identity,
+                LastLocation = context.NewTracker!.Scene!.Location,
+                LastSeenTime = context.NewTracker!.Scene!.Time,
+                Version = 0,
+                ConvertedToFull = false
+            }).ToList();
+            dbContext.BackgroundCharacters.AddRange(backgroundCharacterEntities);
+        }
+
+        var backgroundCharacters = await dbContext.BackgroundCharacters
+            .Where(x => context.NewTracker!.Scene!.CharactersPresent.Except(context.NewBackgroundCharacters.Select(z => z.Name)).Contains(x.Name))
+            .ToListAsync(cancellationToken: cancellationToken);
+
+        foreach (BackgroundCharacter backgroundCharacter in backgroundCharacters)
+        {
+            var newBackgroundState = new BackgroundCharacter
+            {
+                AdventureId = context.AdventureId,
+                Description = backgroundCharacter.Description,
+                SceneId = scene.Id,
+                Scene = scene,
+                Name = backgroundCharacter.Name,
+                Identity = backgroundCharacter.Identity,
+                LastLocation = context.NewTracker!.Scene!.Location,
+                LastSeenTime = context.NewTracker!.Scene!.Time,
+                Version = backgroundCharacter.Version + 1,
+                ConvertedToFull = context.NewCharacters?.Any(c => c.Name.Contains(backgroundCharacter.Name)) ?? false
+            };
+            dbContext.BackgroundCharacters.Add(newBackgroundState);
         }
 
         if (characterUpdates.Count > 0)
@@ -299,7 +340,7 @@ internal sealed class SaveSceneEnrichment(
         }
     }
 
-    private async static Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
+    private static async Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
     {
         List<Guid> eventIds;
         lock (context)
@@ -324,7 +365,7 @@ internal sealed class SaveSceneEnrichment(
                 cancellationToken);
     }
 
-    private async static Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
+    private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
     {
         List<CharacterEventToSave> eventsToSave;
         lock (context)
@@ -357,7 +398,7 @@ internal sealed class SaveSceneEnrichment(
         await dbContext.CharacterEvents.AddRangeAsync(entities);
     }
 
-    private async static Task ProcessImportanceFlags(
+    private static async Task ProcessImportanceFlags(
         GenerationContext context,
         ApplicationDbContext dbContext,
         ILogger logger,

@@ -47,7 +47,13 @@ internal sealed class CharacterTrackerAgent(
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        var previousTrackers = await dbContext.CharacterStates.Where(z => z.CharacterId == context.CharacterId).OrderByDescending(z => z.SequenceNumber).Take(5)
+            .ToArrayAsync(cancellationToken);
         var requestPrompt = $"""
+                             Previous trackers:
+                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
+
                              {PromptSections.CharacterStateContext(context)}
 
                              {context.SceneRewrites.Last().Content}

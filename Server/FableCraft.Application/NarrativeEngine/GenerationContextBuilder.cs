@@ -134,7 +134,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 .Select(lb => JsonSerializer.Deserialize<GeneratedItem>(lb.Content)!).ToArray()
         };
 
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, ct);
+        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.ContextGathered?.BackgroundRoster ?? [], ct);
 
         context.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
@@ -188,7 +188,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Include(x => x.Lorebooks)
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(ct);
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, ct);
+        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, generationContext.ContextGathered?.BackgroundRoster ?? [], ct);
         generationContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
@@ -263,7 +263,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(ct);
 
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, ct);
+        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.newContext.ContextGathered?.BackgroundRoster ?? [], ct);
 
         context.newContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
@@ -353,34 +353,15 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             }).ToList();
     }
 
-    private async Task<List<GeneratedPartialProfile>> GetBackgroundCharactersFromPreviousSceneAsync(
+    private async Task<List<BackgroundCharacter>> GetBackgroundCharactersFromPreviousSceneAsync(
         Guid adventureId,
+        string[] backgroundCharacters,
         CancellationToken ct)
     {
-        // Get the most recent scene for the adventure
-        var previousScene = await dbContext.Scenes
-            .Where(x => x.AdventureId == adventureId)
-            .OrderByDescending(x => x.SequenceNumber)
-            .Select(x => new { x.Id })
-            .FirstOrDefaultAsync(ct);
-
-        if (previousScene == null)
-        {
-            return [];
-        }
-
-        // Query LorebookEntry where Category == "BackgroundCharacter" AND SceneId == previousScene.Id
-        var backgroundCharacterEntries = await dbContext.LorebookEntries
+        return await dbContext.BackgroundCharacters
             .Where(x => x.AdventureId == adventureId
-                        && x.SceneId == previousScene.Id
-                        && x.Category == nameof(LorebookCategory.BackgroundCharacter))
+                        && backgroundCharacters.Contains(x.Name) && !x.ConvertedToFull)
             .ToListAsync(ct);
-
-        // Deserialize JSON content to GeneratedPartialProfile
-        return backgroundCharacterEntries
-            .Select(entry => JsonSerializer.Deserialize<GeneratedPartialProfile>(entry.Content))
-            .Where(profile => profile != null)
-            .ToList()!;
     }
 
     private async Task<(List<CharacterContext> Existing, List<CharacterContext> New)> GetCharactersForRegenerationAsync(

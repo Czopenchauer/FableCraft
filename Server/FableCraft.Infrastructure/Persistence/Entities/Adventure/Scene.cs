@@ -96,6 +96,8 @@ public sealed class GatheredContext
 
     public GatheredContextItem[] NarrativeContext { get; set; } = [];
 
+    public string[] BackgroundRoster { get; set; } = [];
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }

@@ -10,7 +10,7 @@ docker-compose build --no-cache fablecraft-server fablecraft-client
 
 echo "Starting docker-compose with force recreate..."
 
-docker-compose up -d --force-recreate
+docker-compose up --force-recreate
 
 echo "Services started."
 echo "Frontend available at: http://localhost:4200"

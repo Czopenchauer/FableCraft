@@ -40,6 +40,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Character> Characters { get; set; }
 
+    public DbSet<BackgroundCharacter> BackgroundCharacters { get; set; }
+
     public DbSet<CharacterState> CharacterStates { get; set; }
 
     public DbSet<CharacterMemory> CharacterMemories { get; set; }

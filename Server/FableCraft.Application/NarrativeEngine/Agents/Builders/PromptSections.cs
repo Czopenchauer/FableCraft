@@ -163,7 +163,7 @@ internal static class PromptSections
 
         var options = GetJsonOptions(ignoreNull);
         return $"""
-                Set of trackers for the main character, describing their current state in the previous scene:
+                Current tracker:
                 <main_character_tracker>
                 {tracker!.MainCharacter.ToJsonString(options)}
                 </main_character_tracker>
@@ -254,12 +254,12 @@ internal static class PromptSections
         var options = GetJsonOptions(ignoreNull);
         return $"""
                 Current state tracker for the character {context.Name}:
-                <previous_character_state>
+                <character_state>
                 {context.CharacterState.ToJsonString(options)}
-                </previous_character_state>
-                <previous_tracker>
+                </character_state>
+                <_tracker>
                 {context.CharacterTracker.ToJsonString(options)}
-                </previous_tracker>
+                </tracker>
                 """;
     }
 
@@ -537,7 +537,7 @@ internal static class PromptSections
     ///     Formats background character profiles from the previous scene for the Writer agent.
     ///     These characters have partial profiles and should be written directly without emulation.
     /// </summary>
-    public static string BackgroundCharacterProfiles(List<GeneratedPartialProfile> previousBackgroundCharacters)
+    public static string BackgroundCharacterProfiles(List<BackgroundCharacter> previousBackgroundCharacters)
     {
         if (previousBackgroundCharacters == null || previousBackgroundCharacters.Count == 0)
         {
@@ -555,8 +555,6 @@ internal static class PromptSections
                 ## Previously Established Background Characters
 
                 The following background characters have partial profiles from previous scenes.
-                Write them directly using their established voice and behavioral patterns.
-                Do NOT call emulation for these characters.
 
                 <background_characters>
                 {formattedCharacters}

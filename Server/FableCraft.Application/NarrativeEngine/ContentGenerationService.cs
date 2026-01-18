@@ -186,7 +186,7 @@ public sealed class ContentGenerationService(
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore,
-            previousBackgroundCharacters);
+            []);
 
         return context;
     }

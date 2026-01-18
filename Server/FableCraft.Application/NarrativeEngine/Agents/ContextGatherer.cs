@@ -55,6 +55,8 @@ internal sealed class ContextGatherer(
 
                              {previousContext}
 
+                             {CharacterRoster(context)}
+
                              {(context.SceneContext.Length > 0 ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
 
                              The latest scene that was just generated:
@@ -141,7 +143,8 @@ internal sealed class ContextGatherer(
             {
                 WorldContext = worldContext.ToArray(),
                 NarrativeContext = narrativeContext.ToArray(),
-                AdditionalData = output.AdditionalData
+                AdditionalData = output.AdditionalData,
+                BackgroundRoster = output.BackgroundRoster
             };
 
             logger.Information(
@@ -157,6 +160,20 @@ internal sealed class ContextGatherer(
     }
 
     protected override AgentName GetAgentName() => AgentName.ContextGatherer;
+
+    private static string CharacterRoster(GenerationContext context)
+    {
+        if (context.BackgroundCharacters.Count > 0)
+        {
+            var characters = context.BackgroundCharacters.Select(z => $"Name: {z.Name}, Identity: {z.Identity}, Last Location: {z.LastLocation}, Last SeenTime: {z.LastSeenTime}");
+            return $"""
+                    ### Background Character Registry
+                    {string.Join("\n- ", characters)}
+                    """;
+        }
+
+        return string.Empty;
+    }
 
     private static string GetPreviousContextSummary(GenerationContext context)
     {

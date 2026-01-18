@@ -8,6 +8,8 @@ internal class ContextBase
 
     public ContextItem[] NarrativeContext { get; set; } = [];
 
+    public string[] BackgroundRoster { get; set; } = [];
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

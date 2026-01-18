@@ -11,7 +11,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Starting docker-compose with force recreate..." -ForegroundColor Cyan
 
-docker-compose up -d --force-recreate
+docker-compose up --force-recreate
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Services started." -ForegroundColor Green
