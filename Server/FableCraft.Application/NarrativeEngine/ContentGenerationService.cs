@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Persistence;
@@ -140,6 +142,27 @@ public sealed class ContentGenerationService(
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(cancellationToken);
 
+        var previousScene = await dbContext.Scenes
+            .Where(x => x.AdventureId == adventureId)
+            .OrderByDescending(x => x.SequenceNumber)
+            .Select(x => new { x.Id })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var previousBackgroundCharacters = new List<GeneratedPartialProfile>();
+        if (previousScene != null)
+        {
+            var backgroundCharacterEntries = await dbContext.LorebookEntries
+                .Where(x => x.AdventureId == adventureId
+                            && x.SceneId == previousScene.Id
+                            && x.Category == nameof(LorebookCategory.BackgroundCharacter))
+                .ToListAsync(cancellationToken);
+
+            previousBackgroundCharacters = backgroundCharacterEntries
+                .Select(entry => JsonSerializer.Deserialize<GeneratedPartialProfile>(entry.Content))
+                .Where(profile => profile != null)
+                .ToList()!;
+        }
+
         var context = new GenerationContext
         {
             AdventureId = adventureId,
@@ -162,7 +185,8 @@ public sealed class ContentGenerationService(
             adventure.AgentLlmPresets.ToArray(),
             adventure.PromptPaths,
             adventure.AdventureStartTime,
-            createdLore);
+            createdLore,
+            previousBackgroundCharacters);
 
         return context;
     }

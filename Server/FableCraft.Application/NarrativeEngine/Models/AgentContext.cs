@@ -53,6 +53,9 @@ internal sealed class GenerationContext
 
     public List<GeneratedPartialProfile> NewBackgroundCharacters { get; set; } = [];
 
+    [JsonIgnore]
+    public List<GeneratedPartialProfile> PreviousBackgroundCharacters { get; set; } = [];
+
     public string? NewResolution { get; set; }
 
     public ContextBase? ContextGathered { get; set; }
@@ -107,7 +110,8 @@ internal sealed class GenerationContext
         AdventureAgentLlmPreset[] agentLlmPresets,
         string promptPath,
         string adventureStartTime,
-        LorebookEntry[] previouslyGeneratedLore)
+        LorebookEntry[] previouslyGeneratedLore,
+        List<GeneratedPartialProfile> previousBackgroundCharacters)
     {
         SceneContext = sceneContext;
         TrackerStructure = trackerStructure;
@@ -117,6 +121,7 @@ internal sealed class GenerationContext
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
         PreviouslyGeneratedLore = previouslyGeneratedLore;
+        PreviousBackgroundCharacters = previousBackgroundCharacters;
     }
 
     public Tracker? LatestTracker()

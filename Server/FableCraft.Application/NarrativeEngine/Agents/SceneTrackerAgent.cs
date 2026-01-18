@@ -44,6 +44,8 @@ internal sealed class SceneTrackerAgent(
 
                              {PromptSections.ExistingCharactersMinimal(context.Characters)}
 
+                             {PromptSections.BackgroundCharacterProfiles(context.PreviousBackgroundCharacters)}
+
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
 
                              {newCharactersSection}

@@ -534,6 +534,37 @@ internal static class PromptSections
     }
 
     /// <summary>
+    ///     Formats background character profiles from the previous scene for the Writer agent.
+    ///     These characters have partial profiles and should be written directly without emulation.
+    /// </summary>
+    public static string BackgroundCharacterProfiles(List<GeneratedPartialProfile> previousBackgroundCharacters)
+    {
+        if (previousBackgroundCharacters == null || previousBackgroundCharacters.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var formattedCharacters = string.Join("\n",
+            previousBackgroundCharacters.Select(c => $"""
+                                                      <background_character name="{c.Name}">
+                                                      {string.Join("\n", c.ToJsonString())}
+                                                      </background_character>
+                                                      """));
+
+        return $"""
+                ## Previously Established Background Characters
+
+                The following background characters have partial profiles from previous scenes.
+                Write them directly using their established voice and behavioral patterns.
+                Do NOT call emulation for these characters.
+
+                <background_characters>
+                {formattedCharacters}
+                </background_characters>
+                """;
+    }
+
+    /// <summary>
     ///     Formats writer guidance from the Chronicler agent for the Writer agent.
     ///     Retrieves the guidance from the previous scene's metadata.
     /// </summary>

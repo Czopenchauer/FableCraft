@@ -47,6 +47,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
 
+                             {PromptSections.BackgroundCharacterProfiles(context.PreviousBackgroundCharacters)}
+
                              {PromptSections.Context(context)}
 
                              {PromptSections.CurrentSceneTracker(context)}
