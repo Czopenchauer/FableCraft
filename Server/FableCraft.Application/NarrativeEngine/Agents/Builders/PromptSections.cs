@@ -191,6 +191,23 @@ internal static class PromptSections
                 """;
     }
 
+    /// <summary>
+    ///     Returns a minimal list of characters with only name and current location.
+    ///     Use fetch_character_details tool to get full character information.
+    /// </summary>
+    public static string ExistingCharactersMinimal(IEnumerable<CharacterContext> characters)
+    {
+        var formatted = string.Join("\n",
+            characters.Select(c => $"- {c.Name} (Location: {c.CharacterTracker?.Location ?? "unknown"})"));
+
+        return $"""
+                List of existing characters in the story (use fetch_character_details tool to get full details):
+                <existing_characters>
+                {formatted}
+                </existing_characters>
+                """;
+    }
+
     public static string CharacterForEmulation(IEnumerable<CharacterContext> characters, GenerationContext context)
     {
         var names = string.Join("\n- ",
@@ -410,6 +427,9 @@ internal static class PromptSections
 
                 **Narrative Knowledge** (main character memories, goals, relationships):
                 {narrativeContext}
+                
+                **New lore**:
+                {generationContext.PreviouslyGeneratedLore.Select(x => string.Join("\n\n", x.Content))}
                 </knowledge_graph_context>
                 """;
     }

@@ -167,7 +167,7 @@ internal sealed class SaveSceneEnrichment(
             cancellationToken);
     }
 
-    private async static Task UpsertCharacters(GenerationContext context, Scene scene, CancellationToken cancellationToken, ApplicationDbContext dbContext)
+    private static async Task UpsertCharacters(GenerationContext context, Scene scene, CancellationToken cancellationToken, ApplicationDbContext dbContext)
     {
         List<CharacterContext> characterUpdates;
         List<CharacterContext> newCharacters;

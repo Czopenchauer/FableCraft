@@ -6,43 +6,32 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // Check if we should use an external PostgreSQL (e.g., from Docker Compose)
 var useExternalDb = builder.Configuration["FableCraft:UseExternalDatabase"] == "true";
-var externalDbConnectionString = builder.Configuration["ConnectionStrings:fablecraftdb"];
 
-IResourceBuilder<IResourceWithConnectionString> serverDatabase;
+IResourceBuilder<IResourceWithConnectionString> serverDatabase = builder
+    .AddPostgres("fablecraftdb-npgsql", port: 6999)
+    .WithImage("postgres", "18.0")
+    .WithDataVolumeForV18("fablecraft-postgres-data")
+    .AddDatabase("fablecraftdb", "fablecraftdb");
 
-if (useExternalDb && !string.IsNullOrEmpty(externalDbConnectionString))
-{
-    // Use external database (e.g., Docker Compose PostgreSQL)
-    serverDatabase = builder.AddConnectionString("fablecraftdb");
-}
-else
-{
-    // Aspire manages its own PostgreSQL container
-    serverDatabase = builder
-        .AddPostgres("fablecraftdb-npgsql", port: 6999)
-        .WithImage("postgres", "18.0")
-        .WithDataVolumeForV18("fablecraft-postgres-data")
-        .AddDatabase("fablecraftdb", "fablecraftdb");
-}
-
-var graphRagLlmMaxTokens = builder.Configuration["FableCraft:Server:GraphRag:MaxTokens"] ?? "16384";
+var graphRagLlmMaxTokens = builder.Configuration["FableCraft:Server:GraphRag:MaxTokens"] ?? "";
 var graphRagLlmApiKey = builder.Configuration["FableCraft:GraphRag:LLM:ApiKey"]!;
 var graphRagLlmModel = builder.Configuration["FableCraft:GraphRag:LLM:Model"]!;
 var graphRagLlmProvider = builder.Configuration["FableCraft:GraphRag:LLM:Provider"]!;
 var graphRagLlmEndpoint = builder.Configuration["FableCraft:GraphRag:LLM:BaseUrl"] ?? "";
 var graphRagLlmApiVersion = builder.Configuration["FableCraft:GraphRag:LLM:ApiVersion"] ?? "";
-var llmRateLimitEnabled = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitEnabled"] ?? "true";
-var llmRateLimitRequests = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitRequests"] ?? "60";
-var llmRateLimitInterval = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitInterval"] ?? "60";
+var llmRateLimitEnabled = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitEnabled"] ?? "";
+var llmRateLimitRequests = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitRequests"] ?? "";
+var llmRateLimitInterval = builder.Configuration["FableCraft:GraphRag:LLM:RateLimitInterval"] ?? "";
 
 // GraphRag Embedding Configuration
 var embeddingProvider = builder.Configuration["FableCraft:GraphRag:Embedding:Provider"]!;
 var embeddingModel = builder.Configuration["FableCraft:GraphRag:Embedding:Model"]!;
 var embeddingEndpoint = builder.Configuration["FableCraft:GraphRag:Embedding:BaseUrl"] ?? "";
 var embeddingApiVersion = builder.Configuration["FableCraft:GraphRag:Embedding:ApiVersion"] ?? "";
-var embeddingDimensions = builder.Configuration["FableCraft:GraphRag:Embedding:Dimensions"] ?? "3072";
-var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:MaxTokens"] ?? "8191";
-var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "36";
+var embeddingDimensions = builder.Configuration["FableCraft:GraphRag:Embedding:Dimensions"] ?? "";
+var embeddingMaxTokens = builder.Configuration["FableCraft:GraphRag:Embedding:MaxTokens"] ?? "";
+var embeddingApiKey = builder.Configuration["FableCraft:GraphRag:Embedding:ApiKey"] ?? "";
+var embeddingBatchSize = builder.Configuration["FableCraft:GraphRag:Embedding:BatchSize"] ?? "";
 var huggingFaceTokenizer = builder.Configuration["FableCraft:GraphRag:HuggingFaceTokenizer"] ?? "";
 
 var graphRagApi = builder
@@ -61,17 +50,16 @@ var graphRagApi = builder
     .WithEnvironment("LLM_ENDPOINT", graphRagLlmEndpoint)
     .WithEnvironment("LLM_API_VERSION", graphRagLlmApiVersion)
     .WithEnvironment("LLM_MAX_TOKENS", graphRagLlmMaxTokens)
-    .WithEnvironment("LLM_RATE_LIMIT_ENABLED", llmRateLimitEnabled)
-    .WithEnvironment("LLM_RATE_LIMIT_REQUESTS", llmRateLimitRequests)
-    .WithEnvironment("LLM_RATE_LIMIT_INTERVAL", llmRateLimitInterval)
+    // .WithEnvironment("LLM_RATE_LIMIT_ENABLED", llmRateLimitEnabled)
+    // .WithEnvironment("LLM_RATE_LIMIT_REQUESTS", llmRateLimitRequests)
+    //.WithEnvironment("LLM_RATE_LIMIT_INTERVAL", llmRateLimitInterval)
     .WithEnvironment("EMBEDDING_PROVIDER", embeddingProvider)
     .WithEnvironment("EMBEDDING_MODEL", embeddingModel)
     .WithEnvironment("EMBEDDING_ENDPOINT", embeddingEndpoint)
-    .WithEnvironment("EMBEDDING_API_VERSION", embeddingApiVersion)
+    // .WithEnvironment("EMBEDDING_API_VERSION", embeddingApiVersion)
     .WithEnvironment("EMBEDDING_DIMENSIONS", embeddingDimensions)
-    .WithEnvironment("EMBEDDING_MAX_TOKENS", embeddingMaxTokens)
-    .WithEnvironment("EMBEDDING_BATCH_SIZE", embeddingBatchSize)
-    .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer)
+    .WithEnvironment("EMBEDDING_API_KEY", embeddingApiKey)
+    // .WithEnvironment("HUGGINGFACE_TOKENIZER", huggingFaceTokenizer)
     .WithEnvironment("ENABLE_BACKEND_ACCESS_CONTROL", "true")
     .WithEnvironment("TELEMETRY_DISABLED", "true")
     .WithEnvironment("VISUALISATION_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\visualization")

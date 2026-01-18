@@ -47,7 +47,7 @@ services:
       - LLM_ENDPOINT=${LLM_ENDPOINT:-}
       - LLM_API_VERSION=${LLM_API_VERSION:-}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-16384}
-      - LLM_RATE_LIMIT_ENABLED=${LLM_RATE_LIMIT_ENABLED:-true}
+      - LLM_RATE_LIMIT_ENABLED=${LLM_RATE_LIMIT_ENABLED:-false}
       - LLM_RATE_LIMIT_REQUESTS=${LLM_RATE_LIMIT_REQUESTS:-60}
       - LLM_RATE_LIMIT_INTERVAL=${LLM_RATE_LIMIT_INTERVAL:-60}
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
@@ -59,8 +59,7 @@ services:
       - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-36}
       - HUGGINGFACE_TOKENIZER=${HUGGINGFACE_TOKENIZER:-}
     volumes:
-      - ./cognee/data:/app/cognee/data
-      - ./cognee/system:/app/cognee/system
+      - cognee-data:/app/cognee
       - ./visualization:/app/visualization
       - ./data-store:/app/data-store
     depends_on:
@@ -110,6 +109,7 @@ services:
 
 volumes:
   fablecraft-postgres-data:
+  cognee-data:
 
 networks:
   fablecraft-network:

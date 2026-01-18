@@ -19,7 +19,7 @@ internal class ContentGenerator(
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
         // Skip if already fully processed
-        if (context.NewLore != null && context.NewLocations != null && context.NewItems != null)
+        if (context.NewLocations != null && context.NewItems != null)
         {
             logger.Information("Content already generated, skipping");
             return;
@@ -88,7 +88,7 @@ internal class ContentGenerator(
                 .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
         }
 
-        if (context.NewLore != null)
+        if (context.NewLore.Any())
         {
             logger.Information("Lore already created, skipping ({Count})", context.NewLore.Count);
         }
@@ -98,7 +98,7 @@ internal class ContentGenerator(
                 .Select(x => loreCrafter.Invoke(context, x, cancellationToken)).ToArray());
         }
 
-        if (context.NewLocations != null)
+        if (context.NewLocations?.Any() ?? false)
         {
             logger.Information("Locations already created, skipping ({Count})", context.NewLocations.Length);
         }
@@ -108,7 +108,7 @@ internal class ContentGenerator(
                 .Select(location => locationCrafter.Invoke(context, location, cancellationToken)).ToArray());
         }
 
-        if (context.NewItems != null)
+        if (context.NewItems?.Any() ?? false)
         {
             logger.Information("Items already created, skipping ({Count})", context.NewItems.Length);
         }

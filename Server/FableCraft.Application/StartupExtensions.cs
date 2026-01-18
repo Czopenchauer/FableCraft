@@ -26,6 +26,7 @@ public static class StartupExtensions
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddScoped<IGameService, GameService>();
         services
+            .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
@@ -64,6 +65,7 @@ public static class StartupExtensions
         services.AddTransient<CharacterNarrativePlugin>();
         services.AddTransient<CharacterStatePlugin>();
         services.AddTransient<CharacterRelationshipPlugin>();
+        services.AddTransient<CharacterDescriptionPlugin>();
         services.AddTransient<CharacterEmulationPlugin>();
         services.AddTransient<IntentCheckPlugin>();
         services.AddTransient<CharacterSimulationToolsPlugin>();

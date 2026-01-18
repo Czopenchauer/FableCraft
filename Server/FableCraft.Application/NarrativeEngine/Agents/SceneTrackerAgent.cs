@@ -42,7 +42,7 @@ internal sealed class SceneTrackerAgent(
 
                              {PromptSections.MainCharacter(context)}
 
-                             {PromptSections.ExistingCharacters(context.Characters)}
+                             {PromptSections.ExistingCharactersMinimal(context.Characters)}
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}
 
@@ -80,6 +80,7 @@ internal sealed class SceneTrackerAgent(
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<CharacterDescriptionPlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<SceneTracker>("scene_tracker", true);
