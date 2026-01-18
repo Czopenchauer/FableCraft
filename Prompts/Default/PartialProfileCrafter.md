@@ -111,7 +111,7 @@ Output in `<partial_profile>` tags as valid JSON:
 {
   "name": "[Full name]",
   
-  "identity": "[Two-three sentence: who they are, what they do, their place in the world]",
+  "identity": "[One sentence: who they are, what they do, their place in the world]",
   
   "appearance": "[2-3 sentences: physical description with sensory details. What someone would notice and remember.]",
   
@@ -138,13 +138,17 @@ Output in `<partial_profile>` tags as valid JSON:
 }
 ```
 
+<description>
+[2-3 sentences: Public-facing world knowledge entry. Role, visible position, reputation, affiliations - what's known about them, not who they actually are.]
+</description>
+
 ---
 
 ## Calibration
 
 ### Length
 
-The complete profile should be 200-300 words. If you're writing more, you're over-elaborating.
+The complete profile should be 250-350 words. If you're writing more, you're over-elaborating.
 
 ### Depth
 
