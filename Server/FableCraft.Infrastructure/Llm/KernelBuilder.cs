@@ -26,7 +26,7 @@ public interface IKernelBuilder
 public readonly struct LlmProvider : IEquatable<LlmProvider>
 {
     public readonly static LlmProvider OpenAi = new("openai");
-    public readonly static LlmProvider Gemini = new("gemini");
+    public static readonly LlmProvider Gemini = new("gemini");
     public readonly static LlmProvider Anthropic = new("anthropic");
 
     public string Value { get; }
@@ -78,7 +78,6 @@ public sealed class KernelBuilderFactory
         return provider switch
                {
                    _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
-                   _ when provider == LlmProvider.Anthropic => new AnthropicKernelBuilder(preset, _loggerFactory),
                    _ => new OpenAiKernelBuilder(preset, _loggerFactory)
                };
     }
@@ -218,66 +217,5 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopK = _preset.TopK,
             ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
             SafetySettings = DefaultSafetySettings
-        };
-}
-
-internal class AnthropicKernelBuilder : IKernelBuilder
-{
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly LlmPreset _preset;
-
-    public AnthropicKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory;
-        _preset = preset;
-    }
-
-    public Microsoft.SemanticKernel.IKernelBuilder Create()
-    {
-        var anthropicClient = new AnthropicClient
-        {
-            APIKey = _preset.ApiKey,
-            Timeout = TimeSpan.FromMinutes(10)
-        };
-
-        var chatClient = anthropicClient
-            .AsIChatClient(_preset.Model)
-            .AsBuilder()
-            .UseFunctionInvocation()
-            .Build();
-
-        var builder = Kernel.CreateBuilder();
-        builder.Services.AddChatClient(chatClient);
-        builder.Services.AddSingleton(_loggerFactory);
-
-        return builder;
-    }
-
-    public PromptExecutionSettings GetDefaultPromptExecutionSettings() =>
-        new()
-        {
-            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
-            ExtensionData = new Dictionary<string, object>
-            {
-                ["max_tokens"] = _preset.MaxTokens,
-                ["temperature"] = _preset.Temperature ?? 1.0,
-                ["top_p"] = _preset.TopP ?? 1.0
-            }
-        };
-
-    public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
-        new()
-        {
-            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
-            {
-                AllowConcurrentInvocation = true,
-                AllowParallelCalls = true
-            }),
-            ExtensionData = new Dictionary<string, object>
-            {
-                ["max_tokens"] = _preset.MaxTokens,
-                ["temperature"] = _preset.Temperature ?? 1.0,
-                ["top_p"] = _preset.TopP ?? 1.0
-            }
         };
 }
