@@ -182,6 +182,7 @@ async def cognify_dataset(request: CognifyRequest):
         path = os.environ.get('VISUALISATION_PATH', './visualization')
         for adventure_id in request.adventure_ids:
             try:
+                await cognee.cognify(datasets=adventure_id, temporal_cognify=request.temporal)
                 await cognee.visualize_graph(f"{path}/{adventure_id}/cognify_graph_visualization.html")
             except Exception as viz_error:
                 logger.warning("Failed to generate visualization for %s: %s", adventure_id, viz_error)
