@@ -18,7 +18,7 @@ internal sealed class CharacterDescriptionPlugin : PluginBase
         _logger = logger;
     }
 
-    [KernelFunction("fetch_character_details")]
+    [KernelFunction("get_character_details")]
     [Description(
         "Fetches the full details of a character by name. Returns description, appearance, general build, and current state information.")]
     public string FetchCharacterDetails(

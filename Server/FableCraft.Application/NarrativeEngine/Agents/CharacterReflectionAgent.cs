@@ -221,7 +221,8 @@ internal sealed class CharacterReflectionAgent(
                 }
             ],
             Importance = context.Importance,
-            SimulationMetadata = null
+            SimulationMetadata = null,
+            IsDead = false
         };
     }
 

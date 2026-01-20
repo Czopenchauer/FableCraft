@@ -12,6 +12,8 @@ public sealed class CharacterState
 
     public Scene Scene { get; set; } = null!;
 
+    public bool IsDead { get; set; }
+
     public int SequenceNumber { get; set; }
 
     public CharacterStats CharacterStats { get; set; } = null!;

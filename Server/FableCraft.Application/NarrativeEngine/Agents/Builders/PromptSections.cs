@@ -88,7 +88,7 @@ internal static class PromptSections
             sceneContext
                 .OrderByDescending(x => x.SequenceNumber)
                 .Skip(1)
-                .TakeLast(count)
+                .Take(count)
                 .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
@@ -257,18 +257,18 @@ internal static class PromptSections
                 <character_state>
                 {context.CharacterState.ToJsonString(options)}
                 </character_state>
-                <_tracker>
+                <tracker>
                 {context.CharacterTracker.ToJsonString(options)}
                 </tracker>
                 """;
     }
 
-    public static string RecentScenesForCharacter(CharacterContext context, int count = 3)
+    public static string RecentScenesForCharacter(CharacterContext context, int count = 5)
     {
         var scenes = string.Join("\n\n---\n\n",
             context.SceneRewrites
                 .OrderByDescending(x => x.SequenceNumber)
-                .TakeLast(count)
+                .Take(count)
                 .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
@@ -404,6 +404,43 @@ internal static class PromptSections
                 """;
     }
 
+    public static string PreviouslyCreatedContent(GenerationContext context)
+    {
+        var hasLore = context.PreviouslyGeneratedLore.Length > 0;
+        var hasLocations = context.PreviouslyGeneratedLocations.Length > 0;
+        var hasItems = context.PreviouslyGeneratedItems.Length > 0;
+
+        if (!hasLore && !hasLocations && !hasItems)
+        {
+            return string.Empty;
+        }
+
+        var loreContent = hasLore
+            ? string.Join("\n", context.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var locationContent = hasLocations
+            ? string.Join("\n", context.PreviouslyGeneratedLocations.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var itemContent = hasItems
+            ? string.Join("\n", context.PreviouslyGeneratedItems.Select(x => $"- {x.Content}"))
+            : "None";
+
+        return $"""
+                <previously_created_content>
+                **Previously Created Lore**:
+                {loreContent}
+
+                **Previously Created Locations**:
+                {locationContent}
+
+                **Previously Created Items**:
+                {itemContent}
+                </previously_created_content>
+                """;
+    }
+
     public static string Context(GenerationContext generationContext)
     {
         var context = generationContext.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.GatheredContext;
@@ -420,6 +457,18 @@ internal static class PromptSections
             ? string.Join("\n", context.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
             : "No narrative context available.";
 
+        var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var locationContent = generationContext.PreviouslyGeneratedLocations.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLocations.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var itemContent = generationContext.PreviouslyGeneratedItems.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedItems.Select(x => $"- {x.Content}"))
+            : "None";
+
         return $"""
                 <knowledge_graph_context>
                 **World Knowledge** (locations, lore, items, events):
@@ -427,9 +476,15 @@ internal static class PromptSections
 
                 **Narrative Knowledge** (main character memories, goals, relationships):
                 {narrativeContext}
-                
-                **New lore**:
-                {generationContext.PreviouslyGeneratedLore.Select(x => string.Join("\n\n", x.Content))}
+
+                **Recently Created Lore**:
+                {loreContent}
+
+                **Recently Created Locations**:
+                {locationContent}
+
+                **Recently Created Items**:
+                {itemContent}
                 </knowledge_graph_context>
                 """;
     }

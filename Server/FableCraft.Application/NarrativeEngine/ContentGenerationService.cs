@@ -133,7 +133,7 @@ public sealed class ContentGenerationService(
 
         var adventureCharacters = await GetCharacters(adventureId, cancellationToken);
 
-        var createdLore = await dbContext.Scenes
+        var lorebooks = await dbContext.Scenes
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId)
             .OrderByDescending(x => x.SequenceNumber)
@@ -141,6 +141,10 @@ public sealed class ContentGenerationService(
             .Include(x => x.Lorebooks)
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(cancellationToken);
+
+        var createdLore = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore)).ToArray();
+        var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
+        var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
 
         var previousScene = await dbContext.Scenes
             .Where(x => x.AdventureId == adventureId)
@@ -186,6 +190,8 @@ public sealed class ContentGenerationService(
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore,
+            createdLocations,
+            createdItems,
             []);
 
         return context;
@@ -243,7 +249,9 @@ public sealed class ContentGenerationService(
                     })
                     .ToList(),
                 Importance = x.Importance,
-                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
+                SimulationMetadata = x.CharacterStates.Single()
+                    .SimulationMetadata,
+                IsDead = false
             }).ToList();
     }
 }

@@ -56,7 +56,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Take(NumberOfScenesToInclude)
             .ToListAsync(ct);
 
-        var createdLore = await dbContext.Scenes
+        var lorebooks = await dbContext.Scenes
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId && x.SequenceNumber < scene.SequenceNumber)
             .OrderByDescending(x => x.SequenceNumber)
@@ -64,6 +64,10 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Include(x => x.Lorebooks)
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(ct);
+
+        var createdLore = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore)).ToArray();
+        var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
+        var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
 
         // Skip the most recent character state as that's the one being regenerated
         var (existingCharContext, newCharContext) = await GetCharactersForRegenerationAsync(scene.Id, adventureId, ct);
@@ -90,7 +94,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             {
                 CharacterId = cs.CharacterId,
                 Name = cs.CharacterStats.Name!,
-                Description = existingCharContext.Single(x => x.CharacterId == cs.CharacterId).Description,
+                Description = existingCharContext.Single(x => x.CharacterId == cs.CharacterId)
+                    .Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
                 CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId)
@@ -122,7 +127,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     .ToList(),
                 Importance = existingCharContext.Single(ac => ac.CharacterId == cs.CharacterId)
                     .Importance,
-                SimulationMetadata = cs.SimulationMetadata
+                SimulationMetadata = cs.SimulationMetadata,
+                IsDead = cs.IsDead
             }).ToList(),
             // Sequence number 0 indicates newly introduced characters in this scene
             NewCharacters = newCharContext,
@@ -145,6 +151,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore,
+            createdLocations,
+            createdItems,
             previousBackgroundCharacters);
 
         return context;
@@ -180,7 +188,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         var generationProcess = await dbContext.GenerationProcesses.FirstAsync(x => x.AdventureId == adventureId, ct);
         var generationContext = generationProcess.GetContextAs<GenerationContext>();
         var adventureCharacters = await GetCharactersAsync(adventureId, ct);
-        var createdLore = await dbContext.Scenes
+        var lorebooks = await dbContext.Scenes
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId)
             .OrderByDescending(x => x.SequenceNumber)
@@ -188,6 +196,11 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Include(x => x.Lorebooks)
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(ct);
+
+        var createdLore = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore)).ToArray();
+        var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
+        var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
+
         var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, generationContext.ContextGathered?.BackgroundRoster ?? [], ct);
         generationContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
@@ -198,6 +211,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore,
+            createdLocations,
+            createdItems,
             previousBackgroundCharacters);
         return generationContext;
     }
@@ -254,7 +269,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             throw new InvalidOperationException("Failed to deserialize generation context from the database.");
         }
 
-        var createdLore = await dbContext.Scenes
+        var lorebooks = await dbContext.Scenes
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId)
             .OrderByDescending(x => x.SequenceNumber)
@@ -262,6 +277,10 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Include(x => x.Lorebooks)
             .SelectMany(x => x.Lorebooks)
             .ToArrayAsync(ct);
+
+        var createdLore = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Lore)).ToArray();
+        var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
+        var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
 
         var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.newContext.ContextGathered?.BackgroundRoster ?? [], ct);
 
@@ -274,6 +293,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             adventure.PromptPaths,
             adventure.AdventureStartTime,
             createdLore,
+            createdLocations,
+            createdItems,
             previousBackgroundCharacters);
         return (context.newContext, context.process!.Step);
 
@@ -310,6 +331,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .ToListAsync(ct);
 
         return existingCharacters
+            .Where(x => !x.CharacterStates.Single().IsDead)
             .Select(x => new CharacterContext
             {
                 Description = x.Description,
@@ -349,7 +371,9 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     })
                     .ToList(),
                 Importance = x.Importance,
-                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
+                SimulationMetadata = x.CharacterStates.Single()
+                    .SimulationMetadata,
+                IsDead = x.CharacterStates.Single().IsDead,
             }).ToList();
     }
 
@@ -391,6 +415,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .ToListAsync(ct);
 
         var existingCharContext = existingCharacters
+            .Where(x => !x.CharacterStates.Single().IsDead)
             .Select(x => new CharacterContext
             {
                 Description = x
@@ -433,10 +458,13 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     })
                     .ToList(),
                 Importance = x.Importance,
-                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
+                SimulationMetadata = x.CharacterStates.Single()
+                    .SimulationMetadata,
+                IsDead = x.CharacterStates.Single().IsDead,
             }).ToList();
 
         var newCharContext = newlyCreatedCharacters
+            .Where(x => !x.CharacterStates.Single().IsDead)
             .Select(x => new CharacterContext
             {
                 Description = x
@@ -473,7 +501,9 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     })
                     .ToList(),
                 Importance = x.Importance,
-                SimulationMetadata = x.CharacterStates.Single().SimulationMetadata
+                SimulationMetadata = x.CharacterStates.Single()
+                    .SimulationMetadata,
+                IsDead = false
             }).ToList();
 
         return (existingCharContext, newCharContext);

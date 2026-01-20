@@ -57,11 +57,9 @@ internal sealed class CharacterTrackersProcessor(
                     }
 
                     var characterContext = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-                    var tracker = await characterTrackerAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
-                    if (tracker != null)
-                    {
-                        characterContext.CharacterTracker = tracker;
-                    }
+                    var tracker = await characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
+                    characterContext.CharacterTracker = tracker.Tracker;
+                    characterContext.IsDead = tracker.IsDead;
 
                     return characterContext;
                 })

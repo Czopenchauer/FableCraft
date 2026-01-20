@@ -20,6 +20,7 @@ internal sealed class SimulationOrchestrator(
     StandaloneSimulationAgent standaloneAgent,
     SimulationModeratorAgent cohortModeratorAgent,
     OffscreenInferenceAgent offscreenInferenceAgent,
+    CharacterTrackerAgent characterTrackerAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -150,7 +151,7 @@ internal sealed class SimulationOrchestrator(
                     {
                         CharacterId = character.CharacterId,
                         CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? []),
-                        CharacterTracker = character.CharacterTracker.PatchWith(result.TrackerUpdates ?? []),
+                        CharacterTracker = character.CharacterTracker,
                         Name = character.Name,
                         Description = character.Description,
                         CharacterMemories = result.Scenes.Select(x => new MemoryContext
@@ -176,8 +177,12 @@ internal sealed class SimulationOrchestrator(
                         {
                             LastSimulated = plan.SimulationPeriod!.To,
                             PendingMcInteraction = result.PendingMcInteraction
-                        }
+                        },
+                        IsDead = false
                     };
+                    var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+                    characterContext.CharacterTracker = tracker.Tracker;
+                    characterContext.IsDead = tracker.IsDead;
                     return (characterContext, result.WorldEventsEmitted, result.CharacterEvents, character.Name);
                 }
                 catch (Exception ex)
@@ -264,7 +269,7 @@ internal sealed class SimulationOrchestrator(
 
             var significantCharacters = context.Characters
                 .Where(c => c.Importance == CharacterImportance.Significant && !validCharacters.Contains(c.Name))
-                .Select(c => $"{c.Name} - {c.Description ?? "No description available"}")
+                .Select(c => $"{c.Name} - {c.Description}")
                 .ToArray();
 
             var input = new CohortSimulationInput
@@ -279,38 +284,25 @@ internal sealed class SimulationOrchestrator(
             try
             {
                 var result = await cohortModeratorAgent.Invoke(context, input, cancellationToken);
-
-                foreach (var (characterName, reflection) in result.CharacterReflections)
+                await Task.WhenAll(result.CharacterReflections.Select(x =>
                 {
+                    var characterName = x.Key;
+                    var reflection = x.Value;
                     var character = context.Characters.FirstOrDefault(c => c.Name == characterName);
                     if (character == null)
                     {
                         logger.Warning("Character {CharacterName} not found for reflection processing", characterName);
-                        continue;
+                        return null;
                     }
 
-                    var processedResult = ProcessSimulationOutput(
+                    return ProcessSimulationOutput(
                         result,
                         character,
                         reflection,
                         plan,
-                        context);
-
-                    lock (context)
-                    {
-                        context.CharacterUpdates.Add(processedResult.CharacterContext);
-
-                        foreach (var worldEvent in processedResult.WorldEvents)
-                        {
-                            context.NewWorldEvents.Add(worldEvent);
-                        }
-
-                        foreach (var charEvent in processedResult.CharacterEvents)
-                        {
-                            context.NewCharacterEvents.Add(charEvent);
-                        }
-                    }
-                }
+                        context,
+                        cancellationToken);
+                }).Where(x => x is not null).ToArray()!);
             }
             catch (Exception ex)
             {
@@ -326,13 +318,13 @@ internal sealed class SimulationOrchestrator(
     ///     Process a StandaloneSimulationOutput into updates for persistence.
     ///     Used by both standalone and cohort simulations.
     /// </summary>
-    private (CharacterContext CharacterContext, List<WorldEvent> WorldEvents, List<CharacterEventToSave> CharacterEvents)
-        ProcessSimulationOutput(
-            CohortSimulationResult cohortSimulationResult,
-            CharacterContext character,
-            StandaloneSimulationOutput result,
-            SimulationPlannerOutput plan,
-            GenerationContext context)
+    private async Task ProcessSimulationOutput(
+        CohortSimulationResult cohortSimulationResult,
+        CharacterContext character,
+        StandaloneSimulationOutput result,
+        SimulationPlannerOutput plan,
+        GenerationContext context,
+        CancellationToken cancellationToken)
     {
         var characterRelationships = new List<CharacterRelationshipContext>();
         foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
@@ -400,8 +392,12 @@ internal sealed class SimulationOrchestrator(
             {
                 LastSimulated = cohortSimulationResult.Result.SimulationPeriod.To,
                 PendingMcInteraction = result.PendingMcInteraction
-            }
+            },
+            IsDead = false
         };
+        var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+        characterContext.CharacterTracker = tracker.Tracker;
+        characterContext.IsDead = tracker.IsDead;
 
         var worldEvents = result.WorldEventsEmitted?
                               .Select(x => new WorldEvent
@@ -430,6 +426,13 @@ internal sealed class SimulationOrchestrator(
             }
         }
 
-        return (characterContext, worldEvents, characterEvents);
+        lock (context)
+        {
+            context.CharacterUpdates.Add(characterContext);
+
+            context.NewWorldEvents.AddRange(worldEvents);
+
+            context.NewCharacterEvents.AddRange(characterEvents);
+        }
     }
 }

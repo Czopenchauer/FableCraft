@@ -234,7 +234,8 @@ internal sealed class SaveSceneEnrichment(
                     CharacterStats = update.CharacterState,
                     Tracker = update.CharacterTracker!,
                     SequenceNumber = character.Version + 1,
-                    Scene = scene
+                    Scene = scene,
+                    IsDead = update.IsDead,
                 });
                 character.Version += 1;
                 var memories = update.CharacterMemories.Select(x => new CharacterMemory
@@ -322,7 +323,8 @@ internal sealed class SaveSceneEnrichment(
                                 CharacterStats = contextNewCharacter.CharacterState,
                                 Tracker = contextNewCharacter.CharacterTracker!,
                                 SequenceNumber = 0,
-                                Scene = scene
+                                Scene = scene,
+                                IsDead = false
                             }
                         ],
                         Version = 0,

@@ -116,7 +116,7 @@ internal sealed class SimulationPlannerAgent(
                 Name = c.Name,
                 Importance = c.Importance.Value,
                 Location = c.CharacterTracker?.Location ?? "unknown",
-                LastSimulated = c.SimulationMetadata?.LastSimulated,
+                LastSimulated = c.SceneRewrites.MaxBy(z => z.SequenceNumber)!.SceneTracker!.Time,
                 GoalsSummary = c.CharacterState.Motivations.ToJsonString(),
                 KeyRelationships = c.Relationships?.Select(r => r.TargetCharacterName).ToArray(),
                 RelationshipNotes = BuildRelationshipNotes(c),
@@ -139,7 +139,7 @@ internal sealed class SimulationPlannerAgent(
                  {r.Dynamic}
                  """);
 
-        return string.Join("\n\n", notes);
+        return string.Join(";", notes);
     }
 
     private string BuildContextPrompt(SimulationPlannerInput input)

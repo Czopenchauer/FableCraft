@@ -42,6 +42,12 @@ internal sealed class GenerationContext
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
 
     [JsonIgnore]
+    public LorebookEntry[] PreviouslyGeneratedLocations { get; set; } = [];
+
+    [JsonIgnore]
+    public LorebookEntry[] PreviouslyGeneratedItems { get; set; } = [];
+
+    [JsonIgnore]
     public List<BackgroundCharacter> BackgroundCharacters { get; set; } = [];
 
     public List<CharacterContext> NewCharacters { get; set; } = [];
@@ -111,6 +117,8 @@ internal sealed class GenerationContext
         string promptPath,
         string adventureStartTime,
         LorebookEntry[] previouslyGeneratedLore,
+        LorebookEntry[] previouslyGeneratedLocations,
+        LorebookEntry[] previouslyGeneratedItems,
         List<BackgroundCharacter> backgroundCharacters)
     {
         SceneContext = sceneContext;
@@ -121,6 +129,8 @@ internal sealed class GenerationContext
         PromptPath = promptPath;
         AdventureStartTime = adventureStartTime;
         PreviouslyGeneratedLore = previouslyGeneratedLore;
+        PreviouslyGeneratedLocations = previouslyGeneratedLocations;
+        PreviouslyGeneratedItems = previouslyGeneratedItems;
         BackgroundCharacters = backgroundCharacters;
     }
 
@@ -150,6 +160,8 @@ internal sealed class CharacterEventToSave
 
 internal sealed class CharacterContext
 {
+    public required bool IsDead { get; set; }
+
     public required Guid CharacterId { get; set; }
 
     public required string Name { get; set; } = null!;

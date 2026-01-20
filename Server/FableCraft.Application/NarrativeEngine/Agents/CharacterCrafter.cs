@@ -94,7 +94,8 @@ internal sealed class CharacterCrafter : BaseAgent
                 .ToList(),
             SceneRewrites = new List<CharacterSceneContext>(),
             Importance = request.Importance,
-            SimulationMetadata = null
+            SimulationMetadata = null,
+            IsDead = false
         };
     }
 

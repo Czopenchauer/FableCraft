@@ -58,7 +58,7 @@ internal sealed class MainCharacterTrackerAgent(
         {
             requestPrompt = $"""
                              Previous trackers:
-                             {string.Join("\n", context.SceneContext!.OrderByDescending(x => x.SequenceNumber).Take(5).OrderBy(x => x.SequenceNumber).Select(x => x.Metadata!.Tracker!.MainCharacter!.MainCharacter.ToJsonString()))}
+                             {string.Join("\n", context.SceneContext!.OrderByDescending(x => x.SequenceNumber).Take(2).OrderBy(x => x.SequenceNumber).Select(x => x.Metadata!.Tracker!.MainCharacter!.MainCharacter.ToJsonString()))}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 

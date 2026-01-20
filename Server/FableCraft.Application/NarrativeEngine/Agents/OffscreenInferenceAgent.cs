@@ -23,6 +23,7 @@ internal sealed class OffscreenInferenceAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
+    CharacterTrackerAgent characterTrackerAgent,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.OffscreenInferenceAgent;
@@ -35,7 +36,7 @@ internal sealed class OffscreenInferenceAgent(
         var significantForInference = plan.SignificantForInference;
         if (significantForInference is not { Count: > 0 })
         {
-            logger.Debug("OffscreenInferenceProcessor: No significant characters need inference");
+            logger.Information("OffscreenInferenceProcessor: No significant characters need inference");
             return;
         }
 
@@ -83,7 +84,7 @@ internal sealed class OffscreenInferenceAgent(
             }).ToList();
 
             var timeElapsed = $"""
-                               Last action time: {character.SimulationMetadata?.LastSimulated}
+                               Last action time: {character.SceneRewrites.MaxBy(z => z.SequenceNumber)?.SceneTracker!.Time}
                                Current time: {context.NewTracker!.Scene!.Time}
                                """;
 
@@ -154,9 +155,12 @@ internal sealed class OffscreenInferenceAgent(
                     CharacterMemories = memories,
                     Relationships = [],
                     SceneRewrites = sceneRewrites,
-                    SimulationMetadata = character.SimulationMetadata
+                    SimulationMetadata = character.SimulationMetadata,
+                    IsDead = false
                 };
-
+                var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker.Scene, cancellationToken);
+                updatedCharacter.CharacterTracker = tracker.Tracker;
+                updatedCharacter.IsDead = tracker.IsDead;
                 lock (context)
                 {
                     context.CharacterUpdates.Add(updatedCharacter);

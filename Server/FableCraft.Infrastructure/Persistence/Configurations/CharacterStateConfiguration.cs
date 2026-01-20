@@ -22,8 +22,7 @@ public class CharacterStateConfiguration : IEntityTypeConfiguration<CharacterSta
         builder.Property(x => x.SimulationMetadata).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<SimulationMetadata>(x, options));
-        builder.HasIndex(x => x.SequenceNumber);
-        builder.HasIndex(x => new { x.CharacterId, x.SequenceNumber });
+        builder.HasIndex(x => new { x.CharacterId, x.SequenceNumber, x.IsDead }).IsUnique();
 
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterStates)

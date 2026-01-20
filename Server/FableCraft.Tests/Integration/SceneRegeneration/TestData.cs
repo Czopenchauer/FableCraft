@@ -113,10 +113,17 @@ internal static class TestData
             CharacterStats = new CharacterStats
             {
                 Name = characterName,
-                Motivations = new { primary = "Survive" },
-                Routine = new { morning = "Wake up early" }
+                Motivations = new
+                {
+                    primary = "Survive"
+                },
+                Routine = new
+                {
+                    morning = "Wake up early"
+                }
             },
-            Tracker = CreateCharacterTracker(characterName)
+            Tracker = CreateCharacterTracker(characterName),
+            IsDead = false
         };
     }
 

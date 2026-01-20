@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -23,9 +24,59 @@ internal sealed class CharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
-    public async Task<CharacterTracker?> Invoke(
+    public async Task<(CharacterTracker Tracker, bool IsDead)> InvokeAfterSimulation(
         GenerationContext generationContext,
         CharacterContext context,
+        CharacterContext newCharacter,
+        SceneTracker sceneTrackerResult,
+        CancellationToken cancellationToken)
+    {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        var previousTrackers = await dbContext.CharacterStates.Where(z => z.CharacterId == context.CharacterId).OrderByDescending(z => z.SequenceNumber).Take(2)
+            .ToArrayAsync(cancellationToken);
+
+        var requestPrompt = $"""
+                             Previous trackers:
+                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
+
+                             {PromptSections.CharacterStateContext(context)}
+
+                             New scenes content:
+                             {string.Join("\n\n", newCharacter.SceneRewrites.Select(z => $"{z.SceneTracker.ToJsonString()}\n{z.Content}"))}
+
+                             Update the character_tracker based on the scenes scenes!
+                             """;
+        return await InvokeInternal(requestPrompt, generationContext, context, sceneTrackerResult, cancellationToken);
+    }
+    
+    public async Task<(CharacterTracker Tracker, bool IsDead)> Invoke(
+        GenerationContext generationContext,
+        CharacterContext context,
+        CharacterContext newCharacter,
+        SceneTracker sceneTrackerResult,
+        CancellationToken cancellationToken)
+    {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        var previousTrackers = await dbContext.CharacterStates.Where(z => z.CharacterId == context.CharacterId).OrderByDescending(z => z.SequenceNumber).Take(2)
+            .ToArrayAsync(cancellationToken);
+        var requestPrompt = $"""
+                             Previous trackers:
+                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
+
+                             {PromptSections.CharacterStateContext(context)}
+
+                             New scene content:
+                             {newCharacter.SceneRewrites.First().Content}
+
+                             Update the character_tracker based on the new scene.
+                             """;
+        return await InvokeInternal(requestPrompt, generationContext, context, sceneTrackerResult, cancellationToken);
+    }
+
+    private async Task<(CharacterTracker Tracker, bool IsDead)> InvokeInternal(
+        string request,
+        GenerationContext generationContext, 
+        CharacterContext context, 
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
@@ -47,20 +98,9 @@ internal sealed class CharacterTrackerAgent(
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
-        var previousTrackers = await dbContext.CharacterStates.Where(z => z.CharacterId == context.CharacterId).OrderByDescending(z => z.SequenceNumber).Take(5)
-            .ToArrayAsync(cancellationToken);
-        var requestPrompt = $"""
-                             Previous trackers:
-                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
+        chatHistory.AddUserMessage(request);
 
-                             {PromptSections.CharacterStateContext(context)}
-
-                             {context.SceneRewrites.Last().Content}
-                             """;
-        chatHistory.AddUserMessage(requestPrompt);
-
-        var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<CharacterTracker>>("tracker");
+        var outputParser = CreateOutputParser();
 
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
@@ -79,9 +119,25 @@ internal sealed class CharacterTrackerAgent(
             kernelWithKg,
             cancellationToken);
 
-        context.CharacterTracker = trackerDelta.Tracker;
+        return trackerDelta;
+    }
 
-        return null;
+    private static Func<string, (CharacterTracker Tracker, bool IsDead)>
+        CreateOutputParser()
+    {
+        return response =>
+        {
+            var characterStats = ResponseParser.ExtractJson<CharacterStatus>(response, "status");
+            var tracker = ResponseParser.ExtractJson<CharacterDeltaTrackerOutput<CharacterTracker>>(response, "tracker");
+
+            return (tracker.Tracker, characterStats.IsDead);
+        };
+    }
+
+    private class CharacterStatus
+    {
+        [JsonPropertyName("is_dead")]
+        public bool IsDead { get; set; }
     }
 
     private async Task<string> BuildInstruction(GenerationContext context, string characterName)
