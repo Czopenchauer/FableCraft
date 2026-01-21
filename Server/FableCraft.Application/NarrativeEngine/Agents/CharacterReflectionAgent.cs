@@ -40,7 +40,7 @@ internal sealed class CharacterReflectionAgent(
     {
         var kernelBuilder = await GetKernelBuilder(generationContext);
 
-        var systemPrompt = await BuildInstruction(generationContext, context.Name);
+        var systemPrompt = await BuildInstruction(generationContext, context, sceneTrackerResult);
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
@@ -226,10 +226,61 @@ internal sealed class CharacterReflectionAgent(
         };
     }
 
-    private async Task<string> BuildInstruction(GenerationContext context, string characterName)
+    private async Task<string> BuildInstruction(
+        GenerationContext generationContext,
+        CharacterContext characterContext,
+        SceneTracker sceneTrackerResult)
     {
-        var prompt = await GetPromptAsync(context);
-        return PromptBuilder.ReplacePlaceholders(prompt,
-            (PlaceholderNames.CharacterName, characterName));
+        var prompt = await GetPromptAsync(generationContext);
+        var jsonOptions = PromptSections.GetJsonOptions(true);
+
+        prompt = prompt.Replace(PlaceholderNames.CharacterName, characterContext.Name);
+
+        prompt = prompt.Replace("{{character_identity}}", characterContext.CharacterState.ToJsonString(jsonOptions));
+
+        prompt = prompt.Replace("{{character_tracker}}",
+            characterContext.CharacterTracker?.ToJsonString(jsonOptions) ?? "No physical state tracked.");
+
+        var charactersPresent = sceneTrackerResult.CharactersPresent ?? [];
+        var relationshipsOnScene = FormatRelationshipsOnScene(characterContext, charactersPresent, jsonOptions);
+        prompt = prompt.Replace("{{relationships_on_scene}}", relationshipsOnScene);
+
+        return prompt;
+    }
+
+    private static string FormatRelationshipsOnScene(
+        CharacterContext characterContext,
+        string[] charactersPresent,
+        System.Text.Json.JsonSerializerOptions jsonOptions)
+    {
+        if (characterContext.Relationships.Count == 0 || charactersPresent.Length == 0)
+        {
+            return "No established relationships with characters present.";
+        }
+
+        var presentSet = new HashSet<string>(charactersPresent, StringComparer.OrdinalIgnoreCase);
+        var relevantRelationships = characterContext.Relationships
+            .Where(r => presentSet.Contains(r.TargetCharacterName))
+            .ToList();
+
+        if (relevantRelationships.Count == 0)
+        {
+            return "No established relationships with characters present.";
+        }
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var rel in relevantRelationships)
+        {
+            sb.AppendLine($"### {rel.TargetCharacterName}");
+            sb.AppendLine($"**Dynamic:** {rel.Dynamic}");
+            if (rel.Data.Count > 0)
+            {
+                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(jsonOptions)}");
+            }
+
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
     }
 }
