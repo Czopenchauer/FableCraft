@@ -12,14 +12,14 @@ namespace FableCraft.Application.NarrativeEngine.Agents.Builders;
 /// </summary>
 internal static class PromptSections
 {
-    private readonly static JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
         AllowTrailingCommas = true
     };
 
-    private readonly static JsonSerializerOptions JsonOptionsIgnoreNull = new()
+    private static readonly JsonSerializerOptions JsonOptionsIgnoreNull = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
@@ -407,20 +407,15 @@ internal static class PromptSections
     public static string PreviouslyCreatedContent(GenerationContext context)
     {
         var hasLore = context.PreviouslyGeneratedLore.Length > 0;
-        var hasLocations = context.PreviouslyGeneratedLocations.Length > 0;
         var hasItems = context.PreviouslyGeneratedItems.Length > 0;
 
-        if (!hasLore && !hasLocations && !hasItems)
+        if (!hasLore && !hasItems)
         {
             return string.Empty;
         }
 
         var loreContent = hasLore
             ? string.Join("\n", context.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
-            : "None";
-
-        var locationContent = hasLocations
-            ? string.Join("\n", context.PreviouslyGeneratedLocations.Select(x => $"- {x.Content}"))
             : "None";
 
         var itemContent = hasItems
@@ -431,9 +426,6 @@ internal static class PromptSections
                 <previously_created_content>
                 **Previously Created Lore**:
                 {loreContent}
-
-                **Previously Created Locations**:
-                {locationContent}
 
                 **Previously Created Items**:
                 {itemContent}

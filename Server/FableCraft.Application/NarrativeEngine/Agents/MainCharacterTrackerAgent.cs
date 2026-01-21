@@ -39,6 +39,8 @@ internal sealed class MainCharacterTrackerAgent(
 
                              {PromptSections.NewItems(context.NewItems)}
 
+                             {PromptSections.PreviouslyCreatedContent(context)}
+
                              {PromptSections.MainCharacter(context)}
 
                              {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, 5) : "")}

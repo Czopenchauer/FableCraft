@@ -94,6 +94,8 @@ internal sealed class CharacterTrackerAgent(
 
                              {PromptSections.NewItems(generationContext.NewItems)}
 
+                             {PromptSections.PreviouslyCreatedContent(generationContext)}
+
                              {PromptSections.RecentScenesForCharacter(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
