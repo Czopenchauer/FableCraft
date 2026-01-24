@@ -1,8 +1,8 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 
-using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
@@ -22,7 +22,7 @@ namespace FableCraft.Infrastructure.Llm;
 
 public static class Telemetry
 {
-    public readonly static ActivitySource LlmActivitySource = new("LlmCall");
+    public static readonly ActivitySource LlmActivitySource = new("LlmCall");
 }
 
 public interface IAgentKernel
@@ -112,14 +112,20 @@ internal sealed class AgentKernel : IAgentKernel
                                          llmActivity?.SetTag("llm.model", chatCompletionService.GetModelId());
 
                                          var stopwatch = Stopwatch.StartNew();
-                                         var result =
-                                             await chatCompletionService.GetChatMessageContentAsync(chatHistory, promptExecutionSettings, kernel, token);
-                                         _logger.Information("Generated response: {response}", JsonSerializer.Serialize(result));
-                                         var replyInnerContent = result.InnerContent as ChatCompletion;
+
+                                         // Use streaming with resume capability to prevent timeout on long-running requests
+                                         var (responseContent, context, usage) = await ExecuteWithResumeAsync(
+                                             chatCompletionService,
+                                             chatHistory,
+                                             promptExecutionSettings,
+                                             kernel,
+                                             token);
+
+                                         _logger.Information("Generated streaming response: {response}", responseContent);
                                          _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                             replyInnerContent?.Usage.InputTokenCount,
-                                             replyInnerContent?.Usage.OutputTokenCount,
-                                             replyInnerContent?.Usage.TotalTokenCount);
+                                             usage?.InputTokenCount,
+                                             usage?.OutputTokenCount,
+                                             usage?.TotalTokenCount);
 
                                          var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
                                          await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
@@ -128,15 +134,15 @@ internal sealed class AgentKernel : IAgentKernel
                                                  SceneId = ProcessExecutionContext.SceneId.Value,
                                                  CallerName = operationName,
                                                  RequestContent = requestContent,
-                                                 ResponseContent = result.Items.ToJsonString(),
-                                                 InputToken = replyInnerContent?.Usage.InputTokenCount,
-                                                 OutputToken = replyInnerContent?.Usage.OutputTokenCount,
-                                                 TotalToken = replyInnerContent?.Usage.TotalTokenCount,
+                                                 ResponseContent = responseContent,
+                                                 InputToken = usage?.InputTokenCount,
+                                                 OutputToken = usage?.OutputTokenCount,
+                                                 TotalToken = usage?.TotalTokenCount,
                                                  Duration = stopwatch.ElapsedMilliseconds
                                              },
                                              token);
 
-                                         return result.Content;
+                                         return responseContent;
                                      }
                                  }
                                  catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
@@ -155,5 +161,126 @@ internal sealed class AgentKernel : IAgentKernel
             chatHistory.AddUserMessage(result);
             return outputFunc(result);
         }
+    }
+
+    private async Task<(string Content, StreamingContext Context, ChatTokenUsage? Usage)> ExecuteWithResumeAsync(
+        IChatCompletionService chatCompletionService,
+        ChatHistory originalHistory,
+        PromptExecutionSettings settings,
+        Kernel kernel,
+        CancellationToken cancellationToken)
+    {
+        var context = new StreamingContext();
+        const int maxRetries = 3;
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var history = CloneChatHistory(originalHistory);
+
+                // If resuming, add partial response and continuation prompt
+                if (!string.IsNullOrEmpty(context.PartialResponse))
+                {
+                    history.AddAssistantMessage(context.PartialResponse);
+                    history.AddUserMessage(
+                        "Your previous response was interrupted. " + "Continue EXACTLY from where you stopped. " + "Do not repeat content already provided.");
+                }
+
+                var (content, usage) = await StreamResponseAsync(
+                    chatCompletionService,
+                    history,
+                    settings,
+                    kernel,
+                    context,
+                    cancellationToken);
+
+                return (content, context, usage);
+            }
+            catch (HttpIOException ex) when (ex.Message.Contains("ResponseEnded") || ex.Message.Contains("prematurely"))
+            {
+                context.RetryCount = attempt + 1;
+                _logger.Warning(
+                    "Streaming interrupted at {Chunks} chunks, {Length} chars. Retry {Attempt}/{Max}",
+                    context.ChunksReceived,
+                    context.PartialResponse.Length,
+                    attempt + 1,
+                    maxRetries);
+
+                if (attempt == maxRetries)
+                {
+                    throw new LlmStreamingFailedException(context, ex);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("ResponseEnded") || ex.Message.Contains("prematurely"))
+            {
+                context.RetryCount = attempt + 1;
+                _logger.Warning(
+                    "Streaming interrupted (HttpRequestException) at {Chunks} chunks, {Length} chars. Retry {Attempt}/{Max}",
+                    context.ChunksReceived,
+                    context.PartialResponse.Length,
+                    attempt + 1,
+                    maxRetries);
+
+                if (attempt == maxRetries)
+                {
+                    throw new LlmStreamingFailedException(context, ex);
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Unreachable code - retry loop should have returned or thrown");
+    }
+
+    private async Task<(string Content, ChatTokenUsage? Usage)> StreamResponseAsync(
+        IChatCompletionService chatCompletionService,
+        ChatHistory chatHistory,
+        PromptExecutionSettings settings,
+        Kernel kernel,
+        StreamingContext context,
+        CancellationToken cancellationToken)
+    {
+        var responseBuilder = new StringBuilder(context.PartialResponse);
+        StreamingChatMessageContent? lastChunk = null;
+
+        await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
+                           chatHistory,
+                           settings,
+                           kernel,
+                           cancellationToken))
+        {
+            if (chunk.Content != null)
+            {
+                responseBuilder.Append(chunk.Content);
+                context.PartialResponse = responseBuilder.ToString();
+                context.ChunksReceived++;
+                context.LastChunkAt = DateTimeOffset.UtcNow;
+            }
+
+            lastChunk = chunk;
+        }
+
+        context.IsComplete = true;
+
+        ChatTokenUsage? usage = null;
+        if (lastChunk?.InnerContent is StreamingChatCompletionUpdate streamingUpdate)
+        {
+            usage = streamingUpdate.Usage;
+        }
+
+        return (responseBuilder.ToString(), usage);
+    }
+
+    private static ChatHistory CloneChatHistory(ChatHistory original)
+    {
+        var clone = new ChatHistory();
+        foreach (var message in original)
+        {
+            clone.Add(message);
+        }
+
+        return clone;
     }
 }

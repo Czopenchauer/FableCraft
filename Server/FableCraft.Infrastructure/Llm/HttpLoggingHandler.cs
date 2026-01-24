@@ -21,8 +21,6 @@ internal sealed class HttpLoggingHandler : DelegatingHandler
 
         var response = await base.SendAsync(request, cancellationToken);
 
-        await LogResponse(response, requestId);
-
         return response;
     }
 
@@ -33,11 +31,5 @@ internal sealed class HttpLoggingHandler : DelegatingHandler
             var content = await request.Content.ReadAsStringAsync();
             _logger.Information("[{RequestId}] Request Body: {Body}", requestId, content);
         }
-    }
-
-    private async Task LogResponse(HttpResponseMessage response, string requestId)
-    {
-        var content = await response.Content.ReadAsStringAsync();
-        _logger.Information("[{RequestId}] Response Body: {Body}", requestId, content);
     }
 }
