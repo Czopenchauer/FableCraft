@@ -33,6 +33,8 @@ internal sealed class OffscreenInferenceAgent(
         SimulationPlannerOutput plan,
         CancellationToken cancellationToken)
     {
+        logger.Information("OffscreenInferenceProcessor: Starting...");
+
         var significantForInference = plan.SignificantForInference;
         if (significantForInference is not { Count: > 0 })
         {
@@ -138,7 +140,7 @@ internal sealed class OffscreenInferenceAgent(
                         });
                     }
 
-                    logger.Debug("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
+                    logger.Information("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
                         memories.Count,
                         sceneRewrites.Count,
                         character.Name);
@@ -188,6 +190,8 @@ internal sealed class OffscreenInferenceAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
+        chatHistory.AddUserMessage(BuildContextPrompt(input, context));
+        chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
         var kernel = kernelBuilder.Create().Build();
 
@@ -197,6 +201,7 @@ internal sealed class OffscreenInferenceAgent(
 
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
+        logger.Information("OffscreenInferenceAgent for {prompt: {prompt}", chatHistory.ToJsonString());
         return await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
@@ -204,6 +209,119 @@ internal sealed class OffscreenInferenceAgent(
             nameof(OffscreenInferenceAgent),
             kernel,
             cancellationToken);
+    }
+
+    private string BuildContextPrompt(OffscreenInferenceInput input, GenerationContext context)
+    {
+        var jsonOptions = PromptSections.GetJsonOptions(true);
+        var characterName = input.Character.Name;
+
+        var arcImportantCharacters = context.Characters
+            .Where(c => c.Importance == CharacterImportance.ArcImportance && c.Name != characterName)
+            .Select(c => c.Name)
+            .ToArray();
+
+        var significantCharacters = context.Characters
+            .Where(c => c.Importance == CharacterImportance.Significant && c.Name != characterName)
+            .Select(c => $"{c.Name} - {c.Description ?? "No description available"}")
+            .ToArray();
+
+        return $"""
+                <identity>
+                {input.Character.CharacterState.ToJsonString(jsonOptions)}
+                </identity>
+
+                <physical_state>
+                {input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}"}
+                </physical_state>
+
+                <relationships>
+                {FormatRelationships(input.Character)}
+                </relationships>
+
+                <world_events>
+                {FormatWorldEvents(input.WorldEvents)}
+                </world_events>
+
+                <last_scenes>
+                {BuildSceneHistoryContent(input.Character)}
+                </last_scenes>
+                """;
+    }
+
+    private static string BuildRequestPrompt(OffscreenInferenceInput input) =>
+        $"""
+         Live through the period: {input.TimeElapsed}
+
+         What do you do? What happens? How are you affected?
+         """;
+
+    private static string FormatRelationships(CharacterContext character)
+    {
+        if (character.Relationships.Count == 0)
+        {
+            return "No established relationships.";
+        }
+
+        var sb = new StringBuilder();
+        foreach (var rel in character.Relationships)
+        {
+            sb.AppendLine($"### {rel.TargetCharacterName}");
+            sb.AppendLine($"**Dynamic:** {rel.Dynamic}");
+            if (rel.Data.Count > 0)
+            {
+                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(true))}");
+            }
+
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    private static string FormatWorldEvents(object? worldEvents)
+    {
+        if (worldEvents == null)
+        {
+            return "No significant world momentum.";
+        }
+
+        return worldEvents.ToJsonString();
+    }
+
+    private static string BuildSceneHistoryContent(CharacterContext character)
+    {
+        if (character.SceneRewrites.Count == 0)
+        {
+            return "*No previous scenes recorded.*";
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("These are scenes from your perspective (your memories of recent events). This simulation continues from where you left off.");
+        sb.AppendLine();
+
+        var recentScenes = character.SceneRewrites
+            .OrderByDescending(s => s.SequenceNumber)
+            .Take(10)
+            .OrderBy(s => s.SequenceNumber)
+            .ToList();
+
+        foreach (var scene in recentScenes)
+        {
+            sb.AppendLine("---");
+            sb.AppendLine($"**Scene {scene.SequenceNumber}**");
+            if (scene.SceneTracker != null)
+            {
+                sb.AppendLine($"Time: {scene.SceneTracker.Time}");
+                sb.AppendLine($"Location: {scene.SceneTracker.Location}");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine(scene.Content);
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
     }
 
     private string PopulatePlaceholders(string prompt, OffscreenInferenceInput input)
@@ -223,16 +341,6 @@ internal sealed class OffscreenInferenceAgent(
         prompt = prompt.Replace("{{events_log}}", FormatEventsLog(input.EventsLog));
 
         return prompt;
-    }
-
-    private static string FormatWorldEvents(object? worldEvents)
-    {
-        if (worldEvents == null)
-        {
-            return "No significant world events during this period.";
-        }
-
-        return worldEvents.ToJsonString();
     }
 
     private static string FormatEventsLog(List<CharacterEventDto> events)

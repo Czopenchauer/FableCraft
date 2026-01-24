@@ -41,12 +41,6 @@ internal sealed class SimulationOrchestrator(
         var plan = await plannerAgent.Invoke(context, sceneTracker, cancellationToken);
         context.SimulationPlan ??= plan;
 
-        if (plan.SimulationNeeded != true)
-        {
-            logger.Information("SimulationPlanner: No simulation needed - {Reason}", plan.Reason ?? "no reason provided");
-            return;
-        }
-
         var charactersInScene = context.NewTracker?.Scene?.CharactersPresent ?? [];
         foreach (var standaloneSimulation in plan.Standalone ?? [])
         {

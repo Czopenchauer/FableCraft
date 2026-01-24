@@ -1,11 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-using Anthropic;
-
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.ServiceDefaults;
 
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
@@ -65,10 +62,12 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
 public sealed class KernelBuilderFactory
 {
     private readonly ILoggerFactory _loggerFactory;
+    private readonly Serilog.ILogger _logger;
 
-    public KernelBuilderFactory(ILoggerFactory loggerFactory)
+    public KernelBuilderFactory(ILoggerFactory loggerFactory, Serilog.ILogger logger)
     {
         _loggerFactory = loggerFactory;
+        _logger = logger;
     }
 
     public IKernelBuilder Create(LlmPreset preset)
@@ -77,8 +76,8 @@ public sealed class KernelBuilderFactory
 
         return provider switch
                {
-                   _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory),
-                   _ => new OpenAiKernelBuilder(preset, _loggerFactory)
+                   _ when provider == LlmProvider.Gemini => new GeminiKernelBuilder(preset, _loggerFactory, _logger),
+                   _ => new OpenAiKernelBuilder(preset, _loggerFactory, _logger)
                };
     }
 }
@@ -86,11 +85,13 @@ public sealed class KernelBuilderFactory
 internal class OpenAiKernelBuilder : IKernelBuilder
 {
     private readonly ILoggerFactory _loggerFactory;
+    private readonly Serilog.ILogger _logger;
     private readonly LlmPreset _preset;
 
-    public OpenAiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
+    public OpenAiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger)
     {
         _loggerFactory = loggerFactory;
+        _logger = logger;
         _preset = preset;
     }
 
@@ -102,13 +103,18 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             .AddOpenAIChatCompletion(_preset.Model, new Uri(_preset.BaseUrl!), _preset.ApiKey);
 
         builder.Services.AddSingleton(_loggerFactory);
+        builder.Services.AddSingleton(_logger);
+        builder.Services.AddTransient<HttpLoggingHandler>();
 
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
             hp.ConfigureHttpClient((_, c) =>
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
-            }).RemoveAllResilienceHandlers().AddDefaultLlmResiliencePolicies();
+            })
+            .AddHttpMessageHandler<HttpLoggingHandler>()
+            .RemoveAllResilienceHandlers()
+            .AddDefaultLlmResiliencePolicies();
         });
 
         return builder;
@@ -161,7 +167,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
 
 internal class GeminiKernelBuilder : IKernelBuilder
 {
-    private readonly static GeminiSafetySetting[] DefaultSafetySettings =
+    private static readonly GeminiSafetySetting[] DefaultSafetySettings =
     [
         new(GeminiSafetyCategory.Harassment, new GeminiSafetyThreshold("OFF")),
         new(GeminiSafetyCategory.SexuallyExplicit, new GeminiSafetyThreshold("OFF")),
@@ -170,11 +176,13 @@ internal class GeminiKernelBuilder : IKernelBuilder
     ];
 
     private readonly ILoggerFactory _loggerFactory;
+    private readonly Serilog.ILogger _logger;
     private readonly LlmPreset _preset;
 
-    public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory)
+    public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger)
     {
         _loggerFactory = loggerFactory;
+        _logger = logger;
         _preset = preset;
     }
 
@@ -186,13 +194,18 @@ internal class GeminiKernelBuilder : IKernelBuilder
             .AddGoogleAIGeminiChatCompletion(_preset.Model, _preset.ApiKey);
 
         builder.Services.AddSingleton(_loggerFactory);
+        builder.Services.AddSingleton(_logger);
+        builder.Services.AddTransient<HttpLoggingHandler>();
 
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
             hp.ConfigureHttpClient((_, c) =>
             {
                 c.Timeout = TimeSpan.FromMinutes(10);
-            }).RemoveAllResilienceHandlers().AddDefaultLlmResiliencePolicies();
+            })
+            .AddHttpMessageHandler<HttpLoggingHandler>()
+            .RemoveAllResilienceHandlers()
+            .AddDefaultLlmResiliencePolicies();
         });
 
         return builder;

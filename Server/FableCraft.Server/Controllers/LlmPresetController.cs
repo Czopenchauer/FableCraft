@@ -298,7 +298,6 @@ public class LlmPresetController : ControllerBase
                 chatHistory,
                 settings,
                 cancellationToken: cancellationToken);
-
             return Ok(new TestConnectionResponseDto
             {
                 Success = true,

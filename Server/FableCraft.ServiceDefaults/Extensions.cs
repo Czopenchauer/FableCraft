@@ -38,17 +38,17 @@ public static class Extensions
             {
                 options.AttemptTimeout = new HttpTimeoutStrategyOptions
                 {
-                    Timeout = TimeSpan.FromSeconds(20)
+                    Timeout = TimeSpan.FromMinutes(5)
                 };
 
                 options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
                 {
-                    Timeout = TimeSpan.FromMinutes(5)
+                    Timeout = TimeSpan.FromMinutes(20)
                 };
 
                 options.Retry.MaxRetryAttempts = 3;
                 options.Retry.Delay = TimeSpan.FromSeconds(2);
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(10);
             });
 
             // Turn on service discovery by default
