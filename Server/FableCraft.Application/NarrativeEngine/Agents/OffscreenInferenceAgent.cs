@@ -200,7 +200,7 @@ internal sealed class OffscreenInferenceAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(BuildContextPrompt(input, context));
+        chatHistory.AddUserMessage(BuildContextPrompt(input));
         chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
         var kernel = kernelBuilder.Create().Build();
@@ -221,20 +221,9 @@ internal sealed class OffscreenInferenceAgent(
             cancellationToken);
     }
 
-    private string BuildContextPrompt(OffscreenInferenceInput input, GenerationContext context)
+    private string BuildContextPrompt(OffscreenInferenceInput input)
     {
         var jsonOptions = PromptSections.GetJsonOptions(true);
-        var characterName = input.Character.Name;
-
-        var arcImportantCharacters = context.Characters
-            .Where(c => c.Importance == CharacterImportance.ArcImportance && c.Name != characterName)
-            .Select(c => c.Name)
-            .ToArray();
-
-        var significantCharacters = context.Characters
-            .Where(c => c.Importance == CharacterImportance.Significant && c.Name != characterName)
-            .Select(c => $"{c.Name} - {c.Description ?? "No description available"}")
-            .ToArray();
 
         return $"""
                 <identity>
