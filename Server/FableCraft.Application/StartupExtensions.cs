@@ -1,6 +1,8 @@
 #pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
 
 using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.KnowledgeGraph;
+using FableCraft.Application.KnowledgeGraph.Handlers;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -72,6 +74,11 @@ public static class StartupExtensions
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
+        services.AddMessageHandler<IndexWorldbookCommand, IndexWorldbookCommandHandler>();
+
+        // Knowledge graph context service for volume-based isolation
+        // Singleton because it maintains state (currently mounted volume) and operation lock
+        services.AddSingleton<IKnowledgeGraphContextService, KnowledgeGraphContextService>();
 
         return services;
     }

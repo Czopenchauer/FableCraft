@@ -97,7 +97,7 @@ internal sealed class ContextGatherer(
                 var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
                 worldQueryTasks = ragSearch.SearchAsync(
                     callerContext,
-                    [RagClientExtensions.GetWorldDatasetName(context.AdventureId)],
+                    [RagClientExtensions.GetWorldDatasetName()],
                     worldQueries,
                     cancellationToken: cancellationToken);
             }
@@ -107,7 +107,7 @@ internal sealed class ContextGatherer(
                 var narrativeQueries = output.NarrativeQueries.Select(q => q.Query).ToArray();
                 var narrativeResults = await ragSearch.SearchAsync(
                     callerContext,
-                    [RagClientExtensions.GetMainCharacterDatasetName(context.AdventureId)],
+                    [RagClientExtensions.GetMainCharacterDatasetName()],
                     narrativeQueries,
                     cancellationToken: cancellationToken);
 

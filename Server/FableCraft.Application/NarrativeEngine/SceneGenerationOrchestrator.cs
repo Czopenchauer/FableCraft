@@ -1,7 +1,6 @@
 ﻿#pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
 
 using System.Diagnostics;
-using System.Text.Json;
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine.Agents;

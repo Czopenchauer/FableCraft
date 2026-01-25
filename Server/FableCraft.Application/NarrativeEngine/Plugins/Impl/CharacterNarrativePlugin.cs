@@ -42,7 +42,7 @@ internal class CharacterNarrativePlugin : CharacterPluginBase
 
         var datasets = new List<string>
         {
-            RagClientExtensions.GetCharacterDatasetName(CallerContext!.AdventureId, CharacterId)
+            RagClientExtensions.GetCharacterDatasetName(CharacterId)
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();

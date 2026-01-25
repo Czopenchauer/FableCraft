@@ -41,7 +41,7 @@ internal class MainCharacterNarrativePlugin : PluginBase
 
         var datasets = new List<string>
         {
-            RagClientExtensions.GetMainCharacterDatasetName(CallerContext!.AdventureId)
+            RagClientExtensions.GetMainCharacterDatasetName()
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();

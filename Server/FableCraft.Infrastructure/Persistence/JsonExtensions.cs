@@ -1,15 +1,13 @@
 ﻿using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using System.Text.Unicode;
 
 namespace FableCraft.Infrastructure.Persistence;
 
 public static partial class JsonExtensions
 {
-    public readonly static JsonSerializerOptions JsonSerializerOptions = new()
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,

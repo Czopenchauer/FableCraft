@@ -4,8 +4,6 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Tests.Integration.SceneRegeneration.Fixtures;
 
-using Microsoft.EntityFrameworkCore;
-
 namespace FableCraft.Tests.Integration.SceneRegeneration;
 
 [ClassDataSource<PostgresContainerFixture>(Shared = SharedType.PerTestSession)]

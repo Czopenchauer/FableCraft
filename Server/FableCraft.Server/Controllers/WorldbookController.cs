@@ -1,6 +1,9 @@
-﻿using FableCraft.Application.Model.Worldbook;
+using FableCraft.Application.KnowledgeGraph;
+using FableCraft.Application.KnowledgeGraph.Handlers;
+using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Queue;
 
 using FluentValidation;
 
@@ -310,4 +313,82 @@ public class WorldbookController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    ///     Index a worldbook to create a reusable knowledge graph template.
+    ///     This is a one-time expensive operation that processes all lorebook entries.
+    ///     Adventures created from this worldbook will copy the template for isolated KG.
+    /// </summary>
+    [HttpPost("{id:guid}/index")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Index(
+        Guid id,
+        [FromServices] IMessageDispatcher messageDispatcher,
+        CancellationToken cancellationToken)
+    {
+        var worldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
+        {
+            return NotFound();
+        }
+
+        if (worldbook.Lorebooks.Count == 0)
+        {
+            return BadRequest(new
+            {
+                error = "Empty worldbook",
+                message = "Cannot index a worldbook with no lorebook entries."
+            });
+        }
+
+        await messageDispatcher.PublishAsync(new IndexWorldbookCommand
+        {
+            AdventureId = Guid.Empty,
+            WorldbookId = id
+        }, cancellationToken);
+
+        return Accepted(new
+        {
+            worldbookId = id,
+            message = "Indexing started. This may take several minutes depending on worldbook size.",
+            lorebookCount = worldbook.Lorebooks.Count
+        });
+    }
+
+    /// <summary>
+    ///     Check if a worldbook has been indexed.
+    /// </summary>
+    [HttpGet("{id:guid}/index/status")]
+    [ProducesResponseType(typeof(IndexStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IndexStatusResponse>> GetIndexStatus(
+        Guid id,
+        [FromServices] IKnowledgeGraphContextService contextService,
+        CancellationToken cancellationToken)
+    {
+        var worldbookExists = await _dbContext.Worldbooks.AnyAsync(w => w.Id == id, cancellationToken);
+        if (!worldbookExists)
+        {
+            return NotFound();
+        }
+
+        var isIndexed = await contextService.IsWorldbookIndexedAsync(id, cancellationToken);
+
+        return Ok(new IndexStatusResponse
+        {
+            WorldbookId = id,
+            IsIndexed = isIndexed
+        });
+    }
+}
+
+public record IndexStatusResponse
+{
+    public Guid WorldbookId { get; init; }
+    public bool IsIndexed { get; init; }
 }

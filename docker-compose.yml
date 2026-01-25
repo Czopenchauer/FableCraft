@@ -85,11 +85,31 @@ services:
       - ConnectionStrings__fablecraftdb=Host=fablecraftdb;Port=5432;Database=fablecraftdb;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       - ConnectionStrings__graph-rag-api=http://graph-rag-api:8111
       - VisualizationPath=/app/visualization
+      # Pass through for graph service container creation (volume isolation)
+      - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY is required - set it in .env}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_ENDPOINT=${LLM_ENDPOINT:-}
+      - LLM_API_VERSION=${LLM_API_VERSION:-}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-16384}
+      - LLM_RATE_LIMIT_ENABLED=${LLM_RATE_LIMIT_ENABLED:-false}
+      - LLM_RATE_LIMIT_REQUESTS=${LLM_RATE_LIMIT_REQUESTS:-60}
+      - LLM_RATE_LIMIT_INTERVAL=${LLM_RATE_LIMIT_INTERVAL:-60}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-large}
+      - EMBEDDING_ENDPOINT=${EMBEDDING_ENDPOINT:-}
+      - EMBEDDING_API_VERSION=${EMBEDDING_API_VERSION:-}
+      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-3072}
+      - EMBEDDING_MAX_TOKENS=${EMBEDDING_MAX_TOKENS:-8191}
+      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-36}
+      - HUGGINGFACE_TOKENIZER=${HUGGINGFACE_TOKENIZER:-}
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./data-store:/app/data-store
       - ./logs:/app/logs
       - ./Prompts:/app/prompts-root
       - ./visualization:/app/visualization
+      - ./exports:/app/exports
     depends_on:
       fablecraftdb:
         condition: service_healthy

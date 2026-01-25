@@ -1,7 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 
+using Docker.DotNet;
+
 using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.Docker;
+using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
@@ -87,6 +91,25 @@ public static class StartupExtensions
         services.AddSingleton<KernelBuilderFactory>();
         services.AddTransient<IAgentKernel, AgentKernel>();
         services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
+
+        // Docker services for volume-based knowledge graph isolation
+        services.Configure<DockerSettings>(configuration.GetSection(DockerSettings.SectionName));
+        services.Configure<GraphServiceSettings>(configuration.GetSection(GraphServiceSettings.SectionName));
+
+        services.AddSingleton<DockerClient>(sp =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
+            return new DockerClientConfiguration(new Uri(settings.SocketPath)).CreateClient();
+        });
+
+        services.AddSingleton<IVolumeManager, VolumeManager>();
+        services.AddSingleton<IContainerManager, ContainerManager>();
+
+        // HTTP client for Docker health checks (internal container health checks)
+        services.AddHttpClient("DockerHealthCheck", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
 
         return services;
     }

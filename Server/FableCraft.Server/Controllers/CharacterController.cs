@@ -65,10 +65,10 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
         }
 
         var datasetName = request.IsMainCharacter
-            ? RagClientExtensions.GetMainCharacterDatasetName(adventureId)
-            : RagClientExtensions.GetCharacterDatasetName(adventureId, request.CharacterId!.Value);
+            ? RagClientExtensions.GetMainCharacterDatasetName()
+            : RagClientExtensions.GetCharacterDatasetName(request.CharacterId!.Value);
 
-        string[] datasets = [RagClientExtensions.GetWorldDatasetName(adventureId), datasetName];
+        string[] datasets = [RagClientExtensions.GetWorldDatasetName(), datasetName];
         var context = new CallerContext(typeof(CharacterController), adventureId, null);
         var results = await ragSearch.SearchAsync(
             context,
@@ -81,7 +81,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
         var format = results.SelectMany(x => x.Response.Results).GroupBy(x => x.DatasetName);
         foreach (var searchResultItems in format)
         {
-            if (searchResultItems.Key == RagClientExtensions.GetWorldDatasetName(adventureId))
+            if (searchResultItems.Key == RagClientExtensions.GetWorldDatasetName())
             {
                 response.AppendLine($"""
                                      World Knowledge:
@@ -113,8 +113,8 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
     {
         var datasetName = request.DatasetType.ToLower() switch
                           {
-                              "world" => RagClientExtensions.GetWorldDatasetName(adventureId),
-                              "main_character" => RagClientExtensions.GetMainCharacterDatasetName(adventureId),
+                              "world" => RagClientExtensions.GetWorldDatasetName(),
+                              "main_character" => RagClientExtensions.GetMainCharacterDatasetName(),
                               _ => null
                           };
 

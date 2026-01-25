@@ -14,11 +14,15 @@ namespace FableCraft.Infrastructure.Clients;
 
 public static class RagClientExtensions
 {
-    public static string GetCharacterDatasetName(Guid adventureId, Guid characterId) => $"{adventureId}_{characterId}";
+    /// <summary>
+    /// Dataset names are volume-relative since each adventure has its own isolated Docker volume.
+    /// No need for adventure ID prefix - the volume provides isolation.
+    /// </summary>
+    public static string GetCharacterDatasetName(Guid characterId) => $"character_{characterId}";
 
-    public static string GetWorldDatasetName(Guid adventureId) => $"{adventureId}_world";
+    public static string GetWorldDatasetName() => "world";
 
-    public static string GetMainCharacterDatasetName(Guid adventureId) => $"{adventureId}_main_character";
+    public static string GetMainCharacterDatasetName() => "main_character";
 
     public static string GetMainCharacterDescription(MainCharacter mainCharacter) => $"""
                                                                                       Name: {mainCharacter.Name}

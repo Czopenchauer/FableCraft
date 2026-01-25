@@ -1,4 +1,5 @@
-﻿using FableCraft.Application.Exceptions;
+using FableCraft.Application.Exceptions;
+using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.Model.Adventure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -39,6 +40,7 @@ internal class AdventureCreationService : IAdventureCreationService
     private readonly ILogger _logger;
     private readonly IMessageDispatcher _messageDispatcher;
     private readonly IRagBuilder _ragBuilder;
+    private readonly IKnowledgeGraphContextService _contextService;
     private readonly TimeProvider _timeProvider;
 
     public AdventureCreationService(
@@ -46,13 +48,15 @@ internal class AdventureCreationService : IAdventureCreationService
         IMessageDispatcher messageDispatcher,
         TimeProvider timeProvider,
         ILogger logger,
-        IRagBuilder ragBuilder)
+        IRagBuilder ragBuilder,
+        IKnowledgeGraphContextService contextService)
     {
         _dbContext = dbContext;
         _messageDispatcher = messageDispatcher;
         _timeProvider = timeProvider;
         _logger = logger;
         _ragBuilder = ragBuilder;
+        _contextService = contextService;
     }
 
     public async Task<AdventureCreationStatus> CreateAdventureAsync(
@@ -62,20 +66,33 @@ internal class AdventureCreationService : IAdventureCreationService
         var now = _timeProvider.GetUtcNow();
         var tracker = await _dbContext.TrackerDefinitions.SingleAsync(x => x.Id == adventureDto.TrackerDefinitionId, cancellationToken);
 
-        List<LorebookEntry> lorebookEntries = new();
-        if (adventureDto.WorldbookId != null)
+        var worldbookId = adventureDto.WorldbookId
+            ?? throw new InvalidOperationException("WorldbookId is required. All adventures must be created from an indexed worldbook.");
+
+        var worldbookExists = await _dbContext.Worldbooks.AnyAsync(w => w.Id == worldbookId, cancellationToken);
+        if (!worldbookExists)
         {
-            lorebookEntries = await _dbContext.Lorebooks
-                .Where(x => x.WorldbookId == adventureDto.WorldbookId)
-                .Select(entry => new LorebookEntry
-                {
-                    Description = entry.Title,
-                    Content = entry.Content,
-                    Category = entry.Category,
-                    ContentType = entry.ContentType,
-                    Priority = 0
-                }).ToListAsync(cancellationToken);
+            throw new InvalidOperationException($"Worldbook {worldbookId} not found.");
         }
+
+        var isIndexed = await _contextService.IsWorldbookIndexedAsync(worldbookId, cancellationToken);
+        if (!isIndexed)
+        {
+            throw new InvalidOperationException(
+                $"Worldbook {worldbookId} has not been indexed. " +
+                "Run POST /api/Worldbook/{id}/index before creating adventures.");
+        }
+
+        var lorebookEntries = await _dbContext.Lorebooks
+            .Where(x => x.WorldbookId == worldbookId)
+            .Select(entry => new LorebookEntry
+            {
+                Description = entry.Title,
+                Content = entry.Content,
+                Category = entry.Category,
+                ContentType = entry.ContentType,
+                Priority = 0
+            }).ToListAsync(cancellationToken);
 
         var adventure = new Adventure
         {
@@ -84,6 +101,7 @@ internal class AdventureCreationService : IAdventureCreationService
             FirstSceneGuidance = adventureDto.FirstSceneDescription,
             LastPlayedAt = null,
             AdventureStartTime = adventureDto.ReferenceTime,
+            WorldbookId = worldbookId,
             MainCharacter = new MainCharacter
             {
                 Name = adventureDto.MainCharacter.Name,
@@ -160,6 +178,17 @@ internal class AdventureCreationService : IAdventureCreationService
                 "Failed to delete adventure {adventureId} from knowledge graph.",
                 adventureId);
             throw;
+        }
+
+        try
+        {
+            await _contextService.DeleteAdventureVolumeAsync(adventureId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex,
+                "Failed to delete adventure {adventureId} volume. Continuing with database cleanup.",
+                adventureId);
         }
 
         await _dbContext.Chunks.Where(x => x.AdventureId == adventureId).ExecuteDeleteAsync(cancellationToken);

@@ -23,6 +23,8 @@ public class Adventure : IEntity
 
     public required string PromptPath { get; set; }
 
+    public Guid WorldbookId { get; init; }
+
     public required MainCharacter MainCharacter { get; set; }
 
     public List<Character> Characters { get; init; } = [];

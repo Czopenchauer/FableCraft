@@ -62,10 +62,10 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
         switch (graphType)
         {
             case "world":
-                datasets = [RagClientExtensions.GetWorldDatasetName(CallerContext!.AdventureId)];
+                datasets = [RagClientExtensions.GetWorldDatasetName()];
                 break;
             case "personal":
-                datasets = [RagClientExtensions.GetCharacterDatasetName(CallerContext!.AdventureId, CharacterId)];
+                datasets = [RagClientExtensions.GetCharacterDatasetName(CharacterId)];
                 break;
             default:
                 return $"Invalid graph type '{graph}'. Use 'world' or 'personal'.";

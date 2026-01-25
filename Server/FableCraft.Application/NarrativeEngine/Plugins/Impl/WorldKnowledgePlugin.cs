@@ -48,7 +48,7 @@ internal class WorldKnowledgePlugin : PluginBase
 
         var datasets = new List<string>
         {
-            RagClientExtensions.GetWorldDatasetName(CallerContext!.AdventureId)
+            RagClientExtensions.GetWorldDatasetName()
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
