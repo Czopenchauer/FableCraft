@@ -24,7 +24,7 @@ internal sealed class ChroniclerAgent(
     KernelBuilderFactory kernelBuilderFactory,
     IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    private const int MaxScene = 10;
+    private const int MaxScene = 20;
 
     protected override AgentName GetAgentName() => AgentName.ChroniclerAgent;
 

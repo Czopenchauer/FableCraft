@@ -16,7 +16,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent : BaseAgent, IProcessor
 {
-    private const int SceneContextCount = 15;
+    private const int SceneContextCount = 25;
     private readonly IAgentKernel _agentKernel;
     private readonly IPluginFactory _pluginFactory;
 

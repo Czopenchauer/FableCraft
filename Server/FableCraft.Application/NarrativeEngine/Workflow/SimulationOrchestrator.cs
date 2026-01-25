@@ -88,6 +88,12 @@ internal sealed class SimulationOrchestrator(
                     throw new UnreachableException("Requested simulation for unknown character");
                 }
 
+                if (context.CharacterUpdates.Any(c => c.Name != character.Name))
+                {
+                    logger.Information("Skipping already simulated standalone character: {CharacterName}", character.Name);
+                    return default;
+                }
+
                 logger.Information("Running standalone simulation for {CharacterName}...", character.Name);
 
                 var input = new StandaloneSimulationInput
@@ -191,6 +197,11 @@ internal sealed class SimulationOrchestrator(
 
         foreach (var result in results)
         {
+            if (result.characterContext == null)
+            {
+                continue;
+            }
+
             var worldEvents = result.WorldEventsEmitted?.Select(x => new WorldEvent
                                   {
                                       When = x.When,
@@ -286,6 +297,12 @@ internal sealed class SimulationOrchestrator(
                     if (character == null)
                     {
                         logger.Warning("Character {CharacterName} not found for reflection processing", characterName);
+                        return null;
+                    }
+
+                    if (context.CharacterUpdates.Any(c => c.Name != character.Name))
+                    {
+                        logger.Information("Skipping already simulated cohort character: {CharacterName}", character.Name);
                         return null;
                     }
 

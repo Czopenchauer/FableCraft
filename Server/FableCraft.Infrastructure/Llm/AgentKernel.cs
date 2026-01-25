@@ -85,80 +85,84 @@ internal sealed class AgentKernel : IAgentKernel
         catch (InvalidCastException ex)
         {
             _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
+            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
             return await GetResponse();
         }
         catch (JsonException ex)
         {
             _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. {ex.Message}");
+            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
+            return await GetResponse();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
+            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
             return await GetResponse();
         }
 
         async Task<T> GetResponse()
         {
             var result = await _pipeline.ExecuteAsync(async token =>
-                             {
-                                 try
-                                 {
-                                     using (LogContext.Push(
-                                                new PropertyEnricher("OperationName", operationName),
-                                                new PropertyEnricher("Model", chatCompletionService.GetModelId()),
-                                                new PropertyEnricher("AdventureId", ProcessExecutionContext.AdventureId.Value)
-                                            ))
-                                     {
-                                         using var llmActivity = Telemetry.LlmActivitySource.StartActivity("LlmCall");
-                                         llmActivity?.SetTag("llm.operation", operationName);
-                                         llmActivity?.SetTag("llm.model", chatCompletionService.GetModelId());
+                {
+                    try
+                    {
+                        using (LogContext.Push(
+                                   new PropertyEnricher("OperationName", operationName),
+                                   new PropertyEnricher("Model", chatCompletionService.GetModelId()),
+                                   new PropertyEnricher("AdventureId", ProcessExecutionContext.AdventureId.Value)
+                               ))
+                        {
+                            using var llmActivity = Telemetry.LlmActivitySource.StartActivity("LlmCall");
+                            llmActivity?.SetTag("llm.operation", operationName);
+                            llmActivity?.SetTag("llm.model", chatCompletionService.GetModelId());
 
-                                         var stopwatch = Stopwatch.StartNew();
+                            var stopwatch = Stopwatch.StartNew();
 
-                                         // Use streaming with resume capability to prevent timeout on long-running requests
-                                         var (responseContent, context, usage) = await ExecuteWithResumeAsync(
-                                             chatCompletionService,
-                                             chatHistory,
-                                             promptExecutionSettings,
-                                             kernel,
-                                             token);
+                            var (responseContent, context, usage) = await ExecuteWithResumeAsync(
+                                chatCompletionService,
+                                chatHistory,
+                                promptExecutionSettings,
+                                kernel,
+                                token);
 
-                                         _logger.Information("Generated streaming response: {response}", responseContent);
-                                         _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
-                                             usage?.InputTokenCount,
-                                             usage?.OutputTokenCount,
-                                             usage?.TotalTokenCount);
+                            _logger.Information("Generated streaming response: {response}", responseContent);
+                            _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                                usage?.InputTokenCount,
+                                usage?.OutputTokenCount,
+                                usage?.TotalTokenCount);
 
-                                         var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
-                                         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
-                                             {
-                                                 AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
-                                                 SceneId = ProcessExecutionContext.SceneId.Value,
-                                                 CallerName = operationName,
-                                                 RequestContent = requestContent,
-                                                 ResponseContent = responseContent,
-                                                 InputToken = usage?.InputTokenCount,
-                                                 OutputToken = usage?.OutputTokenCount,
-                                                 TotalToken = usage?.TotalTokenCount,
-                                                 Duration = stopwatch.ElapsedMilliseconds
-                                             },
-                                             token);
+                            var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
+                            await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
+                                {
+                                    AdventureId = ProcessExecutionContext.AdventureId.Value ?? Guid.Empty,
+                                    SceneId = ProcessExecutionContext.SceneId.Value,
+                                    CallerName = operationName,
+                                    RequestContent = requestContent,
+                                    ResponseContent = responseContent,
+                                    InputToken = usage?.InputTokenCount,
+                                    OutputToken = usage?.OutputTokenCount,
+                                    TotalToken = usage?.TotalTokenCount,
+                                    Duration = stopwatch.ElapsedMilliseconds
+                                },
+                                token);
 
-                                         return responseContent;
-                                     }
-                                 }
-                                 catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
-                                 {
-                                     _logger.Error(ex, "Error occurred while calling LLM service. {message}", ex.ResponseContent);
-                                     throw;
-                                 }
-                             },
-                             cancellationToken)
-                         ?? string.Empty;
+                            return responseContent;
+                        }
+                    }
+                    catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        _logger.Error(ex, "Error occurred while calling LLM service. {message}", ex.ResponseContent);
+                        throw;
+                    }
+                },
+                cancellationToken);
             if (string.IsNullOrEmpty(result))
             {
                 throw new LlmEmptyResponseException();
             }
 
-            chatHistory.AddUserMessage(result);
+            chatHistory.AddAssistantMessage(result);
             return outputFunc(result);
         }
     }
@@ -179,7 +183,6 @@ internal sealed class AgentKernel : IAgentKernel
             {
                 var history = CloneChatHistory(originalHistory);
 
-                // If resuming, add partial response and continuation prompt
                 if (!string.IsNullOrEmpty(context.PartialResponse))
                 {
                     history.AddAssistantMessage(context.PartialResponse);

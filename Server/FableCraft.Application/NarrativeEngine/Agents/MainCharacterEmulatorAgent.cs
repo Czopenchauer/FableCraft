@@ -26,7 +26,7 @@ public sealed class MainCharacterEmulatorAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory)
 {
-    private const int NumberOfScenesToInclude = 5;
+    private const int NumberOfScenesToInclude = 20;
 
     public async Task<MainCharacterEmulationResponse> InvokeAsync(
         MainCharacterEmulationRequest request,
