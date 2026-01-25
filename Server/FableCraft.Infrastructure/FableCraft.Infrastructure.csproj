@@ -6,8 +6,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="FableCraft.Tests"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Anthropic"/>
-        <PackageReference Include="Docker.DotNet"/>
+        <PackageReference Include="Docker.DotNet.Enhanced"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <PrivateAssets>all</PrivateAssets>

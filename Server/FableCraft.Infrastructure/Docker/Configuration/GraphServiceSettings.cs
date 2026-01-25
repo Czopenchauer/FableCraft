@@ -23,14 +23,25 @@ public sealed class GraphServiceSettings
     public string NetworkName { get; set; } = "fablecraft-network";
 
     /// <summary>
-    /// Port the graph service listens on.
+    /// Host port to expose the graph service on.
     /// </summary>
     public int Port { get; set; } = 8111;
+
+    /// <summary>
+    /// Port the graph service listens on inside the container.
+    /// </summary>
+    public int ContainerPort { get; set; } = 8111;
 
     /// <summary>
     /// Health check endpoint path.
     /// </summary>
     public string HealthEndpoint { get; set; } = "/health";
+
+    /// <summary>
+    /// Host to use for health checks. Defaults to container name.
+    /// Set to "localhost" when running tests from the host machine.
+    /// </summary>
+    public string? HealthCheckHost { get; set; }
 
     /// <summary>
     /// Timeout in seconds for health checks.

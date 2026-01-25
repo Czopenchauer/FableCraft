@@ -5,6 +5,7 @@ using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Serilog;
@@ -22,7 +23,7 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
 {
     private readonly IVolumeManager _volumeManager;
     private readonly IContainerManager _containerManager;
-    private readonly IRagChunkService _ragChunkService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly GraphServiceSettings _settings;
     private readonly IConfiguration _configuration;
     private readonly ILogger _logger;
@@ -42,14 +43,14 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
     public KnowledgeGraphContextService(
         IVolumeManager volumeManager,
         IContainerManager containerManager,
-        IRagChunkService ragChunkService,
+        IServiceScopeFactory scopeFactory,
         IOptions<GraphServiceSettings> settings,
         IConfiguration configuration,
         ILogger logger)
     {
         _volumeManager = volumeManager;
         _containerManager = containerManager;
-        _ragChunkService = ragChunkService;
+        _scopeFactory = scopeFactory;
         _settings = settings.Value;
         _configuration = configuration;
         _logger = logger;
@@ -85,6 +86,9 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
 
             await EnsureContainerWithVolumeAsync(volumeName, ct);
 
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var ragChunkService = scope.ServiceProvider.GetRequiredService<IRagChunkService>();
+
             var chunkRequests = lorebookEntries
                 .Select(e => new ChunkCreationRequest(
                     e.Id,
@@ -93,9 +97,9 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
                     [RagClientExtensions.GetWorldDatasetName()]))
                 .ToList();
 
-            var chunks = await _ragChunkService.CreateChunk(chunkRequests, worldbookId, ct);
-            await _ragChunkService.CommitChunksToRagAsync(chunks, ct);
-            await _ragChunkService.CognifyDatasetsAsync([RagClientExtensions.GetWorldDatasetName()], cancellationToken: ct);
+            var chunks = await ragChunkService.CreateChunk(chunkRequests, worldbookId, ct);
+            await ragChunkService.CommitChunksToRagAsync(chunks, ct);
+            await ragChunkService.CognifyDatasetsAsync([RagClientExtensions.GetWorldDatasetName()], cancellationToken: ct);
 
             _logger.Information(
                 "Successfully indexed worldbook {WorldbookId} with {ChunkCount} chunks",
@@ -149,6 +153,9 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
 
             await EnsureContainerWithVolumeAsync(destVolume, ct);
 
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var ragChunkService = scope.ServiceProvider.GetRequiredService<IRagChunkService>();
+
             string[] datasets = [RagClientExtensions.GetMainCharacterDatasetName(), RagClientExtensions.GetWorldDatasetName()];
             var chunkRequests = new List<ChunkCreationRequest>
             {
@@ -158,9 +165,9 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
                     datasets)
             };
 
-            var chunks = await _ragChunkService.CreateChunk(chunkRequests, adventureId, ct);
-            await _ragChunkService.CommitChunksToRagAsync(chunks, ct);
-            await _ragChunkService.CognifyDatasetsAsync(datasets, cancellationToken: ct);
+            var chunks = await ragChunkService.CreateChunk(chunkRequests, adventureId, ct);
+            await ragChunkService.CommitChunksToRagAsync(chunks, ct);
+            await ragChunkService.CognifyDatasetsAsync(datasets, cancellationToken: ct);
 
             _logger.Information(
                 "Successfully initialized adventure {AdventureId} from worldbook {WorldbookId}",
@@ -327,7 +334,7 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
                 $"{_settings.VisualizationPath}:/app/visualization",
                 $"{_settings.DataStorePath}:/app/data-store"
             ],
-            Ports = [$"{_settings.Port}:{_settings.Port}"],
+            Ports = [$"{_settings.Port}:{_settings.ContainerPort}"],
             NetworkName = _settings.NetworkName,
             Labels = new Dictionary<string, string>
             {
@@ -339,7 +346,8 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
 
     private string BuildHealthUrl()
     {
-        return $"http://{_settings.ContainerName}:{_settings.Port}{_settings.HealthEndpoint}";
+        var host = _settings.HealthCheckHost ?? _settings.ContainerName;
+        return $"http://{host}:{_settings.Port}{_settings.HealthEndpoint}";
     }
 
     private void AddEnvVar(Dictionary<string, string> env, string key, string envVarName, string? defaultValue = null)

@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageVersion Include="Anthropic" Version="12.2.0" />
     <PackageVersion Include="Aspire.AppHost.Sdk" Version="13.0.0" />
-    <PackageVersion Include="Docker.DotNet" Version="3.125.15" />
+    <PackageVersion Include="Docker.DotNet.Enhanced" Version="3.131.1" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.1.0" />
     <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.1.0" />
     <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.1.0" />
