@@ -1,5 +1,11 @@
+using System.Net;
+using System.Threading.RateLimiting;
+
 using Docker.DotNet;
 using Docker.DotNet.Models;
+
+using Polly;
+using Polly.Retry;
 
 using Serilog;
 
@@ -10,6 +16,17 @@ internal sealed class ContainerManager : IContainerManager
     private readonly DockerClient _client;
     private readonly ILogger _logger;
     private readonly HttpClient _healthClient;
+    private readonly ResiliencePipeline _httpResiliencePipeline = 
+        new ResiliencePipelineBuilder()
+    .AddRetry(new RetryStrategyOptions
+    {
+        MaxRetryAttempts = 10,
+        Delay = TimeSpan.FromSeconds(5),
+        BackoffType = DelayBackoffType.Linear,
+        ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
+            ex.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.TooManyRequests).Handle<TimeoutException>()
+    })
+    .Build();
 
     public ContainerManager(
         DockerClient client,
@@ -159,7 +176,7 @@ internal sealed class ContainerManager : IContainerManager
 
             try
             {
-                var response = await _healthClient.GetAsync(healthEndpoint, timeoutCts.Token);
+                var response = await _httpResiliencePipeline.ExecuteAsync(async c => await _healthClient.GetAsync(healthEndpoint, c), timeoutCts.Token);
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.Information("Container {ContainerName} is healthy after {Attempts} attempts",

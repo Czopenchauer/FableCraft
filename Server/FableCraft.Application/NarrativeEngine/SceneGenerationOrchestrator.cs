@@ -206,7 +206,7 @@ internal sealed class SceneGenerationOrchestrator(
             throw new SceneGenerationConcurrencyException(adventureId);
         }
 
-        var workflow = new[] { processors.First(p => p is ResolutionAgent), processors.First(p => p is WriterAgent), processors.First(p => p is SaveSceneWithoutEnrichment) };
+        var workflow = new[] { processors.First(p => p is WriterAgent), processors.First(p => p is SaveSceneWithoutEnrichment) };
 
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,

@@ -99,13 +99,12 @@ public static class StartupExtensions
         services.AddSingleton<DockerClient>(sp =>
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
-            return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(120)).CreateClient();
+            return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(30)).CreateClient();
         });
 
         services.AddSingleton<IVolumeManager, VolumeManager>();
         services.AddSingleton<IContainerManager, ContainerManager>();
 
-        // HTTP client for Docker health checks (internal container health checks)
         services.AddHttpClient("DockerHealthCheck", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(5);
