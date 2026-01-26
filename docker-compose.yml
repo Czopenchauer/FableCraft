@@ -30,48 +30,6 @@ services:
     networks:
       - fablecraft-network
 
-  graph-rag-api:
-    build:
-      context: ./GraphRag
-      dockerfile: Dockerfile
-    container_name: graph-rag-api
-    ports:
-      - "8111:8111"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    env_file:
-      - ./GraphRag/.env.docker
-    # These override env_file values and read from root .env
-    environment:
-      - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY is required - set it in .env}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4}
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_ENDPOINT=${LLM_ENDPOINT:-}
-      - LLM_API_VERSION=${LLM_API_VERSION:-}
-      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-16384}
-      - LLM_RATE_LIMIT_ENABLED=${LLM_RATE_LIMIT_ENABLED:-false}
-      - LLM_RATE_LIMIT_REQUESTS=${LLM_RATE_LIMIT_REQUESTS:-60}
-      - LLM_RATE_LIMIT_INTERVAL=${LLM_RATE_LIMIT_INTERVAL:-60}
-      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-large}
-      - EMBEDDING_ENDPOINT=${EMBEDDING_ENDPOINT:-}
-      - EMBEDDING_API_VERSION=${EMBEDDING_API_VERSION:-}
-      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-3072}
-      - EMBEDDING_MAX_TOKENS=${EMBEDDING_MAX_TOKENS:-8191}
-      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-36}
-      - HUGGINGFACE_TOKENIZER=${HUGGINGFACE_TOKENIZER:-}
-    volumes:
-      - cognee-data:/app/cognee
-      - ./visualization:/app/visualization
-      - ./data-store:/app/data-store
-    depends_on:
-      - aspire-dashboard
-    networks:
-      - fablecraft-network
-
   fablecraft-server:
     build:
       context: .
@@ -85,6 +43,11 @@ services:
       - ConnectionStrings__fablecraftdb=Host=fablecraftdb;Port=5432;Database=fablecraftdb;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       - ConnectionStrings__graph-rag-api=http://graph-rag-api:8111
       - VisualizationPath=/app/visualization
+      # Host paths for graph service container volume mounts
+      # FABLECRAFT_PROJECT_PATH must be set in .env to the absolute project path
+      - GraphService__DataStoreHostPath=${FABLECRAFT_PROJECT_PATH}/data-store
+      - GraphService__VisualizationHostPath=${FABLECRAFT_PROJECT_PATH}/visualization
+      - GraphService__ExportsHostPath=${FABLECRAFT_PROJECT_PATH}/exports
       # Pass through for graph service container creation (volume isolation)
       - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY is required - set it in .env}
       - LLM_MODEL=${LLM_MODEL:-gpt-4}
@@ -113,8 +76,6 @@ services:
     depends_on:
       fablecraftdb:
         condition: service_healthy
-      graph-rag-api:
-        condition: service_started
       aspire-dashboard:
         condition: service_started
     networks:
@@ -143,4 +104,5 @@ volumes:
 
 networks:
   fablecraft-network:
+    name: fablecraft-network
     driver: bridge

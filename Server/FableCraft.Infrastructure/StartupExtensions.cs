@@ -99,7 +99,7 @@ public static class StartupExtensions
         services.AddSingleton<DockerClient>(sp =>
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
-            return new DockerClientConfiguration(new Uri(settings.SocketPath)).CreateClient();
+            return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(120)).CreateClient();
         });
 
         services.AddSingleton<IVolumeManager, VolumeManager>();

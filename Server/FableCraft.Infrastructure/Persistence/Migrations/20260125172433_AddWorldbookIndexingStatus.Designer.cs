@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260125141836_AddWorldbookToAdventure")]
-    partial class AddWorldbookToAdventure
+    [Migration("20260125172433_AddWorldbookIndexingStatus")]
+    partial class AddWorldbookIndexingStatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -742,6 +742,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("IndexingError")
+                        .HasColumnType("text");
+
+                    b.Property<int>("IndexingStatus")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()

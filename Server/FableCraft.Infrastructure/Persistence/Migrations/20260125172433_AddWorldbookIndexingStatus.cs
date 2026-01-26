@@ -6,11 +6,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FableCraft.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddWorldbookToAdventure : Migration
+    public partial class AddWorldbookIndexingStatus : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "IndexingError",
+                table: "Worldbooks",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "IndexingStatus",
+                table: "Worldbooks",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
+
             migrationBuilder.AddColumn<Guid>(
                 name: "WorldbookId",
                 table: "Adventures",
@@ -22,6 +35,14 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "IndexingError",
+                table: "Worldbooks");
+
+            migrationBuilder.DropColumn(
+                name: "IndexingStatus",
+                table: "Worldbooks");
+
             migrationBuilder.DropColumn(
                 name: "WorldbookId",
                 table: "Adventures");

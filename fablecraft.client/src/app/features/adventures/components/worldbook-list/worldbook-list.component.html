@@ -94,6 +94,56 @@
           {{ worldbook.lorebooks.length }} lorebook(s)
         </p>
 
+        <!-- Index Status and Action -->
+        <div class="index-section">
+          <!-- Indexed Badge -->
+          <div *ngIf="getIndexState(worldbook.id).status === 'Indexed'" class="index-badge indexed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M5 13l4 4L19 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Indexed</span>
+          </div>
+
+          <!-- Not Indexed - Show Index Button -->
+          <button
+            *ngIf="getIndexState(worldbook.id).status === 'NotIndexed'"
+            (click)="startIndexing($event, worldbook.id)"
+            class="index-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z" stroke-width="2"/>
+              <path d="M9 12h6M12 9v6" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Index</span>
+          </button>
+
+          <!-- Indexing in Progress -->
+          <div *ngIf="getIndexState(worldbook.id).status === 'Indexing'" class="index-badge indexing">
+            <svg class="index-spinner" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="spinner-track"/>
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="spinner-arc"/>
+            </svg>
+            <span>Indexing...</span>
+          </div>
+
+          <!-- Failed - Show error and retry button -->
+          <div *ngIf="getIndexState(worldbook.id).status === 'Failed'" class="index-failed">
+            <div class="index-badge failed" [title]="getIndexState(worldbook.id).error || 'Indexing failed'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Failed</span>
+            </div>
+            <button
+              (click)="startIndexing($event, worldbook.id)"
+              class="index-button retry">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Hover Arrow -->
         <div class="card-arrow">
           <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">

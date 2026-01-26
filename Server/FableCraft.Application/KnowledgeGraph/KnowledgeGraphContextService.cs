@@ -2,8 +2,10 @@ using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Docker.Configuration;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -28,16 +30,8 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
     private readonly IConfiguration _configuration;
     private readonly ILogger _logger;
 
-    /// <summary>
-    /// Exclusive lock for ALL knowledge graph operations.
-    /// Only one operation can run at a time.
-    /// </summary>
     private readonly SemaphoreSlim _operationLock = new(1, 1);
 
-    /// <summary>
-    /// Tracks which volume is currently mounted (if any).
-    /// Only accessed while holding _operationLock.
-    /// </summary>
     private string? _currentlyMountedVolume;
 
     public KnowledgeGraphContextService(
@@ -74,19 +68,27 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
             lorebookEntries.Count);
 
         await _operationLock.WaitAsync(ct);
+
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var worldbook = await dbContext.Worldbooks.FirstOrDefaultAsync(x => x.Id == worldbookId, ct);
+        if (worldbook == null)
+        {
+            return new IndexingResult(false, "Worldbook not found.");
+        }
+
+        worldbook.IndexingStatus = IndexingStatus.Indexing;
+        worldbook.IndexingError = null;
+        await dbContext.SaveChangesAsync(ct);
         try
         {
-            if (await _volumeManager.ExistsAsync(volumeName, ct))
+            if (!await _volumeManager.ExistsAsync(volumeName, ct))
             {
-                _logger.Information("Deleting existing worldbook template {WorldbookId}", worldbookId);
-                await _volumeManager.DeleteAsync(volumeName, force: true, ct);
+                await _volumeManager.CreateAsync(volumeName, ct);
             }
-
-            await _volumeManager.CreateAsync(volumeName, ct);
 
             await EnsureContainerWithVolumeAsync(volumeName, ct);
 
-            await using var scope = _scopeFactory.CreateAsyncScope();
             var ragChunkService = scope.ServiceProvider.GetRequiredService<IRagChunkService>();
 
             var chunkRequests = lorebookEntries
@@ -101,6 +103,10 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
             await ragChunkService.CommitChunksToRagAsync(chunks, ct);
             await ragChunkService.CognifyDatasetsAsync([RagClientExtensions.GetWorldDatasetName()], cancellationToken: ct);
 
+            worldbook.IndexingStatus = IndexingStatus.Indexed;
+            worldbook.IndexingError = null;
+            await dbContext.SaveChangesAsync(ct);
+
             _logger.Information(
                 "Successfully indexed worldbook {WorldbookId} with {ChunkCount} chunks",
                 worldbookId,
@@ -111,6 +117,17 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to index worldbook {WorldbookId}", worldbookId);
+
+            try
+            {
+                worldbook.IndexingStatus = IndexingStatus.Failed;
+                worldbook.IndexingError = ex.Message;
+                await dbContext.SaveChangesAsync(ct);
+            }
+            catch (Exception dbEx)
+            {
+                _logger.Warning(dbEx, "Failed to update indexing status for worldbook {WorldbookId}", worldbookId);
+            }
 
             return new IndexingResult(false, ex.Message);
         }
@@ -143,13 +160,10 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
                     $"Worldbook {worldbookId} has not been indexed. Run indexing first.");
             }
 
-            if (await _volumeManager.ExistsAsync(destVolume, ct))
+            if (!(await _volumeManager.ExistsAsync(destVolume, ct)))
             {
-                return new IndexingResult(false,
-                    $"Adventure {adventureId} already has a knowledge graph volume.");
+                await _volumeManager.CopyAsync(sourceVolume, destVolume, ct);
             }
-
-            await _volumeManager.CopyAsync(sourceVolume, destVolume, ct);
 
             await EnsureContainerWithVolumeAsync(destVolume, ct);
 
@@ -229,8 +243,12 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
 
     public async Task<bool> IsWorldbookIndexedAsync(Guid worldbookId, CancellationToken ct = default)
     {
-        var volumeName = _settings.GetWorldbookVolumeName(worldbookId);
-        return await _volumeManager.ExistsAsync(volumeName, ct);
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var worldbook = await dbContext.Worldbooks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == worldbookId, ct);
+        return worldbook?.IndexingStatus == IndexingStatus.Indexed;
     }
 
     public async Task DeleteAdventureVolumeAsync(Guid adventureId, CancellationToken ct = default)
@@ -323,6 +341,11 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
         AddEnvVar(environment, "EMBEDDING_BATCH_SIZE", "EMBEDDING_BATCH_SIZE", "36");
         AddEnvVar(environment, "HUGGINGFACE_TOKENIZER", "HUGGINGFACE_TOKENIZER");
 
+        // Point Cognee's directories to the mounted volume
+        // Both data and system must be in the same volume for proper isolation
+        environment["DATA_ROOT_DIRECTORY"] = $"{_settings.VolumeMountPath}/data";
+        environment["SYSTEM_ROOT_DIRECTORY"] = $"{_settings.VolumeMountPath}/system";
+
         return new ContainerConfig
         {
             Name = _settings.ContainerName,
@@ -331,8 +354,8 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
             Volumes =
             [
                 $"{volumeName}:{_settings.VolumeMountPath}",
-                $"{_settings.VisualizationPath}:/app/visualization",
-                $"{_settings.DataStorePath}:/app/data-store"
+                $"{_settings.GetEffectiveVisualizationPath()}:/app/visualization",
+                $"{_settings.GetEffectiveDataStorePath()}:/app/data-store"
             ],
             Ports = [$"{_settings.Port}:{_settings.ContainerPort}"],
             NetworkName = _settings.NetworkName,

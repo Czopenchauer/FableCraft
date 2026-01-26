@@ -46,3 +46,17 @@ export interface LorebookResponseDto {
   category: string;
   contentType: ContentType;
 }
+
+export type IndexingStatus = 'NotIndexed' | 'Indexing' | 'Indexed' | 'Failed';
+
+export interface IndexStatusResponse {
+  worldbookId: string;
+  status: IndexingStatus;
+  error?: string;
+}
+
+export interface IndexStartResponse {
+  worldbookId: string;
+  message: string;
+  lorebookCount: number;
+}

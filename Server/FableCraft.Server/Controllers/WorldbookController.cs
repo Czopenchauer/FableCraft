@@ -1,4 +1,3 @@
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.KnowledgeGraph.Handlers;
 using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
@@ -23,9 +22,6 @@ public class WorldbookController : ControllerBase
         _dbContext = dbContext;
     }
 
-    /// <summary>
-    ///     Get all worldbooks
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<WorldbookResponseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<WorldbookResponseDto>>> GetAll(CancellationToken cancellationToken)
@@ -88,9 +84,6 @@ public class WorldbookController : ControllerBase
         return Ok(worldbook);
     }
 
-    /// <summary>
-    ///     Create a new worldbook
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -346,11 +339,26 @@ public class WorldbookController : ControllerBase
             });
         }
 
-        await messageDispatcher.PublishAsync(new IndexWorldbookCommand
+        try
         {
-            AdventureId = Guid.Empty,
-            WorldbookId = id
-        }, cancellationToken);
+            worldbook.IndexingStatus = IndexingStatus.Indexing;
+            worldbook.IndexingError = null;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await messageDispatcher.PublishAsync(new IndexWorldbookCommand
+                {
+                    AdventureId = Guid.Empty,
+                    WorldbookId = id
+                },
+                cancellationToken);
+        }
+        catch (Exception)
+        {
+            worldbook.IndexingStatus = IndexingStatus.Failed;
+            worldbook.IndexingError = null;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            throw;
+        }
 
         return Accepted(new
         {
@@ -368,21 +376,22 @@ public class WorldbookController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IndexStatusResponse>> GetIndexStatus(
         Guid id,
-        [FromServices] IKnowledgeGraphContextService contextService,
         CancellationToken cancellationToken)
     {
-        var worldbookExists = await _dbContext.Worldbooks.AnyAsync(w => w.Id == id, cancellationToken);
-        if (!worldbookExists)
+        var worldbook = await _dbContext.Worldbooks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
         {
             return NotFound();
         }
 
-        var isIndexed = await contextService.IsWorldbookIndexedAsync(id, cancellationToken);
-
         return Ok(new IndexStatusResponse
         {
             WorldbookId = id,
-            IsIndexed = isIndexed
+            Status = worldbook.IndexingStatus.ToString(),
+            Error = worldbook.IndexingError
         });
     }
 }
@@ -390,5 +399,6 @@ public class WorldbookController : ControllerBase
 public record IndexStatusResponse
 {
     public Guid WorldbookId { get; init; }
-    public bool IsIndexed { get; init; }
+    public required string Status { get; init; }
+    public string? Error { get; init; }
 }

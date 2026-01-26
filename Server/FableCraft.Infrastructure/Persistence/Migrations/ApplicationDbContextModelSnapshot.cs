@@ -740,6 +740,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("IndexingError")
+                        .HasColumnType("text");
+
+                    b.Property<int>("IndexingStatus")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

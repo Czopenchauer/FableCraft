@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {WorldbookDto, WorldbookResponseDto, WorldbookUpdateDto} from '../models/worldbook.model';
+import {IndexStartResponse, IndexStatusResponse, WorldbookDto, WorldbookResponseDto, WorldbookUpdateDto} from '../models/worldbook.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -46,5 +46,19 @@ export class WorldbookService {
    */
   deleteWorldbook(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Start indexing a worldbook
+   */
+  startIndexing(id: string): Observable<IndexStartResponse> {
+    return this.http.post<IndexStartResponse>(`${this.apiUrl}/${id}/index`, {});
+  }
+
+  /**
+   * Get indexing status for a worldbook
+   */
+  getIndexStatus(id: string): Observable<IndexStatusResponse> {
+    return this.http.get<IndexStatusResponse>(`${this.apiUrl}/${id}/index/status`);
   }
 }

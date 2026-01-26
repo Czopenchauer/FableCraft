@@ -49,19 +49,53 @@ public sealed class GraphServiceSettings
     public int HealthCheckTimeoutSeconds { get; set; } = 60;
 
     /// <summary>
-    /// Path for visualization output.
+    /// Path for visualization output (relative, used in non-Docker scenarios).
     /// </summary>
     public string VisualizationPath { get; set; } = "./visualization";
 
     /// <summary>
-    /// Path for data store.
+    /// Absolute host path for visualization output (for Docker volume mounts).
+    /// When set, this takes precedence over VisualizationPath for container creation.
+    /// </summary>
+    public string? VisualizationHostPath { get; set; }
+
+    /// <summary>
+    /// Path for data store (relative, used in non-Docker scenarios).
     /// </summary>
     public string DataStorePath { get; set; } = "./data-store";
 
     /// <summary>
-    /// Path for volume exports.
+    /// Absolute host path for data store (for Docker volume mounts).
+    /// When set, this takes precedence over DataStorePath for container creation.
+    /// </summary>
+    public string? DataStoreHostPath { get; set; }
+
+    /// <summary>
+    /// Path for volume exports (relative, used in non-Docker scenarios).
     /// </summary>
     public string ExportsPath { get; set; } = "./exports";
+
+    /// <summary>
+    /// Absolute host path for exports (for Docker volume mounts).
+    /// When set, this takes precedence over ExportsPath for container creation.
+    /// </summary>
+    public string? ExportsHostPath { get; set; }
+
+    /// <summary>
+    /// Gets the effective data store path for Docker volume mounts.
+    /// Returns the absolute host path if configured, otherwise falls back to relative path.
+    /// </summary>
+    public string GetEffectiveDataStorePath() => DataStoreHostPath ?? DataStorePath;
+
+    /// <summary>
+    /// Gets the effective visualization path for Docker volume mounts.
+    /// </summary>
+    public string GetEffectiveVisualizationPath() => VisualizationHostPath ?? VisualizationPath;
+
+    /// <summary>
+    /// Gets the effective exports path for Docker volume mounts.
+    /// </summary>
+    public string GetEffectiveExportsPath() => ExportsHostPath ?? ExportsPath;
 
     /// <summary>
     /// Volume name prefix for worldbook templates.
@@ -75,9 +109,9 @@ public sealed class GraphServiceSettings
 
     /// <summary>
     /// Volume mount path inside the graph service container.
-    /// This should match the data directory configured in the graph service.
+    /// Mounts the entire cognee folder to include both data and system directories.
     /// </summary>
-    public string VolumeMountPath { get; set; } = "/app/knowledge-graph";
+    public string VolumeMountPath { get; set; } = "/app/cognee";
 
     /// <summary>
     /// Gets the volume name for a worldbook template.
