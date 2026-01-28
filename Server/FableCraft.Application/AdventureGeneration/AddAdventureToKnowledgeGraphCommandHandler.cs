@@ -65,10 +65,15 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 adventure.MainCharacter.Name,
                 adventure.MainCharacter.Description);
 
+            var extraLoreEntries = adventure.Lorebook
+                .Select(l => new ExtraLoreIndexEntry(l.Id, l.Title ?? l.Description, l.Content, l.Category))
+                .ToList();
+
             var result = await contextService.InitializeAdventureAsync(
                 adventure.Id,
                 adventure.WorldbookId,
                 mainCharacter,
+                extraLoreEntries,
                 cancellationToken);
 
             if (!result.Success)

@@ -64,6 +64,7 @@ internal static class PromptSections
             .OrderByDescending(x => x.SequenceNumber)
             .Take(count);
 
+        // {x.PlayerChoice}
         var formatted = string.Join("\n",
             scenes
                 .OrderBy(x => x.SequenceNumber)
@@ -72,7 +73,6 @@ internal static class PromptSections
                               Location: {x.Metadata.Tracker.Scene.Location}
                               Weather: {x.Metadata.Tracker.Scene.Weather}
                               {x.SceneContent}
-                              {x.PlayerChoice}
                               """));
 
         return $"""
@@ -360,6 +360,33 @@ internal static class PromptSections
 
          Generate the first narrative direction for the story based on the above information.
          """;
+
+    /// <summary>
+    ///     Formats extra lore entries that were added during adventure creation.
+    ///     These provide additional world context for the first scene.
+    /// </summary>
+    public static string ExtraLoreEntries(List<ExtraLoreContext> extraLoreEntries)
+    {
+        if (extraLoreEntries == null || extraLoreEntries.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var formattedEntries = string.Join("\n\n",
+            extraLoreEntries.Select(e => $"""
+                                          <extra_lore category="{e.Category}">
+                                          **{e.Title}**
+                                          {e.Content}
+                                          </extra_lore>
+                                          """));
+
+        return $"""
+                The following additional lore was specified for this adventure. Use this information to enrich the first scene:
+                <extra_lore_entries>
+                {formattedEntries}
+                </extra_lore_entries>
+                """;
+    }
 
     public static string NewLocations<T>(T[]? locations, bool ignoreNull = false)
     {

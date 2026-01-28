@@ -284,6 +284,14 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
 
         var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.newContext.ContextGathered?.BackgroundRoster ?? [], ct);
 
+        List<ExtraLoreContext>? extraLoreEntries = null;
+        if (scenes.Count == 0)
+        {
+            extraLoreEntries = await dbContext.LorebookEntries
+                .Select(x => new ExtraLoreContext(x.Title ?? x.Description, x.Content, x.Category))
+                .ToListAsync(ct);
+        }
+
         context.newContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
@@ -295,7 +303,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             createdLore,
             createdLocations,
             createdItems,
-            previousBackgroundCharacters);
+            previousBackgroundCharacters,
+            extraLoreEntries);
         return (context.newContext, context.process!.Step);
 
         async Task<(GenerationContext newContext, GenerationProcess process)> CreateNewProcess()
@@ -331,7 +340,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .ToListAsync(ct);
 
         return existingCharacters
-            .Where(x => !x.CharacterStates.Single().IsDead)
+            .Where(x => x.CharacterStates.Count == 1 && !x.CharacterStates.Single().IsDead)
             .Select(x => new CharacterContext
             {
                 Description = x.Description,
@@ -393,12 +402,11 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         Guid adventureId,
         CancellationToken ct)
     {
-        // Basically Current STATE - 1. Skip the latest states and take the one before that.
         var existingCharacters = await dbContext
             .Characters
             .AsSplitQuery()
-            .Where(x => x.AdventureId == adventureId && x.IntroductionScene != sceneId && x.Version != 0)
-            .Include(x => x.CharacterStates.OrderByDescending(cs => cs.SequenceNumber).Skip(1).Take(1))
+            .Where(x => x.AdventureId == adventureId && x.IntroductionScene != sceneId)
+            .Include(x => x.CharacterStates.Where(cs => cs.SceneId != sceneId).OrderByDescending(cs => cs.SequenceNumber).Take(1))
             .Include(x => x.CharacterMemories.Where(z => z.SceneId != sceneId))
             .Include(x => x.CharacterRelationships)
             .Include(x => x.CharacterSceneRewrites.Where(z => z.SceneId != sceneId).OrderByDescending(c => c.SequenceNumber).Take(20))
@@ -407,7 +415,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         var newlyCreatedCharacters = await dbContext
             .Characters
             .AsSplitQuery()
-            .Where(x => x.AdventureId == adventureId && x.IntroductionScene == sceneId && x.Version == 0)
+            .Where(x => x.AdventureId == adventureId && x.IntroductionScene == sceneId)
             .Include(x => x.CharacterStates)
             .Include(x => x.CharacterMemories)
             .Include(x => x.CharacterRelationships)
@@ -415,7 +423,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .ToListAsync(ct);
 
         var existingCharContext = existingCharacters
-            .Where(x => !x.CharacterStates.Single().IsDead)
+            .Where(x => x.CharacterStates.Count == 1 && !x.CharacterStates.Single().IsDead)
             .Select(x => new CharacterContext
             {
                 Description = x
@@ -434,11 +442,11 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         SceneTracker = y.SceneTracker
                     })
                     .ToList(),
-                // Group by target and take second-latest relationship per target (skip the most recent)
+                // Group by target and take latest relationship per target (excluding the scene being regenerated)
                 Relationships = x.CharacterRelationships
+                    .Where(r => r.SceneId != sceneId)
                     .GroupBy(r => r.TargetCharacterName)
                     .Select(g => g.OrderByDescending(r => r.SequenceNumber)
-                        .Skip(1)
                         .FirstOrDefault())
                     .Where(r => r != null)
                     .Select(y => new CharacterRelationshipContext

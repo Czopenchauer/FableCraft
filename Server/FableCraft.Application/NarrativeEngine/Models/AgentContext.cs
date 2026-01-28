@@ -37,6 +37,13 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public string AdventureStartTime { get; set; } = null!;
 
+    /// <summary>
+    ///     Extra lore entries added during adventure creation. Used in the first scene to provide
+    ///     additional world context to the writer.
+    /// </summary>
+    [JsonIgnore]
+    public List<ExtraLoreContext> ExtraLoreEntries { get; set; } = [];
+
     // Lore entries that were already generated in previous steps, they weren't yet commited to KG.
     [JsonIgnore]
     public LorebookEntry[] PreviouslyGeneratedLore { get; set; } = [];
@@ -119,7 +126,8 @@ internal sealed class GenerationContext
         LorebookEntry[] previouslyGeneratedLore,
         LorebookEntry[] previouslyGeneratedLocations,
         LorebookEntry[] previouslyGeneratedItems,
-        List<BackgroundCharacter> backgroundCharacters)
+        List<BackgroundCharacter> backgroundCharacters,
+        List<ExtraLoreContext>? extraLoreEntries = null)
     {
         SceneContext = sceneContext;
         TrackerStructure = trackerStructure;
@@ -132,6 +140,7 @@ internal sealed class GenerationContext
         PreviouslyGeneratedLocations = previouslyGeneratedLocations;
         PreviouslyGeneratedItems = previouslyGeneratedItems;
         BackgroundCharacters = backgroundCharacters;
+        ExtraLoreEntries = extraLoreEntries ?? [];
     }
 
     public Tracker? LatestTracker()
@@ -215,6 +224,14 @@ internal sealed class CharacterSceneContext
 
     public required SceneTracker? SceneTracker { get; set; }
 }
+
+/// <summary>
+///     Extra lore entry context for the first scene generation.
+/// </summary>
+internal sealed record ExtraLoreContext(
+    string Title,
+    string Content,
+    string Category);
 
 internal sealed class SceneContext
 {

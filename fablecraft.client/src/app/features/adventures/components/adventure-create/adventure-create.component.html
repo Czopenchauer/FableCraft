@@ -181,6 +181,81 @@
         </div>
       </div>
 
+      <!-- Extra Lore Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h2 class="section-title">Extra Lore (Optional)</h2>
+          <p class="section-subtitle">Add custom lore entries that will be used in the first scene</p>
+        </div>
+
+        <div class="extra-lore-entries" formArrayName="extraLoreEntries">
+          <div *ngFor="let loreEntry of extraLoreArray.controls; let i = index" [formGroupName]="i" class="extra-lore-entry">
+            <div class="lore-entry-header">
+              <span class="lore-entry-number">Entry {{ i + 1 }}</span>
+              <button
+                (click)="removeExtraLoreEntry(i)"
+                class="btn-remove"
+                type="button"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" [for]="'loreTitle-' + i">Title *</label>
+                <input
+                  class="form-input"
+                  formControlName="title"
+                  [id]="'loreTitle-' + i"
+                  placeholder="Lore entry title"
+                  type="text"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" [for]="'loreCategory-' + i">Category *</label>
+                <select
+                  class="form-select"
+                  formControlName="category"
+                  [id]="'loreCategory-' + i"
+                >
+                  <option value="Lore">Lore</option>
+                  <option value="Location">Location</option>
+                  <option value="Item">Item</option>
+                  <option value="Character">Character</option>
+                  <option value="Event">Event</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" [for]="'loreContent-' + i">Content *</label>
+              <textarea
+                class="form-textarea"
+                formControlName="content"
+                [id]="'loreContent-' + i"
+                placeholder="Describe this lore entry in detail..."
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button
+          (click)="addExtraLoreEntry()"
+          class="btn btn-secondary add-lore-btn"
+          type="button"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Add Lore Entry
+        </button>
+      </div>
+
       <!-- Agent LLM Presets Section -->
       <div class="form-section">
         <div class="section-header">

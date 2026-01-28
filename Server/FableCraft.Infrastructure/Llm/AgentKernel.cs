@@ -1,3 +1,4 @@
+using System.ClientModel;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -153,6 +154,11 @@ internal sealed class AgentKernel : IAgentKernel
                     catch (HttpOperationException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
                     {
                         _logger.Error(ex, "Error occurred while calling LLM service. {message}", ex.ResponseContent);
+                        throw;
+                    }
+                    catch (ClientResultException e)
+                    {
+                        _logger.Error(e, "Error occurred while calling LLM service. {message}", e.ToString());
                         throw;
                     }
                 },

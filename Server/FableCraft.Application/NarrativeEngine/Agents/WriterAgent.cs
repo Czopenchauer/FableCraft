@@ -70,6 +70,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             requestPrompt = $"""
                              {PromptSections.ResolutionOutput(context.NewResolution)}
 
+                             {PromptSections.ExtraLoreEntries(context.ExtraLoreEntries)}
+
                              {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 
                              Generate a detailed scene based on the above resolution and context.

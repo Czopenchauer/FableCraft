@@ -25,6 +25,12 @@ export interface AdventureAgentLlmPresetDto {
   agentName: string;
 }
 
+export interface ExtraLoreEntryDto {
+  title: string;
+  content: string;
+  category: string;
+}
+
 export interface AdventureDto {
   name: string;
   firstSceneDescription: string;
@@ -34,6 +40,7 @@ export interface AdventureDto {
   trackerDefinitionId: string;
   promptPath: string;
   agentLlmPresets: AdventureAgentLlmPresetDto[];
+  extraLoreEntries?: ExtraLoreEntryDto[];
 }
 
 export interface AdventureDefaultsDto {

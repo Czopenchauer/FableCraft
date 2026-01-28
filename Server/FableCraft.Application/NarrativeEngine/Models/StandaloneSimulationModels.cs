@@ -40,7 +40,7 @@ internal sealed class StandaloneSimulationOutput
     ///     Updates to relationships based on simulation events.
     /// </summary>
     [JsonPropertyName("relationship_updates")]
-    public List<SimulationRelationshipUpdate>? RelationshipUpdates { get; init; }
+    public List<SimulationRelationshipUpdate> RelationshipUpdates { get; init; } = [];
 
     /// <summary>
     ///     Updates to the character's profile/state (e.g., psychology, motivations).

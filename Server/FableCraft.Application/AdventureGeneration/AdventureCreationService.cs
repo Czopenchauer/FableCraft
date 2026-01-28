@@ -3,6 +3,7 @@ using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.Model.Adventure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
@@ -83,17 +84,6 @@ internal class AdventureCreationService : IAdventureCreationService
                 "Run POST /api/Worldbook/{id}/index before creating adventures.");
         }
 
-        var lorebookEntries = await _dbContext.Lorebooks
-            .Where(x => x.WorldbookId == worldbookId)
-            .Select(entry => new LorebookEntry
-            {
-                Description = entry.Title,
-                Content = entry.Content,
-                Category = entry.Category,
-                ContentType = entry.ContentType,
-                Priority = 0
-            }).ToListAsync(cancellationToken);
-
         var adventure = new Adventure
         {
             Name = adventureDto.Name,
@@ -107,7 +97,15 @@ internal class AdventureCreationService : IAdventureCreationService
                 Name = adventureDto.MainCharacter.Name,
                 Description = adventureDto.MainCharacter.Description
             },
-            Lorebook = lorebookEntries,
+            Lorebook = adventureDto.ExtraLoreEntries.Select(x => new LorebookEntry
+            {
+                Title = x.Title,
+                Description = x.Title,
+                Content = x.Content,
+                Category = x.Category,
+                ContentType = ContentType.txt,
+                Priority = 0,
+            }).ToList(),
             TrackerStructure = tracker.Structure,
             AgentLlmPresets = adventureDto.AgentLlmPresets.Select(p => new AdventureAgentLlmPreset
                 {

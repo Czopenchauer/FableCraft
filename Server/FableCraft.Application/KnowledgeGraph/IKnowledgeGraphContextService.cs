@@ -31,19 +31,21 @@ public interface IKnowledgeGraphContextService
 
     /// <summary>
     /// Creates an adventure's knowledge graph by copying a worldbook template
-    /// and adding the main character data.
+    /// and adding the main character data plus any extra lore entries.
     ///
     /// Acquires exclusive lock for the entire operation duration.
     /// </summary>
     /// <param name="adventureId">Adventure to initialize.</param>
     /// <param name="worldbookId">Source worldbook template to copy.</param>
     /// <param name="mainCharacter">Main character data to add.</param>
+    /// <param name="extraLoreEntries">Optional extra lore entries to add to the world dataset.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Result indicating success or failure.</returns>
     Task<IndexingResult> InitializeAdventureAsync(
         Guid adventureId,
         Guid worldbookId,
         MainCharacterIndexEntry mainCharacter,
+        IReadOnlyList<ExtraLoreIndexEntry>? extraLoreEntries = null,
         CancellationToken ct = default);
 
     /// <summary>
@@ -95,3 +97,12 @@ public sealed record MainCharacterIndexEntry(
     Guid Id,
     string Name,
     string Description);
+
+/// <summary>
+/// Extra lore entry for indexing during adventure creation.
+/// </summary>
+public sealed record ExtraLoreIndexEntry(
+    Guid Id,
+    string Title,
+    string Content,
+    string Category);

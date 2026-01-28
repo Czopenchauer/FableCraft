@@ -39,20 +39,29 @@ internal sealed class CharacterTrackersProcessor(
         lock (context)
         {
             alreadyProcessedCharacters = (context.CharacterUpdates?.Select(x => x.Name) ?? [])
-                .Concat(context.NewCharacters?.Select(x => x.Name) ?? [])
-                .ToHashSet();
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
+        logger.Information("CharactersPresent from SceneTracker: [{CharactersPresent}]", string.Join(", ", storyTrackerResult.CharactersPresent));
+        logger.Information("Known characters in context: [{KnownCharacters}]", string.Join(", ", context.Characters.Select(c => c.Name)));
+        logger.Information("New characters in context: [{NewCharacters}]", string.Join(", ", context.NewCharacters?.Select(c => c.Name) ?? []));
+
+        var allCharacters = context.Characters
+            .Concat(context.NewCharacters ?? [])
+            .ToList();
+
         Task<CharacterContext?>[] characterUpdateTask = [];
-        if (context.Characters.Count != 0)
+        if (allCharacters.Count != 0)
         {
-            characterUpdateTask = context.Characters
-                .Where(x => storyTrackerResult.CharactersPresent.Contains(x.Name))
+            characterUpdateTask = allCharacters
+                .Where(x => storyTrackerResult.CharactersPresent.Any(cp =>
+                    string.Equals(cp, x.Name, StringComparison.OrdinalIgnoreCase)))
                 .Select(async character =>
                 {
                     // Skip if this character was already processed in a previous attempt
                     if (alreadyProcessedCharacters.Contains(character.Name))
                     {
+                        logger.Information("Character {Character} already processed. Skipping tracking", character.Name);
                         return null;
                     }
 

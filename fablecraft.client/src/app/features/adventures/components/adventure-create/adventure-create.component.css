@@ -411,6 +411,75 @@
   border-color: rgba(168, 85, 247, 0.3);
 }
 
+/* Extra Lore Section */
+.extra-lore-entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.extra-lore-entry {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+[data-theme="medieval-fantasy"] .extra-lore-entry {
+  background: rgba(184, 134, 11, 0.05);
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .extra-lore-entry {
+  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.lore-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.lore-entry-number {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.btn-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-remove svg {
+  width: 14px;
+  height: 14px;
+}
+
+.add-lore-btn {
+  width: 100%;
+  justify-content: center;
+}
+
 /* Agents Grid */
 .agents-grid {
   display: grid;

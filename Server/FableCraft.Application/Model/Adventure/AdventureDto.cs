@@ -11,6 +11,11 @@ public record AdventureAgentLlmPresetDto(
     [property: JsonConverter(typeof(JsonStringEnumConverter))]
     AgentName AgentName);
 
+public record ExtraLoreEntryDto(
+    string Title,
+    string Content,
+    string Category);
+
 public class AdventureDto
 {
     public required string Name { get; init; } = string.Empty;
@@ -28,6 +33,8 @@ public class AdventureDto
     public required string PromptPath { get; init; }
 
     public required AdventureAgentLlmPresetDto[] AgentLlmPresets { get; set; }
+
+    public ExtraLoreEntryDto[] ExtraLoreEntries { get; init; } = [];
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>

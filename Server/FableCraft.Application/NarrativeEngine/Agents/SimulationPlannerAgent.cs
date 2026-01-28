@@ -88,6 +88,7 @@ internal sealed class SimulationPlannerAgent(
             }
         }
 
+        context.SimulationPlan = plan;
         return plan;
     }
 

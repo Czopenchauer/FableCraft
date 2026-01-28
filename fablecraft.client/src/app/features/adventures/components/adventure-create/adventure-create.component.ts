@@ -1,8 +1,8 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {AdventureService} from '../../services/adventure.service';
-import {AdventureAgentLlmPresetDto, AdventureDto} from '../../models/adventure.model';
+import {AdventureAgentLlmPresetDto, AdventureDto, ExtraLoreEntryDto} from '../../models/adventure.model';
 import {forkJoin, Subject, takeUntil} from 'rxjs';
 import {LlmPresetService} from '../../services/llm-preset.service';
 import {WorldbookService} from '../../services/worldbook.service';
@@ -57,6 +57,10 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     return this.adventureForm.get('agentPresets') as FormGroup;
   }
 
+  get extraLoreArray(): FormArray {
+    return this.adventureForm.get('extraLoreEntries') as FormArray;
+  }
+
   ngOnInit(): void {
     this.loadDropdownData();
   }
@@ -83,6 +87,9 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       llmPresetId: formValue.agentPresets[agentName]
     }));
 
+    // Build extra lore entries array from form
+    const extraLoreEntries: ExtraLoreEntryDto[] = formValue.extraLoreEntries || [];
+
     const adventureDto: AdventureDto = {
       name: formValue.name,
       firstSceneDescription: formValue.firstSceneDescription,
@@ -94,7 +101,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       worldbookId: formValue.worldbookId || null,
       trackerDefinitionId: formValue.trackerDefinitionId,
       promptPath: formValue.promptPath,
-      agentLlmPresets: agentLlmPresets
+      agentLlmPresets: agentLlmPresets,
+      extraLoreEntries: extraLoreEntries
     };
 
     this.adventureService.createAdventure(adventureDto)
@@ -154,6 +162,19 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     });
   }
 
+  addExtraLoreEntry(): void {
+    const loreGroup = this.fb.group({
+      title: ['', Validators.required],
+      content: ['', Validators.required],
+      category: ['Lore', Validators.required]
+    });
+    this.extraLoreArray.push(loreGroup);
+  }
+
+  removeExtraLoreEntry(index: number): void {
+    this.extraLoreArray.removeAt(index);
+  }
+
   private initializeForm(): void {
     // Build agent presets form group dynamically
     const agentPresetsGroup: { [key: string]: any } = {};
@@ -172,7 +193,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       worldbookId: [null],
       trackerDefinitionId: ['', Validators.required],
       promptPath: ['', Validators.required],
-      agentPresets: this.fb.group(agentPresetsGroup)
+      agentPresets: this.fb.group(agentPresetsGroup),
+      extraLoreEntries: this.fb.array([])
     });
   }
 

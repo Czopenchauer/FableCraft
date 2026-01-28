@@ -141,15 +141,17 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
         Guid adventureId,
         Guid worldbookId,
         MainCharacterIndexEntry mainCharacter,
+        IReadOnlyList<ExtraLoreIndexEntry>? extraLoreEntries = null,
         CancellationToken ct = default)
     {
         var sourceVolume = _settings.GetWorldbookVolumeName(worldbookId);
         var destVolume = _settings.GetAdventureVolumeName(adventureId);
 
         _logger.Information(
-            "Initializing adventure {AdventureId} from worldbook {WorldbookId}",
+            "Initializing adventure {AdventureId} from worldbook {WorldbookId} with {ExtraLoreCount} extra lore entries",
             adventureId,
-            worldbookId);
+            worldbookId,
+            extraLoreEntries?.Count ?? 0);
 
         await _operationLock.WaitAsync(ct);
         try
@@ -170,18 +172,32 @@ internal sealed class KnowledgeGraphContextService : IKnowledgeGraphContextServi
             await using var scope = _scopeFactory.CreateAsyncScope();
             var ragChunkService = scope.ServiceProvider.GetRequiredService<IRagChunkService>();
 
-            string[] datasets = [RagClientExtensions.GetMainCharacterDatasetName(), RagClientExtensions.GetWorldDatasetName()];
+            string[] mainCharacterDatasets = [RagClientExtensions.GetMainCharacterDatasetName(), RagClientExtensions.GetWorldDatasetName()];
+            string[] worldDatasets = [RagClientExtensions.GetWorldDatasetName()];
+
             var chunkRequests = new List<ChunkCreationRequest>
             {
                 new(mainCharacter.Id,
                     FormatMainCharacterDescription(mainCharacter),
                     ContentType.txt,
-                    datasets)
+                    mainCharacterDatasets)
             };
+
+            if (extraLoreEntries is { Count: > 0 })
+            {
+                foreach (var entry in extraLoreEntries)
+                {
+                    chunkRequests.Add(new ChunkCreationRequest(
+                        entry.Id,
+                        entry.Content,
+                        ContentType.txt,
+                        worldDatasets));
+                }
+            }
 
             var chunks = await ragChunkService.CreateChunk(chunkRequests, adventureId, ct);
             await ragChunkService.CommitChunksToRagAsync(chunks, ct);
-            await ragChunkService.CognifyDatasetsAsync(datasets, cancellationToken: ct);
+            await ragChunkService.CognifyDatasetsAsync(mainCharacterDatasets, cancellationToken: ct);
 
             _logger.Information(
                 "Successfully initialized adventure {AdventureId} from worldbook {WorldbookId}",
