@@ -19,7 +19,7 @@ public class Adventure : IEntity
 
     public DateTimeOffset CreatedAt { get; init; }
 
-    public DateTimeOffset? LastPlayedAt { get; init; }
+    public DateTimeOffset? LastPlayedAt { get; set; }
 
     public required string PromptPath { get; set; }
 

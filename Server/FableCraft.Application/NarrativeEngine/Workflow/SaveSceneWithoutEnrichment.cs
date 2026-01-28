@@ -36,6 +36,7 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             CommitStatus = CommitStatus.Uncommited
         };
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var adventure = await dbContext.Adventures.SingleAsync(x => x.Id == newScene.AdventureId, cancellationToken: cancellationToken);
         var lastScene = await dbContext.Scenes
             .Where(x => x.AdventureId == context.AdventureId)
             .Include(x => x.CharacterActions)
@@ -67,7 +68,9 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
             await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await dbContext.Scenes.AddAsync(newScene, cancellationToken);
+                adventure.Scenes.Add(newScene);
+                adventure.LastPlayedAt = DateTimeOffset.UtcNow;
+                dbContext.Update(adventure);
                 await dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
