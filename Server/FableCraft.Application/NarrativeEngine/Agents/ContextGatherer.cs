@@ -18,8 +18,8 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
-    IRagSearch ragSearch,
     ILogger logger,
+    IRagClientFactory ragClientFactory,
     KernelBuilderFactory kernelBuilderFactory,
     IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory), IProcessor
 {
@@ -88,6 +88,7 @@ internal sealed class ContextGatherer(
         var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
         try
         {
+            var ragSearchClient = await ragClientFactory.CreateSearchClientForAdventure(context.AdventureId, cancellationToken);
             var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);
             var narrativeContext = new List<ContextItem>(output.CarriedForward.NarrativeContext);
 
@@ -95,7 +96,7 @@ internal sealed class ContextGatherer(
             if (output.WorldQueries.Length > 0)
             {
                 var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
-                worldQueryTasks = ragSearch.SearchAsync(
+                worldQueryTasks = ragSearchClient.SearchAsync(
                     callerContext,
                     [RagClientExtensions.GetWorldDatasetName()],
                     worldQueries,
@@ -105,7 +106,7 @@ internal sealed class ContextGatherer(
             if (output.NarrativeQueries.Length > 0)
             {
                 var narrativeQueries = output.NarrativeQueries.Select(q => q.Query).ToArray();
-                var narrativeResults = await ragSearch.SearchAsync(
+                var narrativeResults = await ragSearchClient.SearchAsync(
                     callerContext,
                     [RagClientExtensions.GetMainCharacterDatasetName()],
                     narrativeQueries,

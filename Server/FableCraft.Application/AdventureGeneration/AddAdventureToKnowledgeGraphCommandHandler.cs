@@ -1,6 +1,9 @@
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Infrastructure;
+using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
 
@@ -17,8 +20,10 @@ public class AddAdventureToKnowledgeGraphCommand : IMessage
 
 internal class AddAdventureToKnowledgeGraphCommandHandler(
     ApplicationDbContext dbContext,
-    IKnowledgeGraphContextService contextService,
     SceneGenerationOrchestrator sceneGenerationOrchestrator,
+    IAdventureRagManager ragManager,
+    IRagChunkService ragChunkService,
+    IRagClientFactory ragClientFactory,
     ILogger logger)
     : IMessageHandler<AddAdventureToKnowledgeGraphCommand>
 {
@@ -60,25 +65,47 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 adventure.Id,
                 adventure.WorldbookId);
 
-            var mainCharacter = new MainCharacterIndexEntry(
-                adventure.MainCharacter.Id,
-                adventure.MainCharacter.Name,
-                adventure.MainCharacter.Description);
+            string[] mainCharacterDatasets = [RagClientExtensions.GetMainCharacterDatasetName(), RagClientExtensions.GetWorldDatasetName()];
+            string[] worldDatasets = [RagClientExtensions.GetWorldDatasetName()];
+
+            List<ChunkCreationRequest> chunkRequests = [new(
+                                                           adventure.MainCharacter.Id,
+                                                           FormatMainCharacterDescription(adventure.MainCharacter),
+                                                           ContentType.txt,
+                                                           mainCharacterDatasets)];
 
             var extraLoreEntries = adventure.Lorebook
-                .Select(l => new ExtraLoreIndexEntry(l.Id, l.Title ?? l.Description, l.Content, l.Category))
+                .Select(l => new ChunkCreationRequest(l.Id, l.Content, l.ContentType, worldDatasets))
                 .ToList();
+            chunkRequests.AddRange(extraLoreEntries);
 
-            var result = await contextService.InitializeAdventureAsync(
+            logger.Information(
+                "Initializing adventure {AdventureId} from worldbook {WorldbookId} with {ExtraLoreCount} extra lore entries",
                 adventure.Id,
                 adventure.WorldbookId,
-                mainCharacter,
-                extraLoreEntries,
-                cancellationToken);
+                extraLoreEntries?.Count ?? 0);
 
-            if (!result.Success)
+            try
             {
-                throw new InvalidOperationException($"Knowledge graph initialization failed: {result.Error}");
+                await ragManager.InitializeFromWorldbook(adventure, cancellationToken);
+                var chunks = await ragChunkService.CreateChunk(chunkRequests, adventure.Id, cancellationToken);
+                var ragBuilder = await ragClientFactory.CreateBuildClientForAdventure(adventure.Id, cancellationToken);
+                await ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
+                await ragChunkService.CognifyDatasetsAsync(ragBuilder, mainCharacterDatasets, cancellationToken: cancellationToken);
+
+                logger.Information(
+                    "Successfully initialized adventure {AdventureId} from worldbook {WorldbookId}",
+                    adventure.Id,
+                    adventure.WorldbookId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex,
+                    "Failed to initialize adventure {AdventureId} from worldbook {WorldbookId}",
+                    adventure.Id,
+                    adventure.WorldbookId);
+
+                throw;
             }
 
             await dbContext.Adventures.Where(x => x.Id == message.AdventureId)
@@ -117,4 +144,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             }
         });
     }
+
+    private static string FormatMainCharacterDescription(MainCharacter mc) =>
+        $"Name: {mc.Name}\n\n{mc.Description}";
 }

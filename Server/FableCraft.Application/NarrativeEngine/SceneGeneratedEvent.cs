@@ -1,4 +1,3 @@
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -25,18 +24,17 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly IRagChunkService _ragChunkService;
-    private readonly IKnowledgeGraphContextService _contextService;
+    private readonly IRagClientFactory _ragClientFactory;
 
     public SceneGeneratedEventHandler(
         ApplicationDbContext dbContext,
         IRagChunkService ragChunkService,
-        IKnowledgeGraphContextService contextService,
-        ILogger logger)
+        ILogger logger, IRagClientFactory ragClientFactory)
     {
         _dbContext = dbContext;
         _ragChunkService = ragChunkService;
-        _contextService = contextService;
         _logger = logger;
+        _ragClientFactory = ragClientFactory;
     }
 
     public async Task HandleAsync(SceneGeneratedEvent message, CancellationToken cancellationToken)
@@ -156,38 +154,27 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                 ContentType.txt,
                 allDatasets));
 
-            var result = await _contextService.CommitSceneDataAsync(
-                message.AdventureId,
-                async ct =>
-                {
-                    var strategy = _dbContext.Database.CreateExecutionStrategy();
-                    await strategy.ExecuteAsync(async () =>
-                    {
-                        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
-
-                        var chunks = await _ragChunkService.CreateChunk(creationRequests, message.AdventureId, ct);
-                        await _ragChunkService.CommitChunksToRagAsync(chunks, ct);
-
-                        await _ragChunkService.CognifyDatasetsAsync(allDatasets, cancellationToken: ct);
-
-                        foreach (var scene in scenesToCommit)
-                        {
-                            scene.CommitStatus = CommitStatus.Commited;
-                        }
-
-                        var existingChunks = await _dbContext.Chunks.Where(x => x.AdventureId == message.AdventureId).ToListAsync(ct);
-                        var newChunks = chunks.Except(existingChunks, new ChunkComparer()).ToList();
-                        _dbContext.AddRange(newChunks);
-                        await _dbContext.SaveChangesAsync(ct);
-                        await transaction.CommitAsync(CancellationToken.None);
-                    });
-                },
-                cancellationToken);
-
-            if (!result.Success)
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            var ragBuilder = await _ragClientFactory.CreateBuildClientForAdventure(message.AdventureId, cancellationToken);
+            await strategy.ExecuteAsync(async () =>
             {
-                throw new InvalidOperationException($"Scene commit failed: {result.Error}");
-            }
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+                var chunks = await _ragChunkService.CreateChunk(creationRequests, message.AdventureId, cancellationToken);
+                await _ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
+                await _ragChunkService.CognifyDatasetsAsync(ragBuilder, allDatasets, cancellationToken: cancellationToken);
+
+                foreach (var scene in scenesToCommit)
+                {
+                    scene.CommitStatus = CommitStatus.Commited;
+                }
+
+                var existingChunks = await _dbContext.Chunks.Where(x => x.AdventureId == message.AdventureId).ToListAsync(cancellationToken);
+                var newChunks = chunks.Except(existingChunks, new ChunkComparer()).ToList();
+                _dbContext.AddRange(newChunks);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(CancellationToken.None);
+            });
         }
         catch (Exception e)
         {

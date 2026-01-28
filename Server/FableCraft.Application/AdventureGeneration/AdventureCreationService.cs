@@ -1,5 +1,4 @@
 using FableCraft.Application.Exceptions;
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.Model.Adventure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -40,24 +39,18 @@ internal class AdventureCreationService : IAdventureCreationService
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly IMessageDispatcher _messageDispatcher;
-    private readonly IRagBuilder _ragBuilder;
-    private readonly IKnowledgeGraphContextService _contextService;
     private readonly TimeProvider _timeProvider;
 
     public AdventureCreationService(
         ApplicationDbContext dbContext,
         IMessageDispatcher messageDispatcher,
         TimeProvider timeProvider,
-        ILogger logger,
-        IRagBuilder ragBuilder,
-        IKnowledgeGraphContextService contextService)
+        ILogger logger)
     {
         _dbContext = dbContext;
         _messageDispatcher = messageDispatcher;
         _timeProvider = timeProvider;
         _logger = logger;
-        _ragBuilder = ragBuilder;
-        _contextService = contextService;
     }
 
     public async Task<AdventureCreationStatus> CreateAdventureAsync(
@@ -70,14 +63,15 @@ internal class AdventureCreationService : IAdventureCreationService
         var worldbookId = adventureDto.WorldbookId
             ?? throw new InvalidOperationException("WorldbookId is required. All adventures must be created from an indexed worldbook.");
 
-        var worldbookExists = await _dbContext.Worldbooks.AnyAsync(w => w.Id == worldbookId, cancellationToken);
-        if (!worldbookExists)
+        var worldbook = await _dbContext.Worldbooks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == worldbookId, cancellationToken);
+        if (worldbook is null)
         {
             throw new InvalidOperationException($"Worldbook {worldbookId} not found.");
         }
 
-        var isIndexed = await _contextService.IsWorldbookIndexedAsync(worldbookId, cancellationToken);
-        if (!isIndexed)
+        if (worldbook.IndexingStatus != IndexingStatus.Indexed)
         {
             throw new InvalidOperationException(
                 $"Worldbook {worldbookId} has not been indexed. " +
@@ -168,19 +162,7 @@ internal class AdventureCreationService : IAdventureCreationService
 
         try
         {
-            await _ragBuilder.DeleteDatasetAsync(adventure.Id.ToString(), cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex,
-                "Failed to delete adventure {adventureId} from knowledge graph.",
-                adventureId);
-            throw;
-        }
-
-        try
-        {
-            await _contextService.DeleteAdventureVolumeAsync(adventureId, cancellationToken);
+            throw new NotImplementedException();
         }
         catch (Exception ex)
         {

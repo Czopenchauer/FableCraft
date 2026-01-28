@@ -1,9 +1,11 @@
+using Microsoft.Extensions.Configuration;
+
 namespace FableCraft.Infrastructure.Docker.Configuration;
 
 /// <summary>
 /// Configuration settings for the knowledge graph service container.
 /// </summary>
-public sealed class GraphServiceSettings
+internal sealed class GraphServiceSettings
 {
     public const string SectionName = "GraphService";
 
@@ -13,19 +15,9 @@ public sealed class GraphServiceSettings
     public string ImageName { get; set; } = "graph-rag-api:latest";
 
     /// <summary>
-    /// Container name for the graph service.
-    /// </summary>
-    public string ContainerName { get; set; } = "graph-rag-api";
-
-    /// <summary>
     /// Docker network name for service communication.
     /// </summary>
     public string NetworkName { get; set; } = "fablecraft-network";
-
-    /// <summary>
-    /// Host port to expose the graph service on.
-    /// </summary>
-    public int Port { get; set; } = 8111;
 
     /// <summary>
     /// Port the graph service listens on inside the container.
@@ -37,16 +29,7 @@ public sealed class GraphServiceSettings
     /// </summary>
     public string HealthEndpoint { get; set; } = "/health";
 
-    /// <summary>
-    /// Host to use for health checks. Defaults to container name.
-    /// Set to "localhost" when running tests from the host machine.
-    /// </summary>
-    public string? HealthCheckHost { get; set; }
-
-    /// <summary>
-    /// Timeout in seconds for health checks.
-    /// </summary>
-    public int HealthCheckTimeoutSeconds { get; set; } = 60;
+    public string BuildHealthCheck(int port, string name) => $"{GetContainerBaseUrl(port, name)}{HealthEndpoint}";
 
     /// <summary>
     /// Path for visualization output (relative, used in non-Docker scenarios).
@@ -124,4 +107,77 @@ public sealed class GraphServiceSettings
     /// </summary>
     public string GetAdventureVolumeName(Guid adventureId) =>
         $"{AdventureVolumePrefix}{adventureId}";
+
+    /// <summary>
+    /// Maximum number of concurrent graph service containers.
+    /// When exceeded, least recently used containers are evicted.
+    /// </summary>
+    public int MaxConcurrentContainers { get; set; } = 10;
+
+    /// <summary>
+    /// Base port for dynamic port allocation.
+    /// Containers will be assigned ports starting from this value.
+    /// </summary>
+    public int BasePort { get; set; } = 8111;
+
+    /// <summary>
+    /// Prefix for adventure-specific container names.
+    /// </summary>
+    public string ContainerNamePrefix { get; set; } = "graph-rag-";
+
+    /// <summary>
+    /// Gets a unique container name for an adventure.
+    /// Uses GUID without dashes, truncated to fit Docker's 63-char limit.
+    /// </summary>
+    public string GetContainerName(string name)
+    {
+        var fullName = $"{ContainerNamePrefix}{name}";
+        return fullName.Length > 63 ? fullName[..63] : fullName;
+    }
+
+    /// <summary>
+    /// Gets the base URL for an adventure's container given its assigned port.
+    /// </summary>
+    public string GetContainerBaseUrl(int port, string name) =>
+        $"http://{GetContainerName(name)}:{port}";
+
+    public Dictionary<string, string> GetEnvVariable(IConfiguration config)
+    {
+        var environment = new Dictionary<string, string>();
+
+        AddEnvVar(environment, "LLM_API_KEY", "LLM_API_KEY");
+        AddEnvVar(environment, "LLM_MODEL", "LLM_MODEL");
+        AddEnvVar(environment, "LLM_PROVIDER", "LLM_PROVIDER");
+        AddEnvVar(environment, "LLM_ENDPOINT", "LLM_ENDPOINT");
+        AddEnvVar(environment, "LLM_API_VERSION", "LLM_API_VERSION");
+        AddEnvVar(environment, "LLM_MAX_TOKENS", "LLM_MAX_TOKENS");
+        AddEnvVar(environment, "LLM_RATE_LIMIT_ENABLED", "LLM_RATE_LIMIT_ENABLED");
+        AddEnvVar(environment, "LLM_RATE_LIMIT_REQUESTS", "LLM_RATE_LIMIT_REQUESTS");
+        AddEnvVar(environment, "LLM_RATE_LIMIT_INTERVAL", "LLM_RATE_LIMIT_INTERVAL");
+
+        AddEnvVar(environment, "EMBEDDING_PROVIDER", "EMBEDDING_PROVIDER");
+        AddEnvVar(environment, "EMBEDDING_MODEL", "EMBEDDING_MODEL");
+        AddEnvVar(environment, "EMBEDDING_ENDPOINT", "EMBEDDING_ENDPOINT");
+        AddEnvVar(environment, "EMBEDDING_API_VERSION", "EMBEDDING_API_VERSION");
+        AddEnvVar(environment, "EMBEDDING_DIMENSIONS", "EMBEDDING_DIMENSIONS");
+        AddEnvVar(environment, "EMBEDDING_MAX_TOKENS", "EMBEDDING_MAX_TOKENS");
+        AddEnvVar(environment, "EMBEDDING_BATCH_SIZE", "EMBEDDING_BATCH_SIZE");
+        AddEnvVar(environment, "HUGGINGFACE_TOKENIZER", "HUGGINGFACE_TOKENIZER");
+
+        environment["DATA_ROOT_DIRECTORY"] = $"{VolumeMountPath}/data";
+        environment["SYSTEM_ROOT_DIRECTORY"] = $"{VolumeMountPath}/system";
+        
+        void AddEnvVar(Dictionary<string, string> env, string key, string envVarName)
+        {
+            var value = config[key]
+                        ?? Environment.GetEnvironmentVariable(envVarName);
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                env[key] = value;
+            }
+        }
+
+        return environment;
+    }
 }

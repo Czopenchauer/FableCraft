@@ -16,6 +16,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 
+using Serilog;
+
 namespace FableCraft.Infrastructure;
 
 public static class StartupExtensions
@@ -51,17 +53,13 @@ public static class StartupExtensions
                 }));
         services.AddHostedService<MigratorApplier>();
 
-        var graphApiBaseUrl = configuration.GetConnectionString("graph-rag-api")
-                              ?? configuration["services:graph-rag-api:graphRagApi:0"];
-        ArgumentException.ThrowIfNullOrEmpty(graphApiBaseUrl);
-        services.AddHttpClient<IRagBuilder, RagClient>(client =>
+        services.AddHttpClient(RagClientFactory.HttpClientName, client =>
             {
-                client.BaseAddress = new Uri(graphApiBaseUrl);
-
                 // LLM calls can take a while
                 client.Timeout = TimeSpan.FromMinutes(120);
             })
             .RemoveAllResilienceHandlers()
+            .AddHttpMessageHandler<RequestTrackerDelegate>()
             .AddStandardResilienceHandler(options =>
             {
                 options.AttemptTimeout = new HttpTimeoutStrategyOptions
@@ -79,20 +77,17 @@ public static class StartupExtensions
                 options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(240);
             });
 
-        services.AddHttpClient<IRagSearch, RagClient>(client =>
-            {
-                client.BaseAddress = new Uri(graphApiBaseUrl);
-
-                client.Timeout = TimeSpan.FromMinutes(10);
-            })
-            .RemoveAllResilienceHandlers()
-            .AddDefaultLlmResiliencePolicies();
+        services.AddSingleton<IRagClientFactory, RagClientFactory>();
+        services.AddSingleton<GraphContainerRegistry>();
+        services.AddSingleton<IGraphContainerRegistry>(sp => sp.GetRequiredService<GraphContainerRegistry>());
+        services.AddSingleton<IContainerMonitor>(sp => sp.GetRequiredService<GraphContainerRegistry>());
+        services.AddSingleton<IAdventureRagManager, AdventureRagManager>();
+        services.AddSingleton<IWorldbookRagManager, AdventureRagManager>();
 
         services.AddSingleton<KernelBuilderFactory>();
         services.AddTransient<IAgentKernel, AgentKernel>();
         services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
 
-        // Docker services for volume-based knowledge graph isolation
         services.Configure<DockerSettings>(configuration.GetSection(DockerSettings.SectionName));
         services.Configure<GraphServiceSettings>(configuration.GetSection(GraphServiceSettings.SectionName));
 
@@ -101,9 +96,10 @@ public static class StartupExtensions
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
             return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(30)).CreateClient();
         });
+        services.AddHostedService<AdventureLoader>();
 
         services.AddSingleton<IVolumeManager, VolumeManager>();
-        services.AddSingleton<IContainerManager, ContainerManager>();
+        services.AddHttpClient<ContainerManager>();
 
         services.AddHttpClient("DockerHealthCheck", client =>
         {

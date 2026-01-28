@@ -1,52 +1,102 @@
+using System.Diagnostics;
 using System.Net;
-using System.Threading.RateLimiting;
 
 using Docker.DotNet;
 using Docker.DotNet.Models;
-
-using Polly;
-using Polly.Retry;
 
 using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
 
-internal sealed class ContainerManager : IContainerManager
+/// <summary>
+/// Container status information.
+/// </summary>
+public sealed record ContainerStatus(
+    string Id,
+    string Name,
+    string State,
+    bool IsRunning,
+    DateTimeOffset? StartedAt);
+
+/// <summary>
+/// Configuration for creating a container.
+/// </summary>
+public sealed class ContainerConfig
+{
+    /// <summary>
+    /// Container name.
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// Docker image to use.
+    /// </summary>
+    public required string Image { get; init; }
+
+    /// <summary>
+    /// Environment variables.
+    /// </summary>
+    public IDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Volume bindings in format "volume_name:/container/path".
+    /// </summary>
+    public IList<string> Volumes { get; init; } = [];
+
+    /// <summary>
+    /// Port mappings in format "host:container".
+    /// </summary>
+    public IList<string> Ports { get; init; } = [];
+    
+    /// <summary>
+    /// Health endpoint.
+    /// </summary>
+    public required string HealthEndpoint { get; init; }
+
+    /// <summary>
+    /// Docker network to attach to.
+    /// </summary>
+    public string? NetworkName { get; init; }
+
+    /// <summary>
+    /// Labels to apply to the container.
+    /// </summary>
+    public IDictionary<string, string> Labels { get; init; } = new Dictionary<string, string>();
+}
+
+internal sealed class ContainerManager
 {
     private readonly DockerClient _client;
     private readonly ILogger _logger;
     private readonly HttpClient _healthClient;
-    private readonly ResiliencePipeline _httpResiliencePipeline = 
-        new ResiliencePipelineBuilder()
-    .AddRetry(new RetryStrategyOptions
-    {
-        MaxRetryAttempts = 10,
-        Delay = TimeSpan.FromSeconds(5),
-        BackoffType = DelayBackoffType.Linear,
-        ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(ex =>
-            ex.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.TooManyRequests).Handle<TimeoutException>()
-    })
-    .Build();
 
     public ContainerManager(
         DockerClient client,
         ILogger logger,
-        IHttpClientFactory httpClientFactory)
+        HttpClient httpClient)
     {
         _client = client;
         _logger = logger;
-        _healthClient = httpClientFactory.CreateClient("DockerHealthCheck");
+        _healthClient = httpClient;
     }
 
-    public async Task<string> RecreateAsync(ContainerConfig config, CancellationToken ct = default)
+    public async Task StartAsync(ContainerConfig config, CancellationToken cancellationToken = default)
     {
-        _logger.Information("Recreating container {ContainerName} with image {Image}",
-            config.Name, config.Image);
+        _logger.Information("Starting container {ContainerName} with image {Image}",
+            config.Name,
+            config.Image);
 
-        if (await ExistsAsync(config.Name, ct))
+        var status = await GetStatusAsync(config.Name, cancellationToken);
+        if (status is not null)
         {
-            await StopAsync(config.Name, TimeSpan.FromSeconds(10), ct);
-            await RemoveAsync(config.Name, force: true, ct);
+            if (status.IsRunning)
+            {
+                return;
+            }
+
+            await _client.Containers.StartContainerAsync(status.Id, new ContainerStartParameters(), cancellationToken);
+            await WaitForHealthyAsync(config.Name, config.HealthEndpoint, cancellationToken: cancellationToken);
+            return;
         }
 
         var envList = config.Environment
@@ -66,10 +116,7 @@ internal sealed class ContainerManager : IContainerManager
                 var containerPortKey = $"{containerPort}/tcp";
 
                 exposedPorts[containerPortKey] = default;
-                portBindings[containerPortKey] = new List<PortBinding>
-                {
-                    new() { HostPort = hostPort }
-                };
+                portBindings[containerPortKey] = new List<PortBinding> { new() { HostPort = hostPort } };
             }
         }
 
@@ -85,41 +132,32 @@ internal sealed class ContainerManager : IContainerManager
                 Binds = config.Volumes.ToList(),
                 PortBindings = portBindings,
                 NetworkMode = config.NetworkName,
-                RestartPolicy = new RestartPolicy
-                {
-                    Name = RestartPolicyKind.UnlessStopped
-                }
+                RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.UnlessStopped }
             }
         };
 
-        var createResponse = await _client.Containers.CreateContainerAsync(createParams, ct);
-        _logger.Debug("Created container {ContainerId}", createResponse.ID);
+        var createResponse = await _client.Containers.CreateContainerAsync(createParams, cancellationToken);
+        _logger.Information("Created container {ContainerId}", createResponse.ID);
 
-        if (!string.IsNullOrEmpty(config.NetworkName))
+        try
         {
-            try
-            {
-                await _client.Networks.ConnectNetworkAsync(config.NetworkName,
-                    new NetworkConnectParameters
-                    {
-                        Container = createResponse.ID
-                    }, ct);
-            }
-            catch (DockerApiException ex) when (ex.Message.Contains("already exists"))
-            {
-                _logger.Debug("Container already connected to network {NetworkName}", config.NetworkName);
-            }
+            await _client.Networks.ConnectNetworkAsync(config.NetworkName,
+                new NetworkConnectParameters { Container = createResponse.ID },
+                cancellationToken);
+        }
+        catch (DockerApiException ex) when (ex.Message.Contains("already exists"))
+        {
+            _logger.Information("Container already connected to network {NetworkName}", config.NetworkName);
         }
 
-        await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
-
+        await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), cancellationToken);
+        await WaitForHealthyAsync(config.Name, config.HealthEndpoint, cancellationToken: cancellationToken);
         _logger.Information("Started container {ContainerName} ({ContainerId})",
-            config.Name, createResponse.ID);
-
-        return createResponse.ID;
+            config.Name,
+            createResponse.ID);
     }
 
-    public async Task StopAsync(string containerName, TimeSpan? waitTimeout = null, CancellationToken ct = default)
+    public async Task StopAsync(string containerName, TimeSpan? waitTimeout = null, CancellationToken cancellationToken = default)
     {
         _logger.Information("Stopping container {ContainerName}", containerName);
 
@@ -127,89 +165,66 @@ internal sealed class ContainerManager : IContainerManager
         {
             var timeoutSeconds = (uint)(waitTimeout?.TotalSeconds ?? 10);
             await _client.Containers.StopContainerAsync(containerName,
-                new ContainerStopParameters { WaitBeforeKillSeconds = timeoutSeconds }, ct);
+                new ContainerStopParameters { WaitBeforeKillSeconds = timeoutSeconds },
+                cancellationToken);
 
             _logger.Information("Stopped container {ContainerName}", containerName);
         }
-        catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.Debug("Container {ContainerName} not found, nothing to stop", containerName);
+            _logger.Information("Container {ContainerName} not found, nothing to stop", containerName);
         }
-        catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotModified)
+        catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotModified)
         {
-            _logger.Debug("Container {ContainerName} already stopped", containerName);
+            _logger.Information("Container {ContainerName} already stopped", containerName);
         }
     }
 
-    public async Task RemoveAsync(string containerName, bool force = false, CancellationToken ct = default)
+    public async Task RemoveAsync(string containerName, bool force = false, CancellationToken cancellationToken = default)
     {
         _logger.Information("Removing container {ContainerName} (force={Force})", containerName, force);
 
         try
         {
             await _client.Containers.RemoveContainerAsync(containerName,
-                new ContainerRemoveParameters { Force = force, RemoveVolumes = false }, ct);
+                new ContainerRemoveParameters
+                {
+                    Force = force,
+                    RemoveVolumes = false
+                },
+                cancellationToken);
 
             _logger.Information("Removed container {ContainerName}", containerName);
         }
-        catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             _logger.Debug("Container {ContainerName} not found, nothing to remove", containerName);
         }
     }
 
-    public async Task WaitForHealthyAsync(string containerName, string healthEndpoint, TimeSpan timeout, CancellationToken ct = default)
+    private async Task WaitForHealthyAsync(string containerName, string healthEndpoint, CancellationToken cancellationToken = default)
     {
         _logger.Information("Waiting for container {ContainerName} to become healthy at {HealthEndpoint}",
-            containerName, healthEndpoint);
+            containerName,
+            healthEndpoint);
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeoutCts.CancelAfter(timeout);
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var attempt = 0;
-        var delay = TimeSpan.FromMilliseconds(500);
-        var maxDelay = TimeSpan.FromSeconds(5);
-
-        while (!timeoutCts.Token.IsCancellationRequested)
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _healthClient.GetAsync(healthEndpoint, cancellationToken);
+        if (response.IsSuccessStatusCode)
         {
-            attempt++;
-
-            try
-            {
-                var response = await _httpResiliencePipeline.ExecuteAsync(async c => await _healthClient.GetAsync(healthEndpoint, c), timeoutCts.Token);
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.Information("Container {ContainerName} is healthy after {Attempts} attempts",
-                        containerName, attempt);
-                    return;
-                }
-
-                _logger.Debug("Health check attempt {Attempt} returned {StatusCode}",
-                    attempt, response.StatusCode);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.Debug("Health check attempt {Attempt} failed: {Message}", attempt, ex.Message);
-            }
-            catch (TaskCanceledException) when (timeoutCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(delay, timeoutCts.Token);
-
-            delay = TimeSpan.FromMilliseconds(Math.Min(delay.TotalMilliseconds * 1.5, maxDelay.TotalMilliseconds));
+            _logger.Information("Container {ContainerName} is healthy after {Attempts} ms",
+                containerName,
+                stopwatch.ElapsedMilliseconds);
         }
-
-        throw new TimeoutException(
-            $"Container {containerName} did not become healthy within {timeout.TotalSeconds} seconds");
     }
 
-    public async Task<ContainerStatus?> GetStatusAsync(string containerName, CancellationToken ct = default)
+    public async Task<ContainerStatus?> GetStatusAsync(string containerName, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _client.Containers.InspectContainerAsync(containerName, ct);
+            var response = await _client.Containers.InspectContainerAsync(containerName, cancellationToken);
 
             return new ContainerStatus(
                 response.ID,
@@ -218,14 +233,9 @@ internal sealed class ContainerManager : IContainerManager
                 response.State.Running,
                 DateTimeOffset.TryParse(response.State.StartedAt, out var started) ? started : null);
         }
-        catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
         }
-    }
-
-    public async Task<bool> ExistsAsync(string containerName, CancellationToken ct = default)
-    {
-        return await GetStatusAsync(containerName, ct) is not null;
     }
 }

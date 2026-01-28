@@ -1,18 +1,9 @@
 namespace FableCraft.Infrastructure.Docker;
 
 /// <summary>
-/// Information about a Docker volume.
-/// </summary>
-public sealed record VolumeInfo(
-    string Name,
-    string Driver,
-    DateTimeOffset CreatedAt,
-    IReadOnlyDictionary<string, string> Labels);
-
-/// <summary>
 /// Manages Docker volumes for knowledge graph isolation.
 /// </summary>
-public interface IVolumeManager
+internal interface IVolumeManager
 {
     /// <summary>
     /// Creates a new Docker volume.
@@ -44,14 +35,6 @@ public interface IVolumeManager
     /// <param name="ct">Cancellation token.</param>
     /// <returns>True if the volume exists.</returns>
     Task<bool> ExistsAsync(string volumeName, CancellationToken ct = default);
-
-    /// <summary>
-    /// Lists volumes matching an optional prefix filter.
-    /// </summary>
-    /// <param name="prefixFilter">Optional prefix to filter volume names.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>List of matching volumes.</returns>
-    Task<IReadOnlyList<VolumeInfo>> ListAsync(string? prefixFilter = null, CancellationToken ct = default);
 
     /// <summary>
     /// Exports a volume to a tar file.

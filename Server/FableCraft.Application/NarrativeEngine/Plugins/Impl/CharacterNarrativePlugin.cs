@@ -16,12 +16,12 @@ namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 internal class CharacterNarrativePlugin : CharacterPluginBase
 {
     private const int MaxQueries = 10;
-    private readonly IRagSearch _ragSearch;
+    private readonly IRagClientFactory _ragClientFactory;
     private int _queryCount;
 
-    public CharacterNarrativePlugin(IRagSearch ragSearch)
+    public CharacterNarrativePlugin(IRagClientFactory ragClientFactory)
     {
-        _ragSearch = ragSearch;
+        _ragClientFactory = ragClientFactory;
     }
 
     [KernelFunction("search_character_narrative")]
@@ -40,13 +40,14 @@ internal class CharacterNarrativePlugin : CharacterPluginBase
             return $"Maximum number of character narrative queries ({MaxQueries}) reached. You cannot perform more searches!";
         }
 
+        var ragSearch = await _ragClientFactory.CreateSearchClientForAdventure(CallerContext.AdventureId, CancellationToken.None);
         var datasets = new List<string>
         {
             RagClientExtensions.GetCharacterDatasetName(CharacterId)
         };
 
         var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
-        var results = await _ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
+        var results = await ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
 
         if (!results.Any() || results.All(r => !r.Response.Results.Any()))
         {

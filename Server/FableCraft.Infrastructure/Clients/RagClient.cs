@@ -39,21 +39,21 @@ public static class RagClientExtensions
 
 public readonly struct SearchType : IEquatable<SearchType>
 {
-    public readonly static SearchType Summaries = new("SUMMARIES");
-    public readonly static SearchType Chunks = new("CHUNKS");
-    public readonly static SearchType RagCompletion = new("RAG_COMPLETION");
-    public readonly static SearchType GraphCompletion = new("GRAPH_COMPLETION");
-    public readonly static SearchType GraphSummaryCompletion = new("GRAPH_SUMMARY_COMPLETION");
-    public readonly static SearchType Code = new("CODE");
-    public readonly static SearchType Cypher = new("CYPHER");
-    public readonly static SearchType NaturalLanguage = new("NATURAL_LANGUAGE");
-    public readonly static SearchType GraphCompletionCot = new("GRAPH_COMPLETION_COT");
-    public readonly static SearchType GraphCompletionContextExtension = new("GRAPH_COMPLETION_CONTEXT_EXTENSION");
-    public readonly static SearchType FeelingLucky = new("FEELING_LUCKY");
-    public readonly static SearchType Feedback = new("FEEDBACK");
-    public readonly static SearchType Temporal = new("TEMPORAL");
-    public readonly static SearchType CodingRules = new("CODING_RULES");
-    public readonly static SearchType ChunksLexical = new("CHUNKS_LEXICAL");
+    public static readonly SearchType Summaries = new("SUMMARIES");
+    public static readonly SearchType Chunks = new("CHUNKS");
+    public static readonly SearchType RagCompletion = new("RAG_COMPLETION");
+    public static readonly SearchType GraphCompletion = new("GRAPH_COMPLETION");
+    public static readonly SearchType GraphSummaryCompletion = new("GRAPH_SUMMARY_COMPLETION");
+    public static readonly SearchType Code = new("CODE");
+    public static readonly SearchType Cypher = new("CYPHER");
+    public static readonly SearchType NaturalLanguage = new("NATURAL_LANGUAGE");
+    public static readonly SearchType GraphCompletionCot = new("GRAPH_COMPLETION_COT");
+    public static readonly SearchType GraphCompletionContextExtension = new("GRAPH_COMPLETION_CONTEXT_EXTENSION");
+    public static readonly SearchType FeelingLucky = new("FEELING_LUCKY");
+    public static readonly SearchType Feedback = new("FEEDBACK");
+    public static readonly SearchType Temporal = new("TEMPORAL");
+    public static readonly SearchType CodingRules = new("CODING_RULES");
+    public static readonly SearchType ChunksLexical = new("CHUNKS_LEXICAL");
 
     public string Value { get; }
 
@@ -115,6 +115,16 @@ internal class RagClient : IRagBuilder, IRagSearch
         _httpClient = httpClient;
         _messageDispatcher = messageDispatcher;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Creates a RagClient with a specific base URL.
+    /// Used for dynamic container URL assignment.
+    /// </summary>
+    public RagClient(HttpClient httpClient, string baseUrl, IMessageDispatcher messageDispatcher, ILogger logger)
+        : this(httpClient, messageDispatcher, logger)
+    {
+        _httpClient.BaseAddress = new Uri(baseUrl);
     }
 
     public async Task<Dictionary<string, Dictionary<string, string>>> AddDataAsync(List<string> content, List<string> datasets, CancellationToken cancellationToken = default)

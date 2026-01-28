@@ -59,7 +59,7 @@ internal sealed class VolumeManager : IVolumeManager
             var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = _settings.UtilityImage,
-                    Name = containerName,
+                    Name = containerName[..63],
                     Cmd = ["sh", "-c", "cp -a /source/. /destination/"],
                     HostConfig = new HostConfig
                     {
@@ -128,26 +128,6 @@ internal sealed class VolumeManager : IVolumeManager
         {
             return false;
         }
-    }
-
-    public async Task<IReadOnlyList<VolumeInfo>> ListAsync(string? prefixFilter = null, CancellationToken ct = default)
-    {
-        var response = await _client.Volumes.ListAsync(ct);
-
-        var volumes = response.Volumes ?? [];
-
-        if (prefixFilter is not null)
-        {
-            volumes = volumes.Where(v => v.Name.StartsWith(prefixFilter, StringComparison.Ordinal)).ToList();
-        }
-
-        return volumes
-            .Select(v => new VolumeInfo(
-                v.Name,
-                v.Driver,
-                DateTimeOffset.TryParse(v.CreatedAt, out var created) ? created : DateTimeOffset.MinValue,
-                (v.Labels ?? new Dictionary<string, string>()).AsReadOnly()))
-            .ToList();
     }
 
     public async Task<string> ExportAsync(string volumeName, string outputDirectory, CancellationToken ct = default)

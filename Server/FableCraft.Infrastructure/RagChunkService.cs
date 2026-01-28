@@ -24,10 +24,12 @@ public interface IRagChunkService
         CancellationToken cancellationToken);
 
     Task CommitChunksToRagAsync(
+        IRagBuilder ragBuilder,
         List<Chunk> chunks,
         CancellationToken cancellationToken);
 
     Task CognifyDatasetsAsync(
+        IRagBuilder ragBuilder,
         string[] datasets,
         bool temporal = false,
         CancellationToken cancellationToken = default);
@@ -38,12 +40,10 @@ internal sealed class RagChunkService : IRagChunkService
     private readonly ResiliencePipeline _httpResiliencePipeline;
     private readonly ResiliencePipeline _ioResiliencePipeline;
 
-    private readonly IRagBuilder _ragBuilder;
     private readonly ApplicationDbContext _dbContext;
 
-    public RagChunkService(IRagBuilder ragBuilder, ApplicationDbContext dbContext)
+    public RagChunkService(ApplicationDbContext dbContext)
     {
-        _ragBuilder = ragBuilder;
         _dbContext = dbContext;
 
         _httpResiliencePipeline = new ResiliencePipelineBuilder()
@@ -141,18 +141,18 @@ internal sealed class RagChunkService : IRagChunkService
     }
 
     public async Task CommitChunksToRagAsync(
+        IRagBuilder ragBuilder,
         List<Chunk> chunks,
         CancellationToken cancellationToken)
     {
         var chunksByDataset = chunks.GroupBy(x => x.DatasetName);
-
         foreach (var datasetGroup in chunksByDataset)
         {
             var datasetName = datasetGroup.Key;
             var filePaths = datasetGroup.Select(x => x.Path).Distinct().ToList();
 
             var addResult = await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                    await _ragBuilder.AddDataAsync(filePaths, [datasetName], ct),
+                    await ragBuilder.AddDataAsync(filePaths, [datasetName], ct),
                 cancellationToken);
 
             foreach (var item in datasetGroup)
@@ -163,12 +163,13 @@ internal sealed class RagChunkService : IRagChunkService
     }
 
     public async Task CognifyDatasetsAsync(
+        IRagBuilder ragBuilder,
         string[] datasets,
         bool temporal = false,
         CancellationToken cancellationToken = default)
     {
         await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                await _ragBuilder.CognifyAsync(datasets, temporal, ct),
+                await ragBuilder.CognifyAsync(datasets, temporal, ct),
             cancellationToken);
     }
 }

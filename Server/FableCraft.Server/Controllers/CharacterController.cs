@@ -1,5 +1,6 @@
 using System.Text;
 
+using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -13,7 +14,7 @@ namespace FableCraft.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]/{adventureId:guid}")]
-public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgent mainCharacterEmulatorAgent, ApplicationDbContext dbContext) : ControllerBase
+public class CharacterController(IRagClientFactory ragClientFactory, MainCharacterEmulatorAgent mainCharacterEmulatorAgent, ApplicationDbContext dbContext) : ControllerBase
 {
     [HttpGet("all")]
     [ProducesResponseType(typeof(CharacterDto[]), StatusCodes.Status200OK)]
@@ -70,6 +71,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
 
         string[] datasets = [RagClientExtensions.GetWorldDatasetName(), datasetName];
         var context = new CallerContext(typeof(CharacterController), adventureId, null);
+        var ragSearch = await ragClientFactory.CreateSearchClientForAdventure(adventureId, cancellationToken);
         var results = await ragSearch.SearchAsync(
             context,
             datasets,
@@ -124,6 +126,7 @@ public class CharacterController(IRagSearch ragSearch, MainCharacterEmulatorAgen
         }
 
         var context = new CallerContext(typeof(CharacterController), adventureId, null);
+        var ragSearch = await ragClientFactory.CreateSearchClientForAdventure(adventureId, cancellationToken);
         var results = await ragSearch.SearchAsync(
             context,
             [datasetName],
