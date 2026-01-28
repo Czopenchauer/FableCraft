@@ -208,16 +208,12 @@ internal sealed class ContainerManager
             containerName,
             healthEndpoint);
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
         var stopwatch = Stopwatch.StartNew();
         var response = await _healthClient.GetAsync(healthEndpoint, cancellationToken);
-        if (response.IsSuccessStatusCode)
-        {
-            _logger.Information("Container {ContainerName} is healthy after {Attempts} ms",
-                containerName,
-                stopwatch.ElapsedMilliseconds);
-        }
+        response.EnsureSuccessStatusCode();
+        _logger.Information("Container {ContainerName} is healthy after {ElapsedMs} ms",
+            containerName,
+            stopwatch.ElapsedMilliseconds);
     }
 
     public async Task<ContainerStatus?> GetStatusAsync(string containerName, CancellationToken cancellationToken = default)

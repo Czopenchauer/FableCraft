@@ -113,11 +113,11 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         await creationLock.WaitAsync(ct);
         try
         {
-            var port = AllocatePort();
-            var containerConfig = BuildContainerConfig(containerName, volumeName, port);
+            var hostPort = AllocatePort();
+            var containerConfig = BuildContainerConfig(containerName, volumeName, hostPort);
             await _containerManager.StartAsync(containerConfig, ct);
-            var baseUrl = _settings.GetContainerBaseUrl(port, containerName);
-            _containers.TryAdd(identifier, new ContainerInfo(containerName, baseUrl, port, 0, DateTimeOffset.UtcNow));
+            var baseUrl = _settings.GetContainerBaseUrl(_settings.ContainerPort, containerName);
+            _containers.TryAdd(identifier, new ContainerInfo(containerName, baseUrl, hostPort, 0, DateTimeOffset.UtcNow));
             return baseUrl;
         }
         finally
@@ -157,27 +157,21 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
     private int AllocatePort()
     {
         var port = _settings.BasePort;
-        IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
-        TcpConnectionInformation[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpConnections();
+        var usedPorts = _containers.Values.Select(c => c.Port).ToHashSet();
 
-        do
+        while (usedPorts.Contains(port))
         {
-            if (tcpConnInfoArray.All(tcpi => tcpi.LocalEndPoint.Port != port))
+            port++;
+            if (port > 65535)
             {
-                return port;
+                throw new InvalidOperationException("No available ports");
             }
-
-            port += port;
-            if (port >= tcpConnInfoArray.Select(x => x.LocalEndPoint.Port).Max())
-            {
-                throw new Exception($"Port {port} exceeds maximum allowed port");
-            }
-        } while (port < tcpConnInfoArray.Select(x => x.LocalEndPoint.Port).Max());
+        }
 
         return port;
     }
 
-    private ContainerConfig BuildContainerConfig(string containerName, string volumeName, int port)
+    private ContainerConfig BuildContainerConfig(string containerName, string volumeName, int hostPort)
     {
         return new ContainerConfig
         {
@@ -192,7 +186,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             ],
             Ports =
             [
-                $"{port}:{_settings.ContainerPort}"
+                $"{hostPort}:{_settings.ContainerPort}"
             ],
             NetworkName = _settings.NetworkName,
             Labels = new Dictionary<string, string>
@@ -200,7 +194,8 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
                 ["fablecraft.managed"] = "true",
                 ["fablecraft.service"] = "knowledge-graph"
             },
-            HealthEndpoint = _settings.BuildHealthCheck(port, containerName)
+            // Use ContainerPort for health check (container-to-container communication)
+            HealthEndpoint = _settings.BuildHealthCheck(_settings.ContainerPort, containerName)
         };
     }
 

@@ -99,12 +99,15 @@ public static class StartupExtensions
         services.AddHostedService<AdventureLoader>();
 
         services.AddSingleton<IVolumeManager, VolumeManager>();
-        services.AddHttpClient<ContainerManager>();
-
-        services.AddHttpClient("DockerHealthCheck", client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(5);
-        });
+        services.AddHttpClient<ContainerManager>()
+            .AddStandardResilienceHandler(options =>
+            {
+                options.Retry.MaxRetryAttempts = 20;
+                options.Retry.Delay = TimeSpan.FromMilliseconds(500);
+                options.Retry.BackoffType = Polly.DelayBackoffType.Linear;
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
+            });
 
         return services;
     }

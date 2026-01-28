@@ -139,7 +139,7 @@ internal sealed class GraphServiceSettings
     /// Gets the base URL for an adventure's container given its assigned port.
     /// </summary>
     public string GetContainerBaseUrl(int port, string name) =>
-        $"http://{GetContainerName(name)}:{port}";
+        $"http://{name}:{port}";
 
     public Dictionary<string, string> GetEnvVariable(IConfiguration config)
     {
