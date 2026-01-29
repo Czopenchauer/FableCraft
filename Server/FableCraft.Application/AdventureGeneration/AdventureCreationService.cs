@@ -1,6 +1,5 @@
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model.Adventure;
-using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;

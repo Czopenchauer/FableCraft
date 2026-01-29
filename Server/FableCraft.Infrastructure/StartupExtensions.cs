@@ -9,14 +9,11 @@ using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
-using FableCraft.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
-
-using Serilog;
 
 namespace FableCraft.Infrastructure;
 

@@ -1,6 +1,5 @@
 using System.Text;
 
-using FableCraft.Application.KnowledgeGraph;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
