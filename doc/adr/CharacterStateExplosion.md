@@ -7,7 +7,7 @@ Character state explodes after a few scenes due to accumulating memory_stream, k
 
 | Data | Storage | Retrieval |
 |------|---------|-----------|
-| Core profile (identity, personality, voice, sexuality, behavioral patterns) | Character JSON | Always loaded |
+| Core profile (identity, personality, voice, behavioral patterns) | Character JSON | Always loaded |
 | Volatile state (emotional, goals, plans) | Character JSON | Always loaded |
 | Memories (full scene rewrites) | KG (Cognee) | Semantic search |
 | Memory index (short summaries) | DB | Last N + high salience |
