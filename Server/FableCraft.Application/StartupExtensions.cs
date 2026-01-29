@@ -1,7 +1,6 @@
 #pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
 
 using FableCraft.Application.AdventureGeneration;
-using FableCraft.Application.KnowledgeGraph.Handlers;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Plugins;

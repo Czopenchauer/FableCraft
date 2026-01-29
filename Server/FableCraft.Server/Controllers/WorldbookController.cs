@@ -1,4 +1,4 @@
-using FableCraft.Application.KnowledgeGraph.Handlers;
+using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;

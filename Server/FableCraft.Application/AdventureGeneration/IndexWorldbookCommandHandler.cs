@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Serilog;
 
-namespace FableCraft.Application.KnowledgeGraph.Handlers;
+namespace FableCraft.Application.AdventureGeneration;
 
 /// <summary>
 /// Command to index a worldbook, creating a reusable template volume.
