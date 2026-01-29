@@ -1,0 +1,180 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="scene-edit-modal">
+    <div class="modal-header">
+      <h3>Edit Scene</h3>
+      <button (click)="onClose()" class="close-btn" title="Close">
+        <svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+             stroke-width="2" viewBox="0 0 24 24" width="20">
+          <line x1="18" x2="6" y1="6" y2="18"></line>
+          <line x1="6" x2="18" y1="6" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="modal-tabs">
+      <button
+        (click)="setActiveTab('narrative')"
+        [class.active]="isActiveTab('narrative')"
+        class="tab-btn"
+        type="button">
+        Narrative
+      </button>
+      <button
+        (click)="setActiveTab('sceneTracker')"
+        [class.active]="isActiveTab('sceneTracker')"
+        class="tab-btn"
+        type="button">
+        Scene Tracker
+      </button>
+      <button
+        (click)="setActiveTab('mainCharacter')"
+        [class.active]="isActiveTab('mainCharacter')"
+        class="tab-btn"
+        type="button">
+        Main Character
+      </button>
+      <button
+        (click)="setActiveTab('characters')"
+        [class.active]="isActiveTab('characters')"
+        [disabled]="characters.length === 0"
+        class="tab-btn"
+        type="button">
+        Characters ({{ characters.length }})
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Narrative Tab -->
+      <div *ngIf="isActiveTab('narrative')" class="tab-content">
+        <label class="field-label">Scene Narrative Text</label>
+        <p class="field-hint">Supports markdown formatting</p>
+        <textarea
+          [(ngModel)]="narrativeText"
+          class="narrative-textarea"
+          placeholder="Enter scene narrative..."
+          rows="15">
+        </textarea>
+      </div>
+
+      <!-- Scene Tracker Tab -->
+      <div *ngIf="isActiveTab('sceneTracker')" class="tab-content">
+        <label class="field-label">Scene Tracker (JSON)</label>
+        <p class="field-hint">Edit time, location, weather, characters present, and custom fields</p>
+        <textarea
+          (ngModelChange)="onSceneTrackerChange()"
+          [(ngModel)]="sceneTrackerJson"
+          [class.error]="sceneTrackerError"
+          class="json-textarea"
+          placeholder="Enter scene tracker JSON..."
+          spellcheck="false">
+        </textarea>
+        <div *ngIf="sceneTrackerError" class="error-message">
+          <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+               stroke-width="2" viewBox="0 0 24 24" width="16">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" x2="12" y1="8" y2="12"></line>
+            <line x1="12" x2="12.01" y1="16" y2="16"></line>
+          </svg>
+          <span>{{ sceneTrackerErrorMessage }}</span>
+        </div>
+      </div>
+
+      <!-- Main Character Tab -->
+      <div *ngIf="isActiveTab('mainCharacter')" class="tab-content">
+        <div class="form-group">
+          <label class="field-label">Main Character Tracker (JSON)</label>
+          <p class="field-hint">Edit the protagonist's state tracker</p>
+          <textarea
+            (ngModelChange)="onMainCharacterTrackerChange()"
+            [(ngModel)]="mainCharacterTrackerJson"
+            [class.error]="mainCharacterError"
+            class="json-textarea"
+            placeholder="Enter main character tracker JSON..."
+            spellcheck="false">
+          </textarea>
+          <div *ngIf="mainCharacterError" class="error-message">
+            <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                 stroke-width="2" viewBox="0 0 24 24" width="16">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" x2="12" y1="8" y2="12"></line>
+              <line x1="12" x2="12.01" y1="16" y2="16"></line>
+            </svg>
+            <span>{{ mainCharacterErrorMessage }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Description</label>
+          <p class="field-hint">Narrative description of the protagonist's current state</p>
+          <textarea
+            [(ngModel)]="mainCharacterDescription"
+            class="description-textarea"
+            placeholder="Enter main character description..."
+            rows="4">
+          </textarea>
+        </div>
+      </div>
+
+      <!-- Characters Tab -->
+      <div *ngIf="isActiveTab('characters')" class="tab-content">
+        <div *ngIf="characters.length === 0" class="no-characters">
+          <p>No characters in this scene.</p>
+        </div>
+
+        <div *ngIf="characters.length > 0" class="characters-edit-container">
+          <!-- Character selector -->
+          <div class="character-selector">
+            <button
+              (click)="selectCharacter(i)"
+              *ngFor="let char of characters; let i = index"
+              [class.active]="selectedCharacterIndex === i"
+              [class.has-error]="char.hasError"
+              class="character-btn"
+              type="button">
+              {{ char.name }}
+            </button>
+          </div>
+
+          <!-- Selected character editor -->
+          <div *ngIf="characters[selectedCharacterIndex]" class="character-editor">
+            <label class="field-label">{{ characters[selectedCharacterIndex].name }}'s Tracker (JSON)</label>
+            <p class="field-hint">Edit this character's state tracker</p>
+            <textarea
+              (ngModelChange)="onCharacterTrackerChange(selectedCharacterIndex)"
+              [(ngModel)]="characters[selectedCharacterIndex].trackerJson"
+              [class.error]="characters[selectedCharacterIndex].hasError"
+              class="json-textarea"
+              placeholder="Enter character tracker JSON..."
+              spellcheck="false">
+            </textarea>
+            <div *ngIf="characters[selectedCharacterIndex].hasError" class="error-message">
+              <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                   stroke-width="2" viewBox="0 0 24 24" width="16">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" x2="12" y1="8" y2="12"></line>
+                <line x1="12" x2="12.01" y1="16" y2="16"></line>
+              </svg>
+              <span>{{ characters[selectedCharacterIndex].errorMessage }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="onClose()" [disabled]="isSaving" class="btn-cancel">Cancel</button>
+      <button
+        (click)="onSave()"
+        [disabled]="hasAnyError() || isSaving"
+        class="btn-save">
+        <svg *ngIf="isSaving" class="spinner-small" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+        </svg>
+        <span *ngIf="!isSaving">Save</span>
+        <span *ngIf="isSaving">Saving...</span>
+      </button>
+    </div>
+  </div>
+</div>

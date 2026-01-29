@@ -34,6 +34,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   showSettingsModal = false;
   // Adventure State modal state (Lore + Characters)
   showAdventureStateModal = false;
+  // Scene Edit modal state
+  showSceneEditModal = false;
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
   selectedAgents: Set<string> = new Set(['SceneTracker', 'MainCharacterTracker', 'CharacterTracker']);
@@ -529,6 +531,28 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   closeAdventureStateModal(): void {
     this.showAdventureStateModal = false;
+  }
+
+  /**
+   * Open the scene edit modal
+   */
+  openSceneEditModal(): void {
+    this.showSceneEditModal = true;
+  }
+
+  /**
+   * Close the scene edit modal
+   */
+  closeSceneEditModal(): void {
+    this.showSceneEditModal = false;
+  }
+
+  /**
+   * Handle scene saved event from edit modal
+   */
+  onSceneSaved(scene: GameScene): void {
+    this.currentScene = scene;
+    this.closeSceneEditModal();
   }
 
   /**

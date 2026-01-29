@@ -73,7 +73,12 @@ internal sealed class IndexWorldbookCommandHandler : IMessageHandler<IndexWorldb
         var entries = worldbook.Lorebooks
             .Select(e => new ChunkCreationRequest(
                 e.Id,
-                e.Content,
+                $"""
+                 {e.Title}
+                 {e.Content}
+
+                 Category: {e.Category}
+                 """,
                 e.ContentType,
                 [RagClientExtensions.GetWorldDatasetName()]))
             .ToList();

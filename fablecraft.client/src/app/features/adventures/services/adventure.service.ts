@@ -14,7 +14,8 @@ import {
   GameSceneApiResponse,
   GeneratedLorebookDto,
   GenerateLorebookDto,
-  SceneEnrichmentResult
+  SceneEnrichmentResult,
+  SceneTracker
 } from '../models/adventure.model';
 import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../models/adventure-settings.model';
 import {environment} from '../../../../environments/environment';
@@ -157,6 +158,48 @@ export class AdventureService {
     );
   }
 
+  // ============== Scene Edit API Methods ==============
+
+  /**
+   * Update scene narrative text
+   */
+  updateSceneNarrative(adventureId: string, sceneId: string, narrativeText: string): Observable<GameScene> {
+    return this.http.patch<GameSceneApiResponse>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/narrative`,
+      {narrativeText}
+    ).pipe(map(mapApiResponseToGameScene));
+  }
+
+  /**
+   * Update scene tracker (time, location, weather, characters present)
+   */
+  updateSceneTracker(adventureId: string, sceneId: string, tracker: Partial<SceneTracker>): Observable<GameScene> {
+    return this.http.patch<GameSceneApiResponse>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/scene-tracker`,
+      tracker
+    ).pipe(map(mapApiResponseToGameScene));
+  }
+
+  /**
+   * Update main character tracker and description
+   */
+  updateMainCharacterTracker(adventureId: string, sceneId: string, tracker: any, description: string): Observable<GameScene> {
+    return this.http.patch<GameSceneApiResponse>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/main-character`,
+      {tracker, description}
+    ).pipe(map(mapApiResponseToGameScene));
+  }
+
+  /**
+   * Update a character's tracker
+   */
+  updateCharacterState(adventureId: string, sceneId: string, characterStateId: string, tracker: any): Observable<GameScene> {
+    return this.http.patch<GameSceneApiResponse>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/character/${characterStateId}`,
+      {tracker}
+    ).pipe(map(mapApiResponseToGameScene));
+  }
+
   // ============== Adventure Settings API Methods ==============
 
   /**
@@ -216,6 +259,7 @@ function mapApiResponseToGameScene(response: GameSceneApiResponse): GameScene {
     selectedChoice: genOutput?.submittedAction ?? null,
     canRegenerate: response.canRegenerate,
     canDelete: response.canDelete,
+    canEdit: response.canRegenerate, // Same logic - only uncommitted scenes can be edited
     tracker: genOutput?.tracker ?? null,
     narrativeDirectorOutput: genOutput?.narrativeDirectorOutput ?? null,
     enrichmentStatus: response.enrichmentStatus,

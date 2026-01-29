@@ -1,5 +1,9 @@
-﻿using FableCraft.Application.Exceptions;
+﻿using System.Text.Json;
+
+using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+using FableCraft.Server.Models;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -139,6 +143,162 @@ public class PlayController : ControllerBase
         catch (AdventureNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    /// <summary>
+    ///     Update scene narrative text
+    /// </summary>
+    [HttpPatch("scene/{sceneId:guid}/narrative")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> UpdateSceneNarrative(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] UpdateSceneNarrativeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var scene = await _gameService.UpdateSceneNarrativeAsync(
+                adventureId, sceneId, request.NarrativeText, cancellationToken);
+            return Ok(scene);
+        }
+        catch (SceneNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    ///     Update scene tracker (time, location, weather, characters present)
+    /// </summary>
+    [HttpPatch("scene/{sceneId:guid}/scene-tracker")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> UpdateSceneTracker(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] UpdateSceneTrackerRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var additionalProperties = request.AdditionalProperties.HasValue
+                ? JsonSerializer.Deserialize<Dictionary<string, object>>(request.AdditionalProperties.Value.GetRawText())
+                : new Dictionary<string, object>();
+
+            var tracker = new SceneTracker
+            {
+                Time = request.Time,
+                Location = request.Location,
+                Weather = request.Weather,
+                CharactersPresent = request.CharactersPresent,
+                AdditionalProperties = additionalProperties!
+            };
+
+            var scene = await _gameService.UpdateSceneTrackerAsync(
+                adventureId, sceneId, tracker, cancellationToken);
+            return Ok(scene);
+        }
+        catch (SceneNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    ///     Update main character tracker and description
+    /// </summary>
+    [HttpPatch("scene/{sceneId:guid}/main-character")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> UpdateMainCharacterTracker(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] UpdateMainCharacterTrackerRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var tracker = JsonSerializer.Deserialize<MainCharacterTracker>(request.Tracker.GetRawText());
+            if (tracker == null)
+            {
+                return BadRequest(new { error = "Invalid tracker format" });
+            }
+
+            var state = new MainCharacterState
+            {
+                MainCharacter = tracker,
+                MainCharacterDescription = request.Description
+            };
+
+            var scene = await _gameService.UpdateMainCharacterTrackerAsync(
+                adventureId, sceneId, state, cancellationToken);
+            return Ok(scene);
+        }
+        catch (SceneNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { error = $"Invalid JSON format: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    ///     Update a specific character's tracker
+    /// </summary>
+    [HttpPatch("scene/{sceneId:guid}/character/{characterStateId:guid}")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> UpdateCharacterState(
+        Guid adventureId,
+        Guid sceneId,
+        Guid characterStateId,
+        [FromBody] UpdateCharacterStateRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var tracker = JsonSerializer.Deserialize<CharacterTracker>(request.Tracker.GetRawText());
+            if (tracker == null)
+            {
+                return BadRequest(new { error = "Invalid tracker format" });
+            }
+
+            var scene = await _gameService.UpdateCharacterStateAsync(
+                adventureId, sceneId, characterStateId, tracker, cancellationToken);
+            return Ok(scene);
+        }
+        catch (SceneNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { error = $"Invalid JSON format: {ex.Message}" });
         }
     }
 }

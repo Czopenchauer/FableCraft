@@ -49,12 +49,6 @@ internal sealed class StandaloneSimulationOutput
     public Dictionary<string, object>? ProfileUpdates { get; init; }
 
     /// <summary>
-    ///     Updates to the character's tracker (physical state like fatigue, hunger).
-    /// </summary>
-    [JsonPropertyName("tracker_updates")]
-    public Dictionary<string, object>? TrackerUpdates { get; init; }
-
-    /// <summary>
     ///     If the character decides to seek out the protagonist.
     /// </summary>
     [JsonPropertyName("pending_mc_interaction")]

@@ -182,6 +182,7 @@ export interface GameScene {
   selectedChoice: string | null;
   canRegenerate: boolean;
   canDelete: boolean;
+  canEdit: boolean;
   tracker: TrackerDto | null;
   narrativeDirectorOutput: NarrativeDirectorOutput | null;
   enrichmentStatus: EnrichmentStatus;

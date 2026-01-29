@@ -56,6 +56,20 @@
 
         <!-- Action buttons -->
         <button
+          (click)="openSceneEditModal()"
+          *ngIf="currentScene.canEdit"
+          class="btn-action btn-edit"
+          title="Edit this scene"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path
+              [attr.d]="'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'"
+              [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+              [attr.stroke-width]="2"></path>
+          </svg>
+          <span>Edit</span>
+        </button>
+        <button
           (click)="onRegenerateScene()"
           *ngIf="currentScene.canDelete"
           class="btn-action btn-regenerate"
@@ -651,4 +665,13 @@
     [sceneMetadata]="currentScene?.metadata ?? null"
     [isOpen]="showAdventureStateModal">
   </app-adventure-state-modal>
+
+  <!-- Scene Edit Modal -->
+  <app-scene-edit-modal
+    (close)="closeSceneEditModal()"
+    (saved)="onSceneSaved($event)"
+    [adventureId]="adventureId"
+    [scene]="currentScene"
+    [isOpen]="showSceneEditModal">
+  </app-scene-edit-modal>
 </div>

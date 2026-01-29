@@ -38,6 +38,7 @@ public static class StartupExtensions
 
         var connectionString = configuration.GetConnectionString("fablecraftdb");
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
+        connectionString += ";Include Error Detail=true";
         services.AddDbContextPool<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
                 sqlOptions =>
                 {

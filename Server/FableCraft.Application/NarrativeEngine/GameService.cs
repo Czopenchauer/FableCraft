@@ -56,6 +56,18 @@ public interface IGameService
         Guid sceneId,
         List<string> agentsToRegenerate,
         CancellationToken cancellationToken);
+
+    Task<GameScene> UpdateSceneNarrativeAsync(Guid adventureId, Guid sceneId, string narrativeText,
+        CancellationToken cancellationToken);
+
+    Task<GameScene> UpdateSceneTrackerAsync(Guid adventureId, Guid sceneId, SceneTracker tracker,
+        CancellationToken cancellationToken);
+
+    Task<GameScene> UpdateMainCharacterTrackerAsync(Guid adventureId, Guid sceneId, MainCharacterState state,
+        CancellationToken cancellationToken);
+
+    Task<GameScene> UpdateCharacterStateAsync(Guid adventureId, Guid sceneId, Guid characterStateId,
+        CharacterTracker tracker, CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -378,5 +390,105 @@ internal class GameService : IGameService
             _logger.Error(ex, "Failed to regenerate enrichment for scene {SceneId} in adventure {AdventureId}", sceneId, adventureId);
             throw;
         }
+    }
+
+    public async Task<GameScene> UpdateSceneNarrativeAsync(Guid adventureId, Guid sceneId, string narrativeText,
+        CancellationToken cancellationToken)
+    {
+        var scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new SceneNotFoundException(sceneId);
+        }
+
+        if (scene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only edit uncommitted scenes");
+        }
+
+        scene.NarrativeText = narrativeText;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetSceneAsync(adventureId, sceneId, cancellationToken);
+    }
+
+    public async Task<GameScene> UpdateSceneTrackerAsync(Guid adventureId, Guid sceneId, SceneTracker tracker,
+        CancellationToken cancellationToken)
+    {
+        var scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new SceneNotFoundException(sceneId);
+        }
+
+        if (scene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only edit uncommitted scenes");
+        }
+
+        scene.Metadata.Tracker ??= new Tracker();
+        scene.Metadata.Tracker.Scene = tracker;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetSceneAsync(adventureId, sceneId, cancellationToken);
+    }
+
+    public async Task<GameScene> UpdateMainCharacterTrackerAsync(Guid adventureId, Guid sceneId,
+        MainCharacterState state, CancellationToken cancellationToken)
+    {
+        var scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new SceneNotFoundException(sceneId);
+        }
+
+        if (scene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only edit uncommitted scenes");
+        }
+
+        scene.Metadata.Tracker ??= new Tracker();
+        scene.Metadata.Tracker.MainCharacter = state;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetSceneAsync(adventureId, sceneId, cancellationToken);
+    }
+
+    public async Task<GameScene> UpdateCharacterStateAsync(Guid adventureId, Guid sceneId, Guid characterStateId,
+        CharacterTracker tracker, CancellationToken cancellationToken)
+    {
+        var scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new SceneNotFoundException(sceneId);
+        }
+
+        if (scene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only edit uncommitted scenes");
+        }
+
+        var characterState = scene.CharacterStates.FirstOrDefault(cs => cs.Id == characterStateId);
+        if (characterState == null)
+        {
+            throw new InvalidOperationException($"Character state with ID {characterStateId} not found in scene");
+        }
+
+        characterState.Tracker = tracker;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetSceneAsync(adventureId, sceneId, cancellationToken);
     }
 }

@@ -33,6 +33,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        if (context.NewScene is not null)
+        {
+            return;
+        }
+
         var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
         var hasSceneContext = context.SceneContext.Length > 0;
@@ -65,7 +70,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
             var instruction = await dbContext.Adventures
-                .Select(x => new { x.Id, x.FirstSceneGuidance })
+                .Select(x => new
+                {
+                    x.Id,
+                    x.FirstSceneGuidance
+                })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
             requestPrompt = $"""
                              {PromptSections.ResolutionOutput(context.NewResolution)}

@@ -30,7 +30,7 @@ public class Scene : IEntity
     public string? AdventureSummary { get; set; }
 
     [Required]
-    public required string NarrativeText { get; init; }
+    public required string NarrativeText { get; set; }
 
     public CommitStatus CommitStatus { get; set; }
 
@@ -125,16 +125,16 @@ public sealed class Tracker
 
 public sealed class SceneTracker
 {
-    public required string Time { get; init; }
+    public required string Time { get; set; }
 
-    public required string Location { get; init; }
+    public required string Location { get; set; }
 
-    public required string Weather { get; init; }
+    public required string Weather { get; set; }
 
-    public string[] CharactersPresent { get; init; } = [];
+    public string[] CharactersPresent { get; set; } = [];
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+    public Dictionary<string, object> AdditionalProperties { get; set; } = null!;
 }
 
 public sealed class MainCharacterState
@@ -146,26 +146,26 @@ public sealed class MainCharacterState
 
 public sealed class CharacterTracker
 {
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
-    public required string Location { get; init; }
+    public required string Location { get; set; }
 
-    public string? Appearance { get; init; }
+    public string? Appearance { get; set; }
 
-    public string? GeneralBuild { get; init; }
+    public string? GeneralBuild { get; set; }
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+    public Dictionary<string, object> AdditionalProperties { get; set; } = null!;
 }
 
 public sealed class MainCharacterTracker
 {
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
-    public string? Appearance { get; init; }
+    public string? Appearance { get; set; }
 
-    public string? GeneralBuild { get; init; }
+    public string? GeneralBuild { get; set; }
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+    public Dictionary<string, object> AdditionalProperties { get; set; } = null!;
 }

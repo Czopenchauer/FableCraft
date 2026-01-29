@@ -377,7 +377,7 @@ internal sealed class SimulationOrchestrator(
         {
             CharacterId = character.CharacterId,
             CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? []),
-            CharacterTracker = character.CharacterTracker.PatchWith(result.TrackerUpdates ?? []),
+            CharacterTracker = character.CharacterTracker,
             Name = character.Name,
             Description = character.Description,
             CharacterMemories = result.Scenes.Select(x => new MemoryContext

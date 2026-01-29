@@ -37,6 +37,7 @@ import {CharacterDetailComponent} from './features/adventures/components/charact
 import {JsonEditorModalComponent} from './features/adventures/components/json-editor-modal/json-editor-modal.component';
 import {SceneMetadataTabComponent} from './features/adventures/components/scene-metadata-tab/scene-metadata-tab.component';
 import {LlmLogsTabComponent} from './features/adventures/components/llm-logs-tab/llm-logs-tab.component';
+import {SceneEditModalComponent} from './features/adventures/components/scene-edit-modal/scene-edit-modal.component';
 import {MarkdownPipe} from './shared/pipes/markdown.pipe';
 
 @NgModule({
@@ -62,7 +63,8 @@ import {MarkdownPipe} from './shared/pipes/markdown.pipe';
     CharacterDetailComponent,
     JsonEditorModalComponent,
     SceneMetadataTabComponent,
-    LlmLogsTabComponent
+    LlmLogsTabComponent,
+    SceneEditModalComponent
   ],
   imports: [
     BrowserModule,
