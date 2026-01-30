@@ -279,7 +279,16 @@
                   <div *ngIf="diff.type === 'removed'" class="diff-values">
                     <span class="diff-old">- {{ formatDiffValue(diff.oldValue) }}</span>
                   </div>
-                  <div *ngIf="diff.type === 'modified'" class="diff-values">
+                  <!-- Word-level diff for modified strings -->
+                  <div *ngIf="diff.type === 'modified' && isStringDiff(diff)" class="diff-values diff-inline">
+                    <ng-container *ngFor="let segment of getWordDiff(diff)">
+                      <span [class.word-same]="segment.type === 'same'"
+                            [class.word-added]="segment.type === 'added'"
+                            [class.word-removed]="segment.type === 'removed'">{{ segment.text }}</span>
+                    </ng-container>
+                  </div>
+                  <!-- Regular diff for non-string modified values -->
+                  <div *ngIf="diff.type === 'modified' && !isStringDiff(diff)" class="diff-values">
                     <span class="diff-old">- {{ formatDiffValue(diff.oldValue) }}</span>
                     <span class="diff-new">+ {{ formatDiffValue(diff.newValue) }}</span>
                   </div>

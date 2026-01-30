@@ -371,6 +371,147 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Compute word-level diff between two strings
+   * Returns array of segments with type: 'same', 'added', 'removed'
+   */
+  computeWordDiff(oldStr: string, newStr: string): WordDiffSegment[] {
+    if (oldStr === newStr) {
+      return [{type: 'same', text: newStr}];
+    }
+
+    const oldWords = this.tokenize(oldStr);
+    const newWords = this.tokenize(newStr);
+
+    // Use longest common subsequence algorithm
+    const lcs = this.computeLCS(oldWords, newWords);
+    const segments: WordDiffSegment[] = [];
+
+    let oldIdx = 0;
+    let newIdx = 0;
+    let lcsIdx = 0;
+
+    while (oldIdx < oldWords.length || newIdx < newWords.length) {
+      if (lcsIdx < lcs.length) {
+        // Add removed words (in old but not matching LCS)
+        while (oldIdx < oldWords.length && oldWords[oldIdx] !== lcs[lcsIdx]) {
+          segments.push({type: 'removed', text: oldWords[oldIdx]});
+          oldIdx++;
+        }
+        // Add inserted words (in new but not matching LCS)
+        while (newIdx < newWords.length && newWords[newIdx] !== lcs[lcsIdx]) {
+          segments.push({type: 'added', text: newWords[newIdx]});
+          newIdx++;
+        }
+        // Add common word
+        if (lcsIdx < lcs.length) {
+          segments.push({type: 'same', text: lcs[lcsIdx]});
+          oldIdx++;
+          newIdx++;
+          lcsIdx++;
+        }
+      } else {
+        // Remaining words after LCS is exhausted
+        while (oldIdx < oldWords.length) {
+          segments.push({type: 'removed', text: oldWords[oldIdx]});
+          oldIdx++;
+        }
+        while (newIdx < newWords.length) {
+          segments.push({type: 'added', text: newWords[newIdx]});
+          newIdx++;
+        }
+      }
+    }
+
+    return this.mergeSegments(segments);
+  }
+
+  /**
+   * Tokenize string into words, preserving spaces and punctuation
+   */
+  private tokenize(str: string): string[] {
+    // Split by word boundaries but keep delimiters
+    return str.split(/(\s+|[.,;:!?'"()\[\]{}])/g).filter(t => t.length > 0);
+  }
+
+  /**
+   * Compute Longest Common Subsequence
+   */
+  private computeLCS(arr1: string[], arr2: string[]): string[] {
+    const m = arr1.length;
+    const n = arr2.length;
+    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (arr1[i - 1] === arr2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    // Backtrack to find LCS
+    const lcs: string[] = [];
+    let i = m, j = n;
+    while (i > 0 && j > 0) {
+      if (arr1[i - 1] === arr2[j - 1]) {
+        lcs.unshift(arr1[i - 1]);
+        i--;
+        j--;
+      } else if (dp[i - 1][j] > dp[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+
+    return lcs;
+  }
+
+  /**
+   * Merge consecutive segments of the same type
+   */
+  private mergeSegments(segments: WordDiffSegment[]): WordDiffSegment[] {
+    if (segments.length === 0) return segments;
+
+    const merged: WordDiffSegment[] = [];
+    let current = {...segments[0]};
+
+    for (let i = 1; i < segments.length; i++) {
+      if (segments[i].type === current.type) {
+        current.text += segments[i].text;
+      } else {
+        merged.push(current);
+        current = {...segments[i]};
+      }
+    }
+    merged.push(current);
+
+    return merged;
+  }
+
+  /**
+   * Check if a diff item has string values suitable for word diff
+   */
+  isStringDiff(diff: DiffItem): boolean {
+    if (diff.type === 'modified') {
+      return typeof diff.oldValue === 'string' && typeof diff.newValue === 'string';
+    }
+    return false;
+  }
+
+  /**
+   * Get word diff for a modified string item
+   */
+  getWordDiff(diff: DiffItem): WordDiffSegment[] {
+    if (diff.type === 'modified' && typeof diff.oldValue === 'string' && typeof diff.newValue === 'string') {
+      return this.computeWordDiff(diff.oldValue, diff.newValue);
+    }
+    return [];
+  }
+
+  /**
    * Toggle the regenerate dropdown menu
    */
   toggleRegenerateDropdown(): void {
@@ -971,4 +1112,12 @@ export interface DiffItem {
   path: string;
   oldValue?: any;
   newValue?: any;
+}
+
+/**
+ * Represents a segment in a word-level diff
+ */
+export interface WordDiffSegment {
+  type: 'same' | 'added' | 'removed';
+  text: string;
 }
