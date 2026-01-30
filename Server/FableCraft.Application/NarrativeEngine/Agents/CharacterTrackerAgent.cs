@@ -62,7 +62,7 @@ internal sealed class CharacterTrackerAgent(
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var previousTrackers = await dbContext.CharacterStates
             .Where(z => z.CharacterId == context.CharacterId)
-            .OrderByDescending(z => z.SequenceNumber).Take(4)
+            .OrderByDescending(z => z.SequenceNumber).Take(3)
             .ToArrayAsync(cancellationToken);
         var requestPrompt = $"""
                              Previous trackers:

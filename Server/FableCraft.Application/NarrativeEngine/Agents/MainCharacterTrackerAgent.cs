@@ -62,7 +62,7 @@ internal sealed class MainCharacterTrackerAgent(
                              Previous trackers:
                              {string.Join("\n", context.SceneContext!
                                  .OrderByDescending(x => x.SequenceNumber)
-                                 .Take(4)
+                                 .Take(3)
                                  .OrderBy(x => x.SequenceNumber)
                                  .Select(x => x.Metadata!.Tracker!.MainCharacter!.MainCharacter.ToJsonString()))}
 
@@ -78,7 +78,7 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<MainCharacterTracker>>("tracker");
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         var kernel = kernelBuilder.Create();
         var kernelWithKg = kernel.Build();
 

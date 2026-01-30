@@ -4,16 +4,17 @@ namespace FableCraft.Infrastructure.Clients;
 
 internal sealed class RequestTrackerDelegate(IContainerMonitor containerMonitor) : DelegatingHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        var adventureId = ProcessExecutionContext.AdventureId.Value;
         try
         {
-            containerMonitor.Increment(ProcessExecutionContext.AdventureId.Value);
-            return base.SendAsync(request, cancellationToken);
+            containerMonitor.Increment(adventureId);
+            return await base.SendAsync(request, cancellationToken);
         }
         finally
         {
-            containerMonitor.Decrement(ProcessExecutionContext.AdventureId.Value);
+            containerMonitor.Decrement(adventureId);
         }
     }
 }

@@ -47,9 +47,11 @@ internal sealed class VolumeManager : IVolumeManager
     {
         _logger.Information("Copying volume {Source} to {Destination}", source, destination);
 
+        var createdVolume = false;
         if (!await ExistsAsync(destination, ct))
         {
             await CreateAsync(destination, ct);
+            createdVolume = true;
         }
 
         var containerName = $"fablecraft-volume-copy-{Guid.NewGuid():N}";
@@ -59,7 +61,7 @@ internal sealed class VolumeManager : IVolumeManager
             var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = _settings.UtilityImage,
-                    Name = containerName[..63],
+                    Name = containerName,
                     Cmd = ["sh", "-c", "cp -a /source/. /destination/"],
                     HostConfig = new HostConfig
                     {
@@ -86,6 +88,23 @@ internal sealed class VolumeManager : IVolumeManager
             }
 
             _logger.Information("Copied volume {Source} to {Destination}", source, destination);
+        }
+        catch
+        {
+            if (createdVolume)
+            {
+                try
+                {
+                    await DeleteAsync(destination, force: true, ct);
+                    _logger.Information("Cleaned up destination volume {Destination} after copy failure", destination);
+                }
+                catch (Exception deleteEx)
+                {
+                    _logger.Warning(deleteEx, "Failed to clean up destination volume {Destination}", destination);
+                }
+            }
+
+            throw;
         }
         finally
         {

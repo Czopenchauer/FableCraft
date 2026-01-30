@@ -288,6 +288,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         if (scenes.Count == 0)
         {
             extraLoreEntries = await dbContext.LorebookEntries
+                .Where(x => x.AdventureId == adventureId)
                 .Select(x => new ExtraLoreContext(x.Title ?? x.Description, x.Content, x.Category))
                 .ToListAsync(ct);
         }

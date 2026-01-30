@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
@@ -158,7 +159,8 @@ internal sealed class AgentKernel : IAgentKernel
                     }
                     catch (ClientResultException e)
                     {
-                        _logger.Error(e, "Error occurred while calling LLM service. {message}", e.ToString());
+                        
+                        _logger.Error(e, "Error occurred while calling LLM service. {message}", e.Data.ToJsonString());
                         throw;
                     }
                 },

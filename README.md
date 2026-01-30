@@ -28,26 +28,29 @@ FableCraft solves these problems with:
 
 ## Prerequisites
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 18+](https://nodejs.org/) (for Angular frontend)
-- [Docker](https://www.docker.com/) (optional, for containerized deployment)
-- LLM API key (OpenAI, Anthropic, Azure, Google, etc.)
+- [Docker](https://www.docker.com/)
+- LLM API key (Gemini, OpenAI, Anthropic, etc.)
 
 ## Quick Start
 
-### Option A: Docker (Recommended)
-
-The easiest way to run FableCraft with all services:
+1. Copy the environment template and configure your API keys:
 
 ```bash
-# Copy environment template and configure
 cp .env.template .env
+```
 
-# Edit .env and set your LLM_API_KEY (required)
-# Optionally configure LLM_PROVIDER, LLM_MODEL, etc.
+2. Edit `.env` and set your API keys (see Configuration below)
 
-# Start all services
-docker-compose up -d
+3. Run FableCraft:
+
+**Linux/macOS:**
+```bash
+./start.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\start.ps1
 ```
 
 Services will be available at:
@@ -56,67 +59,49 @@ Services will be available at:
 - **GraphRag API**: http://localhost:8111
 - **Aspire Dashboard**: http://localhost:18888
 
-### Option B: Aspire (Local Development)
-
-For development with hot-reload and debugging:
-
-```bash
-# Ensure you have .NET Aspire workload installed
-dotnet workload install aspire
-
-# Run the AppHost (orchestrates all services)
-dotnet run --project FableCraft.AppHost/FableCraft.AppHost.csproj
-```
-
-The Aspire dashboard will open automatically and show all running services.
-
 ## Configuration
 
-Copy `.env.template` to `.env` and configure your API keys:
-
-**Required settings:**
-
-| Variable | Description |
-|----------|-------------|
-| `LLM_API_KEY` | Your LLM provider API key |
-| `LLM_PROVIDER` | `gemini`, `openai`, `anthropic`, or `custom` |
-| `LLM_MODEL` | Model name (e.g., `gemini/gemini-2.5-flash`, `gpt-4o`) |
-| `EMBEDDING_API_KEY` | Your embedding provider API key |
-| `EMBEDDING_PROVIDER` | `gemini`, `openai`, or `ollama` |
-| `EMBEDDING_MODEL` | Embedding model (e.g., `gemini/gemini-embedding-001`) |
-
-**Example minimal configuration (Gemini):**
+Copy `.env.template` to `.env` and configure the following:
 
 ```bash
-LLM_API_KEY=your-gemini-api-key
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini/gemini-2.5-flash
+# =============================================================================
+# PROJECT PATH (Required for Docker volume mounts)
+# =============================================================================
+# Set this to the absolute path of the FableCraft project directory.
+# On Windows: Use forward slashes, e.g., C:/Users/yourname/FableCraft
+# On Linux/macOS: Use the full path, e.g., /home/user/FableCraft
+# NOTE: The start scripts set this automatically
+FABLECRAFT_PROJECT_PATH=
 
-EMBEDDING_API_KEY=your-gemini-api-key
+# =============================================================================
+# LLM CONFIGURATION (Required)
+# =============================================================================
+LLM_API_KEY=your-api-key-here
+LLM_MODEL=gemini/gemini-2.5-flash
+LLM_PROVIDER=gemini
+LLM_MAX_TOKENS=200000
+
+# Rate Limiting (recommended)
+LLM_RATE_LIMIT_ENABLED=true
+LLM_RATE_LIMIT_REQUESTS=50
+LLM_RATE_LIMIT_INTERVAL=60
+
+# =============================================================================
+# EMBEDDING CONFIGURATION (Required)
+# =============================================================================
 EMBEDDING_PROVIDER=gemini
 EMBEDDING_MODEL=gemini/gemini-embedding-001
+EMBEDDING_API_KEY=your-api-key-here
 EMBEDDING_DIMENSIONS=3072
+
+# =============================================================================
+# DATABASE (Optional - defaults provided)
+# =============================================================================
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
 ```
 
-See `.env.template` for alternative providers (OpenAI, Anthropic, Ollama) and optional settings.
-
-## Project Structure
-
-```
-FableCraft/
-├── FableCraft.AppHost/      # Aspire orchestration
-├── Server/
-│   ├── FableCraft.Application/   # Business logic, narrative engine, agents
-│   ├── FableCraft.Infrastructure/ # EF Core, persistence, external clients
-│   ├── FableCraft.Server/        # ASP.NET Core Web API
-│   ├── FableCraft.ServiceDefaults/ # Shared service configuration
-│   └── FableCraft.Tests/         # Test projects
-├── fablecraft.client/       # Angular frontend
-├── GraphRag/                # Knowledge graph service (Python/Cognee)
-├── Prompts/                 # LLM prompt templates
-├── data/                    # Sample data
-└── doc/                     # Documentation
-```
+See `.env.template` for alternative providers (OpenAI, Anthropic, Ollama).
 
 ## Architecture Overview
 

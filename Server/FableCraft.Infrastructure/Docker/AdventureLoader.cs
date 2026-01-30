@@ -11,7 +11,7 @@ internal sealed class AdventureLoader(ApplicationDbContext context, IGraphContai
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var lastPlayedAdventure = await context.Adventures.OrderByDescending(x => x.LastPlayedAt).FirstOrDefaultAsync(cancellationToken);
+        var lastPlayedAdventure = await context.Adventures.Where(x => x.LastPlayedAt != null).OrderByDescending(x => x.LastPlayedAt).FirstOrDefaultAsync(cancellationToken);
         if (lastPlayedAdventure is null)
         {
             logger.Information("No adventures found for preloading");

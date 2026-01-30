@@ -129,17 +129,15 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             try
             {
                 await sceneGenerationOrchestrator.GenerateSceneAsync(adventure.Id, string.Empty, cancellationToken);
-                adventure.SceneGenerationStatus = ProcessingStatus.Completed;
-                dbContext.Adventures.Update(adventure);
-                await dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.Adventures.Where(x => x.Id == adventure.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(a => a.SceneGenerationStatus, ProcessingStatus.Completed), cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
             catch (Exception)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                adventure.SceneGenerationStatus = ProcessingStatus.Failed;
-                dbContext.Adventures.Update(adventure);
-                await dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.Adventures.Where(x => x.Id == adventure.Id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(a => a.SceneGenerationStatus, ProcessingStatus.Failed), cancellationToken);
                 throw;
             }
         });

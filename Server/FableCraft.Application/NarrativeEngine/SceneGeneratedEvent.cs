@@ -100,7 +100,14 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             foreach (var scene in scenesToCommit)
             {
                 var lorebookRequests = scene.Lorebooks.Select(x =>
-                    new ChunkCreationRequest(x.Id, x.Content, x.ContentType, [RagClientExtensions.GetWorldDatasetName()]));
+                    new ChunkCreationRequest(x.Id,
+                        $"""
+                         {x.Title}
+                         {x.Content}
+                         {x.Category}
+                         """,
+                        x.ContentType,
+                        [RagClientExtensions.GetWorldDatasetName()]));
                 creationRequests.AddRange(lorebookRequests);
 
                 var sceneContent = $"""
