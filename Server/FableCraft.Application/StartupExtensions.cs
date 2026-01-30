@@ -27,6 +27,7 @@ public static class StartupExtensions
         services.AddScoped<IGameService, GameService>();
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
+            .AddScoped<CharacterReflectionMaintenanceService>()
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
