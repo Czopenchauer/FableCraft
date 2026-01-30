@@ -98,20 +98,12 @@ internal sealed class CharacterSimulationAgent(
     {
         var jsonOptions = PromptSections.GetJsonOptions(true);
 
-        // CHARACTER_NAME
         prompt = prompt.Replace(PlaceholderNames.CharacterName, character.Name);
 
-        // core_profile - the character's stable identity
         prompt = prompt.Replace("{{core_profile}}", character.CharacterState.ToJsonString(jsonOptions));
 
-        // current_state - emotional landscape (extract from CharacterState if available)
-        var currentState = ExtractCurrentState(character);
-        prompt = prompt.Replace("{{current_state}}", currentState);
-
-        // character_tracker - physical state
         prompt = prompt.Replace("{{character_tracker}}", character.CharacterTracker?.ToJsonString(jsonOptions) ?? "No physical state tracked.");
 
-        // relationships
         prompt = prompt.Replace("{{relationships}}", FormatRelationships(character));
 
         prompt = prompt.Replace("{{recent_memories}}", BuildSceneHistoryContent(character));
@@ -122,24 +114,12 @@ internal sealed class CharacterSimulationAgent(
 
         prompt = prompt.Replace("{{significant_characters}}", FormatSignificantCharacters(cohortInput.SignificantCharacters));
 
-        // Replace injectable references (like dot_notation_reference, salience_scale, etc.)
         prompt = await ReplaceInjectableReference(prompt, "{{dot_notation_reference}}", "DotNotation.md", context.PromptPath);
         prompt = await ReplaceInjectableReference(prompt, "{{salience_scale}}", "Salience.md", context.PromptPath);
         prompt = await ReplaceInjectableReference(prompt, "{{physical_state_reference}}", "PhysicalStateReference.md", context.PromptPath);
         prompt = await ReplaceInjectableReference(prompt, "{{knowledge_boundaries}}", "KnowledgeBoundaries.md", context.PromptPath);
 
         return prompt;
-    }
-
-    private static string ExtractCurrentState(CharacterContext character)
-    {
-        // Try to extract psychology section from CharacterState extension data (new schema)
-        if (character.CharacterState.ExtensionData?.TryGetValue("psychology", out var psychology) == true)
-        {
-            return psychology.ToJsonString();
-        }
-
-        return "Current psychological state not explicitly tracked.";
     }
 
     private static string BuildUserMessage(CharacterQueryType queryType, string stimulus, string query)

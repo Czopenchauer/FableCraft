@@ -135,7 +135,7 @@ internal sealed class SimulationModeratorAgent(
 
         // Time period
         sb.AppendLine("## Time Period");
-        sb.AppendLine($"Simulate to: {input.SimulationPeriod.To}");
+        sb.AppendLine($"Simulate to: {input.SimulationPeriod}");
         sb.AppendLine();
 
         // Known interactions

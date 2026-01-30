@@ -17,7 +17,7 @@ internal sealed class StandaloneSimulationInput
     /// <summary>
     ///     The time period to simulate (e.g., "6 hours", "until morning").
     /// </summary>
-    public required string TimePeriod { get; init; }
+    public required SceneTracker? TimePeriod { get; init; }
 
     /// <summary>
     ///     World events that may affect the character.

@@ -149,6 +149,7 @@ internal sealed class SimulationPlannerAgent(
         {
             $"""
              ### Story Tracker
+             Current time and location from main character perspective. Potential simulation should not exceed this time! Simulate the character up to {input.SceneTracker.Time}!
              <story_tracker>
              Time: {input.SceneTracker.Time}
              Location: {input.SceneTracker.Location}

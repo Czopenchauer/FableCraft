@@ -93,12 +93,6 @@ internal sealed class SimulationPlannerOutput
     public string? Reason { get; init; }
 
     /// <summary>
-    ///     How much in-world time to simulate.
-    /// </summary>
-    [JsonPropertyName("simulation_period")]
-    public SimulationPeriod? SimulationPeriod { get; init; }
-
-    /// <summary>
     ///     Groups of 2-4 arc_important characters to simulate together.
     /// </summary>
     [JsonPropertyName("cohorts")]

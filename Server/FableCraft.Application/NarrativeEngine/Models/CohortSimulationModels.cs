@@ -17,7 +17,7 @@ internal sealed class CohortSimulationInput
     /// <summary>
     ///     The time period to simulate.
     /// </summary>
-    public required SimulationPeriod SimulationPeriod { get; init; }
+    public required string SimulationPeriod { get; init; }
 
     /// <summary>
     ///     Known interactions from SimulationPlanner/IntentCheck.

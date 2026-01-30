@@ -99,7 +99,7 @@ internal sealed class SimulationOrchestrator(
                 var input = new StandaloneSimulationInput
                 {
                     Character = character,
-                    TimePeriod = plan.SimulationPeriod.ToJsonString(),
+                    TimePeriod = context.NewTracker!.Scene,
                     WorldEvents = previousState?.WorldMomentum
                 };
 
@@ -127,7 +127,7 @@ internal sealed class SimulationOrchestrator(
                             {
                                 TargetCharacterName = relationshipUpdate.Name,
                                 Data = relationshipUpdate.ExtensionData!,
-                                UpdateTime = plan.SimulationPeriod!.To,
+                                UpdateTime = input.TimePeriod!.Time,
                                 SequenceNumber = 0,
                                 Dynamic = relationshipUpdate.Dynamic
                             });
@@ -139,7 +139,7 @@ internal sealed class SimulationOrchestrator(
                             {
                                 TargetCharacterName = relationship.TargetCharacterName,
                                 Data = updatedRelationship,
-                                UpdateTime = plan.SimulationPeriod!.To,
+                                UpdateTime = input.TimePeriod!.Time,
                                 SequenceNumber = relationship.SequenceNumber + 1,
                                 Dynamic = relationshipUpdate.Dynamic
                             };
@@ -175,7 +175,7 @@ internal sealed class SimulationOrchestrator(
                         Importance = character.Importance,
                         SimulationMetadata = new SimulationMetadata
                         {
-                            LastSimulated = plan.SimulationPeriod!.To,
+                            LastSimulated = input.TimePeriod!.Time,
                             PendingMcInteraction = result.PendingMcInteraction
                         },
                         IsDead = false
@@ -280,7 +280,7 @@ internal sealed class SimulationOrchestrator(
             var input = new CohortSimulationInput
             {
                 CohortMembers = context.Characters.Where(x => validCharacters.Contains(x.Name)).ToArray(),
-                SimulationPeriod = plan.SimulationPeriod!,
+                SimulationPeriod = context.NewTracker!.Scene!.Time!,
                 KnownInteractions = cohort.ExtensionData,
                 WorldEvents = previousState?.WorldMomentum,
                 SignificantCharacters = significantCharacters.Length > 0 ? significantCharacters : null
@@ -353,7 +353,7 @@ internal sealed class SimulationOrchestrator(
                 {
                     TargetCharacterName = relationshipUpdate.Name,
                     Data = relationshipUpdate.ExtensionData!,
-                    UpdateTime = plan.SimulationPeriod!.To,
+                    UpdateTime = context.NewTracker!.Scene!.Time,
                     SequenceNumber = 0,
                     Dynamic = relationshipUpdate.Dynamic
                 });
@@ -365,7 +365,7 @@ internal sealed class SimulationOrchestrator(
                 {
                     TargetCharacterName = relationship.TargetCharacterName,
                     Data = updatedRelationship,
-                    UpdateTime = plan.SimulationPeriod!.To,
+                    UpdateTime = context.NewTracker!.Scene!.Time,
                     SequenceNumber = relationship.SequenceNumber + 1,
                     Dynamic = relationshipUpdate.Dynamic
                 };

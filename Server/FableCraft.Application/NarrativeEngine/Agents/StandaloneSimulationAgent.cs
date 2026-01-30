@@ -152,7 +152,7 @@ internal sealed class StandaloneSimulationAgent(
 
     private static string BuildRequestPrompt(StandaloneSimulationInput input) =>
         $"""
-         Live through the period: {input.TimePeriod}
+         Live through the time to: {input.TimePeriod!.Time}
 
          What do you do? What happens? How are you affected?
          """;
