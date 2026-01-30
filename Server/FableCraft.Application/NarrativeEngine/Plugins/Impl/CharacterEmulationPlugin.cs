@@ -43,6 +43,22 @@ internal sealed class CharacterEmulationPlugin : PluginBase
         ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
 
-        return await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
+        var response = await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
+
+        if (Context != null)
+        {
+            lock (Context)
+            {
+                if (!Context.CharacterEmulationOutputs.TryGetValue(characterName, out var outputs))
+                {
+                    outputs = [];
+                    Context.CharacterEmulationOutputs[characterName] = outputs;
+                }
+
+                outputs.Add(new CharacterEmulationOutput(characterName, stimulus, query, response, outputs.Count + 1));
+            }
+        }
+
+        return response;
     }
 }

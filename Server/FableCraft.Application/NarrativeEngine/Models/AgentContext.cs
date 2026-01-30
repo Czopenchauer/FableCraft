@@ -4,6 +4,16 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
+/// <summary>
+///     Captures the output from a character emulation call for use in reflection.
+/// </summary>
+internal sealed record CharacterEmulationOutput(
+    string CharacterName,
+    string Stimulus,
+    string Query,
+    string Response,
+    int SequenceNumber);
+
 internal sealed class GenerationContext
 {
     public required Guid AdventureId { get; set; }
@@ -114,6 +124,13 @@ internal sealed class GenerationContext
     ///     Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
     /// </summary>
     public List<CharacterEventToSave> NewCharacterEvents { get; set; } = [];
+
+    /// <summary>
+    ///     Character emulation outputs captured during scene generation.
+    ///     Used by CharacterReflectionAgent to understand the character's internal experience.
+    /// </summary>
+    [JsonIgnore]
+    public Dictionary<string, List<CharacterEmulationOutput>> CharacterEmulationOutputs { get; set; } = new();
 
     public void SetupRequiredFields(
         SceneContext[] sceneContext,

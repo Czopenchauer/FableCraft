@@ -85,7 +85,7 @@ internal sealed class SimulationOrchestrator(
                 {
                     logger.Warning("Standalone simulation requested for unknown character: {CharacterName}",
                         standalone.Character);
-                    throw new UnreachableException("Requested simulation for unknown character");
+                    throw new UnreachableException($"Requested simulation for unknown character: {standalone.Character}");
                 }
 
                 if (context.CharacterUpdates.Any(c => c.Name != character.Name))

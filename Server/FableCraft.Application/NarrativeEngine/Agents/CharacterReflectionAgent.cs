@@ -70,6 +70,8 @@ internal sealed class CharacterReflectionAgent(
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(context)}
+
+                             {PromptSections.CharacterEmulationOutputs(generationContext, context.Name)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
