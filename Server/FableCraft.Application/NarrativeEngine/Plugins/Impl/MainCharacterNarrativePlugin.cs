@@ -30,7 +30,9 @@ internal class MainCharacterNarrativePlugin : PluginBase
         [Description("List of queries for main character information to retrieve (memories, goals, relationships, personal history, etc.)")]
         string[] query,
         [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
-        string levelOfDetails)
+        string levelOfDetails,
+        [Description("Time when to look. Provide the time if you want to ask for specific period - for example when asking about current state, provide the current time. For history - provide the historical data. If time is not needed provide empty string or null.")]
+        string? time)
     {
         ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
@@ -44,7 +46,14 @@ internal class MainCharacterNarrativePlugin : PluginBase
             RagClientExtensions.GetMainCharacterDatasetName()
         };
 
-        var queryCombined = query.Select(x => $"{x}, level of details: {levelOfDetails}").ToArray();
+        var queryCombined = query.Select(x =>
+        {
+            if (!string.IsNullOrEmpty(time))
+            {
+                return $"{x}, level of details: {levelOfDetails}. Current time: {time} - use it to retrieve fresh knowledge where possible.";
+            }
+            return $"{x}, level of details: {levelOfDetails}";
+        }).ToArray();
         var ragSearch = await _ragClientFactory.CreateSearchClientForAdventure(CallerContext.AdventureId, CancellationToken.None);
         var results = await ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
 

@@ -145,15 +145,6 @@
       </div>
     </div>
 
-    <!-- Story Tracker (above scene) - Scene and Characters Present only -->
-    <div *ngIf="currentScene && !isInitialLoad && currentScene.tracker"
-         [class.regenerating-enrichment]="isRegeneratingEnrichment"
-         [class.regenerating]="isRegenerating" class="story-tracker-panel">
-      <div *ngIf="currentScene.tracker.scene" class="story-tracker-section">
-        <app-json-renderer [data]="{scene: currentScene.tracker.scene}"></app-json-renderer>
-      </div>
-    </div>
-
     <!-- Game Content -->
     <div *ngIf="currentScene && !isInitialLoad" [class.regenerating]="isRegenerating" class="game-content">
       <!-- Regenerating overlay -->
@@ -188,8 +179,22 @@
 
           <div class="tracker-header">
             Characters
-            <span *ngIf="isEnriching" class="enriching-badge">Loading...</span>
+            <span *ngIf="isEnriching" class="enriching-badge">Updating...</span>
             <span *ngIf="enrichmentFailed" class="enrichment-failed-badge">Failed</span>
+            <!-- Diff toggle button -->
+            <button
+              *ngIf="hasDiffAvailable && !isEnriching"
+              (click)="toggleTrackerDiff()"
+              [class.active]="showTrackerDiff"
+              class="btn-diff-toggle"
+              title="Show changes from previous scene"
+            >
+              <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                <path [attr.d]="'M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4'"
+                      [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                      [attr.stroke-width]="2"></path>
+              </svg>
+            </button>
             <!-- Regenerate enrichment dropdown -->
             <div *ngIf="canRegenerateEnrichment()" class="regenerate-dropdown-container">
               <button
@@ -245,8 +250,128 @@
             </div>
           </div>
 
-          <!-- Loading state -->
-          <div *ngIf="isEnriching" class="tracker-loading">
+          <!-- Tracker Diff Panel (at top) -->
+          <div *ngIf="showTrackerDiff && hasDiffAvailable && !isEnriching" class="tracker-diff-panel">
+            <div class="diff-panel-header">
+              <span class="diff-panel-title">
+                {{ activeCharacterTab === 'scene' ? 'Scene' : activeCharacterTab === 'protagonist' ? 'Protagonist' : activeCharacterTab }} changes
+              </span>
+              <button (click)="toggleTrackerDiff()" class="diff-close-btn" title="Close diff">
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="diff-content">
+              <ng-container *ngIf="computeTrackerDiff().length === 0">
+                <div class="diff-empty">No changes detected</div>
+              </ng-container>
+              <ng-container *ngFor="let diff of computeTrackerDiff()">
+                <div class="diff-item" [class.added]="diff.type === 'added'"
+                     [class.removed]="diff.type === 'removed'"
+                     [class.modified]="diff.type === 'modified'">
+                  <span class="diff-path">{{ diff.path }}</span>
+                  <span class="diff-type-badge">{{ diff.type }}</span>
+                  <div *ngIf="diff.type === 'added'" class="diff-values">
+                    <span class="diff-new">+ {{ formatDiffValue(diff.newValue) }}</span>
+                  </div>
+                  <div *ngIf="diff.type === 'removed'" class="diff-values">
+                    <span class="diff-old">- {{ formatDiffValue(diff.oldValue) }}</span>
+                  </div>
+                  <div *ngIf="diff.type === 'modified'" class="diff-values">
+                    <span class="diff-old">- {{ formatDiffValue(diff.oldValue) }}</span>
+                    <span class="diff-new">+ {{ formatDiffValue(diff.newValue) }}</span>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Stale tracker display during enrichment (shows previous scene's tracker) -->
+          <div *ngIf="isEnriching && previousTrackerForDiff" class="tracker-content stale-tracker">
+            <!-- Stale banner indicator -->
+            <div class="stale-banner">
+              <svg [attr.fill]="'none'" class="spinner-tiny" viewBox="0 0 24 24">
+                <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4"
+                        [attr.stroke]="'currentColor'" class="opacity-25"></circle>
+                <path [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                      [attr.fill]="'currentColor'" class="opacity-75"></path>
+              </svg>
+              <span class="stale-badge">Updating tracker...</span>
+              <span class="stale-label">(showing previous scene)</span>
+            </div>
+            <!-- Show previous scene's tracker (fully readable, interactive) -->
+            <div class="character-tabs">
+              <div class="character-tabs-header">
+                <button
+                  (click)="setActiveCharacterTab('scene')"
+                  [class.active]="isActiveCharacterTab('scene')"
+                  class="character-tab-btn"
+                  type="button"
+                >
+                  Scene
+                </button>
+                <button
+                  (click)="setActiveCharacterTab('protagonist')"
+                  [class.active]="isActiveCharacterTab('protagonist')"
+                  class="character-tab-btn"
+                  type="button"
+                >
+                  Protagonist
+                </button>
+                <button
+                  (click)="setActiveCharacterTab(char.name)"
+                  *ngFor="let char of previousTrackerForDiff.characters"
+                  [class.active]="isActiveCharacterTab(char.name)"
+                  class="character-tab-btn"
+                  type="button"
+                >
+                  {{ char.name }}
+                </button>
+              </div>
+              <div class="character-tabs-content">
+                <div *ngIf="isActiveCharacterTab('scene') && previousTrackerForDiff.scene"
+                     class="character-tab-panel">
+                  <app-json-renderer [data]="previousTrackerForDiff.scene"></app-json-renderer>
+                </div>
+                <div *ngIf="isActiveCharacterTab('protagonist') && previousTrackerForDiff.mainCharacter"
+                     class="character-tab-panel">
+                  <div class="nested-tabs-header">
+                    <button (click)="setActiveNestedTab('state')" [class.active]="isActiveNestedTab('state')" class="nested-tab-btn" type="button">State</button>
+                    <button (click)="setActiveNestedTab('description')" [class.active]="isActiveNestedTab('description')" class="nested-tab-btn" type="button">Description</button>
+                  </div>
+                  <div class="nested-tabs-content">
+                    <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
+                      <app-json-renderer [data]="previousTrackerForDiff.mainCharacter.tracker"></app-json-renderer>
+                    </div>
+                    <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                      <app-json-renderer [data]="{description: previousTrackerForDiff.mainCharacter.description}"></app-json-renderer>
+                    </div>
+                  </div>
+                </div>
+                <ng-container *ngFor="let character of previousTrackerForDiff.characters">
+                  <div *ngIf="isActiveCharacterTab(character.name)" class="character-tab-panel">
+                    <div class="nested-tabs-header">
+                      <button (click)="setActiveNestedTab('state')" [class.active]="isActiveNestedTab('state')" class="nested-tab-btn" type="button">State</button>
+                      <button (click)="setActiveNestedTab('description')" [class.active]="isActiveNestedTab('description')" class="nested-tab-btn" type="button">Description</button>
+                    </div>
+                    <div class="nested-tabs-content">
+                      <div *ngIf="isActiveNestedTab('state')" class="nested-tab-panel">
+                        <app-json-renderer [data]="character.tracker"></app-json-renderer>
+                      </div>
+                      <div *ngIf="isActiveNestedTab('description')" class="nested-tab-panel">
+                        <app-json-renderer [data]="{description: character.description}"></app-json-renderer>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading state only when no previous tracker exists -->
+          <div *ngIf="isEnriching && !previousTrackerForDiff" class="tracker-loading">
             <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
               <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
                       class="opacity-25"></circle>
@@ -280,6 +405,15 @@
           <div *ngIf="!isEnriching && !enrichmentFailed && currentScene.tracker" class="character-tabs">
             <!-- Tab Headers -->
             <div class="character-tabs-header">
+              <!-- Scene Tab -->
+              <button
+                (click)="setActiveCharacterTab('scene')"
+                [class.active]="isActiveCharacterTab('scene')"
+                class="character-tab-btn"
+                type="button"
+              >
+                Scene
+              </button>
               <!-- Protagonist Tab -->
               <button
                 (click)="setActiveCharacterTab('protagonist')"
@@ -303,6 +437,12 @@
 
             <!-- Tab Content -->
             <div class="character-tabs-content">
+              <!-- Scene Content -->
+              <div *ngIf="isActiveCharacterTab('scene') && currentScene.tracker.scene"
+                   class="character-tab-panel">
+                <app-json-renderer [data]="currentScene.tracker.scene"></app-json-renderer>
+              </div>
+
               <!-- Protagonist Content -->
               <div *ngIf="isActiveCharacterTab('protagonist') && currentScene.tracker.mainCharacter"
                    class="character-tab-panel">

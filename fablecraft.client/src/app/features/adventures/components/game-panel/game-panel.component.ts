@@ -5,7 +5,7 @@ import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
 import {RagChatMessage, RagChatService, RagDatasetType} from '../../services/rag-chat.service';
-import {GameScene, SceneEnrichmentResult} from '../../models/adventure.model';
+import {GameScene, SceneEnrichmentResult, TrackerDto} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 
 @Component({
@@ -55,6 +55,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   ragChatMessages: RagChatMessage[] = [];
   isRagChatLoading = false;
   private previousTrackerData: any = null;
+  // For stale display and diff comparison
+  previousTrackerForDiff: TrackerDto | null = null;
+  showTrackerDiff = false;
+  hasDiffAvailable = false;
   // Character emulation state
   private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
   // RAG Knowledge Chat state
@@ -120,6 +124,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     if (!this.adventureId) return;
 
     this.isLoading = true;
+    // Reset diff state while loading
+    this.showTrackerDiff = false;
 
     this.adventureService.getCurrentScene(this.adventureId)
       .pipe(
@@ -137,6 +143,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           // Check if tracker is missing and trigger enrichment if needed
           if (this.currentScene && !this.currentScene.tracker) {
             this.enrichSceneData(this.currentScene.sceneId);
+          } else {
+            // Tracker exists, fetch previous scene for diff comparison
+            this.fetchPreviousSceneTracker();
           }
         },
         error: (err) => {
@@ -244,6 +253,121 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   canRegenerateEnrichment(): boolean {
     return !!(this.currentScene?.tracker && !this.isEnriching && !this.isRegeneratingEnrichment && !this.isLoading && !this.isRegenerating);
+  }
+
+  /**
+   * Toggle tracker diff view
+   */
+  toggleTrackerDiff(): void {
+    this.showTrackerDiff = !this.showTrackerDiff;
+  }
+
+  /**
+   * Compute diff between previous and current tracker, filtered by active tab
+   */
+  computeTrackerDiff(): DiffItem[] {
+    if (!this.previousTrackerForDiff || !this.currentScene?.tracker) {
+      return [];
+    }
+
+    // Get the appropriate section based on active tab
+    if (this.activeCharacterTab === 'scene') {
+      return this.deepDiff(
+        this.previousTrackerForDiff.scene,
+        this.currentScene.tracker.scene,
+        'scene'
+      );
+    } else if (this.activeCharacterTab === 'protagonist') {
+      return this.deepDiff(
+        this.previousTrackerForDiff.mainCharacter,
+        this.currentScene.tracker.mainCharacter,
+        'protagonist'
+      );
+    } else {
+      // Find the character by name in both trackers
+      const prevChar = this.previousTrackerForDiff.characters?.find(
+        c => c.name === this.activeCharacterTab
+      );
+      const currChar = this.currentScene.tracker.characters?.find(
+        c => c.name === this.activeCharacterTab
+      );
+
+      if (!prevChar && !currChar) {
+        return [];
+      }
+
+      if (!prevChar) {
+        return [{type: 'added', path: this.activeCharacterTab, newValue: currChar}];
+      }
+
+      if (!currChar) {
+        return [{type: 'removed', path: this.activeCharacterTab, oldValue: prevChar}];
+      }
+
+      return this.deepDiff(prevChar, currChar, this.activeCharacterTab);
+    }
+  }
+
+  /**
+   * Recursively compute diff between two objects
+   */
+  private deepDiff(prev: any, curr: any, path: string): DiffItem[] {
+    const diffs: DiffItem[] = [];
+
+    if (prev === curr) return diffs;
+
+    if (typeof prev !== typeof curr) {
+      diffs.push({type: 'modified', path: path || 'root', oldValue: prev, newValue: curr});
+      return diffs;
+    }
+
+    if (Array.isArray(prev) && Array.isArray(curr)) {
+      // Compare arrays
+      const maxLen = Math.max(prev.length, curr.length);
+      for (let i = 0; i < maxLen; i++) {
+        const itemPath = path ? `${path}[${i}]` : `[${i}]`;
+        if (i >= prev.length) {
+          diffs.push({type: 'added', path: itemPath, newValue: curr[i]});
+        } else if (i >= curr.length) {
+          diffs.push({type: 'removed', path: itemPath, oldValue: prev[i]});
+        } else if (typeof prev[i] === 'object' && typeof curr[i] === 'object' && prev[i] !== null && curr[i] !== null) {
+          diffs.push(...this.deepDiff(prev[i], curr[i], itemPath));
+        } else if (prev[i] !== curr[i]) {
+          diffs.push({type: 'modified', path: itemPath, oldValue: prev[i], newValue: curr[i]});
+        }
+      }
+      return diffs;
+    }
+
+    if (typeof prev === 'object' && prev !== null && typeof curr === 'object' && curr !== null) {
+      const allKeys = new Set([...Object.keys(prev), ...Object.keys(curr)]);
+      for (const key of allKeys) {
+        const keyPath = path ? `${path}.${key}` : key;
+        if (!(key in prev)) {
+          diffs.push({type: 'added', path: keyPath, newValue: curr[key]});
+        } else if (!(key in curr)) {
+          diffs.push({type: 'removed', path: keyPath, oldValue: prev[key]});
+        } else {
+          diffs.push(...this.deepDiff(prev[key], curr[key], keyPath));
+        }
+      }
+      return diffs;
+    }
+
+    if (prev !== curr) {
+      diffs.push({type: 'modified', path: path || 'root', oldValue: prev, newValue: curr});
+    }
+
+    return diffs;
+  }
+
+  /**
+   * Format value for diff display
+   */
+  formatDiffValue(value: any): string {
+    if (value === null || value === undefined) return 'null';
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
   }
 
   /**
@@ -706,6 +830,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.isEnriching = true;
     this.enrichmentFailed = false;
 
+    // Fetch previous scene tracker first for stale display during enrichment
+    this.fetchPreviousSceneTracker();
+
     this.adventureService.enrichScene(this.adventureId, sceneId)
       .pipe(
         takeUntil(this.destroy$),
@@ -724,12 +851,47 @@ export class GamePanelComponent implements OnInit, OnDestroy {
             this.currentScene.tracker = enrichment.tracker;
           }
 
+          // Update diff availability now that current scene has tracker
+          this.hasDiffAvailable = this.previousTrackerForDiff !== null;
+
           this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error enriching scene:', err);
           this.enrichmentFailed = true;
           this.toastService.warning('Scene enrichment failed. The scene is still playable.');
+        }
+      });
+  }
+
+  /**
+   * Fetch the previous scene's tracker for diff comparison and stale display
+   */
+  private fetchPreviousSceneTracker(): void {
+    if (!this.adventureId || !this.currentScene?.previousScene) {
+      this.previousTrackerForDiff = null;
+      this.hasDiffAvailable = false;
+      return;
+    }
+
+    this.adventureService.getScene(this.adventureId, this.currentScene.previousScene)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (previousScene) => {
+          if (previousScene?.tracker) {
+            this.previousTrackerForDiff = previousScene.tracker;
+            // Only mark diff as available if current scene also has tracker
+            this.hasDiffAvailable = this.currentScene?.tracker !== null;
+          } else {
+            this.previousTrackerForDiff = null;
+            this.hasDiffAvailable = false;
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error fetching previous scene for diff:', err);
+          this.previousTrackerForDiff = null;
+          this.hasDiffAvailable = false;
         }
       });
   }
@@ -743,6 +905,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.enrichmentData = null;
     this.enrichmentFailed = false;
+    // Reset diff state while loading
+    this.showTrackerDiff = false;
 
     this.adventureService.getScene(this.adventureId, sceneId)
       .pipe(
@@ -760,6 +924,9 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           // Check if tracker is missing and trigger enrichment if needed
           if (this.currentScene && !this.currentScene.tracker) {
             this.enrichSceneData(this.currentScene.sceneId);
+          } else {
+            // Tracker exists, fetch previous scene for diff comparison
+            this.fetchPreviousSceneTracker();
           }
 
           this.cdr.detectChanges();
@@ -794,4 +961,14 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     const stored = localStorage.getItem(this.RAG_CHAT_VISIBLE_KEY);
     this.showRagChatBox = stored === 'true';
   }
+}
+
+/**
+ * Represents a single diff item between two tracker states
+ */
+export interface DiffItem {
+  type: 'added' | 'removed' | 'modified';
+  path: string;
+  oldValue?: any;
+  newValue?: any;
 }
