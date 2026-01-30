@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
@@ -45,16 +47,16 @@ internal sealed class OffscreenInferenceOutput
     public List<OffscreenScene>? Scenes { get; init; }
 
     /// <summary>
-    ///     Updates to the character's profile/state using dot-notation keys.
+    ///     Complete character profile/state after updates (replaces previous state).
     /// </summary>
     [JsonPropertyName("profile_updates")]
-    public Dictionary<string, object>? ProfileUpdates { get; init; }
+    public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
-    ///     Updates to the character's tracker (physical state) using dot-notation keys.
+    ///     Complete character tracker (physical state) after updates (replaces previous state).
     /// </summary>
     [JsonPropertyName("tracker_updates")]
-    public Dictionary<string, object>? TrackerUpdates { get; init; }
+    public CharacterTracker? TrackerUpdates { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }

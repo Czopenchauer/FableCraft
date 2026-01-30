@@ -134,11 +134,10 @@ internal sealed class SimulationOrchestrator(
                         }
                         else if (relationshipUpdate.ExtensionData?.Count > 0)
                         {
-                            var updatedRelationship = relationship.Data.PatchWith(relationshipUpdate.ExtensionData);
                             var newRelationship = new CharacterRelationshipContext
                             {
                                 TargetCharacterName = relationship.TargetCharacterName,
-                                Data = updatedRelationship,
+                                Data = relationshipUpdate.ExtensionData!,
                                 UpdateTime = input.TimePeriod!.Time,
                                 SequenceNumber = relationship.SequenceNumber + 1,
                                 Dynamic = relationshipUpdate.Dynamic
@@ -150,7 +149,7 @@ internal sealed class SimulationOrchestrator(
                     var characterContext = new CharacterContext
                     {
                         CharacterId = character.CharacterId,
-                        CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? []),
+                        CharacterState = result.ProfileUpdates ?? character.CharacterState,
                         CharacterTracker = character.CharacterTracker,
                         Name = character.Name,
                         Description = character.Description,
@@ -360,11 +359,10 @@ internal sealed class SimulationOrchestrator(
             }
             else if (relationshipUpdate.ExtensionData?.Count > 0)
             {
-                var updatedRelationship = relationship.Data.PatchWith(relationshipUpdate.ExtensionData);
                 var newRelationship = new CharacterRelationshipContext
                 {
                     TargetCharacterName = relationship.TargetCharacterName,
-                    Data = updatedRelationship,
+                    Data = relationshipUpdate.ExtensionData!,
                     UpdateTime = context.NewTracker!.Scene!.Time,
                     SequenceNumber = relationship.SequenceNumber + 1,
                     Dynamic = relationshipUpdate.Dynamic
@@ -376,7 +374,7 @@ internal sealed class SimulationOrchestrator(
         var characterContext = new CharacterContext
         {
             CharacterId = character.CharacterId,
-            CharacterState = character.CharacterState.PatchWith(result.ProfileUpdates ?? []),
+            CharacterState = result.ProfileUpdates ?? character.CharacterState,
             CharacterTracker = character.CharacterTracker,
             Name = character.Name,
             Description = character.Description,

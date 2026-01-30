@@ -43,10 +43,10 @@ internal sealed class StandaloneSimulationOutput
     public List<SimulationRelationshipUpdate> RelationshipUpdates { get; init; } = [];
 
     /// <summary>
-    ///     Updates to the character's profile/state (e.g., psychology, motivations).
+    ///     Complete character profile/state after updates (replaces previous state).
     /// </summary>
     [JsonPropertyName("profile_updates")]
-    public Dictionary<string, object>? ProfileUpdates { get; init; }
+    public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
     ///     If the character decides to seek out the protagonist.

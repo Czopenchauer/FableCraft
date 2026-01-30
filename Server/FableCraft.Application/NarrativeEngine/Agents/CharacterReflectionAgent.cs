@@ -104,28 +104,9 @@ internal sealed class CharacterReflectionAgent(
 
         var characterState = context.CharacterState;
 
-        if (output.ProfileUpdates.Count > 0)
+        if (output.ProfileUpdates != null)
         {
-            try
-            {
-                characterState = characterState.PatchWith(output.ProfileUpdates);
-            }
-            catch (Exception e)
-            {
-                var error = $"""
-                             Fix the output. I encountered an error:
-                             {e.Message}
-                             """;
-                chatHistory.AddUserMessage(error);
-                output = await agentKernel.SendRequestAsync(
-                    chatHistory,
-                    outputParser,
-                    promptExecutionSettings,
-                    nameof(CharacterReflectionAgent),
-                    kernelWithKg,
-                    cancellationToken);
-                characterState = characterState.PatchWith(output.ProfileUpdates);
-            }
+            characterState = output.ProfileUpdates;
         }
         else
         {
@@ -155,35 +136,15 @@ internal sealed class CharacterReflectionAgent(
             }
             else if (reflectionOutputRelationshipUpdate.ExtensionData?.Count > 0)
             {
-                try
+                var newRelationship = new CharacterRelationshipContext
                 {
-                    var updatedRelationship = matchedRelationship.Data.PatchWith(reflectionOutputRelationshipUpdate.ExtensionData);
-                    var newRelationship = new CharacterRelationshipContext
-                    {
-                        TargetCharacterName = matchedRelationship.TargetCharacterName,
-                        Data = updatedRelationship,
-                        UpdateTime = sceneTrackerResult.Time,
-                        SequenceNumber = matchedRelationship.SequenceNumber + 1,
-                        Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? matchedRelationship.Dynamic
-                    };
-                    characterRelationships.Add(newRelationship);
-                }
-                catch (Exception e)
-                {
-                    var error = $"""
-                                 Fix the output. I encountered an error:
-                                 {e.Message}
-                                 """;
-                    chatHistory.AddUserMessage(error);
-                    output = await agentKernel.SendRequestAsync(
-                        chatHistory,
-                        outputParser,
-                        promptExecutionSettings,
-                        nameof(CharacterReflectionAgent),
-                        kernelWithKg,
-                        cancellationToken);
-                    characterState = characterState.PatchWith(output.ProfileUpdates);
-                }
+                    TargetCharacterName = matchedRelationship.TargetCharacterName,
+                    Data = reflectionOutputRelationshipUpdate.ExtensionData!,
+                    UpdateTime = sceneTrackerResult.Time,
+                    SequenceNumber = matchedRelationship.SequenceNumber + 1,
+                    Dynamic = reflectionOutputRelationshipUpdate.Dynamic ?? matchedRelationship.Dynamic
+                };
+                characterRelationships.Add(newRelationship);
             }
         }
 

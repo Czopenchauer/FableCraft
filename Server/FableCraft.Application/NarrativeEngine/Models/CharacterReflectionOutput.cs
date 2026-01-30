@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
@@ -18,7 +20,7 @@ public sealed class CharacterReflectionOutput
     public CharacterRelationshipOutput[] RelationshipUpdates { get; set; } = [];
 
     [JsonPropertyName("profile_updates")]
-    public Dictionary<string, object> ProfileUpdates { get; set; } = [];
+    public CharacterStats? ProfileUpdates { get; set; }
 }
 
 public sealed class CharacterMemoryOutput
@@ -37,7 +39,8 @@ public sealed class CharacterRelationshipOutput
 {
     public required string Toward { get; set; }
 
-    public object? Dynamic { get; set; }
+    [JsonPropertyName("dynamic")]
+    public required string Dynamic { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
