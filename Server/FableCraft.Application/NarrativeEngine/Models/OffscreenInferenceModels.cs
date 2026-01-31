@@ -49,7 +49,7 @@ internal sealed class OffscreenInferenceOutput
     /// <summary>
     ///     Complete character profile/state after updates (replaces previous state).
     /// </summary>
-    [JsonPropertyName("profile_updates")]
+    [JsonPropertyName("identity")]
     public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
@@ -91,7 +91,7 @@ internal sealed class OffscreenScene
 /// </summary>
 internal sealed class OffscreenSceneTracker
 {
-    [JsonPropertyName("DateTime")]
+    [JsonPropertyName("Time")]
     public required string DateTime { get; init; }
 
     [JsonPropertyName("Location")]

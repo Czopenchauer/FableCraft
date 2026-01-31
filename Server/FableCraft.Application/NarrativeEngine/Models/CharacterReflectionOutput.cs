@@ -16,10 +16,10 @@ public sealed class CharacterReflectionOutput
     [JsonPropertyName("memory")]
     public CharacterMemoryOutput? Memory { get; set; }
 
-    [JsonPropertyName("relationship_updates")]
+    [JsonPropertyName("relationships")]
     public CharacterRelationshipOutput[] RelationshipUpdates { get; set; } = [];
 
-    [JsonPropertyName("profile_updates")]
+    [JsonPropertyName("identity")]
     public CharacterStats? ProfileUpdates { get; set; }
 }
 

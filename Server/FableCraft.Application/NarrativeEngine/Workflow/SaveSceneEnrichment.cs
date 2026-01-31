@@ -253,7 +253,8 @@ internal sealed class SaveSceneEnrichment(
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    UpdateTime = x.UpdateTime
+                    UpdateTime = x.UpdateTime,
+                    Dynamic = x.Dynamic
                 });
                 var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {
@@ -294,7 +295,8 @@ internal sealed class SaveSceneEnrichment(
                     Data = x.Data,
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
-                    UpdateTime = x.UpdateTime
+                    UpdateTime = x.UpdateTime,
+                    Dynamic = x.Dynamic
                 }).ToList();
                 var sceneRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
                 {

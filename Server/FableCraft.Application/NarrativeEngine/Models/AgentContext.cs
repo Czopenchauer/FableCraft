@@ -129,7 +129,6 @@ internal sealed class GenerationContext
     ///     Character emulation outputs captured during scene generation.
     ///     Used by CharacterReflectionAgent to understand the character's internal experience.
     /// </summary>
-    [JsonIgnore]
     public Dictionary<string, List<CharacterEmulationOutput>> CharacterEmulationOutputs { get; set; } = new();
 
     public void SetupRequiredFields(
@@ -224,7 +223,7 @@ internal sealed class CharacterRelationshipContext
 {
     public required string TargetCharacterName { get; set; } = null!;
 
-    public required object Dynamic { get; set; }
+    public required string Dynamic { get; set; }
 
     public required IDictionary<string, object> Data { get; set; } = null!;
 

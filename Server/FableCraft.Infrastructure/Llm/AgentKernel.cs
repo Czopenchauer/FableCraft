@@ -9,6 +9,7 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.Google;
 using Microsoft.SemanticKernel.Services;
 
 using OpenAI.Chat;

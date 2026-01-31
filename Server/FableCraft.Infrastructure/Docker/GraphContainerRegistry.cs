@@ -234,7 +234,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             Volumes =
             [
                 $"{volumeName}:{_settings.VolumeMountPath}",
-                $"{containerName}/{_settings.GetEffectiveVisualizationPath()}:/app/visualization",
+                $"{_settings.GetEffectiveVisualizationPath()}/{containerName}:/app/visualization",
                 $"{_settings.GetEffectiveDataStorePath()}:/app/data-store"
             ],
             Ports =

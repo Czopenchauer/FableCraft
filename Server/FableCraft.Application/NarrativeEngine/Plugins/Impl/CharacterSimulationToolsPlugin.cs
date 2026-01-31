@@ -98,7 +98,7 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
     [Description(
         "Submit your complete simulation output. Call this only during the reflection query to provide your scenes, state updates, and other outputs.")]
     public string SubmitReflection(
-        [Description("Your complete reflection output as JSON (scenes, relationship_updates, profile_updates, tracker_updates, etc.)")]
+        [Description("Your complete reflection output as JSON (scenes, relationship, identity, tracker, etc.)")]
         string outputJson)
     {
         try

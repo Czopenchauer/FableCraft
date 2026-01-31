@@ -39,13 +39,13 @@ internal sealed class StandaloneSimulationOutput
     /// <summary>
     ///     Updates to relationships based on simulation events.
     /// </summary>
-    [JsonPropertyName("relationship_updates")]
+    [JsonPropertyName("relationships")]
     public List<SimulationRelationshipUpdate> RelationshipUpdates { get; init; } = [];
 
     /// <summary>
     ///     Complete character profile/state after updates (replaces previous state).
     /// </summary>
-    [JsonPropertyName("profile_updates")]
+    [JsonPropertyName("identity")]
     public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
@@ -119,7 +119,7 @@ internal sealed class SimulationRelationshipUpdate
     public required string Name { get; init; }
 
     [JsonPropertyName("dynamic")]
-    public required object Dynamic { get; init; }
+    public required string Dynamic { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
