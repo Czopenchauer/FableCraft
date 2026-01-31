@@ -168,6 +168,21 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label" for="graphRagSettingsId">GraphRAG Settings</label>
+          <select
+            class="form-select"
+            formControlName="graphRagSettingsId"
+            id="graphRagSettingsId"
+          >
+            <option [ngValue]="null">-- None (inherit from worldbook) --</option>
+            <option *ngFor="let settings of graphRagSettingsOptions" [ngValue]="settings.id">
+              {{ settings.name }}
+            </option>
+          </select>
+          <span class="help-text">Optional. Select GraphRAG settings for knowledge graph queries. Auto-populated from selected worldbook.</span>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Prompt Path *</label>
           <app-directory-browser
             (pathSelected)="onPromptPathSelected($event)"

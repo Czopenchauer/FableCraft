@@ -1,3 +1,5 @@
+using FableCraft.Infrastructure.Persistence.Entities;
+
 using Microsoft.Extensions.Configuration;
 
 namespace FableCraft.Infrastructure.Docker.Configuration;
@@ -141,42 +143,97 @@ internal sealed class GraphServiceSettings
     public string GetContainerBaseUrl(int port, string name) =>
         $"http://{name}:{port}";
 
+    /// <summary>
+    /// Builds environment variables from configuration/environment variables.
+    /// Used as fallback when no GraphRagSettings are provided.
+    /// </summary>
     public Dictionary<string, string> GetEnvVariable(IConfiguration config)
+    {
+        return GetEnvVariable(config, graphRagSettings: null);
+    }
+
+    /// <summary>
+    /// Builds environment variables from GraphRagSettings entity if provided,
+    /// otherwise falls back to configuration/environment variables.
+    /// </summary>
+    public Dictionary<string, string> GetEnvVariable(IConfiguration config, GraphRagSettings? graphRagSettings)
     {
         var environment = new Dictionary<string, string>();
 
-        AddEnvVar(environment, "LLM_API_KEY", "LLM_API_KEY");
-        AddEnvVar(environment, "LLM_MODEL", "LLM_MODEL");
-        AddEnvVar(environment, "LLM_PROVIDER", "LLM_PROVIDER");
-        AddEnvVar(environment, "LLM_ENDPOINT", "LLM_ENDPOINT");
-        AddEnvVar(environment, "LLM_API_VERSION", "LLM_API_VERSION");
-        AddEnvVar(environment, "LLM_MAX_TOKENS", "LLM_MAX_TOKENS");
-        AddEnvVar(environment, "LLM_RATE_LIMIT_ENABLED", "LLM_RATE_LIMIT_ENABLED");
-        AddEnvVar(environment, "LLM_RATE_LIMIT_REQUESTS", "LLM_RATE_LIMIT_REQUESTS");
-        AddEnvVar(environment, "LLM_RATE_LIMIT_INTERVAL", "LLM_RATE_LIMIT_INTERVAL");
+        if (graphRagSettings != null)
+        {
+            environment["LLM_API_KEY"] = graphRagSettings.LlmApiKey;
+            environment["LLM_MODEL"] = graphRagSettings.LlmModel;
+            environment["LLM_PROVIDER"] = graphRagSettings.LlmProvider;
 
-        AddEnvVar(environment, "EMBEDDING_PROVIDER", "EMBEDDING_PROVIDER");
-        AddEnvVar(environment, "EMBEDDING_MODEL", "EMBEDDING_MODEL");
-        AddEnvVar(environment, "EMBEDDING_ENDPOINT", "EMBEDDING_ENDPOINT");
-        AddEnvVar(environment, "EMBEDDING_API_VERSION", "EMBEDDING_API_VERSION");
-        AddEnvVar(environment, "EMBEDDING_DIMENSIONS", "EMBEDDING_DIMENSIONS");
-        AddEnvVar(environment, "EMBEDDING_MAX_TOKENS", "EMBEDDING_MAX_TOKENS");
-        AddEnvVar(environment, "EMBEDDING_BATCH_SIZE", "EMBEDDING_BATCH_SIZE");
-        AddEnvVar(environment, "HUGGINGFACE_TOKENIZER", "HUGGINGFACE_TOKENIZER");
+            if (!string.IsNullOrEmpty(graphRagSettings.LlmEndpoint))
+                environment["LLM_ENDPOINT"] = graphRagSettings.LlmEndpoint;
+
+            if (!string.IsNullOrEmpty(graphRagSettings.LlmApiVersion))
+                environment["LLM_API_VERSION"] = graphRagSettings.LlmApiVersion;
+
+            environment["LLM_MAX_TOKENS"] = graphRagSettings.LlmMaxTokens.ToString();
+            environment["LLM_RATE_LIMIT_ENABLED"] = graphRagSettings.LlmRateLimitEnabled.ToString().ToLowerInvariant();
+            environment["LLM_RATE_LIMIT_REQUESTS"] = graphRagSettings.LlmRateLimitRequests.ToString();
+            environment["LLM_RATE_LIMIT_INTERVAL"] = graphRagSettings.LlmRateLimitInterval.ToString();
+
+            environment["EMBEDDING_PROVIDER"] = graphRagSettings.EmbeddingProvider;
+            environment["EMBEDDING_MODEL"] = graphRagSettings.EmbeddingModel;
+
+            if (!string.IsNullOrEmpty(graphRagSettings.EmbeddingEndpoint))
+                environment["EMBEDDING_ENDPOINT"] = graphRagSettings.EmbeddingEndpoint;
+
+            if (!string.IsNullOrEmpty(graphRagSettings.EmbeddingApiVersion))
+                environment["EMBEDDING_API_VERSION"] = graphRagSettings.EmbeddingApiVersion;
+
+            // Use embedding API key if provided, otherwise fall back to LLM API key
+            var embeddingApiKey = !string.IsNullOrEmpty(graphRagSettings.EmbeddingApiKey)
+                ? graphRagSettings.EmbeddingApiKey
+                : graphRagSettings.LlmApiKey;
+            environment["EMBEDDING_API_KEY"] = embeddingApiKey;
+
+            environment["EMBEDDING_DIMENSIONS"] = graphRagSettings.EmbeddingDimensions.ToString();
+            environment["EMBEDDING_MAX_TOKENS"] = graphRagSettings.EmbeddingMaxTokens.ToString();
+            environment["EMBEDDING_BATCH_SIZE"] = graphRagSettings.EmbeddingBatchSize.ToString();
+
+            if (!string.IsNullOrEmpty(graphRagSettings.HuggingfaceTokenizer))
+                environment["HUGGINGFACE_TOKENIZER"] = graphRagSettings.HuggingfaceTokenizer;
+        }
+        else
+        {
+            AddEnvVar(environment, "LLM_API_KEY", "LLM_API_KEY");
+            AddEnvVar(environment, "LLM_MODEL", "LLM_MODEL");
+            AddEnvVar(environment, "LLM_PROVIDER", "LLM_PROVIDER");
+            AddEnvVar(environment, "LLM_ENDPOINT", "LLM_ENDPOINT");
+            AddEnvVar(environment, "LLM_API_VERSION", "LLM_API_VERSION");
+            AddEnvVar(environment, "LLM_MAX_TOKENS", "LLM_MAX_TOKENS");
+            AddEnvVar(environment, "LLM_RATE_LIMIT_ENABLED", "LLM_RATE_LIMIT_ENABLED");
+            AddEnvVar(environment, "LLM_RATE_LIMIT_REQUESTS", "LLM_RATE_LIMIT_REQUESTS");
+            AddEnvVar(environment, "LLM_RATE_LIMIT_INTERVAL", "LLM_RATE_LIMIT_INTERVAL");
+
+            AddEnvVar(environment, "EMBEDDING_PROVIDER", "EMBEDDING_PROVIDER");
+            AddEnvVar(environment, "EMBEDDING_MODEL", "EMBEDDING_MODEL");
+            AddEnvVar(environment, "EMBEDDING_ENDPOINT", "EMBEDDING_ENDPOINT");
+            AddEnvVar(environment, "EMBEDDING_API_VERSION", "EMBEDDING_API_VERSION");
+            AddEnvVar(environment, "EMBEDDING_DIMENSIONS", "EMBEDDING_DIMENSIONS");
+            AddEnvVar(environment, "EMBEDDING_MAX_TOKENS", "EMBEDDING_MAX_TOKENS");
+            AddEnvVar(environment, "EMBEDDING_BATCH_SIZE", "EMBEDDING_BATCH_SIZE");
+            AddEnvVar(environment, "HUGGINGFACE_TOKENIZER", "HUGGINGFACE_TOKENIZER");
+
+            void AddEnvVar(Dictionary<string, string> env, string key, string envVarName)
+            {
+                var value = config[key]
+                            ?? Environment.GetEnvironmentVariable(envVarName);
+
+                if (!string.IsNullOrEmpty(value))
+                {
+                    env[key] = value;
+                }
+            }
+        }
 
         environment["DATA_ROOT_DIRECTORY"] = $"{VolumeMountPath}/data";
         environment["SYSTEM_ROOT_DIRECTORY"] = $"{VolumeMountPath}/system";
-        
-        void AddEnvVar(Dictionary<string, string> env, string key, string envVarName)
-        {
-            var value = config[key]
-                        ?? Environment.GetEnvironmentVariable(envVarName);
-
-            if (!string.IsNullOrEmpty(value))
-            {
-                env[key] = value;
-            }
-        }
 
         return environment;
     }

@@ -31,13 +31,6 @@ internal sealed class RagClientFactory : IRagClientFactory
         _logger = logger;
     }
 
-    public (IRagBuilder Builder, IRagSearch Search) CreateClient(string baseUrl)
-    {
-        var httpClient = _httpClientFactory.CreateClient("GraphRag");
-        var client = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
-        return (client, client);
-    }
-
     public async Task<IRagSearch> CreateSearchClientForAdventure(Guid adventureId, CancellationToken cancellationToken)
     {
         var baseUrl = await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventureId, cancellationToken);

@@ -230,6 +230,12 @@
   font-size: var(--font-size-sm);
 }
 
+.field-help {
+  margin-top: var(--spacing-xs);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
 .form-actions {
   display: flex;
   gap: var(--spacing-md);

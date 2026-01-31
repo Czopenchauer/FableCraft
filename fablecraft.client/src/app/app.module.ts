@@ -39,6 +39,9 @@ import {SceneMetadataTabComponent} from './features/adventures/components/scene-
 import {LlmLogsTabComponent} from './features/adventures/components/llm-logs-tab/llm-logs-tab.component';
 import {SceneEditModalComponent} from './features/adventures/components/scene-edit-modal/scene-edit-modal.component';
 import {MarkdownPipe} from './shared/pipes/markdown.pipe';
+import {
+  GraphRagSettingsManagerComponent
+} from './features/settings/components/graph-rag-settings-manager/graph-rag-settings-manager.component';
 
 @NgModule({
   declarations: [
@@ -64,7 +67,8 @@ import {MarkdownPipe} from './shared/pipes/markdown.pipe';
     JsonEditorModalComponent,
     SceneMetadataTabComponent,
     LlmLogsTabComponent,
-    SceneEditModalComponent
+    SceneEditModalComponent,
+    GraphRagSettingsManagerComponent
   ],
   imports: [
     BrowserModule,

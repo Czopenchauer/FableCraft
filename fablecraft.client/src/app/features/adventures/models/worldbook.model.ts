@@ -1,17 +1,23 @@
+import {GraphRagSettingsSummaryDto} from '../../settings/models/graph-rag-settings.model';
+
 export interface WorldbookDto {
   name: string;
   lorebooks?: CreateLorebookDto[];
+  graphRagSettingsId?: string | null;
 }
 
 export interface WorldbookUpdateDto {
   name: string;
   lorebooks?: UpdateLorebookDto[];
+  graphRagSettingsId?: string | null;
 }
 
 export interface WorldbookResponseDto {
   id: string;
   name: string;
   lorebooks: LorebookResponseDto[];
+  graphRagSettingsId?: string | null;
+  graphRagSettings?: GraphRagSettingsSummaryDto | null;
 }
 
 export interface LorebookDto {

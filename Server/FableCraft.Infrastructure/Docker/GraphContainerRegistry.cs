@@ -1,7 +1,11 @@
 using System.Collections.Concurrent;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Persistence;
+using FableCraft.Infrastructure.Persistence.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -46,29 +50,34 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
     private readonly GraphServiceSettings _settings;
     private readonly ILogger _logger;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _operationLocks = new();
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
     public GraphContainerRegistry(
         ContainerManager containerManager,
         IOptions<GraphServiceSettings> settings,
         IConfiguration config,
-        ILogger logger, ApplicationDbContext dbContext, IVolumeManager volumeManager)
+        ILogger logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, IVolumeManager volumeManager)
     {
         _containerManager = containerManager;
         _config = config;
         _settings = settings.Value;
         _logger = logger;
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _volumeManager = volumeManager;
     }
 
     public async Task<string> EnsureAdventureContainerRunningAsync(Guid adventureId, CancellationToken ct)
     {
-        var adventureName = await _dbContext.Adventures.Select(x => new
-        {
-            x.Id,
-            x.Name,
-        }).SingleAsync(x => x.Id == adventureId, cancellationToken: ct);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        var adventure = await dbContext.Adventures
+            .Include(a => a.GraphRagSettings)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.GraphRagSettings
+            })
+            .SingleAsync(x => x.Id == adventureId, cancellationToken: ct);
 
         var volumeExists = await _volumeManager.ExistsAsync(_settings.GetAdventureVolumeName(adventureId), ct);
         if (!volumeExists)
@@ -76,16 +85,26 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             throw new Exception($"Could not find volume for adventure {adventureId}");
         }
 
-        return await EnsureContainerAsync(adventureId, _settings.GetContainerName(adventureName.Id.ToString()), _settings.GetAdventureVolumeName(adventureId), ct);
+        return await EnsureContainerAsync(
+            adventureId,
+            _settings.GetContainerName(adventure.Id.ToString()),
+            _settings.GetAdventureVolumeName(adventureId),
+            adventure.GraphRagSettings,
+            ct);
     }
 
     public async Task<string> EnsureWorldbookContainerRunningAsync(Guid worldbookId, CancellationToken ct)
     {
-        var worldbook = await _dbContext.Worldbooks.Select(x => new
-        {
-            x.Id,
-            x.Name
-        }).SingleAsync(x => x.Id == worldbookId, cancellationToken: ct);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        var worldbook = await dbContext.Worldbooks
+            .Include(w => w.GraphRagSettings)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.GraphRagSettings
+            })
+            .SingleAsync(x => x.Id == worldbookId, cancellationToken: ct);
 
         var volumeExists = await _volumeManager.ExistsAsync(_settings.GetWorldbookVolumeName(worldbookId), ct);
         if (!volumeExists)
@@ -93,10 +112,20 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             throw new Exception($"Could not find volume for worldbook {worldbookId}");
         }
 
-        return await EnsureContainerAsync(worldbookId, _settings.GetContainerName(worldbook.Id.ToString()), _settings.GetWorldbookVolumeName(worldbookId), ct);
+        return await EnsureContainerAsync(
+            worldbookId,
+            _settings.GetContainerName(worldbook.Id.ToString()),
+            _settings.GetWorldbookVolumeName(worldbookId),
+            worldbook.GraphRagSettings,
+            ct);
     }
 
-    private async Task<string> EnsureContainerAsync(Guid identifier, string containerName, string volumeName, CancellationToken ct)
+    private async Task<string> EnsureContainerAsync(
+        Guid identifier,
+        string containerName,
+        string volumeName,
+        GraphRagSettings? graphRagSettings,
+        CancellationToken ct)
     {
         if (_containers.TryGetValue(identifier, out var existing))
         {
@@ -113,7 +142,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         try
         {
             var hostPort = AllocatePort();
-            var containerConfig = BuildContainerConfig(containerName, volumeName, hostPort);
+            var containerConfig = BuildContainerConfig(containerName, volumeName, hostPort, graphRagSettings);
             await _containerManager.StartAsync(containerConfig, ct);
             var baseUrl = _settings.GetContainerBaseUrl(_settings.ContainerPort, containerName);
             _containers.TryAdd(identifier, new ContainerInfo(containerName, baseUrl, hostPort, 0, DateTimeOffset.UtcNow));
@@ -170,17 +199,21 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         return port;
     }
 
-    private ContainerConfig BuildContainerConfig(string containerName, string volumeName, int hostPort)
+    private ContainerConfig BuildContainerConfig(
+        string containerName,
+        string volumeName,
+        int hostPort,
+        GraphRagSettings? graphRagSettings)
     {
         return new ContainerConfig
         {
             Name = containerName,
             Image = _settings.ImageName,
-            Environment = _settings.GetEnvVariable(_config),
+            Environment = _settings.GetEnvVariable(_config, graphRagSettings),
             Volumes =
             [
                 $"{volumeName}:{_settings.VolumeMountPath}",
-                $"{_settings.GetEffectiveVisualizationPath()}:/app/visualization",
+                $"{containerName}/{_settings.GetEffectiveVisualizationPath()}:/app/visualization",
                 $"{_settings.GetEffectiveDataStorePath()}:/app/data-store"
             ],
             Ports =
@@ -193,7 +226,6 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
                 ["fablecraft.managed"] = "true",
                 ["fablecraft.service"] = "knowledge-graph"
             },
-            // Use ContainerPort for health check (container-to-container communication)
             HealthEndpoint = _settings.BuildHealthCheck(_settings.ContainerPort, containerName)
         };
     }

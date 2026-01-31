@@ -77,6 +77,20 @@ internal class AdventureCreationService : IAdventureCreationService
                 "Run POST /api/Worldbook/{id}/index before creating adventures.");
         }
 
+        Guid? graphRagSettingsId = adventureDto.GraphRagSettingsId ?? worldbook.GraphRagSettingsId;
+
+        if (graphRagSettingsId.HasValue)
+        {
+            var settingsExists = await _dbContext.GraphRagSettings
+                .AnyAsync(s => s.Id == graphRagSettingsId.Value, cancellationToken);
+
+            if (!settingsExists)
+            {
+                throw new InvalidOperationException(
+                    $"GraphRagSettings with ID '{graphRagSettingsId}' not found.");
+            }
+        }
+
         var adventure = new Adventure
         {
             Name = adventureDto.Name,
@@ -85,6 +99,7 @@ internal class AdventureCreationService : IAdventureCreationService
             LastPlayedAt = null,
             AdventureStartTime = adventureDto.ReferenceTime,
             WorldbookId = worldbookId,
+            GraphRagSettingsId = graphRagSettingsId,
             MainCharacter = new MainCharacter
             {
                 Name = adventureDto.MainCharacter.Name,

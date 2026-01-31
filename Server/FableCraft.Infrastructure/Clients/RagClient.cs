@@ -144,7 +144,11 @@ internal class RagClient : IRagBuilder, IRagSearch
 
     public async Task CognifyAsync(string[] datasets, bool temporal = false, CancellationToken cancellationToken = default)
     {
-        var request = new CognifyRequest { Datasets = datasets, Temporal = temporal };
+        var request = new CognifyRequest
+        {
+            Datasets = datasets,
+            Temporal = temporal
+        };
         var response = await _httpClient.PostAsJsonAsync("/cognify", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -234,16 +238,15 @@ internal class RagClient : IRagBuilder, IRagSearch
             catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
                 _logger.Information("RAG search for datasets '{datasets}' returned Not Found.", string.Join(",", datasets));
-                return (query, new SearchResponse
-                {
-                    Results = new List<SearchResultItem>
+                return (
+                    query,
+                    new SearchResponse
                     {
-                        new()
+                        Results = new List<SearchResultItem>
                         {
-                            Text = "Knowledge graph does not contain any data yet. It might be because it's newly introduced character to the story."
+                            new() { Text = "Knowledge graph does not contain any data yet. It might be because it's newly introduced character to the story." }
                         }
-                    }
-                });
+                    });
             }
         }).ToArray();
 
@@ -255,7 +258,11 @@ internal class RagClient : IRagBuilder, IRagSearch
                 AdventureId = context.AdventureId,
                 SceneId = context.SceneId,
                 RequestContent = queries.ToJsonString(),
-                ResponseContent = results.Select(x => new { x.query, response = x.Item2 }).ToJsonString(),
+                ResponseContent = results.Select(x => new
+                {
+                    x.query,
+                    response = x.Item2
+                }).ToJsonString(),
                 InputToken = null,
                 OutputToken = null,
                 TotalToken = null,

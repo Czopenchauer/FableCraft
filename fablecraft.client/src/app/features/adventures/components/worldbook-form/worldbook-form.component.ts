@@ -9,6 +9,8 @@ import {
   WorldbookResponseDto,
   WorldbookUpdateDto
 } from '../../models/worldbook.model';
+import {GraphRagSettingsService} from '../../../settings/services/graph-rag-settings.service';
+import {GraphRagSettingsSummaryDto} from '../../../settings/models/graph-rag-settings.model';
 
 @Component({
   selector: 'app-worldbook-form',
@@ -30,14 +32,19 @@ export class WorldbookFormComponent implements OnInit {
   // JSON import
   importError: string | null = null;
 
+  // GraphRAG Settings options
+  graphRagSettingsOptions: GraphRagSettingsSummaryDto[] = [];
+
   constructor(
     private fb: FormBuilder,
     private worldbookService: WorldbookService,
+    private graphRagSettingsService: GraphRagSettingsService,
     private router: Router,
     private route: ActivatedRoute
   ) {
     this.worldbookForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(200)]],
+      graphRagSettingsId: [null],
       lorebooks: this.fb.array([])
     });
   }
@@ -54,9 +61,26 @@ export class WorldbookFormComponent implements OnInit {
     this.worldbookId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.worldbookId;
 
+    // Load GraphRAG settings options
+    this.loadGraphRagSettings();
+
     if (this.isEditMode && this.worldbookId) {
       this.loadWorldbook(this.worldbookId);
     }
+  }
+
+  /**
+   * Load GraphRAG settings options for dropdown
+   */
+  loadGraphRagSettings(): void {
+    this.graphRagSettingsService.getAllSummary().subscribe({
+      next: (settings) => {
+        this.graphRagSettingsOptions = settings;
+      },
+      error: (err) => {
+        console.error('Error loading GraphRAG settings:', err);
+      }
+    });
   }
 
   /**
@@ -281,9 +305,10 @@ export class WorldbookFormComponent implements OnInit {
         console.log('Loaded worldbook:', worldbook);
         console.log('Lorebooks count:', worldbook.lorebooks?.length || 0);
 
-        // Patch worldbook name
+        // Patch worldbook name and settings
         this.worldbookForm.patchValue({
-          name: worldbook.name
+          name: worldbook.name,
+          graphRagSettingsId: worldbook.graphRagSettingsId || null
         });
 
         // Populate lorebooks FormArray
@@ -326,6 +351,7 @@ export class WorldbookFormComponent implements OnInit {
       // Edit mode: Build WorldbookUpdateDto
       const dto: WorldbookUpdateDto = {
         name: formValue.name,
+        graphRagSettingsId: formValue.graphRagSettingsId || null,
         lorebooks: formValue.lorebooks.map((lb: any) => ({
           id: lb.id || undefined,  // Include id for existing, omit for new
           title: lb.title,
@@ -350,6 +376,7 @@ export class WorldbookFormComponent implements OnInit {
       // Create mode: Build WorldbookDto
       const dto: WorldbookDto = {
         name: formValue.name,
+        graphRagSettingsId: formValue.graphRagSettingsId || null,
         lorebooks: formValue.lorebooks.map((lb: any) => ({
           title: lb.title,
           content: lb.content,

@@ -7,6 +7,8 @@ public class WorldbookDto
     public required string Name { get; init; } = string.Empty;
 
     public List<CreateLorebookDto> Lorebooks { get; init; } = new();
+
+    public Guid? GraphRagSettingsId { get; init; }
 }
 
 public class WorldbookUpdateDto
@@ -14,6 +16,8 @@ public class WorldbookUpdateDto
     public required string Name { get; init; } = string.Empty;
 
     public List<UpdateLorebookDto> Lorebooks { get; init; } = new();
+
+    public Guid? GraphRagSettingsId { get; init; }
 }
 
 public class WorldbookResponseDto
@@ -23,6 +27,10 @@ public class WorldbookResponseDto
     public required string Name { get; init; } = string.Empty;
 
     public List<LorebookResponseDto> Lorebooks { get; init; } = new();
+
+    public Guid? GraphRagSettingsId { get; init; }
+
+    public GraphRagSettingsSummaryDto? GraphRagSettings { get; init; }
 }
 
 public class WorldbookDtoValidator : AbstractValidator<WorldbookDto>

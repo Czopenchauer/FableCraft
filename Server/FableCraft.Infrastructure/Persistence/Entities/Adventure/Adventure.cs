@@ -37,6 +37,10 @@ public class Adventure : IEntity
 
     public List<AdventureAgentLlmPreset> AgentLlmPresets { get; init; } = [];
 
+    public Guid? GraphRagSettingsId { get; set; }
+
+    public GraphRagSettings? GraphRagSettings { get; set; }
+
     [Key]
     public Guid Id { get; set; }
 }

@@ -41,6 +41,7 @@ export interface AdventureDto {
   promptPath: string;
   agentLlmPresets: AdventureAgentLlmPresetDto[];
   extraLoreEntries?: ExtraLoreEntryDto[];
+  graphRagSettingsId?: string | null;
 }
 
 export interface AdventureDefaultsDto {

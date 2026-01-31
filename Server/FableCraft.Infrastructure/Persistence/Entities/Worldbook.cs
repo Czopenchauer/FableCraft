@@ -11,6 +11,10 @@ public class Worldbook : IEntity
     public string? IndexingError { get; set; }
 
     public Guid Id { get; set; }
+
+    public Guid? GraphRagSettingsId { get; set; }
+
+    public GraphRagSettings? GraphRagSettings { get; set; }
 }
 
 public enum IndexingStatus

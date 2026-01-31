@@ -32,6 +32,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<LlmPreset> LlmPresets { get; set; }
 
+    public DbSet<GraphRagSettings> GraphRagSettings { get; set; }
+
     public DbSet<Worldbook> Worldbooks { get; set; }
 
     public DbSet<Lorebook> Lorebooks { get; set; }

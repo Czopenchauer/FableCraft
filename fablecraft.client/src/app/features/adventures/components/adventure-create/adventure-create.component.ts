@@ -10,6 +10,8 @@ import {TrackerDefinitionService} from '../../services/tracker-definition.servic
 import {LlmPresetResponseDto} from '../../models/llm-preset.model';
 import {WorldbookResponseDto} from '../../models/worldbook.model';
 import {TrackerDefinitionResponseDto} from '../../models/tracker-definition.model';
+import {GraphRagSettingsService} from '../../../settings/services/graph-rag-settings.service';
+import {GraphRagSettingsSummaryDto} from '../../../settings/models/graph-rag-settings.model';
 
 @Component({
   selector: 'app-adventure-create',
@@ -27,6 +29,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
   llmPresets: LlmPresetResponseDto[] = [];
   worldbooks: WorldbookResponseDto[] = [];
   trackerDefinitions: TrackerDefinitionResponseDto[] = [];
+  graphRagSettingsOptions: GraphRagSettingsSummaryDto[] = [];
 
   // Agent names from backend
   agentNames: string[] = [];
@@ -45,6 +48,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     private llmPresetService: LlmPresetService,
     private worldbookService: WorldbookService,
     private trackerDefinitionService: TrackerDefinitionService,
+    private graphRagSettingsService: GraphRagSettingsService,
     private router: Router
   ) {
   }
@@ -99,6 +103,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
         description: formValue.mainCharacter.description
       },
       worldbookId: formValue.worldbookId || null,
+      graphRagSettingsId: formValue.graphRagSettingsId || null,
       trackerDefinitionId: formValue.trackerDefinitionId,
       promptPath: formValue.promptPath,
       agentLlmPresets: agentLlmPresets,
@@ -191,11 +196,35 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
         description: ['', Validators.required]
       }),
       worldbookId: [null],
+      graphRagSettingsId: [null],
       trackerDefinitionId: ['', Validators.required],
       promptPath: ['', Validators.required],
       agentPresets: this.fb.group(agentPresetsGroup),
       extraLoreEntries: this.fb.array([])
     });
+
+    // Watch worldbook changes to auto-populate GraphRAG settings
+    this.adventureForm.get('worldbookId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(worldbookId => {
+        this.onWorldbookChanged(worldbookId);
+      });
+  }
+
+  /**
+   * When worldbook selection changes, auto-populate GraphRAG settings from worldbook if available
+   */
+  private onWorldbookChanged(worldbookId: string | null): void {
+    if (!worldbookId) {
+      return;
+    }
+
+    const selectedWorldbook = this.worldbooks.find(wb => wb.id === worldbookId);
+    if (selectedWorldbook?.graphRagSettingsId) {
+      this.adventureForm.patchValue({
+        graphRagSettingsId: selectedWorldbook.graphRagSettingsId
+      });
+    }
   }
 
   private loadDropdownData(): void {
@@ -205,7 +234,8 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       presets: this.llmPresetService.getAllPresets(),
       worldbooks: this.worldbookService.getAllWorldbooks(),
       trackerDefinitions: this.trackerDefinitionService.getAllDefinitions(),
-      defaults: this.adventureService.getDefaults()
+      defaults: this.adventureService.getDefaults(),
+      graphRagSettings: this.graphRagSettingsService.getAllSummary()
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -213,6 +243,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
           this.llmPresets = result.presets;
           this.worldbooks = result.worldbooks;
           this.trackerDefinitions = result.trackerDefinitions;
+          this.graphRagSettingsOptions = result.graphRagSettings;
           this.defaultPromptPath = result.defaults.defaultPromptPath;
           this.currentPromptPath = result.defaults.defaultPromptPath;
           this.agentNames = result.defaults.availableAgents;

@@ -1,4 +1,5 @@
 using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.Model;
 using FableCraft.Application.Model.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
@@ -29,10 +30,23 @@ public class WorldbookController : ControllerBase
         var worldbooks = await _dbContext
             .Worldbooks
             .Include(w => w.Lorebooks)
+            .Include(w => w.GraphRagSettings)
             .Select(w => new WorldbookResponseDto
             {
                 Id = w.Id,
                 Name = w.Name,
+                GraphRagSettingsId = w.GraphRagSettingsId,
+                GraphRagSettings = w.GraphRagSettings != null
+                    ? new GraphRagSettingsSummaryDto
+                    {
+                        Id = w.GraphRagSettings.Id,
+                        Name = w.GraphRagSettings.Name,
+                        LlmProvider = w.GraphRagSettings.LlmProvider,
+                        LlmModel = w.GraphRagSettings.LlmModel,
+                        EmbeddingProvider = w.GraphRagSettings.EmbeddingProvider,
+                        EmbeddingModel = w.GraphRagSettings.EmbeddingModel
+                    }
+                    : null,
                 Lorebooks = w.Lorebooks.Select(l => new LorebookResponseDto
                 {
                     Id = l.Id,
@@ -59,11 +73,24 @@ public class WorldbookController : ControllerBase
         var worldbook = await _dbContext
             .Worldbooks
             .Include(w => w.Lorebooks)
+            .Include(w => w.GraphRagSettings)
             .Where(w => w.Id == id)
             .Select(w => new WorldbookResponseDto
             {
                 Id = w.Id,
                 Name = w.Name,
+                GraphRagSettingsId = w.GraphRagSettingsId,
+                GraphRagSettings = w.GraphRagSettings != null
+                    ? new GraphRagSettingsSummaryDto
+                    {
+                        Id = w.GraphRagSettings.Id,
+                        Name = w.GraphRagSettings.Name,
+                        LlmProvider = w.GraphRagSettings.LlmProvider,
+                        LlmModel = w.GraphRagSettings.LlmModel,
+                        EmbeddingProvider = w.GraphRagSettings.EmbeddingProvider,
+                        EmbeddingModel = w.GraphRagSettings.EmbeddingModel
+                    }
+                    : null,
                 Lorebooks = w.Lorebooks.Select(l => new LorebookResponseDto
                 {
                     Id = l.Id,
@@ -127,10 +154,27 @@ public class WorldbookController : ControllerBase
             });
         }
 
+        GraphRagSettings? graphRagSettings = null;
+        if (dto.GraphRagSettingsId.HasValue)
+        {
+            graphRagSettings = await _dbContext.GraphRagSettings
+                .FirstOrDefaultAsync(s => s.Id == dto.GraphRagSettingsId.Value, cancellationToken);
+
+            if (graphRagSettings == null)
+            {
+                return BadRequest(new
+                {
+                    error = "Invalid GraphRagSettingsId",
+                    message = $"GraphRagSettings with ID '{dto.GraphRagSettingsId}' not found."
+                });
+            }
+        }
+
         var worldbook = new Worldbook
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
+            GraphRagSettingsId = dto.GraphRagSettingsId,
             Lorebooks = dto.Lorebooks.Select(l => new Lorebook
             {
                 Id = Guid.NewGuid(),
@@ -148,6 +192,18 @@ public class WorldbookController : ControllerBase
         {
             Id = worldbook.Id,
             Name = worldbook.Name,
+            GraphRagSettingsId = worldbook.GraphRagSettingsId,
+            GraphRagSettings = graphRagSettings != null
+                ? new GraphRagSettingsSummaryDto
+                {
+                    Id = graphRagSettings.Id,
+                    Name = graphRagSettings.Name,
+                    LlmProvider = graphRagSettings.LlmProvider,
+                    LlmModel = graphRagSettings.LlmModel,
+                    EmbeddingProvider = graphRagSettings.EmbeddingProvider,
+                    EmbeddingModel = graphRagSettings.EmbeddingModel
+                }
+                : null,
             Lorebooks = worldbook.Lorebooks.Select(l => new LorebookResponseDto
             {
                 Id = l.Id,
@@ -219,7 +275,24 @@ public class WorldbookController : ControllerBase
             });
         }
 
+        GraphRagSettings? graphRagSettings = null;
+        if (dto.GraphRagSettingsId.HasValue)
+        {
+            graphRagSettings = await _dbContext.GraphRagSettings
+                .FirstOrDefaultAsync(s => s.Id == dto.GraphRagSettingsId.Value, cancellationToken);
+
+            if (graphRagSettings == null)
+            {
+                return BadRequest(new
+                {
+                    error = "Invalid GraphRagSettingsId",
+                    message = $"GraphRagSettings with ID '{dto.GraphRagSettingsId}' not found."
+                });
+            }
+        }
+
         worldbook.Name = dto.Name;
+        worldbook.GraphRagSettingsId = dto.GraphRagSettingsId;
 
         var updatedLorebookIds = dto.Lorebooks
             .Where(l => l.Id.HasValue)
@@ -272,6 +345,18 @@ public class WorldbookController : ControllerBase
         {
             Id = worldbook.Id,
             Name = worldbook.Name,
+            GraphRagSettingsId = worldbook.GraphRagSettingsId,
+            GraphRagSettings = graphRagSettings != null
+                ? new GraphRagSettingsSummaryDto
+                {
+                    Id = graphRagSettings.Id,
+                    Name = graphRagSettings.Name,
+                    LlmProvider = graphRagSettings.LlmProvider,
+                    LlmModel = graphRagSettings.LlmModel,
+                    EmbeddingProvider = graphRagSettings.EmbeddingProvider,
+                    EmbeddingModel = graphRagSettings.EmbeddingModel
+                }
+                : null,
             Lorebooks = worldbook.Lorebooks.Select(l => new LorebookResponseDto
             {
                 Id = l.Id,

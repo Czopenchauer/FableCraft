@@ -35,6 +35,8 @@ public class AdventureDto
     public required AdventureAgentLlmPresetDto[] AgentLlmPresets { get; set; }
 
     public ExtraLoreEntryDto[] ExtraLoreEntries { get; init; } = [];
+
+    public Guid? GraphRagSettingsId { get; init; }
 }
 
 public class AdventureDtoValidator : AbstractValidator<AdventureDto>

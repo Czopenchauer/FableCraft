@@ -7,10 +7,11 @@ using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
 
-internal sealed class AdventureLoader(ApplicationDbContext context, IGraphContainerRegistry containerRegistry, ILogger logger) : IHostedService
+internal sealed class AdventureLoader(IDbContextFactory<ApplicationDbContext> contextFactory, IGraphContainerRegistry containerRegistry, ILogger logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var lastPlayedAdventure = await context.Adventures.Where(x => x.LastPlayedAt != null).OrderByDescending(x => x.LastPlayedAt).FirstOrDefaultAsync(cancellationToken);
         if (lastPlayedAdventure is null)
         {

@@ -64,6 +64,24 @@
           </div>
         </div>
 
+        <!-- GraphRAG Settings Field -->
+        <div class="form-group">
+          <label class="form-label" for="graphRagSettingsId">
+            GraphRAG Settings
+          </label>
+          <select
+            class="form-input"
+            formControlName="graphRagSettingsId"
+            id="graphRagSettingsId"
+          >
+            <option [ngValue]="null">-- None --</option>
+            <option *ngFor="let settings of graphRagSettingsOptions" [ngValue]="settings.id">
+              {{ settings.name }}
+            </option>
+          </select>
+          <div class="field-help">Optional. Select GraphRAG settings for knowledge graph indexing.</div>
+        </div>
+
         <!-- Lorebooks Section -->
         <div class="lorebooks-section">
           <div class="section-header">
