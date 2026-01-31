@@ -187,7 +187,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         var port = _settings.BasePort;
         var usedPorts = _containers.Values.Select(c => c.Port).ToHashSet();
 
-        while (usedPorts.Contains(port))
+        while (usedPorts.Contains(port) || !IsPortAvailable(port))
         {
             port++;
             if (port > 65535)
@@ -197,6 +197,27 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         }
 
         return port;
+    }
+
+    private static bool IsPortAvailable(int port)
+    {
+        var activeTcpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
+        if (activeTcpListeners.Any(endpoint => endpoint.Port == port))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var listener = new TcpListener(IPAddress.Loopback, port);
+            listener.Start();
+            listener.Stop();
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
     }
 
     private ContainerConfig BuildContainerConfig(
