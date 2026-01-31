@@ -84,94 +84,127 @@ internal sealed class OffscreenInferenceAgent(
                 }
 
                 var events = eventsByCharacter.GetValueOrDefault(character.Name, []);
-                var eventDtos = events.Select(e => new CharacterEventDto
-                {
-                    Time = e.Time,
-                    Event = e.Event,
-                    SourceCharacter = e.SourceCharacterName,
-                    SourceRead = e.SourceRead
-                }).ToList();
+                CharacterContext updatedCharacter;
 
-                var timeElapsed = $"""
-                                   Last action time: {character.SceneRewrites.MaxBy(z => z.SequenceNumber)?.SceneTracker!.Time}
-                                   Current time: {context.NewTracker!.Scene!.Time}
-                                   """;
-
-                var input = new OffscreenInferenceInput
+                if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
+                    && cached.Source == ReflectionSource.OffscreenInference)
                 {
-                    Character = character,
-                    EventsLog = eventDtos,
-                    TimeElapsed = timeElapsed,
-                    CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
-                    WorldEvents = context.SceneContext?
-                        .OrderByDescending(x => x.SequenceNumber)
-                        .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum
-                };
+                    logger.Information("Using cached offscreen inference for {CharacterName}", character.Name);
+                    updatedCharacter = cached.Result;
+                }
+                else
+                {
+                    var eventDtos = events.Select(e => new CharacterEventDto
+                    {
+                        Time = e.Time,
+                        Event = e.Event,
+                        SourceCharacter = e.SourceCharacterName,
+                        SourceRead = e.SourceRead
+                    }).ToList();
+
+                    var timeElapsed = $"""
+                                       Last action time: {character.SceneRewrites.MaxBy(z => z.SequenceNumber)?.SceneTracker!.Time}
+                                       Current time: {context.NewTracker!.Scene!.Time}
+                                       """;
+
+                    var input = new OffscreenInferenceInput
+                    {
+                        Character = character,
+                        EventsLog = eventDtos,
+                        TimeElapsed = timeElapsed,
+                        CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
+                        WorldEvents = context.SceneContext?
+                            .OrderByDescending(x => x.SequenceNumber)
+                            .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum
+                    };
+
+                    try
+                    {
+                        logger.Information("Running OffscreenInference for {CharacterName} (events: {EventCount})",
+                            character.Name,
+                            eventDtos.Count);
+
+                        var result = await Simulate(context, input, cancellationToken);
+
+                        var memories = new List<MemoryContext>();
+                        var sceneRewrites = new List<CharacterSceneContext>();
+
+                        if (result.Scenes is { Count: > 0 })
+                        {
+                            foreach (var scene in result.Scenes)
+                            {
+                                var sceneTracker = new SceneTracker
+                                {
+                                    Time = scene.SceneTracker.DateTime,
+                                    Location = scene.SceneTracker.Location,
+                                    Weather = scene.SceneTracker.Weather ?? "Unknown",
+                                    CharactersPresent = scene.SceneTracker.CharactersPresent?.ToArray() ?? []
+                                };
+
+                                memories.Add(new MemoryContext
+                                {
+                                    MemoryContent = scene.Memory.Summary,
+                                    SceneTracker = sceneTracker,
+                                    Salience = scene.Memory.Salience,
+                                    Data = scene.Memory.ExtensionData
+                                });
+
+                                sceneRewrites.Add(new CharacterSceneContext
+                                {
+                                    Content = scene.Narrative,
+                                    SequenceNumber = 0,
+                                    SceneTracker = sceneTracker
+                                });
+                            }
+
+                            logger.Information("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
+                                memories.Count,
+                                sceneRewrites.Count,
+                                character.Name);
+                        }
+
+                        updatedCharacter = new CharacterContext
+                        {
+                            CharacterId = character.CharacterId,
+                            Name = character.Name,
+                            Description = character.Description,
+                            Importance = character.Importance,
+                            CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                            CharacterTracker = result.TrackerUpdates ?? character.CharacterTracker,
+                            CharacterMemories = memories,
+                            Relationships = [],
+                            SceneRewrites = sceneRewrites,
+                            SimulationMetadata = character.SimulationMetadata,
+                            IsDead = false
+                        };
+
+                        lock (context)
+                        {
+                            context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
+                            {
+                                CharacterId = character.CharacterId,
+                                CharacterName = character.Name,
+                                Source = ReflectionSource.OffscreenInference,
+                                Result = updatedCharacter
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "OffscreenInference failed for {CharacterName}", character.Name);
+                        throw;
+                    }
+                }
 
                 try
                 {
-                    logger.Information("Running OffscreenInference for {CharacterName} (events: {EventCount})",
-                        character.Name,
-                        eventDtos.Count);
-
-                    var result = await Simulate(context, input, cancellationToken);
-
-                    var memories = new List<MemoryContext>();
-                    var sceneRewrites = new List<CharacterSceneContext>();
-
-                    if (result.Scenes is { Count: > 0 })
-                    {
-                        foreach (var scene in result.Scenes)
-                        {
-                            var sceneTracker = new SceneTracker
-                            {
-                                Time = scene.SceneTracker.DateTime,
-                                Location = scene.SceneTracker.Location,
-                                Weather = scene.SceneTracker.Weather ?? "Unknown",
-                                CharactersPresent = scene.SceneTracker.CharactersPresent?.ToArray() ?? []
-                            };
-
-                            memories.Add(new MemoryContext
-                            {
-                                MemoryContent = scene.Memory.Summary,
-                                SceneTracker = sceneTracker,
-                                Salience = scene.Memory.Salience,
-                                Data = scene.Memory.ExtensionData
-                            });
-
-                            sceneRewrites.Add(new CharacterSceneContext
-                            {
-                                Content = scene.Narrative,
-                                SequenceNumber = 0,
-                                SceneTracker = sceneTracker
-                            });
-                        }
-
-                        logger.Information("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
-                            memories.Count,
-                            sceneRewrites.Count,
-                            character.Name);
-                    }
-
-                    var updatedCharacter = new CharacterContext
-                    {
-                        CharacterId = character.CharacterId,
-                        Name = character.Name,
-                        Description = character.Description,
-                        Importance = character.Importance,
-                        CharacterState = result.ProfileUpdates ?? character.CharacterState,
-                        CharacterTracker = result.TrackerUpdates ?? character.CharacterTracker,
-                        CharacterMemories = memories,
-                        Relationships = [],
-                        SceneRewrites = sceneRewrites,
-                        SimulationMetadata = character.SimulationMetadata,
-                        IsDead = false
-                    };
-                    var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker.Scene, cancellationToken);
+                    var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker!.Scene!, cancellationToken);
                     updatedCharacter.CharacterTracker = tracker.Tracker;
                     updatedCharacter.IsDead = tracker.IsDead;
+
                     lock (context)
                     {
+                        context.PendingReflectionCache.Remove(character.CharacterId);
                         context.CharacterUpdates.Add(updatedCharacter);
 
                         foreach (var evt in events)
@@ -182,7 +215,7 @@ internal sealed class OffscreenInferenceAgent(
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "OffscreenInference failed for {CharacterName}", character.Name);
+                    logger.Error(ex, "OffscreenInference tracker failed for {CharacterName}", character.Name);
                     throw;
                 }
             })

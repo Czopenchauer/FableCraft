@@ -94,99 +94,146 @@ internal sealed class SimulationOrchestrator(
                     return default;
                 }
 
-                logger.Information("Running standalone simulation for {CharacterName}...", character.Name);
+                CharacterContext characterContext;
+                StandaloneSimulationOutput result;
 
-                var input = new StandaloneSimulationInput
+                if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
+                    && cached.Source == ReflectionSource.StandaloneSimulation)
                 {
-                    Character = character,
-                    TimePeriod = context.NewTracker!.Scene,
-                    WorldEvents = previousState?.WorldMomentum
-                };
+                    logger.Information("Using cached standalone simulation for {CharacterName}", character.Name);
+                    characterContext = cached.Result;
+                    result = new StandaloneSimulationOutput
+                    {
+                        Scenes = [],
+                        RelationshipUpdates = [],
+                        ProfileUpdates = characterContext.CharacterState,
+                        PendingMcInteraction = characterContext.SimulationMetadata?.PendingMcInteraction,
+                        WorldEventsEmitted = null,
+                        CharacterEvents = null
+                    };
+                }
+                else
+                {
+                    logger.Information("Running standalone simulation for {CharacterName}...", character.Name);
+
+                    var input = new StandaloneSimulationInput
+                    {
+                        Character = character,
+                        TimePeriod = context.NewTracker!.Scene,
+                        WorldEvents = previousState?.WorldMomentum
+                    };
+
+                    try
+                    {
+                        result = await standaloneAgent.Invoke(context, input, cancellationToken);
+                        logger.Information(
+                            "Standalone simulation complete for {CharacterName}: {SceneCount} scenes, {RelUpdates} relationship updates",
+                            character.Name,
+                            result.Scenes.Count,
+                            result.RelationshipUpdates?.Count ?? 0);
+
+                        var characterRelationships = new List<CharacterRelationshipContext>();
+                        foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
+                        {
+                            if (relationshipUpdate.ExtensionData?.Count == 0)
+                            {
+                                logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
+                            }
+
+                            var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
+                            if (relationship == null)
+                            {
+                                characterRelationships.Add(new CharacterRelationshipContext
+                                {
+                                    TargetCharacterName = relationshipUpdate.Name,
+                                    Data = relationshipUpdate.ExtensionData!,
+                                    UpdateTime = input.TimePeriod!.Time,
+                                    SequenceNumber = 0,
+                                    Dynamic = relationshipUpdate.Dynamic
+                                });
+                            }
+                            else if (relationshipUpdate.ExtensionData?.Count > 0)
+                            {
+                                var newRelationship = new CharacterRelationshipContext
+                                {
+                                    TargetCharacterName = relationship.TargetCharacterName,
+                                    Data = relationshipUpdate.ExtensionData!,
+                                    UpdateTime = input.TimePeriod!.Time,
+                                    SequenceNumber = relationship.SequenceNumber + 1,
+                                    Dynamic = relationshipUpdate.Dynamic
+                                };
+                                characterRelationships.Add(newRelationship);
+                            }
+                        }
+
+                        characterContext = new CharacterContext
+                        {
+                            CharacterId = character.CharacterId,
+                            CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                            CharacterTracker = character.CharacterTracker,
+                            Name = character.Name,
+                            Description = character.Description,
+                            CharacterMemories = result.Scenes.Select(x => new MemoryContext
+                                {
+                                    Salience = x.Memory.Salience,
+                                    Data = x.Memory.ExtensionData!,
+                                    MemoryContent = x.Memory.Summary,
+                                    SceneTracker = x.SceneTracker
+                                })
+                                .ToList(),
+                            Relationships = characterRelationships,
+                            SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
+                                {
+                                    Content = x.Narrative,
+                                    SequenceNumber = character.SceneRewrites.Count > 0
+                                        ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
+                                        : 1,
+                                    SceneTracker = x.SceneTracker
+                                })
+                                .ToList(),
+                            Importance = character.Importance,
+                            SimulationMetadata = new SimulationMetadata
+                            {
+                                LastSimulated = input.TimePeriod!.Time,
+                                PendingMcInteraction = result.PendingMcInteraction
+                            },
+                            IsDead = false
+                        };
+
+                        lock (context)
+                        {
+                            context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
+                            {
+                                CharacterId = character.CharacterId,
+                                CharacterName = character.Name,
+                                Source = ReflectionSource.StandaloneSimulation,
+                                Result = characterContext
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Standalone simulation failed for {CharacterName}", character.Name);
+                        throw;
+                    }
+                }
 
                 try
                 {
-                    var result = await standaloneAgent.Invoke(context, input, cancellationToken);
-                    logger.Information(
-                        "Standalone simulation complete for {CharacterName}: {SceneCount} scenes, {RelUpdates} relationship updates",
-                        character.Name,
-                        result.Scenes.Count,
-                        result.RelationshipUpdates?.Count ?? 0);
-
-                    var characterRelationships = new List<CharacterRelationshipContext>();
-                    foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
-                    {
-                        if (relationshipUpdate.ExtensionData?.Count == 0)
-                        {
-                            logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
-                        }
-
-                        var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
-                        if (relationship == null)
-                        {
-                            characterRelationships.Add(new CharacterRelationshipContext
-                            {
-                                TargetCharacterName = relationshipUpdate.Name,
-                                Data = relationshipUpdate.ExtensionData!,
-                                UpdateTime = input.TimePeriod!.Time,
-                                SequenceNumber = 0,
-                                Dynamic = relationshipUpdate.Dynamic
-                            });
-                        }
-                        else if (relationshipUpdate.ExtensionData?.Count > 0)
-                        {
-                            var newRelationship = new CharacterRelationshipContext
-                            {
-                                TargetCharacterName = relationship.TargetCharacterName,
-                                Data = relationshipUpdate.ExtensionData!,
-                                UpdateTime = input.TimePeriod!.Time,
-                                SequenceNumber = relationship.SequenceNumber + 1,
-                                Dynamic = relationshipUpdate.Dynamic
-                            };
-                            characterRelationships.Add(newRelationship);
-                        }
-                    }
-
-                    var characterContext = new CharacterContext
-                    {
-                        CharacterId = character.CharacterId,
-                        CharacterState = result.ProfileUpdates ?? character.CharacterState,
-                        CharacterTracker = character.CharacterTracker,
-                        Name = character.Name,
-                        Description = character.Description,
-                        CharacterMemories = result.Scenes.Select(x => new MemoryContext
-                            {
-                                Salience = x.Memory.Salience,
-                                Data = x.Memory.ExtensionData!,
-                                MemoryContent = x.Memory.Summary,
-                                SceneTracker = x.SceneTracker
-                            })
-                            .ToList(),
-                        Relationships = characterRelationships,
-                        SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
-                            {
-                                Content = x.Narrative,
-                                SequenceNumber = character.SceneRewrites.Count > 0
-                                    ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
-                                    : 1,
-                                SceneTracker = x.SceneTracker
-                            })
-                            .ToList(),
-                        Importance = character.Importance,
-                        SimulationMetadata = new SimulationMetadata
-                        {
-                            LastSimulated = input.TimePeriod!.Time,
-                            PendingMcInteraction = result.PendingMcInteraction
-                        },
-                        IsDead = false
-                    };
                     var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = tracker.IsDead;
+
+                    lock (context)
+                    {
+                        context.PendingReflectionCache.Remove(character.CharacterId);
+                    }
+
                     return (characterContext, result.WorldEventsEmitted, result.CharacterEvents, character.Name);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Standalone simulation failed for {CharacterName}", character.Name);
+                    logger.Error(ex, "Standalone simulation tracker failed for {CharacterName}", character.Name);
                     throw;
                 }
             })
@@ -336,77 +383,105 @@ internal sealed class SimulationOrchestrator(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
-        var characterRelationships = new List<CharacterRelationshipContext>();
-        foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
+        CharacterContext characterContext;
+
+        if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
+            && cached.Source == ReflectionSource.CohortSimulation)
         {
-            if (relationshipUpdate.ExtensionData?.Count == 0)
+            logger.Information("Using cached cohort simulation for {CharacterName}", character.Name);
+            characterContext = cached.Result;
+        }
+        else
+        {
+            var characterRelationships = new List<CharacterRelationshipContext>();
+            foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
             {
-                logger.Warning("Character {CharacterName} has no relationship update data!", character.Name);
-                continue;
+                if (relationshipUpdate.ExtensionData?.Count == 0)
+                {
+                    logger.Warning("Character {CharacterName} has no relationship update data!", character.Name);
+                    continue;
+                }
+
+                var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
+                if (relationship == null)
+                {
+                    characterRelationships.Add(new CharacterRelationshipContext
+                    {
+                        TargetCharacterName = relationshipUpdate.Name,
+                        Data = relationshipUpdate.ExtensionData!,
+                        UpdateTime = context.NewTracker!.Scene!.Time,
+                        SequenceNumber = 0,
+                        Dynamic = relationshipUpdate.Dynamic
+                    });
+                }
+                else if (relationshipUpdate.ExtensionData?.Count > 0)
+                {
+                    var newRelationship = new CharacterRelationshipContext
+                    {
+                        TargetCharacterName = relationship.TargetCharacterName,
+                        Data = relationshipUpdate.ExtensionData!,
+                        UpdateTime = context.NewTracker!.Scene!.Time,
+                        SequenceNumber = relationship.SequenceNumber + 1,
+                        Dynamic = relationshipUpdate.Dynamic
+                    };
+                    characterRelationships.Add(newRelationship);
+                }
             }
 
-            var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
-            if (relationship == null)
+            characterContext = new CharacterContext
             {
-                characterRelationships.Add(new CharacterRelationshipContext
+                CharacterId = character.CharacterId,
+                CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                CharacterTracker = character.CharacterTracker,
+                Name = character.Name,
+                Description = character.Description,
+                CharacterMemories = result.Scenes.Select(x => new MemoryContext
+                    {
+                        Salience = x.Memory.Salience,
+                        Data = x.Memory.ExtensionData!,
+                        MemoryContent = x.Memory.Summary,
+                        SceneTracker = x.SceneTracker
+                    })
+                    .ToList(),
+                Relationships = characterRelationships,
+                SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
+                    {
+                        Content = x.Narrative,
+                        SequenceNumber = character.SceneRewrites.Count > 0
+                            ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
+                            : 1,
+                        SceneTracker = x.SceneTracker
+                    })
+                    .ToList(),
+                Importance = character.Importance,
+                SimulationMetadata = new SimulationMetadata
                 {
-                    TargetCharacterName = relationshipUpdate.Name,
-                    Data = relationshipUpdate.ExtensionData!,
-                    UpdateTime = context.NewTracker!.Scene!.Time,
-                    SequenceNumber = 0,
-                    Dynamic = relationshipUpdate.Dynamic
-                });
-            }
-            else if (relationshipUpdate.ExtensionData?.Count > 0)
+                    LastSimulated = cohortSimulationResult.Result.SimulationPeriod.To,
+                    PendingMcInteraction = result.PendingMcInteraction
+                },
+                IsDead = false
+            };
+
+            lock (context)
             {
-                var newRelationship = new CharacterRelationshipContext
+                context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
                 {
-                    TargetCharacterName = relationship.TargetCharacterName,
-                    Data = relationshipUpdate.ExtensionData!,
-                    UpdateTime = context.NewTracker!.Scene!.Time,
-                    SequenceNumber = relationship.SequenceNumber + 1,
-                    Dynamic = relationshipUpdate.Dynamic
+                    CharacterId = character.CharacterId,
+                    CharacterName = character.Name,
+                    Source = ReflectionSource.CohortSimulation,
+                    Result = characterContext
                 };
-                characterRelationships.Add(newRelationship);
             }
         }
 
-        var characterContext = new CharacterContext
-        {
-            CharacterId = character.CharacterId,
-            CharacterState = result.ProfileUpdates ?? character.CharacterState,
-            CharacterTracker = character.CharacterTracker,
-            Name = character.Name,
-            Description = character.Description,
-            CharacterMemories = result.Scenes.Select(x => new MemoryContext
-                {
-                    Salience = x.Memory.Salience,
-                    Data = x.Memory.ExtensionData!,
-                    MemoryContent = x.Memory.Summary,
-                    SceneTracker = x.SceneTracker
-                })
-                .ToList(),
-            Relationships = characterRelationships,
-            SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
-                {
-                    Content = x.Narrative,
-                    SequenceNumber = character.SceneRewrites.Count > 0
-                        ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
-                        : 1,
-                    SceneTracker = x.SceneTracker
-                })
-                .ToList(),
-            Importance = character.Importance,
-            SimulationMetadata = new SimulationMetadata
-            {
-                LastSimulated = cohortSimulationResult.Result.SimulationPeriod.To,
-                PendingMcInteraction = result.PendingMcInteraction
-            },
-            IsDead = false
-        };
         var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
         characterContext.CharacterTracker = tracker.Tracker;
         characterContext.IsDead = tracker.IsDead;
+
+        lock (context)
+        {
+            context.PendingReflectionCache.Remove(character.CharacterId);
+        }
 
         var worldEvents = result.WorldEventsEmitted?
                               .Select(x => new WorldEvent

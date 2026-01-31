@@ -131,6 +131,12 @@ internal sealed class GenerationContext
     /// </summary>
     public Dictionary<string, List<CharacterEmulationOutput>> CharacterEmulationOutputs { get; set; } = new();
 
+    /// <summary>
+    ///     Cached reflection/simulation results that haven't been tracked yet.
+    ///     Populated before CharacterTrackerAgent runs, consumed after tracker succeeds.
+    /// </summary>
+    public Dictionary<Guid, CachedReflectionResult> PendingReflectionCache { get; set; } = new();
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,
@@ -181,6 +187,29 @@ internal sealed class CharacterEventToSave
     public required string Event { get; init; }
 
     public required string SourceRead { get; init; }
+}
+
+/// <summary>
+///     Cached intermediate result from reflection/simulation agents.
+///     Persisted in GenerationContext to survive retries.
+/// </summary>
+internal sealed class CachedReflectionResult
+{
+    public required Guid CharacterId { get; init; }
+
+    public required string CharacterName { get; init; }
+
+    public required ReflectionSource Source { get; init; }
+
+    public required CharacterContext Result { get; init; }
+}
+
+internal enum ReflectionSource
+{
+    CharacterReflection,
+    StandaloneSimulation,
+    CohortSimulation,
+    OffscreenInference
 }
 
 internal sealed class CharacterContext

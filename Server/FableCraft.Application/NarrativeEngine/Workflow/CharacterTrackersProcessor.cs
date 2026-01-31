@@ -65,10 +65,38 @@ internal sealed class CharacterTrackersProcessor(
                         return null;
                     }
 
-                    var characterContext = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                    CharacterContext characterContext;
+
+                    if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
+                        && cached.Source == ReflectionSource.CharacterReflection)
+                    {
+                        logger.Information("Using cached reflection for {Character}", character.Name);
+                        characterContext = cached.Result;
+                    }
+                    else
+                    {
+                        characterContext = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+
+                        lock (context)
+                        {
+                            context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
+                            {
+                                CharacterId = character.CharacterId,
+                                CharacterName = character.Name,
+                                Source = ReflectionSource.CharacterReflection,
+                                Result = characterContext
+                            };
+                        }
+                    }
+
                     var tracker = await characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = tracker.IsDead;
+
+                    lock (context)
+                    {
+                        context.PendingReflectionCache.Remove(character.CharacterId);
+                    }
 
                     return characterContext;
                 })
