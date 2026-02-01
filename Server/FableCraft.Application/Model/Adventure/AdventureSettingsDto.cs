@@ -13,6 +13,10 @@ public class AdventureSettingsResponseDto
     public required string PromptPath { get; init; }
 
     public required List<AgentLlmPresetDto> AgentLlmPresets { get; init; }
+
+    public Guid? GraphRagSettingsId { get; init; }
+
+    public string? GraphRagSettingsName { get; init; }
 }
 
 public class AgentLlmPresetDto
@@ -31,6 +35,8 @@ public class UpdateAdventureSettingsDto
     public required string PromptPath { get; init; }
 
     public required List<UpdateAgentLlmPresetDto> AgentLlmPresets { get; init; }
+
+    public Guid? GraphRagSettingsId { get; init; }
 }
 
 public class UpdateAgentLlmPresetDto

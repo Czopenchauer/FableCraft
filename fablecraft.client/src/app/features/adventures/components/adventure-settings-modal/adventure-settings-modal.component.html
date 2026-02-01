@@ -46,6 +46,27 @@
           </div>
         </div>
 
+        <!-- GraphRAG Settings Section -->
+        <div class="settings-section">
+          <h3 class="section-title">GraphRAG Settings</h3>
+          <p class="section-description">Configure the knowledge graph and embedding settings for this adventure.</p>
+          <div class="form-group">
+            <label for="graphRagSettings">GraphRAG Configuration</label>
+            <select
+              [(ngModel)]="graphRagSettingsId"
+              [disabled]="isSaving"
+              class="form-select"
+              id="graphRagSettings"
+            >
+              <option [ngValue]="null">Not assigned (use worldbook default)</option>
+              <option *ngFor="let settings of availableGraphRagSettings" [ngValue]="settings.id">
+                {{ settings.name }} ({{ settings.llmProvider }}/{{ settings.llmModel }})
+              </option>
+            </select>
+            <span class="help-text">Select a GraphRAG configuration or leave empty to use the worldbook's settings</span>
+          </div>
+        </div>
+
         <!-- Agent LLM Presets Section -->
         <div class="settings-section">
           <div class="section-header">

@@ -4,6 +4,8 @@ import {LlmPresetResponseDto} from '../../models/llm-preset.model';
 import {AdventureService} from '../../services/adventure.service';
 import {LlmPresetService} from '../../services/llm-preset.service';
 import {ToastService} from '../../../../core/services/toast.service';
+import {GraphRagSettingsService} from '../../../settings/services/graph-rag-settings.service';
+import {GraphRagSettingsSummaryDto} from '../../../settings/models/graph-rag-settings.model';
 
 @Component({
   selector: 'app-adventure-settings-modal',
@@ -21,10 +23,12 @@ export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
   isSaving = false;
   settings: AdventureSettingsResponseDto | null = null;
   availablePresets: LlmPresetResponseDto[] = [];
+  availableGraphRagSettings: GraphRagSettingsSummaryDto[] = [];
 
   // Form state
   promptPath = '';
   agentPresets: { agentName: string; llmPresetId: string | null }[] = [];
+  graphRagSettingsId: string | null = null;
 
   // Editing LLM preset state
   editingPreset: LlmPresetResponseDto | null = null;
@@ -33,6 +37,7 @@ export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
   constructor(
     private adventureService: AdventureService,
     private llmPresetService: LlmPresetService,
+    private graphRagSettingsService: GraphRagSettingsService,
     private toastService: ToastService
   ) {
   }
@@ -75,7 +80,8 @@ export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
       agentLlmPresets: this.agentPresets.map(p => ({
         agentName: p.agentName,
         llmPresetId: p.llmPresetId
-      }))
+      })),
+      graphRagSettingsId: this.graphRagSettingsId
     };
 
     this.adventureService.updateAdventureSettings(this.adventureId, updateDto).subscribe({
@@ -210,13 +216,15 @@ export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
 
     this.isLoading = true;
 
-    // Load both settings and available presets
+    // Load settings, available presets, and GraphRAG settings
     Promise.all([
       this.adventureService.getAdventureSettings(this.adventureId).toPromise(),
-      this.llmPresetService.getAllPresets().toPromise()
-    ]).then(([settings, presets]) => {
+      this.llmPresetService.getAllPresets().toPromise(),
+      this.graphRagSettingsService.getAllSummary().toPromise()
+    ]).then(([settings, presets, graphRagSettings]) => {
       this.settings = settings!;
       this.availablePresets = presets || [];
+      this.availableGraphRagSettings = graphRagSettings || [];
       this.initializeForm();
       this.isLoading = false;
     }).catch(err => {
@@ -235,12 +243,15 @@ export class AdventureSettingsModalComponent implements OnChanges, OnDestroy {
       agentName: preset.agentName,
       llmPresetId: preset.llmPresetId || null
     }));
+    this.graphRagSettingsId = this.settings.graphRagSettingsId || null;
   }
 
   private resetState(): void {
     this.settings = null;
     this.promptPath = '';
     this.agentPresets = [];
+    this.graphRagSettingsId = null;
+    this.availableGraphRagSettings = [];
     this.editingPreset = null;
     this.isCreatingPreset = false;
   }

@@ -149,7 +149,6 @@ public class AdventureController : ControllerBase
         if (string.IsNullOrEmpty(basePath))
         {
             var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
-            // Trim trailing slashes before getting parent directory
             defaultPromptPath = defaultPromptPath.TrimEnd('/', '\\');
             basePath = Path.GetDirectoryName(defaultPromptPath) ?? "";
         }
@@ -202,6 +201,7 @@ public class AdventureController : ControllerBase
         var adventure = await _dbContext.Adventures
             .Include(a => a.AgentLlmPresets)
             .ThenInclude(p => p.LlmPreset)
+            .Include(a => a.GraphRagSettings)
             .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -227,7 +227,9 @@ public class AdventureController : ControllerBase
             AdventureId = adventure.Id,
             Name = adventure.Name,
             PromptPath = adventure.PromptPath,
-            AgentLlmPresets = agentPresets
+            AgentLlmPresets = agentPresets,
+            GraphRagSettingsId = adventure.GraphRagSettingsId,
+            GraphRagSettingsName = adventure.GraphRagSettings?.Name
         };
 
         return Ok(response);
@@ -253,6 +255,7 @@ public class AdventureController : ControllerBase
         var adventure = await _dbContext.Adventures
             .Include(a => a.AgentLlmPresets)
             .ThenInclude(p => p.LlmPreset)
+            .Include(a => a.GraphRagSettings)
             .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
 
         if (adventure == null)
@@ -261,6 +264,24 @@ public class AdventureController : ControllerBase
         }
 
         adventure.PromptPath = dto.PromptPath;
+
+        if (dto.GraphRagSettingsId.HasValue)
+        {
+            var settingsExists = await _dbContext.GraphRagSettings
+                .AnyAsync(s => s.Id == dto.GraphRagSettingsId.Value, cancellationToken);
+            if (!settingsExists)
+            {
+                return BadRequest(Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    { "GraphRagSettingsId", [$"GraphRagSettings with ID '{dto.GraphRagSettingsId}' not found."] }
+                }));
+            }
+            adventure.GraphRagSettingsId = dto.GraphRagSettingsId.Value;
+        }
+        else
+        {
+            adventure.GraphRagSettingsId = null;
+        }
 
         foreach (var presetDto in dto.AgentLlmPresets)
         {
@@ -311,6 +332,7 @@ public class AdventureController : ControllerBase
         {
             await _dbContext.Entry(preset).Reference(p => p.LlmPreset).LoadAsync(cancellationToken);
         }
+        await _dbContext.Entry(adventure).Reference(a => a.GraphRagSettings).LoadAsync(cancellationToken);
 
         var allAgentNames = Enum.GetValues<AgentName>();
         var agentPresets = allAgentNames.Select(agentName =>
@@ -330,7 +352,9 @@ public class AdventureController : ControllerBase
             AdventureId = adventure.Id,
             Name = adventure.Name,
             PromptPath = adventure.PromptPath,
-            AgentLlmPresets = agentPresets
+            AgentLlmPresets = agentPresets,
+            GraphRagSettingsId = adventure.GraphRagSettingsId,
+            GraphRagSettingsName = adventure.GraphRagSettings?.Name
         };
 
         return Ok(response);

@@ -70,6 +70,7 @@ internal sealed class OffscreenInferenceAgent(
             .Select(async significantEntry =>
             {
                 var character = context.Characters.FirstOrDefault(c => c.Name == significantEntry.Character);
+
                 if (character == null)
                 {
                     logger.Warning("OffscreenInference requested for unknown character: {CharacterName}",
@@ -77,7 +78,13 @@ internal sealed class OffscreenInferenceAgent(
                     return;
                 }
 
-                if (context.CharacterUpdates.Any(z => z.CharacterId ==  character.CharacterId))
+                if (currentSceneTracker.CharactersPresent.Contains(character.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    logger.Warning("Skipping offscreen inference for {CharacterName} as they are already present on scene", character.Name);
+                    return;
+                }
+
+                if (context.CharacterUpdates.Any(z => z.CharacterId == character.CharacterId))
                 {
                     logger.Information("Skipping already simulated character: {CharacterName}", character.Name);
                     return;

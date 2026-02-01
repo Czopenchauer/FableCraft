@@ -54,7 +54,6 @@ internal sealed class AgentKernel : IAgentKernel
             {
                 ShouldHandle = new PredicateBuilder()
                     .Handle<HttpOperationException>(e => e.StatusCode == HttpStatusCode.TooManyRequests)
-                    .Handle<LlmEmptyResponseException>()
                     .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.TooManyRequests),
                 MaxRetryAttempts = 1,
                 Delay = TimeSpan.FromSeconds(5),
@@ -88,19 +87,28 @@ internal sealed class AgentKernel : IAgentKernel
         catch (InvalidCastException ex)
         {
             _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
+            chatHistory.AddUserMessage(
+                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
             return await GetResponse();
         }
         catch (JsonException ex)
         {
             _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
+            chatHistory.AddUserMessage(
+                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
             return await GetResponse();
         }
         catch (InvalidOperationException ex)
         {
             _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage($"I've encountered an error parsing your response. Fix your response. Ensue it's in correct xml tags! {ex.Message}");
+            chatHistory.AddUserMessage(
+                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
+            return await GetResponse();
+        }
+        catch (LlmEmptyResponseException ex)
+        {
+            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
+            chatHistory.AddUserMessage("You've returned nothing. Continue reasoning process and output correctly formatted response.");
             return await GetResponse();
         }
 

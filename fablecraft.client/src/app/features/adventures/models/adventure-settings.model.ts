@@ -3,6 +3,8 @@ export interface AdventureSettingsResponseDto {
   name: string;
   promptPath: string;
   agentLlmPresets: AgentLlmPresetDto[];
+  graphRagSettingsId?: string | null;
+  graphRagSettingsName?: string | null;
 }
 
 export interface AgentLlmPresetDto {
@@ -15,6 +17,7 @@ export interface AgentLlmPresetDto {
 export interface UpdateAdventureSettingsDto {
   promptPath: string;
   agentLlmPresets: UpdateAgentLlmPresetDto[];
+  graphRagSettingsId?: string | null;
 }
 
 export interface UpdateAgentLlmPresetDto {
