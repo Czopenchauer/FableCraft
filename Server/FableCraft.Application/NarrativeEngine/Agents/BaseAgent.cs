@@ -42,7 +42,6 @@ internal abstract class BaseAgent
         return promp
             .Replace(PlaceholderNames.StoryBible, storyBible)
             .Replace(PlaceholderNames.WorldSetting, worldSettings)
-            .Replace(PlaceholderNames.CharacterName, generationContext.MainCharacter.Name)
             .Replace(PlaceholderNames.DotNotation, dotNotation);
     }
 

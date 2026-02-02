@@ -150,6 +150,12 @@ internal sealed class SaveSceneEnrichment(
 
             await UpsertCharacters(context, scene, cancellationToken, dbContext);
 
+            // Link pre-scene custom characters to the first scene
+            if (scene.SequenceNumber == 0)
+            {
+                await LinkPreSceneCharactersToFirstScene(context.AdventureId, scene, dbContext, cancellationToken);
+            }
+
             await ProcessImportanceFlags(context, dbContext, logger, cancellationToken);
 
             await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
@@ -471,4 +477,50 @@ internal sealed class SaveSceneEnrichment(
 
     private static bool IsValidTransition(ImportanceChangeRequest request) =>
         request.From == "arc_important" && request.To == "significant" || request.From == "significant" && request.To == "arc_important";
+
+    /// <summary>
+    ///     Links pre-scene custom characters (those with null IntroductionScene) to the first scene.
+    ///     This updates the Character, CharacterState, and CharacterRelationship records to point to the first scene.
+    /// </summary>
+    private async Task LinkPreSceneCharactersToFirstScene(
+        Guid adventureId,
+        Scene firstScene,
+        ApplicationDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        // Find all characters with null IntroductionScene (pre-scene custom characters)
+        var preSceneCharacters = await dbContext.Characters
+            .Include(c => c.CharacterStates)
+            .Include(c => c.CharacterRelationships)
+            .Where(c => c.AdventureId == adventureId && c.IntroductionScene == null)
+            .ToListAsync(cancellationToken);
+
+        if (preSceneCharacters.Count == 0)
+        {
+            return;
+        }
+
+        logger.Information("Linking {Count} pre-scene custom characters to first scene {SceneId}",
+            preSceneCharacters.Count, firstScene.Id);
+
+        foreach (var character in preSceneCharacters)
+        {
+            character.IntroductionScene = firstScene.Id;
+            character.Scene = firstScene;
+
+            foreach (var state in character.CharacterStates.Where(s => s.SceneId == null))
+            {
+                state.SceneId = firstScene.Id;
+                state.Scene = firstScene;
+            }
+
+            foreach (var relationship in character.CharacterRelationships.Where(r => r.SceneId == null))
+            {
+                relationship.SceneId = firstScene.Id;
+                relationship.Scene = firstScene;
+            }
+
+            dbContext.Characters.Update(character);
+        }
+    }
 }

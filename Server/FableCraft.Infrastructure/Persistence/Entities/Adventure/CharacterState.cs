@@ -8,9 +8,13 @@ public sealed class CharacterState
 
     public Guid CharacterId { get; set; }
 
-    public Guid SceneId { get; set; }
+    /// <summary>
+    ///     The scene where this character state was recorded.
+    ///     Null for initial state of pre-scene custom characters.
+    /// </summary>
+    public Guid? SceneId { get; set; }
 
-    public Scene Scene { get; set; } = null!;
+    public Scene? Scene { get; set; }
 
     public bool IsDead { get; set; }
 

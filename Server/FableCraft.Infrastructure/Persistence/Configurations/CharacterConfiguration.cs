@@ -35,6 +35,13 @@ public class CharacterConfiguration : IEntityTypeConfiguration<Character>
             .HasForeignKey(x => x.CharacterId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // IntroductionScene is nullable for pre-scene custom characters
+        builder.HasOne(x => x.Scene)
+            .WithMany()
+            .HasForeignKey(x => x.IntroductionScene)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
+
         builder.HasIndex(x => x.AdventureId);
     }
 }

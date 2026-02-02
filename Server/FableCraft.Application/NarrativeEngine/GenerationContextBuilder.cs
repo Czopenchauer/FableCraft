@@ -40,7 +40,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 x.MainCharacter,
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
-                x.AdventureStartTime
+                x.AdventureStartTime,
+                x.InitialMainCharacterTracker
             })
             .SingleAsync(ct);
 
@@ -153,7 +154,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             createdLore,
             createdLocations,
             createdItems,
-            previousBackgroundCharacters);
+            previousBackgroundCharacters,
+            initialMainCharacterTracker: adventure.InitialMainCharacterTracker);
 
         return context;
     }
@@ -172,7 +174,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 x.MainCharacter,
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
-                x.AdventureStartTime
+                x.AdventureStartTime,
+                x.InitialMainCharacterTracker
             })
             .SingleAsync(ct);
 
@@ -213,7 +216,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             createdLore,
             createdLocations,
             createdItems,
-            previousBackgroundCharacters);
+            previousBackgroundCharacters,
+            initialMainCharacterTracker: adventure.InitialMainCharacterTracker);
         return generationContext;
     }
 
@@ -233,7 +237,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 x.MainCharacter,
                 x.AgentLlmPresets,
                 PromptPaths = x.PromptPath,
-                x.AdventureStartTime
+                x.AdventureStartTime,
+                x.InitialMainCharacterTracker
             })
             .SingleAsync(ct);
 
@@ -305,7 +310,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             createdLocations,
             createdItems,
             previousBackgroundCharacters,
-            extraLoreEntries);
+            extraLoreEntries,
+            adventure.InitialMainCharacterTracker);
         return (context.newContext, context.process!.Step);
 
         async Task<(GenerationContext newContext, GenerationProcess process)> CreateNewProcess()
@@ -403,11 +409,12 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         Guid adventureId,
         CancellationToken ct)
     {
+        // Include pre-scene custom characters (IntroductionScene == null) and characters not introduced in this scene
         var existingCharacters = await dbContext
             .Characters
             .AsSplitQuery()
-            .Where(x => x.AdventureId == adventureId && x.IntroductionScene != sceneId)
-            .Include(x => x.CharacterStates.Where(cs => cs.SceneId != sceneId).OrderByDescending(cs => cs.SequenceNumber).Take(1))
+            .Where(x => x.AdventureId == adventureId && (x.IntroductionScene == null || x.IntroductionScene != sceneId))
+            .Include(x => x.CharacterStates.Where(cs => cs.SceneId == null || cs.SceneId != sceneId).OrderByDescending(cs => cs.SequenceNumber).Take(1))
             .Include(x => x.CharacterMemories.Where(z => z.SceneId != sceneId))
             .Include(x => x.CharacterRelationships)
             .Include(x => x.CharacterSceneRewrites.Where(z => z.SceneId != sceneId).OrderByDescending(c => c.SequenceNumber).Take(20))
@@ -443,9 +450,9 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         SceneTracker = y.SceneTracker
                     })
                     .ToList(),
-                // Group by target and take latest relationship per target (excluding the scene being regenerated)
+                // Group by target and take latest relationship per target (excluding the scene being regenerated, but including pre-scene relationships)
                 Relationships = x.CharacterRelationships
-                    .Where(r => r.SceneId != sceneId)
+                    .Where(r => r.SceneId == null || r.SceneId != sceneId)
                     .GroupBy(r => r.TargetCharacterName)
                     .Select(g => g.OrderByDescending(r => r.SequenceNumber)
                         .FirstOrDefault())

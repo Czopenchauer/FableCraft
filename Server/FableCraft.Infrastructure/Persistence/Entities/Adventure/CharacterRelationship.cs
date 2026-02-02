@@ -19,10 +19,11 @@ public sealed class CharacterRelationship : IEntity
 
     /// <summary>
     ///     The scene where this relationship state was recorded.
+    ///     Null for initial relationships of pre-scene custom characters.
     /// </summary>
-    public Guid SceneId { get; set; }
+    public Guid? SceneId { get; set; }
 
-    public Scene Scene { get; set; } = null!;
+    public Scene? Scene { get; set; }
 
     public required string? UpdateTime { get; set; }
 

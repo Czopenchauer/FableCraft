@@ -24,9 +24,11 @@ public class CharacterStateConfiguration : IEntityTypeConfiguration<CharacterSta
             x => JsonSerializer.Deserialize<SimulationMetadata>(x, options));
         builder.HasIndex(x => new { x.CharacterId, x.SequenceNumber, x.IsDead }).IsUnique();
 
+        // SceneId is nullable for initial state of pre-scene custom characters
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterStates)
             .HasForeignKey(x => x.SceneId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
     }
 }

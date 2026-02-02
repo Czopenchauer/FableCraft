@@ -64,9 +64,9 @@ public sealed class Character : IEntity
 {
     public Guid AdventureId { get; set; }
 
-    public required Guid IntroductionScene { get; set; }
+    public Guid? IntroductionScene { get; set; }
 
-    public Scene Scene { get; set; } = null!;
+    public Scene? Scene { get; set; }
 
     public required string Name { get; set; }
 

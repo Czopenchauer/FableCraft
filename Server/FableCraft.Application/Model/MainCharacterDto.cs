@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
+using FluentValidation;
 
 namespace FableCraft.Application.Model;
 
@@ -7,6 +9,12 @@ public class MainCharacterDto
     public string Name { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    ///     Optional initial tracker state for the main character.
+    ///     If provided, this will be used instead of calling InitMainCharacterTrackerAgent for the first scene.
+    /// </summary>
+    public MainCharacterTracker? InitialTracker { get; init; }
 }
 
 public class CharacterDtoValidator : AbstractValidator<MainCharacterDto>

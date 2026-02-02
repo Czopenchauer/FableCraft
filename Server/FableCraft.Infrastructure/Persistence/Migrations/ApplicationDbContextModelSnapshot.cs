@@ -42,6 +42,9 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("GraphRagSettingsId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("InitialMainCharacterTracker")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("LastPlayedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -168,15 +171,12 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<Guid>("IntroductionScene")
+                    b.Property<Guid?>("IntroductionScene")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<Guid>("SceneId")
-                        .HasColumnType("uuid");
 
                     b.Property<int>("Version")
                         .HasColumnType("integer");
@@ -185,7 +185,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AdventureId");
 
-                    b.HasIndex("SceneId");
+                    b.HasIndex("IntroductionScene");
 
                     b.ToTable("Characters");
                 });
@@ -280,7 +280,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<string>("Dynamic")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("SceneId")
+                    b.Property<Guid?>("SceneId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SequenceNumber")
@@ -350,7 +350,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDead")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("SceneId")
+                    b.Property<Guid?>("SceneId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SequenceNumber")
@@ -912,9 +912,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
 
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure.Scene", "Scene")
                         .WithMany()
-                        .HasForeignKey("SceneId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("IntroductionScene")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Scene");
                 });
@@ -947,8 +946,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure.Scene", "Scene")
                         .WithMany("CharacterRelationships")
                         .HasForeignKey("SceneId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Scene");
                 });
@@ -981,8 +979,7 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure.Scene", "Scene")
                         .WithMany("CharacterStates")
                         .HasForeignKey("SceneId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Scene");
                 });

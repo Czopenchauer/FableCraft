@@ -18,6 +18,9 @@ public class AdventureConfiguration : IEntityTypeConfiguration<Adventure>
         builder.Property(x => x.TrackerStructure).HasConversion<string>(
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<TrackerStructure>(x, options)!);
+        builder.Property(x => x.InitialMainCharacterTracker).HasConversion<string>(
+            x => JsonSerializer.Serialize(x, options),
+            x => JsonSerializer.Deserialize<MainCharacterTracker>(x, options));
         builder.HasIndex(x => x.Name).IsUnique();
     }
 }

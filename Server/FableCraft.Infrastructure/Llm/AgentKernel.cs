@@ -80,37 +80,79 @@ internal sealed class AgentKernel : IAgentKernel
     {
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
                                     ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
-        try
+        const int maxParsingRetries = 4;
+        for (int attempt = 1; attempt <= maxParsingRetries; attempt++)
         {
-            return await GetResponse();
+            try
+            {
+                return await GetResponse();
+            }
+            catch (InvalidCastException ex)
+            {
+                _logger.Warning(ex,
+                    "Error while calling LLM {operation} service (attempt {attempt}/{max}). {message}",
+                    operationName,
+                    attempt,
+                    maxParsingRetries,
+                    ex.Message);
+                if (attempt == maxParsingRetries)
+                {
+                    throw;
+                }
+
+                chatHistory.AddUserMessage(
+                    $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                _logger.Warning(ex,
+                    "Error while calling LLM {operation} service (attempt {attempt}/{max}). {message}",
+                    operationName,
+                    attempt,
+                    maxParsingRetries,
+                    ex.Message);
+                if (attempt == maxParsingRetries)
+                {
+                    throw;
+                }
+
+                chatHistory.AddUserMessage(
+                    $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.Warning(ex,
+                    "Error while calling LLM {operation} service (attempt {attempt}/{max}). {message}",
+                    operationName,
+                    attempt,
+                    maxParsingRetries,
+                    ex.Message);
+                if (attempt == maxParsingRetries)
+                {
+                    throw;
+                }
+
+                chatHistory.AddUserMessage(
+                    $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
+            }
+            catch (LlmEmptyResponseException ex)
+            {
+                _logger.Warning(ex,
+                    "Error while calling LLM {operation} service (attempt {attempt}/{max}). {message}",
+                    operationName,
+                    attempt,
+                    maxParsingRetries,
+                    ex.Message);
+                if (attempt == maxParsingRetries)
+                {
+                    throw;
+                }
+
+                chatHistory.AddUserMessage("You've returned nothing. Continue reasoning process and output correctly formatted response.");
+            }
         }
-        catch (InvalidCastException ex)
-        {
-            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage(
-                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
-            return await GetResponse();
-        }
-        catch (JsonException ex)
-        {
-            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage(
-                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
-            return await GetResponse();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage(
-                $"I've encountered an error parsing your response. Check your output format and ensure the response follows it precisely. Fix your response. Error: {ex.Message}");
-            return await GetResponse();
-        }
-        catch (LlmEmptyResponseException ex)
-        {
-            _logger.Warning(ex, "Error while calling LLM {operation} service. {message}", operationName, ex.Message);
-            chatHistory.AddUserMessage("You've returned nothing. Continue reasoning process and output correctly formatted response.");
-            return await GetResponse();
-        }
+
+        throw new InvalidOperationException("Unreachable code - retry loop should have returned or thrown");
 
         async Task<T> GetResponse()
         {
@@ -168,7 +210,6 @@ internal sealed class AgentKernel : IAgentKernel
                     }
                     catch (ClientResultException e)
                     {
-                        
                         _logger.Error(e, "Error occurred while calling LLM service. {message}", e.Data.ToJsonString());
                         throw;
                     }

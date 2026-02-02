@@ -105,6 +105,7 @@ internal class AdventureCreationService : IAdventureCreationService
                 Name = adventureDto.MainCharacter.Name,
                 Description = adventureDto.MainCharacter.Description
             },
+            InitialMainCharacterTracker = adventureDto.MainCharacter.InitialTracker,
             Lorebook = adventureDto.ExtraLoreEntries.Select(x => new LorebookEntry
             {
                 Title = x.Title,
@@ -135,10 +136,60 @@ internal class AdventureCreationService : IAdventureCreationService
             throw new InvalidOperationException($"An adventure with the name '{adventureDto.Name}' already exists.", ex);
         }
 
+        if (adventureDto.CustomCharacters.Length > 0)
+        {
+            await CreateCustomCharactersAsync(adventure.Id, adventureDto.CustomCharacters, cancellationToken);
+        }
+
         await _messageDispatcher.PublishAsync(new AddAdventureToKnowledgeGraphCommand { AdventureId = adventure.Id },
             cancellationToken);
 
         return await GetAdventureCreationStatusAsync(adventure.Id, cancellationToken);
+    }
+
+    private async Task CreateCustomCharactersAsync(
+        Guid adventureId,
+        CustomCharacterDto[] characters,
+        CancellationToken cancellationToken)
+    {
+        foreach (var dto in characters)
+        {
+            var character = new Character
+            {
+                AdventureId = adventureId,
+                IntroductionScene = null,
+                Name = dto.Name,
+                Description = dto.Description,
+                Importance = CharacterImportanceConverter.FromString(dto.Importance),
+                Version = 0,
+                CharacterStates =
+                [
+                    new CharacterState
+                    {
+                        SceneId = null,
+                        CharacterStats = dto.CharacterStats,
+                        Tracker = dto.CharacterTracker,
+                        SequenceNumber = 0,
+                        IsDead = false
+                    }
+                ],
+                CharacterRelationships = dto.InitialRelationships.Select(r => new CharacterRelationship
+                {
+                    SceneId = null,
+                    TargetCharacterName = r.TargetCharacterName,
+                    Dynamic = r.Dynamic,
+                    Data = r.Data,
+                    SequenceNumber = 0,
+                    UpdateTime = null
+                }).ToList()
+            };
+
+            _dbContext.Characters.Add(character);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.Information("Created {Count} custom characters for adventure {AdventureId}",
+            characters.Length, adventureId);
     }
 
     public async Task<AdventureCreationStatus> GetAdventureCreationStatusAsync(Guid adventureId,

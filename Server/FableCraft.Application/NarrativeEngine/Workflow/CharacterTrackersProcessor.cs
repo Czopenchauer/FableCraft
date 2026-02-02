@@ -127,6 +127,17 @@ internal sealed class CharacterTrackersProcessor(
     {
         if (context.SceneContext.Length == 0)
         {
+            if (context.InitialMainCharacterTracker != null)
+            {
+                logger.Information("Using pre-defined initial main character tracker");
+                context.NewTracker!.MainCharacter = new MainCharacterState
+                {
+                    MainCharacter = context.InitialMainCharacterTracker,
+                    MainCharacterDescription = null
+                };
+                return;
+            }
+
             await initMainCharacterTrackerAgent.Invoke(context, cancellationToken);
             return;
         }

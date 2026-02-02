@@ -19,9 +19,11 @@ public class CharacterRelationshipConfiguration : IEntityTypeConfiguration<Chara
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<IDictionary<string, object>>(x, options)!);
 
+        // SceneId is nullable for initial relationships of pre-scene custom characters
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterRelationships)
             .HasForeignKey(x => x.SceneId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
     }
 }
