@@ -35,7 +35,7 @@ internal sealed class OffscreenInferenceAgent(
     {
         logger.Information("OffscreenInferenceProcessor: Starting...");
 
-        var significantForInference = plan.SignificantForInference;
+        var significantForInference = plan.Inference;
         if (significantForInference is not { Count: > 0 })
         {
             logger.Information("OffscreenInferenceProcessor: No significant characters need inference");

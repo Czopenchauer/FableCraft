@@ -128,16 +128,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             FrequencyPenalty = _preset.FrequencyPenalty,
             PresencePenalty = _preset.PresencePenalty,
-            FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
-            ExtensionData = new Dictionary<string, object>
-            {
-                {
-                    "thinking", new
-                    {
-                        type = "enabled"
-                    }
-                }
-            }
+            FunctionChoiceBehavior = FunctionChoiceBehavior.None()
         };
 
     public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
@@ -152,16 +143,7 @@ internal class OpenAiKernelBuilder : IKernelBuilder
             {
                 AllowConcurrentInvocation = true,
                 AllowParallelCalls = true
-            }),
-            ExtensionData = new Dictionary<string, object>
-            {
-                {
-                    "thinking", new
-                    {
-                        type = "enabled"
-                    }
-                }
-            }
+            })
         };
 }
 

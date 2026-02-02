@@ -93,7 +93,7 @@ internal sealed class SimulationPlannerOutput
     public string? Reason { get; init; }
 
     /// <summary>
-    ///     Groups of 2-4 arc_important characters to simulate together.
+    ///     Groups of 2-4 characters to simulate together (can include both arc_important and significant tiers).
     /// </summary>
     [JsonPropertyName("cohorts")]
     public List<SimulationCohort>? Cohorts { get; init; }
@@ -111,10 +111,10 @@ internal sealed class SimulationPlannerOutput
     public List<SkippedCharacter>? Skip { get; init; }
 
     /// <summary>
-    ///     Significant characters likely to appear in next scene (need OffscreenInference).
+    ///     Significant characters not in a cohort that need OffscreenInference.
     /// </summary>
-    [JsonPropertyName("significant_for_inference")]
-    public List<SignificantForInference>? SignificantForInference { get; init; }
+    [JsonPropertyName("inference")]
+    public List<SignificantForInference>? Inference { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
@@ -142,6 +142,12 @@ internal sealed class SimulationCohort
     /// </summary>
     [JsonPropertyName("characters")]
     public required List<string> Characters { get; init; }
+
+    /// <summary>
+    ///     Character tiers in same order as characters array (arc_important or significant).
+    /// </summary>
+    [JsonPropertyName("tiers")]
+    public List<string>? Tiers { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
