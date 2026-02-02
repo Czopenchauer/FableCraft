@@ -40,6 +40,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
+        systemPrompt = systemPrompt.Replace(PlaceholderNames.CharacterName, context.MainCharacter.Name);
         var hasSceneContext = context.SceneContext.Length > 0;
 
         var chatHistory = new ChatHistory();

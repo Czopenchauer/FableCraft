@@ -162,18 +162,24 @@ internal sealed class CharacterAgent : BaseAgent
 
     private string BuildMainCharacterSection(GenerationContext context, CharacterContext currentCharacter)
     {
-        var tracker = _generationContext.LatestTracker()?.MainCharacter?.MainCharacter;
+        var tracker = _generationContext.LatestTracker()?.MainCharacter?.MainCharacter
+                      ?? context.NewTracker?.MainCharacter?.MainCharacter
+                      ?? _generationContext.InitialMainCharacterTracker;
         var description = _generationContext.LatestTracker()?.MainCharacter?.MainCharacterDescription
                           ?? _generationContext.MainCharacter.Description;
 
+        var name = tracker?.Name ?? _generationContext.MainCharacter.Name;
+        var appearance = tracker?.Appearance ?? "Unknown";
+        var generalBuild = tracker?.GeneralBuild ?? "Unknown";
+
         var builder = new StringBuilder($"""
-                                         <character name="{tracker!.Name}">
-                                         Appearance: {tracker.Appearance}
-                                         GeneralBuild: {tracker.GeneralBuild}
+                                         <character name="{name}">
+                                         Appearance: {appearance}
+                                         GeneralBuild: {generalBuild}
                                          {description}
                                          </character>
                                          """);
-        var scene = context.LatestTracker()!.Scene!.CharactersPresent;
+        var scene = context.LatestTracker()?.Scene?.CharactersPresent ?? [];
         var otherCharacters = _generationContext.Characters
             .Where(c => c.Name != currentCharacter.Name && scene.Contains(c.Name))
             .ToList();

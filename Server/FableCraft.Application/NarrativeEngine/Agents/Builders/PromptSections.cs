@@ -213,21 +213,13 @@ internal static class PromptSections
         var names = string.Join("\n- ",
             characters.Select(c => c.Name));
 
-        var mainCharTracker = context.LatestTracker()?.MainCharacter?.MainCharacter;
-        var mainCharProfile = $"""
-                               <profile name="{context.MainCharacter.Name}" role="main_character">
-                               Appearance: {mainCharTracker?.Appearance}
-                               GeneralBuild: {mainCharTracker?.GeneralBuild}
-                               {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
-                               </profile>
-                               """;
-
         var profiles = string.Join("\n",
             characters.Select(c =>
                 $"""
                  <profile name="{c.Name}">
                  Appearance: {c.CharacterTracker?.Appearance}
                  GeneralBuild: {c.CharacterTracker?.GeneralBuild}
+                 Location: {c.CharacterTracker?.Location ?? "unknown"}
                  {c.Description}
                  </profile>
                  """
@@ -243,7 +235,6 @@ internal static class PromptSections
                 ---
 
                 <character_profiles>
-                {mainCharProfile}
                 {profiles}
                 </character_profiles>
                 """;
