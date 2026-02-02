@@ -124,6 +124,18 @@
             {{ getFieldError('description', mainCharacterGroup) }}
           </span>
         </div>
+
+        <div class="form-group">
+          <label class="form-label" for="initialTrackerJson">Initial Tracker State (Optional - JSON)</label>
+          <textarea
+            class="form-textarea code-input"
+            formControlName="initialTrackerJson"
+            id="initialTrackerJson"
+            placeholder='{"name": "CharacterName", "appearance": "...", "generalBuild": "..."}'
+            rows="4"
+          ></textarea>
+          <span class="help-text">Optional JSON to pre-define the main character's tracker state for the first scene. Leave empty to let the AI initialize it.</span>
+        </div>
       </div>
 
       <!-- Configuration Section -->
@@ -268,6 +280,165 @@
             <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
           </svg>
           Add Lore Entry
+        </button>
+      </div>
+
+      <!-- Custom Characters Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h2 class="section-title">Custom Characters (Optional)</h2>
+          <p class="section-subtitle">Pre-define NPCs that will exist from the start of the adventure</p>
+        </div>
+
+        <div class="custom-characters-entries" formArrayName="customCharacters">
+          <div *ngFor="let character of customCharactersArray.controls; let i = index" [formGroupName]="i" class="custom-character-entry">
+            <div class="character-entry-header">
+              <span class="character-entry-number">Character {{ i + 1 }}</span>
+              <button
+                (click)="removeCustomCharacter(i)"
+                class="btn-remove"
+                type="button"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" [for]="'charName-' + i">Name *</label>
+                <input
+                  class="form-input"
+                  formControlName="name"
+                  [id]="'charName-' + i"
+                  placeholder="Character name"
+                  type="text"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" [for]="'charImportance-' + i">Importance *</label>
+                <select
+                  class="form-select"
+                  formControlName="importance"
+                  [id]="'charImportance-' + i"
+                >
+                  <option value="arc_important">Arc Important</option>
+                  <option value="significant">Significant</option>
+                  <option value="background">Background</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" [for]="'charDescription-' + i">Description *</label>
+              <textarea
+                class="form-textarea"
+                formControlName="description"
+                [id]="'charDescription-' + i"
+                placeholder="Physical appearance, personality, role in the story..."
+                rows="3"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" [for]="'charStats-' + i">Character Stats (JSON)</label>
+              <textarea
+                class="form-textarea code-input"
+                formControlName="characterStatsJson"
+                [id]="'charStats-' + i"
+                placeholder='{"name": "", "motivations": null, "routine": null}'
+                rows="4"
+              ></textarea>
+              <span class="help-text">Character profile: motivations, routine, and other stats</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" [for]="'charTracker-' + i">Character Tracker (JSON)</label>
+              <textarea
+                class="form-textarea code-input"
+                formControlName="characterTrackerJson"
+                [id]="'charTracker-' + i"
+                placeholder='{"name": "", "location": "", "appearance": ""}'
+                rows="4"
+              ></textarea>
+              <span class="help-text">Character tracker state: location, appearance, etc.</span>
+            </div>
+
+            <!-- Relationships within this character -->
+            <div class="relationships-section">
+              <div class="relationships-header">
+                <span class="relationships-title">Relationships</span>
+                <button
+                  (click)="addRelationship(i)"
+                  class="btn btn-small btn-secondary"
+                  type="button"
+                >
+                  + Add Relationship
+                </button>
+              </div>
+
+              <div formArrayName="relationships">
+                <div *ngFor="let rel of getCharacterRelationships(i).controls; let j = index" [formGroupName]="j" class="relationship-entry">
+                  <div class="relationship-row">
+                    <div class="form-group">
+                      <label class="form-label" [for]="'relTarget-' + i + '-' + j">Target Character *</label>
+                      <input
+                        class="form-input"
+                        formControlName="targetCharacterName"
+                        [id]="'relTarget-' + i + '-' + j"
+                        placeholder="Name of the other character"
+                        type="text"
+                      />
+                    </div>
+                    <button
+                      (click)="removeRelationship(i, j)"
+                      class="btn-remove"
+                      type="button"
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" [for]="'relDynamic-' + i + '-' + j">Dynamic *</label>
+                    <textarea
+                      class="form-textarea"
+                      formControlName="dynamic"
+                      [id]="'relDynamic-' + i + '-' + j"
+                      placeholder="2-4 sentences: How they feel about this person and why..."
+                      rows="2"
+                    ></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" [for]="'relData-' + i + '-' + j">Relationship Data (JSON)</label>
+                    <textarea
+                      class="form-textarea code-input"
+                      formControlName="dataJson"
+                      [id]="'relData-' + i + '-' + j"
+                      placeholder='{"foundation": "", "stance": "", "trust": ""}'
+                      rows="3"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          (click)="addCustomCharacter()"
+          class="btn btn-secondary add-character-btn"
+          type="button"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          Add Custom Character
         </button>
       </div>
 

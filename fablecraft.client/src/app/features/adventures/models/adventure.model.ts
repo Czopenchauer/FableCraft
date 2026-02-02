@@ -18,6 +18,60 @@ export interface AdventureListItemDto {
 export interface CharacterDto {
   name: string;
   description: string;
+  initialTracker?: MainCharacterTrackerInput | null;
+}
+
+/**
+ * Input structure for the main character's initial tracker state.
+ * This is used when creating an adventure to pre-define the MC's tracker.
+ */
+export interface MainCharacterTrackerInput {
+  name: string;
+  appearance?: string;
+  generalBuild?: string;
+  [key: string]: any; // Additional dynamic fields from tracker definition
+}
+
+/**
+ * Represents a pre-defined custom character to be created with the adventure.
+ */
+export interface CustomCharacterDto {
+  name: string;
+  description: string;
+  importance: 'arc_important' | 'significant' | 'background';
+  characterStats: CharacterStatsInput;
+  characterTracker: CharacterTrackerInput;
+  initialRelationships: CustomRelationshipDto[];
+}
+
+/**
+ * Input structure for character stats (profile).
+ */
+export interface CharacterStatsInput {
+  name?: string;
+  motivations?: any;
+  routine?: any;
+  [key: string]: any; // Additional dynamic fields
+}
+
+/**
+ * Input structure for character tracker state.
+ */
+export interface CharacterTrackerInput {
+  name: string;
+  location: string;
+  appearance?: string;
+  generalBuild?: string;
+  [key: string]: any; // Additional dynamic fields
+}
+
+/**
+ * Represents an initial relationship for a custom character.
+ */
+export interface CustomRelationshipDto {
+  targetCharacterName: string;
+  dynamic: string;
+  data: { [key: string]: any };
 }
 
 export interface AdventureAgentLlmPresetDto {
@@ -42,6 +96,7 @@ export interface AdventureDto {
   agentLlmPresets: AdventureAgentLlmPresetDto[];
   extraLoreEntries?: ExtraLoreEntryDto[];
   graphRagSettingsId?: string | null;
+  customCharacters?: CustomCharacterDto[];
 }
 
 export interface AdventureDefaultsDto {

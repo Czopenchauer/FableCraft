@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {AdventureService} from '../../services/adventure.service';
-import {AdventureAgentLlmPresetDto, AdventureDto, ExtraLoreEntryDto} from '../../models/adventure.model';
+import {AdventureAgentLlmPresetDto, AdventureDto, CustomCharacterDto, CustomRelationshipDto, ExtraLoreEntryDto} from '../../models/adventure.model';
 import {forkJoin, Subject, takeUntil} from 'rxjs';
 import {LlmPresetService} from '../../services/llm-preset.service';
 import {WorldbookService} from '../../services/worldbook.service';
@@ -65,6 +65,10 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     return this.adventureForm.get('extraLoreEntries') as FormArray;
   }
 
+  get customCharactersArray(): FormArray {
+    return this.adventureForm.get('customCharacters') as FormArray;
+  }
+
   ngOnInit(): void {
     this.loadDropdownData();
   }
@@ -94,20 +98,41 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     // Build extra lore entries array from form
     const extraLoreEntries: ExtraLoreEntryDto[] = formValue.extraLoreEntries || [];
 
+    // Build custom characters array from form
+    const customCharacters: CustomCharacterDto[] = (formValue.customCharacters || []).map((char: any) => ({
+      name: char.name,
+      description: char.description,
+      importance: char.importance,
+      characterStats: this.parseJsonSafe(char.characterStatsJson, {name: char.name, motivations: null, routine: null}),
+      characterTracker: this.parseJsonSafe(char.characterTrackerJson, {name: char.name, location: ''}),
+      initialRelationships: (char.relationships || []).map((rel: any) => ({
+        targetCharacterName: rel.targetCharacterName,
+        dynamic: rel.dynamic,
+        data: this.parseJsonSafe(rel.dataJson, {})
+      }))
+    }));
+
+    // Parse initial MC tracker if provided
+    const initialTracker = formValue.mainCharacter.initialTrackerJson
+      ? this.parseJsonSafe(formValue.mainCharacter.initialTrackerJson, null)
+      : null;
+
     const adventureDto: AdventureDto = {
       name: formValue.name,
       firstSceneDescription: formValue.firstSceneDescription,
       referenceTime: formValue.referenceTime,
       mainCharacter: {
         name: formValue.mainCharacter.name,
-        description: formValue.mainCharacter.description
+        description: formValue.mainCharacter.description,
+        initialTracker: initialTracker
       },
       worldbookId: formValue.worldbookId || null,
       graphRagSettingsId: formValue.graphRagSettingsId || null,
       trackerDefinitionId: formValue.trackerDefinitionId,
       promptPath: formValue.promptPath,
       agentLlmPresets: agentLlmPresets,
-      extraLoreEntries: extraLoreEntries
+      extraLoreEntries: extraLoreEntries,
+      customCharacters: customCharacters.length > 0 ? customCharacters : undefined
     };
 
     this.adventureService.createAdventure(adventureDto)
@@ -180,6 +205,52 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
     this.extraLoreArray.removeAt(index);
   }
 
+  // Custom Characters management
+  addCustomCharacter(): void {
+    const characterGroup = this.fb.group({
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      importance: ['significant', Validators.required],
+      characterStatsJson: ['{\n  "name": "",\n  "motivations": null,\n  "routine": null\n}'],
+      characterTrackerJson: ['{\n  "name": "",\n  "location": ""\n}'],
+      relationships: this.fb.array([])
+    });
+    this.customCharactersArray.push(characterGroup);
+  }
+
+  removeCustomCharacter(index: number): void {
+    this.customCharactersArray.removeAt(index);
+  }
+
+  getCharacterRelationships(characterIndex: number): FormArray {
+    return this.customCharactersArray.at(characterIndex).get('relationships') as FormArray;
+  }
+
+  addRelationship(characterIndex: number): void {
+    const relationshipGroup = this.fb.group({
+      targetCharacterName: ['', Validators.required],
+      dynamic: ['', Validators.required],
+      dataJson: ['{}']
+    });
+    this.getCharacterRelationships(characterIndex).push(relationshipGroup);
+  }
+
+  removeRelationship(characterIndex: number, relationshipIndex: number): void {
+    this.getCharacterRelationships(characterIndex).removeAt(relationshipIndex);
+  }
+
+  private parseJsonSafe(jsonString: string, defaultValue: any): any {
+    if (!jsonString || jsonString.trim() === '') {
+      return defaultValue;
+    }
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      console.warn('Failed to parse JSON:', e);
+      return defaultValue;
+    }
+  }
+
   private initializeForm(): void {
     // Build agent presets form group dynamically
     const agentPresetsGroup: { [key: string]: any } = {};
@@ -193,14 +264,16 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
       referenceTime: ['', Validators.required],
       mainCharacter: this.fb.group({
         name: ['', [Validators.required, Validators.minLength(2)]],
-        description: ['', Validators.required]
+        description: ['', Validators.required],
+        initialTrackerJson: [''] // Optional JSON for initial MC tracker
       }),
       worldbookId: [null],
       graphRagSettingsId: [null],
       trackerDefinitionId: ['', Validators.required],
       promptPath: ['', Validators.required],
       agentPresets: this.fb.group(agentPresetsGroup),
-      extraLoreEntries: this.fb.array([])
+      extraLoreEntries: this.fb.array([]),
+      customCharacters: this.fb.array([])
     });
 
     // Watch worldbook changes to auto-populate GraphRAG settings

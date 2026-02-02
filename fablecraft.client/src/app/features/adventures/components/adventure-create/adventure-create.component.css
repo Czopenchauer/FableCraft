@@ -475,9 +475,103 @@
   height: 14px;
 }
 
-.add-lore-btn {
+.add-lore-btn,
+.add-character-btn {
   width: 100%;
   justify-content: center;
+}
+
+/* Custom Characters Section */
+.custom-characters-entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.custom-character-entry {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+[data-theme="medieval-fantasy"] .custom-character-entry {
+  background: rgba(184, 134, 11, 0.05);
+  border-color: var(--color-primary);
+}
+
+[data-theme="modern-dark"] .custom-character-entry {
+  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.character-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.character-entry-number {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Code input styling for JSON fields */
+.code-input {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: var(--font-size-xs);
+  background: var(--bg-primary);
+  white-space: pre;
+}
+
+/* Relationships Section */
+.relationships-section {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px dashed var(--border-primary);
+}
+
+.relationships-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.relationships-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.btn-small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+}
+
+.relationship-entry {
+  padding: var(--spacing-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.relationship-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+}
+
+.relationship-row .form-group {
+  flex: 1;
+}
+
+.relationship-row .btn-remove {
+  margin-top: 24px;
 }
 
 /* Agents Grid */
