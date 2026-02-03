@@ -32,18 +32,18 @@ internal sealed class CharacterEmulationPlugin : PluginBase
     [Description(
         "Emulate a character's action based on the character's personality, motivations, and the current situation. Use this to generate character dialogue, actions, reactions, or decisions that are consistent with their established traits and the narrative context.")]
     public async Task<string> EmulateCharacterActionAsync(
-        [Description("The name of the character whose action is to be emulated. Use exactly the same name as defined in the character context.")]
+        [Description("Exact name as defined in character context. Must match.")]
         string characterName,
-        [Description("What just happened requiring response")]
-        string stimulus,
-        [Description("\"What do they do?\" / \"What do they say?\" / \"How do they react?\"")]
+        [Description("External events the character can perceive right now. See **Situation Construction** below. Must NOT contain anything about the character themselves—their tracker provides complete self-knowledge.")]
+        string situation,
+        [Description("What you need from them. See **Query Types**.")]
         string query
     )
     {
         ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
 
-        var response = await _characterAgent.EmulateCharacterAction(stimulus, query, characterName);
+        var response = await _characterAgent.EmulateCharacterAction(situation, query, characterName);
 
         if (Context != null)
         {
@@ -55,7 +55,7 @@ internal sealed class CharacterEmulationPlugin : PluginBase
                     Context.CharacterEmulationOutputs[characterName] = outputs;
                 }
 
-                outputs.Add(new CharacterEmulationOutput(characterName, stimulus, query, response, outputs.Count + 1));
+                outputs.Add(new CharacterEmulationOutput(characterName, situation, query, response, outputs.Count + 1));
             }
         }
 

@@ -254,7 +254,7 @@ internal static class PromptSections
                 """;
     }
 
-    public static string RecentScenesForCharacter(CharacterContext context, int count = 5)
+    public static string RecentScenesForCharacter(CharacterContext context, int count = 15)
     {
         var scenes = string.Join("\n\n---\n\n",
             context.SceneRewrites
