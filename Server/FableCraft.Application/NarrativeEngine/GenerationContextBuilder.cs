@@ -23,7 +23,7 @@ internal interface IGenerationContextBuilder
 
 internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) : IGenerationContextBuilder
 {
-    private const int NumberOfScenesToInclude = 20;
+    private const int NumberOfScenesToInclude = 30;
 
     public async Task<GenerationContext> BuildRegenerationContextAsync(
         Guid adventureId,

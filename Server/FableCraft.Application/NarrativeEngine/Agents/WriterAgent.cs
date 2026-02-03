@@ -47,23 +47,36 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.CharacterForEmulation(context.Characters, context)}
-
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}
-
-                             {PromptSections.BackgroundCharacterProfiles(context.BackgroundCharacters)}
 
                              {PromptSections.Context(context)}
 
                              {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.PreviousCharacterObservations(context.SceneContext)}
-
-                             {(hasSceneContext ? PromptSections.LastScenes(context.SceneContext, SceneContextCount) : "")}
                              """;
+        chatHistory.AddUserMessage($"""
+                                    {PromptSections.CharacterForEmulation(context.Characters, context)}
+
+                                    {PromptSections.BackgroundCharacterProfiles(context.BackgroundCharacters)}
+                                    """);
         chatHistory.AddUserMessage(contextPrompt);
+        foreach (string se in context.SceneContext
+                     .OrderByDescending(x => x.SequenceNumber)
+                     .Take(SceneContextCount)
+                     .OrderBy(x => x.SequenceNumber)
+                     .Select(x => $"""
+                                   Time: {x.Metadata.Tracker!.Scene!.Time}
+                                   Location: {x.Metadata.Tracker.Scene.Location}
+                                   Weather: {x.Metadata.Tracker.Scene.Weather}
+                                   Characters: {x.Metadata.Tracker.Scene.CharactersPresent}
+                                   {x.SceneContent}
+                                   """))
+        {
+            chatHistory.AddUserMessage(se);
+        }
 
         string requestPrompt;
         if (!hasSceneContext)

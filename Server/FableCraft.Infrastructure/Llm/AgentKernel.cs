@@ -180,10 +180,13 @@ internal sealed class AgentKernel : IAgentKernel
                                 token);
 
                             _logger.Information("Generated streaming response: {response}", responseContent);
-                            _logger.Information("Input usage: {usage}, output usage {output}, total usage {total}",
+                            _logger.Information("Partial context streaming response: {response}", context.PartialResponse);
+                            _logger.Information(
+                                "Token usage - Input: {Input}, Output: {Output}, Total: {Total}, CachedTokens: {Cached}",
                                 usage?.InputTokenCount,
                                 usage?.OutputTokenCount,
-                                usage?.TotalTokenCount);
+                                usage?.TotalTokenCount,
+                                usage?.InputTokenDetails?.CachedTokenCount);
 
                             var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
                             await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
