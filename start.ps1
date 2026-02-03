@@ -3,7 +3,6 @@
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Convert to forward slashes for Docker compatibility
 $env:FABLECRAFT_PROJECT_PATH = $ScriptDir -replace '\\', '/'
 
 Write-Host "Starting FableCraft..."

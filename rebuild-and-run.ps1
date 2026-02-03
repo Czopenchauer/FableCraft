@@ -1,5 +1,10 @@
 # Rebuild client and server images, then start with force recreate
 
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+$env:FABLECRAFT_PROJECT_PATH = $ScriptDir -replace '\\', '/'
+
+Write-Host "Project path: $env:FABLECRAFT_PROJECT_PATH"
 Write-Host "Rebuilding fablecraft-server and fablecraft-client images..." -ForegroundColor Cyan
 
 docker-compose build --no-cache fablecraft-server fablecraft-client
