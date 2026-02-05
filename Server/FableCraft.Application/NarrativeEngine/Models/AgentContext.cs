@@ -5,6 +5,12 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 namespace FableCraft.Application.NarrativeEngine.Models;
 
 /// <summary>
+///     Parsed result from a character emulation LLM call.
+///     Observable is returned to the caller; FullResponse (observable + internal) goes to reflection.
+/// </summary>
+internal sealed record CharacterEmulationResult(string Observable, string FullResponse);
+
+/// <summary>
 ///     Captures the output from a character emulation call for use in reflection.
 /// </summary>
 internal sealed record CharacterEmulationOutput(

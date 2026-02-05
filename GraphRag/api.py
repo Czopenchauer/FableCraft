@@ -302,8 +302,8 @@ async def delete_node(dataset_name: str, data_id: UUID):
                 detail=f"Dataset with name '{dataset_name}' not found"
             )
 
-        dataset_id = UUID(dataset.id)
-        await cognee.delete(data_id=data_id, dataset_id=dataset_id)
+        dataset_id = str(dataset.id)
+        await cognee.delete(data_id=str(data_id), dataset_id=dataset_id)
 
         return {"message": f"Successfully deleted node {data_id} from dataset {dataset_name}"}
     except HTTPException:

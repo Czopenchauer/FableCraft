@@ -199,7 +199,7 @@ internal sealed class CharacterAgent : BaseAgent
         return builder.ToString();
     }
 
-    public async Task<string> EmulateCharacterAction(
+    public async Task<CharacterEmulationResult> EmulateCharacterAction(
         string situation,
         string query,
         string characterName)
@@ -208,7 +208,7 @@ internal sealed class CharacterAgent : BaseAgent
         if (!_chatHistory.TryGetValue(characterName, out var ctx))
         {
             _logger.Information("Character {CharacterName} not found in chat history. Current chatHistory: {history}", characterName, _chatHistory.Keys);
-            return "Character not found.";
+            return new CharacterEmulationResult("Character not found.", "Character not found.");
         }
 
         var (characterContext, chatHistory) = ctx;
@@ -227,15 +227,24 @@ internal sealed class CharacterAgent : BaseAgent
 
         chat.AddUserMessage(situation);
         chat.AddUserMessage(query);
-        var outputFunc = new Func<string, string>(response => response);
-        var response = await _agentKernel.SendRequestAsync(chat,
-            outputFunc,
+        var outputParser = CreateOutputParser();
+        var result = await _agentKernel.SendRequestAsync(chat,
+            outputParser,
             _kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             $"{nameof(CharacterAgent)}:{characterName}",
             kernelWithKg,
             CancellationToken.None);
-        _logger.Information("Received response for character {CharacterName}: {Response}", characterName, response);
-        return response;
+        _logger.Information("Received response for character {CharacterName}: {Response}", characterName, result.FullResponse);
+        return result;
+    }
+
+    private static Func<string, CharacterEmulationResult> CreateOutputParser()
+    {
+        return response =>
+        {
+            var observable = ResponseParser.ExtractText(response, "observable");
+            return new CharacterEmulationResult(observable, response);
+        };
     }
 
     private async Task<string> BuildInstruction(GenerationContext context) => await GetPromptAsync(context);
