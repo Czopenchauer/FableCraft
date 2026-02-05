@@ -10,6 +10,11 @@ export FABLECRAFT_PROJECT_PATH="$SCRIPT_DIR"
 echo "Starting FableCraft..."
 echo "Project path: $FABLECRAFT_PROJECT_PATH"
 
+if [ -z "$(docker images -q fablecraft-fablecraft-server 2>/dev/null)" ] || [ -z "$(docker images -q fablecraft-fablecraft-client 2>/dev/null)" ]; then
+    echo "Building Docker images (this may take a few minutes on first run)..."
+    docker compose build
+fi
+
 docker compose up
 
 echo ""

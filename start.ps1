@@ -8,6 +8,14 @@ $env:FABLECRAFT_PROJECT_PATH = $ScriptDir -replace '\\', '/'
 Write-Host "Starting FableCraft..."
 Write-Host "Project path: $env:FABLECRAFT_PROJECT_PATH"
 
+$serverImage = docker images -q fablecraft-fablecraft-server 2>$null
+$clientImage = docker images -q fablecraft-fablecraft-client 2>$null
+
+if (-not $serverImage -or -not $clientImage) {
+    Write-Host "Building Docker images (this may take a few minutes on first run)..."
+    docker compose build
+}
+
 docker compose up
 
 Write-Host ""
