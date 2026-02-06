@@ -57,7 +57,6 @@ public static class StartupExtensions
                 client.Timeout = TimeSpan.FromMinutes(120);
             })
             .RemoveAllResilienceHandlers()
-            .AddHttpMessageHandler<RequestTrackerDelegate>()
             .AddStandardResilienceHandler(options =>
             {
                 options.AttemptTimeout = new HttpTimeoutStrategyOptions

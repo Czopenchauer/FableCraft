@@ -19,14 +19,20 @@ internal sealed class RagClientFactory : IRagClientFactory
     public const string HttpClientName = "GraphRagClient";
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly GraphContainerRegistry _graphContainerRegistry;
+    private readonly IContainerMonitor _containerMonitor;
     private readonly ILogger _logger;
     private readonly IMessageDispatcher _messageDispatcher;
 
     public RagClientFactory(
-        IHttpClientFactory httpClientFactory, GraphContainerRegistry graphContainerRegistry, IMessageDispatcher messageDispatcher, ILogger logger)
+        IHttpClientFactory httpClientFactory,
+        GraphContainerRegistry graphContainerRegistry,
+        IContainerMonitor containerMonitor,
+        IMessageDispatcher messageDispatcher,
+        ILogger logger)
     {
         _httpClientFactory = httpClientFactory;
         _graphContainerRegistry = graphContainerRegistry;
+        _containerMonitor = containerMonitor;
         _messageDispatcher = messageDispatcher;
         _logger = logger;
     }
@@ -34,21 +40,24 @@ internal sealed class RagClientFactory : IRagClientFactory
     public async Task<IRagSearch> CreateSearchClientForAdventure(Guid adventureId, CancellationToken cancellationToken)
     {
         var baseUrl = await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventureId, cancellationToken);
-        var httpClient = _httpClientFactory.CreateClient("GraphRag");
-        return new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+        var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        return new MonitoredRagClient(inner, _containerMonitor, adventureId);
     }
 
     public async Task<IRagBuilder> CreateBuildClientForAdventure(Guid adventureId, CancellationToken cancellationToken)
     {
         var baseUrl = await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventureId, cancellationToken);
-        var httpClient = _httpClientFactory.CreateClient("GraphRag");
-        return new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+        var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        return new MonitoredRagClient(inner, _containerMonitor, adventureId);
     }
 
     public async Task<IRagBuilder> CreateBuildClientForWorldbook(Guid worldbookId, CancellationToken cancellationToken)
     {
         var baseUrl = await _graphContainerRegistry.EnsureWorldbookContainerRunningAsync(worldbookId, cancellationToken);
-        var httpClient = _httpClientFactory.CreateClient("GraphRag");
-        return new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+        var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
+        return new MonitoredRagClient(inner, _containerMonitor, worldbookId);
     }
 }

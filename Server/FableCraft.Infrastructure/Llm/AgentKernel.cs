@@ -322,7 +322,6 @@ internal sealed class AgentKernel : IAgentKernel
         {
             if (chunk.Content != null)
             {
-                _logger.Information("Received chunk items: {chunkItems}", chunk.Items.ToJsonString());
                 responseBuilder.Append(chunk.Content);
                 context.PartialResponse = responseBuilder.ToString();
                 context.ChunksReceived++;

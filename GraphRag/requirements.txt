@@ -1,6 +1,6 @@
 ﻿# Cognee - Knowledge Graph RAG Framework
-cognee[all]
-cognee[monitoring]
+cognee[all] <= 0.5.2
+cognee[monitoring]  <= 0.5.2
 
 # NLP dependencies
 transformers
