@@ -184,44 +184,76 @@ internal sealed class SaveSceneEnrichment(
             newCharacters = context.NewCharacters?.ToList() ?? [];
         }
 
+        var existingBackgroundCharsForScene = await dbContext.BackgroundCharacters
+            .Where(x => x.AdventureId == context.AdventureId && x.SceneId == scene.Id)
+            .ToDictionaryAsync(x => x.Name, x => x, cancellationToken);
+
         if (context.NewBackgroundCharacters.Count > 0)
         {
-            var backgroundCharacterEntities = context.NewBackgroundCharacters.Select(x => new BackgroundCharacter
+            foreach (var newBgChar in context.NewBackgroundCharacters)
             {
-                AdventureId = context.AdventureId,
-                Description = x.Description,
-                SceneId = scene.Id,
-                Scene = scene,
-                Name = x.Name,
-                Identity = x.Identity,
-                LastLocation = context.NewTracker!.Scene!.Location,
-                LastSeenTime = context.NewTracker!.Scene!.Time,
-                Version = 0,
-                ConvertedToFull = false
-            }).ToList();
-            dbContext.BackgroundCharacters.AddRange(backgroundCharacterEntities);
+                if (existingBackgroundCharsForScene.TryGetValue(newBgChar.Name, out var existingBgChar))
+                {
+                    existingBgChar.Description = newBgChar.Description;
+                    existingBgChar.Identity = newBgChar.Identity;
+                    existingBgChar.LastLocation = context.NewTracker!.Scene!.Location;
+                    existingBgChar.LastSeenTime = context.NewTracker!.Scene!.Time;
+                }
+                else
+                {
+                    var bgCharEntity = new BackgroundCharacter
+                    {
+                        AdventureId = context.AdventureId,
+                        Description = newBgChar.Description,
+                        SceneId = scene.Id,
+                        Scene = scene,
+                        Name = newBgChar.Name,
+                        Identity = newBgChar.Identity,
+                        LastLocation = context.NewTracker!.Scene!.Location,
+                        LastSeenTime = context.NewTracker!.Scene!.Time,
+                        Version = 0,
+                        ConvertedToFull = false
+                    };
+                    dbContext.BackgroundCharacters.Add(bgCharEntity);
+                }
+            }
         }
 
         var backgroundCharacters = await dbContext.BackgroundCharacters
-            .Where(x => context.NewTracker!.Scene!.CharactersPresent.Except(context.NewBackgroundCharacters.Select(z => z.Name)).Contains(x.Name))
+            .Where(x => x.AdventureId == context.AdventureId
+                        && x.SceneId != scene.Id
+                        && context.NewTracker!.Scene!.CharactersPresent.Except(context.NewBackgroundCharacters.Select(z => z.Name)).Contains(x.Name))
+            .GroupBy(x => x.Name)
+            .Select(g => g.OrderByDescending(x => x.Version).First())
             .ToListAsync(cancellationToken: cancellationToken);
 
         foreach (BackgroundCharacter backgroundCharacter in backgroundCharacters)
         {
-            var newBackgroundState = new BackgroundCharacter
+            if (existingBackgroundCharsForScene.TryGetValue(backgroundCharacter.Name, out var existingBgChar))
             {
-                AdventureId = context.AdventureId,
-                Description = backgroundCharacter.Description,
-                SceneId = scene.Id,
-                Scene = scene,
-                Name = backgroundCharacter.Name,
-                Identity = backgroundCharacter.Identity,
-                LastLocation = context.NewTracker!.Scene!.Location,
-                LastSeenTime = context.NewTracker!.Scene!.Time,
-                Version = backgroundCharacter.Version + 1,
-                ConvertedToFull = context.NewCharacters?.Any(c => c.Name.Contains(backgroundCharacter.Name)) ?? false
-            };
-            dbContext.BackgroundCharacters.Add(newBackgroundState);
+                existingBgChar.Description = backgroundCharacter.Description;
+                existingBgChar.Identity = backgroundCharacter.Identity;
+                existingBgChar.LastLocation = context.NewTracker!.Scene!.Location;
+                existingBgChar.LastSeenTime = context.NewTracker!.Scene!.Time;
+                existingBgChar.ConvertedToFull = context.NewCharacters?.Any(c => c.Name.Contains(backgroundCharacter.Name)) ?? false;
+            }
+            else
+            {
+                var newBackgroundState = new BackgroundCharacter
+                {
+                    AdventureId = context.AdventureId,
+                    Description = backgroundCharacter.Description,
+                    SceneId = scene.Id,
+                    Scene = scene,
+                    Name = backgroundCharacter.Name,
+                    Identity = backgroundCharacter.Identity,
+                    LastLocation = context.NewTracker!.Scene!.Location,
+                    LastSeenTime = context.NewTracker!.Scene!.Time,
+                    Version = backgroundCharacter.Version + 1,
+                    ConvertedToFull = context.NewCharacters?.Any(c => c.Name.Contains(backgroundCharacter.Name)) ?? false
+                };
+                dbContext.BackgroundCharacters.Add(newBackgroundState);
+            }
         }
 
         if (characterUpdates.Count > 0)
@@ -229,21 +261,56 @@ internal sealed class SaveSceneEnrichment(
             var updateNames = characterUpdates.Select(y => y.Name).ToList();
             var characters = await dbContext
                 .Characters
+                .Include(c => c.CharacterStates.Where(cs => cs.SceneId == scene.Id))
+                .Include(c => c.CharacterMemories.Where(cm => cm.SceneId == scene.Id))
+                .Include(c => c.CharacterRelationships.Where(cr => cr.SceneId == scene.Id))
+                .Include(c => c.CharacterSceneRewrites.Where(csr => csr.SceneId == scene.Id))
                 .Where(x => x.AdventureId == context.AdventureId && updateNames.Contains(x.Name))
                 .ToListAsync(cancellationToken);
 
             foreach (var character in characters)
             {
                 var update = characterUpdates.Single(x => x.Name == character.Name);
-                character.CharacterStates.Add(new CharacterState
+
+                var existingState = character.CharacterStates.FirstOrDefault(cs => cs.SceneId == scene.Id);
+                if (existingState != null)
                 {
-                    CharacterStats = update.CharacterState,
-                    Tracker = update.CharacterTracker!,
-                    SequenceNumber = character.Version + 1,
-                    Scene = scene,
-                    IsDead = update.IsDead,
-                });
-                character.Version += 1;
+                    existingState.CharacterStats = update.CharacterState;
+                    existingState.Tracker = update.CharacterTracker!;
+                    existingState.IsDead = update.IsDead;
+                }
+                else
+                {
+                    character.CharacterStates.Add(new CharacterState
+                    {
+                        CharacterStats = update.CharacterState,
+                        Tracker = update.CharacterTracker!,
+                        SequenceNumber = character.Version + 1,
+                        Scene = scene,
+                        IsDead = update.IsDead,
+                        SimulationMetadata = update.SimulationMetadata
+                    });
+                    character.Version += 1;
+                }
+
+                var existingMemories = character.CharacterMemories.Where(cm => cm.SceneId == scene.Id).ToList();
+                foreach (var mem in existingMemories)
+                {
+                    character.CharacterMemories.Remove(mem);
+                }
+
+                var existingRelationships = character.CharacterRelationships.Where(cr => cr.SceneId == scene.Id).ToList();
+                foreach (var rel in existingRelationships)
+                {
+                    character.CharacterRelationships.Remove(rel);
+                }
+
+                var existingRewrites = character.CharacterSceneRewrites.Where(csr => csr.SceneId == scene.Id).ToList();
+                foreach (var rewrite in existingRewrites)
+                {
+                    character.CharacterSceneRewrites.Remove(rewrite);
+                }
+
                 var memories = update.CharacterMemories.Select(x => new CharacterMemory
                 {
                     SceneTracker = x.SceneTracker,
@@ -281,6 +348,10 @@ internal sealed class SaveSceneEnrichment(
             var newCharacterNames = newCharacters.Select(y => y.Name).ToList();
             var characters = await dbContext
                 .Characters
+                .Include(c => c.CharacterStates.Where(cs => cs.SceneId == scene.Id))
+                .Include(c => c.CharacterMemories.Where(cm => cm.SceneId == scene.Id))
+                .Include(c => c.CharacterRelationships.Where(cr => cr.SceneId == scene.Id))
+                .Include(c => c.CharacterSceneRewrites.Where(csr => csr.SceneId == scene.Id))
                 .Where(x => x.AdventureId == context.AdventureId && newCharacterNames.Contains(x.Name))
                 .ToListAsync(cancellationToken);
 
@@ -314,9 +385,45 @@ internal sealed class SaveSceneEnrichment(
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)
                 {
-                    existingChar.CharacterMemories = memories;
-                    existingChar.CharacterRelationships = relationships;
-                    existingChar.CharacterSceneRewrites = sceneRewrites;
+                    existingChar.Description = contextNewCharacter.Description;
+                    existingChar.Importance = contextNewCharacter.Importance;
+
+                    var existingState = existingChar.CharacterStates.FirstOrDefault(cs => cs.SceneId == scene.Id);
+                    if (existingState != null)
+                    {
+                        existingState.CharacterStats = contextNewCharacter.CharacterState;
+                        existingState.Tracker = contextNewCharacter.CharacterTracker!;
+                        existingState.IsDead = contextNewCharacter.IsDead;
+                    }
+                    else
+                    {
+                        existingChar.CharacterStates.Add(new CharacterState
+                        {
+                            CharacterStats = contextNewCharacter.CharacterState,
+                            Tracker = contextNewCharacter.CharacterTracker!,
+                            SequenceNumber = 0,
+                            Scene = scene,
+                            IsDead = contextNewCharacter.IsDead,
+                            SimulationMetadata = contextNewCharacter.SimulationMetadata
+                        });
+                    }
+
+                    foreach (var mem in existingChar.CharacterMemories.Where(cm => cm.SceneId == scene.Id).ToList())
+                    {
+                        existingChar.CharacterMemories.Remove(mem);
+                    }
+                    foreach (var rel in existingChar.CharacterRelationships.Where(cr => cr.SceneId == scene.Id).ToList())
+                    {
+                        existingChar.CharacterRelationships.Remove(rel);
+                    }
+                    foreach (var rewrite in existingChar.CharacterSceneRewrites.Where(csr => csr.SceneId == scene.Id).ToList())
+                    {
+                        existingChar.CharacterSceneRewrites.Remove(rewrite);
+                    }
+
+                    existingChar.CharacterMemories.AddRange(memories);
+                    existingChar.CharacterRelationships.AddRange(relationships);
+                    existingChar.CharacterSceneRewrites.AddRange(sceneRewrites);
                 }
                 else
                 {
@@ -332,7 +439,8 @@ internal sealed class SaveSceneEnrichment(
                                 Tracker = contextNewCharacter.CharacterTracker!,
                                 SequenceNumber = 0,
                                 Scene = scene,
-                                IsDead = false
+                                IsDead = false,
+                                SimulationMetadata = contextNewCharacter.SimulationMetadata
                             }
                         ],
                         Version = 0,
