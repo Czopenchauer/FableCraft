@@ -6,5 +6,5 @@ Your body affects your behavior:
 | High fatigue | Sleep, rest, reduced effectiveness, irritable |
 | Hunger / Thirst | Eat, drink, distracted if severe |
 | Intoxication | Impaired judgment, loosened inhibitions |
-| Restraints | Affects movement and comfort |
+| Restraints | Affects movement, comfort |
 | Ongoing conditions | Illness, poison, curse — affects everything |

@@ -105,6 +105,7 @@ Simulation runs if ANY of these are true:
 - At least one `arc_important` character has `last_simulated` more than 6 in-world hours ago
 - An `arc_important` character has a `pending_mc_interaction` with urgency `immediate` or `high`
 - An `arc_important` character is in the same location as MC and likely to cross paths
+- An `significant` character is likely to appear in the next scene.
 
 If no trigger condition is met, output an empty plan (no simulation needed).
 
@@ -124,16 +125,12 @@ Remove from simulation:
 
 ### Step 4: Determine Simulation Period
 
-Choose based on context:
+Simulation catches characters up to the **current story time**. The period covers the gap between their `last_simulated` timestamp and now.
 
-| Situation | Period |
-|-----------|--------|
-| Default | 6 in-world hours |
-| Evening/night approaching | "Until morning" |
-| MC traveling to known destination | Until likely arrival time |
-| Urgent `potential_interaction` pending | Until that interaction's timing |
+- **from:** The character's `last_simulated` time (or earliest among grouped characters)
+- **to:** Current time from `story_tracker.Time`
 
-The period should end at a natural break point when possible.
+For cohorts, use the earliest `last_simulated` among all members—everyone simulates through the same endpoint.
 
 ### Step 5: Score Cohort Formation
 
@@ -211,6 +208,7 @@ Before output:
 - Simulation period makes sense for the situation
 - significant_for_inference includes characters likely to appear
 - IntentCheck was used appropriately (not over-used, not under-used)
+- ALWAYS USE THE FULL NAME OF THE CHARACTER
 
 ---
 

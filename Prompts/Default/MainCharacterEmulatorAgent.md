@@ -38,4 +38,6 @@ Based on this input, write a response that authentically represents how this cha
 - Output ONLY the character's text - no meta-commentary
 - Do not include XML tags or JSON in your response
 - Simply write the requested content as the character would express it
-- Your response should be MAX 2 paragraphs. Only describe what character does according to the instruction
+- Your response should be MAX 2 paragraphs. Only describe what character do according to the instruction
+- Never write other characters reactions and actions.
+- Only include what main character is doing
