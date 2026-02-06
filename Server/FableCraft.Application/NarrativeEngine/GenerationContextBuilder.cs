@@ -409,9 +409,9 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         Guid adventureId,
         CancellationToken ct)
     {
-        // Include pre-scene custom characters (IntroductionScene == null) and characters not introduced in this scene
         var existingCharacters = await dbContext
             .Characters
+            .AsNoTracking()
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId && (x.IntroductionScene == null || x.IntroductionScene != sceneId))
             .Include(x => x.CharacterStates.Where(cs => cs.SceneId == null || cs.SceneId != sceneId).OrderByDescending(cs => cs.SequenceNumber).Take(1))
@@ -422,6 +422,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
 
         var newlyCreatedCharacters = await dbContext
             .Characters
+            .AsNoTracking()
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId && x.IntroductionScene == sceneId)
             .Include(x => x.CharacterStates)

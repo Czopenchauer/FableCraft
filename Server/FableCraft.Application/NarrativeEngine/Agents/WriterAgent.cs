@@ -107,12 +107,25 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {GetPendingMcInteractions(context)}
 
-                             {PromptSections.ResolutionOutput(context.NewResolution)}
-
                              {PromptSections.PlayerAction(context.PlayerAction)}
 
-                             {PromptSections.ActionResolution(context)}
-
+                             ---
+                             ## Quick Reference
+                             
+                             **Emulation:**
+                             - Call for EVERY full-profile character, EVERY beat
+                             - Multiple calls per scene is normal and expected
+                             - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
+                             - Speech is verbatim. Actions rendered through MC's perception.
+                             - If emulation contradicts your plan, emulation wins.
+                             
+                             **MC Agency:**
+                             - MC does ONLY what player input specified—nothing more
+                             - No invented dialogue, decisions, or "helpful" additional actions
+                             - Wishful thinking ("I convince," "knowing this will earn trust") = inner monologue, not world effect
+                             - No mechanism = MC acts, world doesn't bend
+                             
+                             **Never invent. Always ask.**
                              Generate a detailed scene based on the above resolution and context.
                              """;
         }
@@ -134,7 +147,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             kernelBuilder.GetDefaultFunctionPromptExecutionSettings(),
             nameof(WriterAgent),
             kernelWithKg,
-            cancellationToken);
+            cancellationToken,
+            new AgentKernelOptions { MaxParsingRetries = 1 });
 
         context.NewScene = newScene;
     }
@@ -150,8 +164,17 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             var choices = choicesText
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            var creationRequests = ResponseParser.ExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
-            var importanceFlags = ResponseParser.ExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
+            CreationRequests? creationRequests = null;
+            if (response.Contains("creation_requests"))
+            {
+                creationRequests = ResponseParser.ExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
+            }
+
+            ImportanceFlags? importanceFlags = null;
+            if (response.Contains("importance_flags"))
+            {
+                importanceFlags = ResponseParser.ExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
+            }
 
             return new GeneratedScene
             {

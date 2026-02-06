@@ -9,7 +9,6 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.Google;
 using Microsoft.SemanticKernel.Services;
 
 using OpenAI.Chat;
@@ -23,7 +22,12 @@ using Serilog.Core.Enrichers;
 
 namespace FableCraft.Infrastructure.Llm;
 
-public static class Telemetry
+public class AgentKernelOptions
+{
+    public int MaxParsingRetries { get; init; } = 4;
+}
+
+internal static class Telemetry
 {
     public static readonly ActivitySource LlmActivitySource = new("LlmCall");
 }
@@ -36,7 +40,8 @@ public interface IAgentKernel
         PromptExecutionSettings promptExecutionSettings,
         string operationName,
         Kernel kernel,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        AgentKernelOptions? options = null);
 }
 
 internal sealed class AgentKernel : IAgentKernel
@@ -76,11 +81,12 @@ internal sealed class AgentKernel : IAgentKernel
         PromptExecutionSettings promptExecutionSettings,
         string operationName,
         Kernel kernel,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        AgentKernelOptions? options = null)
     {
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
                                     ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
-        const int maxParsingRetries = 4;
+        var maxParsingRetries = options?.MaxParsingRetries ?? 4;
         for (int attempt = 1; attempt <= maxParsingRetries; attempt++)
         {
             try
@@ -180,7 +186,6 @@ internal sealed class AgentKernel : IAgentKernel
                                 token);
 
                             _logger.Information("Generated streaming response: {response}", responseContent);
-                            _logger.Information("Partial context streaming response: {response}", context.PartialResponse);
                             _logger.Information(
                                 "Token usage - Input: {Input}, Output: {Output}, Total: {Total}, CachedTokens: {Cached}",
                                 usage?.InputTokenCount,
@@ -317,6 +322,7 @@ internal sealed class AgentKernel : IAgentKernel
         {
             if (chunk.Content != null)
             {
+                _logger.Information("Received chunk items: {chunkItems}", chunk.Items.ToJsonString());
                 responseBuilder.Append(chunk.Content);
                 context.PartialResponse = responseBuilder.ToString();
                 context.ChunksReceived++;
