@@ -1,8 +1,10 @@
+using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FableCraft.Server.Controllers;
 
@@ -70,5 +72,44 @@ public sealed class MaintenanceController(
         }
 
         return Ok(result);
+    }
+
+    /// <summary>
+    ///     Recovers a corrupted GraphRAG container by recreating its Docker volume from the worldbook template
+    ///     and recommitting all adventure data (main character, lorebook, scenes, character rewrites).
+    /// </summary>
+    /// <param name="adventureId">The ID of the adventure to recover.</param>
+    /// <param name="newWorldbookId">Optional: reassign the adventure to a different worldbook before recovery.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpPost("recover-graphrag/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RecoverGraphRag(
+        Guid adventureId,
+        [FromQuery] Guid? newWorldbookId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var adventureExists = await dbContext.Adventures.AnyAsync(x => x.Id == adventureId, cancellationToken);
+        if (!adventureExists)
+        {
+            return NotFound("Adventure not found");
+        }
+
+        if (newWorldbookId.HasValue)
+        {
+            var worldbookExists = await dbContext.Worldbooks.AnyAsync(x => x.Id == newWorldbookId.Value, cancellationToken);
+            if (!worldbookExists)
+            {
+                return NotFound("Worldbook not found");
+            }
+        }
+
+        await messageDispatcher.PublishAsync(new RecoverGraphRagCommand
+        {
+            AdventureId = adventureId,
+            NewWorldbookId = newWorldbookId
+        }, cancellationToken);
+
+        return Accepted();
     }
 }
