@@ -38,6 +38,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             return;
         }
 
+        context.CharacterEmulationOutputs.Clear();
+
         var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
         systemPrompt = systemPrompt.Replace(PlaceholderNames.CharacterName, context.MainCharacter.Name);
