@@ -14,6 +14,12 @@ public interface IWorldbookRagManager
 public interface IAdventureRagManager
 {
     Task InitializeFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes the existing adventure volume and reinitializes it from the worldbook template.
+    /// Used to recover corrupted GraphRAG containers.
+    /// </summary>
+    Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default);
 }
 
 internal sealed class AdventureRagManager : IAdventureRagManager, IWorldbookRagManager
@@ -42,6 +48,28 @@ internal sealed class AdventureRagManager : IAdventureRagManager, IWorldbookRagM
         {
             await _volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
         }
+
+        await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
+    }
+
+    public async Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default)
+    {
+        var sourceVolume = _settings.GetWorldbookVolumeName(adventure.WorldbookId);
+        var destVolume = _settings.GetAdventureVolumeName(adventure.Id);
+
+        if (!await _volumeManager.ExistsAsync(sourceVolume, cancellationToken))
+        {
+            throw new WorldbookNotIndexedException(adventure.WorldbookId);
+        }
+
+        await _graphContainerRegistry.RemoveContainerAsync(adventure.Id, cancellationToken);
+
+        if (await _volumeManager.ExistsAsync(destVolume, cancellationToken))
+        {
+            await _volumeManager.DeleteAsync(destVolume, force: true, cancellationToken);
+        }
+
+        await _volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
 
         await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
     }

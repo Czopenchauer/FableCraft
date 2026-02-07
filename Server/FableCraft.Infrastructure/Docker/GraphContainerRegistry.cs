@@ -32,6 +32,11 @@ internal interface IGraphContainerRegistry
     /// Returns the base URL for the container (e.g., "http://localhost:8112").
     /// </summary>
     Task<string> EnsureWorldbookContainerRunningAsync(Guid worldbookId, CancellationToken ct);
+
+    /// <summary>
+    /// Stops and removes the container for the given identifier (adventure or worldbook).
+    /// </summary>
+    Task RemoveContainerAsync(Guid identifier, CancellationToken ct);
 }
 
 internal interface IContainerMonitor
@@ -268,7 +273,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         if (_containers.TryGetValue(adventureIdValue.Value, out var containerInfo))
         {
             var updated = containerInfo with { PendingOperationCount = Math.Max(containerInfo.PendingOperationCount - 1, 0) };
-            _containers.TryUpdate(adventureIdValue.Value, containerInfo with { PendingOperationCount = Math.Max(containerInfo.PendingOperationCount - 1, 0) }, containerInfo);
+            _containers.TryUpdate(adventureIdValue.Value, updated, containerInfo);
             _logger.Information("Container {ContainerName} has {request} pending operation", containerInfo.Name, updated.PendingOperationCount);
         }
     }

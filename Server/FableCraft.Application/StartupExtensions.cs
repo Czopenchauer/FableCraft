@@ -74,6 +74,7 @@ public static class StartupExtensions
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
         services.AddMessageHandler<IndexWorldbookCommand, IndexWorldbookCommandHandler>();
+        services.AddMessageHandler<RecoverGraphRagCommand, RecoverGraphRagCommandHandler>();
 
         return services;
     }
