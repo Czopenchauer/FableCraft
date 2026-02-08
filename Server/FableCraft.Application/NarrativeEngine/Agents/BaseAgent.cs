@@ -33,7 +33,7 @@ internal abstract class BaseAgent
             $"{agentName}.md"
         );
         var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
-        var dotNotation = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "DotNotation.md"));
+        var progressionSystem = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "ProgressionSystem.md"));
         var worldSettingsPath = Path.Combine(generationContext.PromptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
@@ -41,8 +41,8 @@ internal abstract class BaseAgent
         var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
         return promp
             .Replace(PlaceholderNames.StoryBible, storyBible)
-            .Replace(PlaceholderNames.WorldSetting, worldSettings)
-            .Replace(PlaceholderNames.DotNotation, dotNotation);
+            .Replace(PlaceholderNames.ProgressionSystem, progressionSystem)
+            .Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 
     private static async Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)

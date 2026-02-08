@@ -56,5 +56,5 @@ internal static class PlaceholderNames
     /// </summary>
     public const string StoryBible = "{{story_bible}}";
 
-    public const string DotNotation = "{{dot_notation_reference}}";
+    public const string ProgressionSystem = "{{progression_system}}";
 }

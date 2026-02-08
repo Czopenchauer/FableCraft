@@ -16,7 +16,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent : BaseAgent, IProcessor
 {
-    private const int SceneContextCount = 25;
+    private const int SceneContextCount = 20;
     private readonly IAgentKernel _agentKernel;
     private readonly IPluginFactory _pluginFactory;
 
@@ -169,13 +169,13 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             CreationRequests? creationRequests = null;
             if (response.Contains("creation_requests"))
             {
-                creationRequests = ResponseParser.ExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
+                creationRequests = ResponseParser.TryExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
             }
 
             ImportanceFlags? importanceFlags = null;
             if (response.Contains("importance_flags"))
             {
-                importanceFlags = ResponseParser.ExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
+                importanceFlags = ResponseParser.TryExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
             }
 
             return new GeneratedScene

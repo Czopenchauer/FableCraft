@@ -28,6 +28,22 @@ internal static class ResponseParser
         return JsonSerializer.Deserialize<T>(content.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
                ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
     }
+    
+    /// <summary>
+    ///     Extracts content from a single XML tag and deserializes it as JSON
+    /// </summary>
+    public static T? TryExtractJson<T>(string response, string tag, bool ignoreNull = false)
+    {
+        var content = ExtractTagContent(response, tag);
+        var options = PromptSections.GetJsonOptions(ignoreNull);
+        if (content == null)
+        {
+            return default;
+        }
+
+        return JsonSerializer.Deserialize<T>(content.RemoveThinkingBlock().ExtractJsonFromMarkdown(), options)
+               ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
+    }
 
     /// <summary>
     ///     Extracts raw text content from an XML tag

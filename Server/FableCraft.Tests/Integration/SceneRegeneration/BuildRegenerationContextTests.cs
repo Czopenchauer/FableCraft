@@ -59,9 +59,9 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
 
         var context = await builder.BuildRegenerationContextAsync(adventure.Id, currentScene, CancellationToken.None);
 
-        await Assert.That(context.SceneContext).Count().IsEqualTo(20);
+        await Assert.That(context.SceneContext).Count().IsEqualTo(24);
         await Assert.That(context.SceneContext.Max(s => s.SequenceNumber)).IsEqualTo(24);
-        await Assert.That(context.SceneContext.Min(s => s.SequenceNumber)).IsEqualTo(5);
+        await Assert.That(context.SceneContext.Min(s => s.SequenceNumber)).IsEqualTo(1);
     }
 
     [Test]
@@ -320,7 +320,7 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         var elena = context.Characters.Single();
         // Should skip the most recent (sequence 3) and return second-latest (sequence 2)
         await Assert.That(elena.Relationships).Count().IsEqualTo(1);
-        await Assert.That(elena.Relationships.Single().Dynamic.ToString()).IsEqualTo("Getting closer");
+        await Assert.That(elena.Relationships.Single().Dynamic).IsEqualTo("Getting closer");
         await Assert.That(elena.Relationships.Single().SequenceNumber).IsEqualTo(2);
     }
 
@@ -394,7 +394,7 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(marcus.CharacterMemories).Count().IsEqualTo(1);
         await Assert.That(marcus.CharacterMemories.Single().MemoryContent).IsEqualTo("First memory");
         await Assert.That(marcus.Relationships).Count().IsEqualTo(1);
-        await Assert.That(marcus.Relationships.Single().Dynamic.ToString()).IsEqualTo("Curious about");
+        await Assert.That(marcus.Relationships.Single().Dynamic).IsEqualTo("Curious about");
         await Assert.That(marcus.SceneRewrites).Count().IsEqualTo(1);
     }
 

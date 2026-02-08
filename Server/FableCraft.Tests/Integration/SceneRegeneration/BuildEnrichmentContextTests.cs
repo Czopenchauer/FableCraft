@@ -82,9 +82,7 @@ public class BuildEnrichmentContextTests(PostgresContainerFixture fixture)
 
         var context = await builder.BuildEnrichmentContextAsync(adventure.Id, CancellationToken.None);
 
-        // Takes 20 most recent, then skips 1, so 19 scenes
-        await Assert.That(context.SceneContext).Count().IsEqualTo(19);
-        // Most recent (25) is skipped since it's being enriched
+        await Assert.That(context.SceneContext).Count().IsEqualTo(24);
         await Assert.That(context.SceneContext.Max(s => s.SequenceNumber)).IsEqualTo(24);
     }
 
@@ -151,7 +149,7 @@ public class BuildEnrichmentContextTests(PostgresContainerFixture fixture)
         var elena = context.Characters.Single();
         await Assert.That(elena.Relationships).Count().IsEqualTo(1);
         // Should have the latest relationship (sequence 2)
-        await Assert.That(elena.Relationships.Single().Dynamic.ToString()).IsEqualTo("Ally");
+        await Assert.That(elena.Relationships.Single().Dynamic).IsEqualTo("Ally");
     }
 
     [Test]

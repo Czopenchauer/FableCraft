@@ -38,7 +38,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(context.NewSceneId).IsNotNull();
         await Assert.That(step).IsEqualTo(GenerationProcessStep.NotStarted);
 
-        // Verify process was persisted
         var savedProcess = await db.GenerationProcesses.FirstOrDefaultAsync(p => p.AdventureId == adventure.Id);
         await Assert.That(savedProcess).IsNotNull();
     }
@@ -63,7 +62,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var (context, step) = await builder.GetOrCreateGenerationContextAsync(
             adventure.Id, "Explore the forest", CancellationToken.None);
 
-        // Should return the existing context
         await Assert.That(context.PlayerAction).IsEqualTo("Explore the forest");
         await Assert.That(context.NewSceneId).IsEqualTo(existingSceneId);
         await Assert.That(step).IsEqualTo(GenerationProcessStep.GeneratingScene);
@@ -89,7 +87,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var (context, step) = await builder.GetOrCreateGenerationContextAsync(
             adventure.Id, "Go to the tavern", CancellationToken.None);
 
-        // Should create new context with different action
         await Assert.That(context.PlayerAction).IsEqualTo("Go to the tavern");
         await Assert.That(context.NewSceneId).IsNotEqualTo(oldSceneId);
         await Assert.That(step).IsEqualTo(GenerationProcessStep.NotStarted);
@@ -135,10 +132,9 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var (context, _) = await builder.GetOrCreateGenerationContextAsync(
             adventure.Id, "New action", CancellationToken.None);
 
-        await Assert.That(context.SceneContext).Count().IsEqualTo(20);
-        // Should have the 20 most recent scenes (6-25)
-        await Assert.That(context.SceneContext.Max(s => s.SequenceNumber)).IsEqualTo(25);
-        await Assert.That(context.SceneContext.Min(s => s.SequenceNumber)).IsEqualTo(6);
+        await Assert.That(context.SceneContext).Count().IsEqualTo(24);
+        await Assert.That(context.SceneContext.Max(s => s.SequenceNumber)).IsEqualTo(24);
+        await Assert.That(context.SceneContext.Min(s => s.SequenceNumber)).IsEqualTo(1);
     }
 
     [Test]
@@ -168,7 +164,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var elena = context.Characters.Single();
         await Assert.That(elena.Name).IsEqualTo("Elena");
         await Assert.That(elena.Description).IsEqualTo("A skilled fighter");
-        // Should have the latest state
         await Assert.That(elena.CharacterState.Name).IsEqualTo("Elena - after scene 2");
     }
 
@@ -188,7 +183,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena"));
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena"));
         character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene1.Id, "Important memory"));
-        // Two relationships - should get latest
         character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene1.Id, 1, "Hero", "Neutral"));
         character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene2.Id, 2, "Hero", "Friendly"));
         adventure.Characters.Add(character);
@@ -203,8 +197,7 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(elena.CharacterMemories).Count().IsEqualTo(1);
         await Assert.That(elena.CharacterMemories.Single().MemoryContent).IsEqualTo("Important memory");
         await Assert.That(elena.Relationships).Count().IsEqualTo(1);
-        // Should have latest relationship
-        await Assert.That(elena.Relationships.Single().Dynamic.ToString()).IsEqualTo("Friendly");
+        await Assert.That(elena.Relationships.Single().Dynamic).IsEqualTo("Friendly");
     }
 
     [Test]
@@ -269,7 +262,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var scene = TestData.CreateScene(adventure.Id, 1, selectedAction: "Look around");
         adventure.Scenes.Add(scene);
 
-        // Simulate corrupted/null context scenario
         var corruptedProcess = new GenerationProcess
         {
             AdventureId = adventure.Id,

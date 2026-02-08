@@ -2,12 +2,13 @@
 
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+using FableCraft.Tests.Integration.SceneRegeneration;
 
 namespace FableCraft.Tests.Tracker;
 
 public class TrackerStructureTests
 {
-    private readonly static JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
@@ -23,13 +24,13 @@ public class TrackerStructureTests
         return structure;
     }
 
-    private async static Task AssertFieldIsValid(FieldDefinition field, string? because = null)
+    private static async Task AssertFieldIsValid(FieldDefinition field, string? because = null)
     {
         await Assert.That(field.Name).IsNotNull();
         await Assert.That(field.Prompt).IsNotNull();
     }
 
-    private async static Task AssertStringField(FieldDefinition field, bool hasExampleValues = true)
+    private static async Task AssertStringField(FieldDefinition field, bool hasExampleValues = true)
     {
         await AssertFieldIsValid(field);
         await Assert.That(field.Type).IsEqualTo(FieldType.String);
@@ -41,8 +42,6 @@ public class TrackerStructureTests
             await Assert.That(field.ExampleValues).IsNotNull();
         }
     }
-
-    #region Scene Tests
 
     [Test]
     public async Task Story_ShouldDeserializeAllFields()
@@ -103,15 +102,11 @@ public class TrackerStructureTests
         await Assert.That(locationField.Prompt).StartsWith("Provide a detailed and specific location");
     }
 
-    #endregion
-
-    #region MainCharacter Tests
-
     [Test]
     public async Task MainCharacter_ShouldDeserializeAllFields()
     {
         // Act
-        var structure = DeserializeStructure(TestTrackerV2.Tracker);
+        var structure = DeserializeStructure(TestTracker.InputJson);
 
         // Assert
         await Assert.That(structure.MainCharacter).IsNotNull();
@@ -237,10 +232,6 @@ public class TrackerStructureTests
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black leather pumps");
     }
 
-    #endregion
-
-    #region Characters Tests
-
     [Test]
     public async Task Characters_ShouldDeserializeAllFields()
     {
@@ -331,10 +322,6 @@ public class TrackerStructureTests
         await Assert.That(defaultOutfit ?? string.Empty).Contains("Black dress shoes");
     }
 
-    #endregion
-
-    #region Conversion Tests
-
     [Test]
     public async Task ConvertToSystemJson_ShouldProduceValidJsonForStory()
     {
@@ -402,10 +389,6 @@ public class TrackerStructureTests
         await Assert.That(string.IsNullOrEmpty(serialized)).IsFalse();
     }
 
-    #endregion
-
-    #region Edge Cases
-
     [Test]
     public async Task FieldDefinition_HasNestedFields_ShouldReturnFalseForNull()
     {
@@ -454,6 +437,4 @@ public class TrackerStructureTests
         await Assert.That(field.HasNestedFields).IsTrue();
         await Assert.That(field.NestedFields).IsNotNull();
     }
-
-    #endregion
 }

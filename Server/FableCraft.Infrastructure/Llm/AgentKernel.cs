@@ -11,8 +11,6 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Services;
 
-using OpenAI.Chat;
-
 using Polly;
 using Polly.Retry;
 
@@ -21,6 +19,8 @@ using Serilog.Context;
 using Serilog.Core.Enrichers;
 
 namespace FableCraft.Infrastructure.Llm;
+
+internal record TokenUsage(int? InputTokens, int? OutputTokens, int? TotalTokens, int? CachedTokens);
 
 public class AgentKernelOptions
 {
@@ -188,10 +188,10 @@ internal sealed class AgentKernel : IAgentKernel
                             _logger.Information("Generated streaming response: {response}", responseContent);
                             _logger.Information(
                                 "Token usage - Input: {Input}, Output: {Output}, Total: {Total}, CachedTokens: {Cached}",
-                                usage?.InputTokenCount,
-                                usage?.OutputTokenCount,
-                                usage?.TotalTokenCount,
-                                usage?.InputTokenDetails?.CachedTokenCount);
+                                usage?.InputTokens,
+                                usage?.OutputTokens,
+                                usage?.TotalTokens,
+                                usage?.CachedTokens);
 
                             var requestContent = string.Join(",", chatHistory.Select(m => m.Content));
                             await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
@@ -201,9 +201,9 @@ internal sealed class AgentKernel : IAgentKernel
                                     CallerName = operationName,
                                     RequestContent = requestContent,
                                     ResponseContent = responseContent,
-                                    InputToken = usage?.InputTokenCount,
-                                    OutputToken = usage?.OutputTokenCount,
-                                    TotalToken = usage?.TotalTokenCount,
+                                    InputToken = usage?.InputTokens,
+                                    OutputToken = usage?.OutputTokens,
+                                    TotalToken = usage?.TotalTokens,
                                     Duration = stopwatch.ElapsedMilliseconds
                                 },
                                 token);
@@ -233,7 +233,7 @@ internal sealed class AgentKernel : IAgentKernel
         }
     }
 
-    private async Task<(string Content, StreamingContext Context, ChatTokenUsage? Usage)> ExecuteWithResumeAsync(
+    private async Task<(string Content, StreamingContext Context, TokenUsage? Usage)> ExecuteWithResumeAsync(
         IChatCompletionService chatCompletionService,
         ChatHistory originalHistory,
         PromptExecutionSettings settings,
@@ -303,7 +303,7 @@ internal sealed class AgentKernel : IAgentKernel
         throw new InvalidOperationException("Unreachable code - retry loop should have returned or thrown");
     }
 
-    private async Task<(string Content, ChatTokenUsage? Usage)> StreamResponseAsync(
+    private async Task<(string Content, TokenUsage? Usage)> StreamResponseAsync(
         IChatCompletionService chatCompletionService,
         ChatHistory chatHistory,
         PromptExecutionSettings settings,
@@ -312,6 +312,8 @@ internal sealed class AgentKernel : IAgentKernel
         CancellationToken cancellationToken)
     {
         var responseBuilder = new StringBuilder(context.PartialResponse);
+        var reasoningBuilder = new StringBuilder();
+        var itemTypes = new HashSet<string>();
         StreamingChatMessageContent? lastChunk = null;
 
         await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
@@ -320,6 +322,19 @@ internal sealed class AgentKernel : IAgentKernel
                            kernel,
                            cancellationToken))
         {
+            foreach (var item in chunk.Items)
+            {
+                itemTypes.Add(item.GetType().Name);
+
+                if (item.GetType().Name.Contains("Reasoning", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (item is StreamingTextContent textContent)
+                    {
+                        reasoningBuilder.Append(textContent.Text);
+                    }
+                }
+            }
+
             if (chunk.Content != null)
             {
                 responseBuilder.Append(chunk.Content);
@@ -333,13 +348,56 @@ internal sealed class AgentKernel : IAgentKernel
 
         context.IsComplete = true;
 
-        ChatTokenUsage? usage = null;
-        if (lastChunk?.InnerContent is StreamingChatCompletionUpdate streamingUpdate)
+        if (itemTypes.Count > 0)
         {
-            usage = streamingUpdate.Usage;
+            _logger.Information("Content item types received: {Types}", string.Join(", ", itemTypes));
+        }
+
+        if (reasoningBuilder.Length > 0)
+        {
+            _logger.Information("Reasoning content ({Length} chars): {Reasoning}",
+                reasoningBuilder.Length,
+                reasoningBuilder.ToString());
+        }
+
+        TokenUsage? usage = null;
+        if (lastChunk?.Metadata != null)
+        {
+            if (lastChunk.Metadata.TryGetValue("Usage", out var usageObj) && usageObj != null)
+            {
+                usage = ExtractUsageFromObject(usageObj);
+            }
         }
 
         return (responseBuilder.ToString(), usage);
+    }
+
+    private TokenUsage? ExtractUsageFromObject(object usageObj)
+    {
+        try
+        {
+            var type = usageObj.GetType();
+            var inputTokens = type.GetProperty("InputTokenCount")?.GetValue(usageObj) as int?
+                              ?? type.GetProperty("PromptTokens")?.GetValue(usageObj) as int?;
+            var outputTokens = type.GetProperty("OutputTokenCount")?.GetValue(usageObj) as int?
+                               ?? type.GetProperty("CompletionTokens")?.GetValue(usageObj) as int?;
+            var totalTokens = type.GetProperty("TotalTokenCount")?.GetValue(usageObj) as int?
+                              ?? type.GetProperty("TotalTokens")?.GetValue(usageObj) as int?;
+
+            int? cachedTokens = null;
+            var inputDetails = type.GetProperty("InputTokenDetails")?.GetValue(usageObj);
+            if (inputDetails != null)
+            {
+                cachedTokens = inputDetails.GetType().GetProperty("CachedTokenCount")?.GetValue(inputDetails) as int?;
+            }
+
+            return new TokenUsage(inputTokens, outputTokens, totalTokens, cachedTokens);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to extract usage from object of type {Type}", usageObj.GetType().Name);
+            return null;
+        }
     }
 
     private static ChatHistory CloneChatHistory(ChatHistory original)
