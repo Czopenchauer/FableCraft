@@ -22,7 +22,7 @@ public interface IAdventureRagManager
     Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default);
 }
 
-internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> settings, IVolumeManager volumeManager, GraphContainerRegistry graphContainerRegistry)
+internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> settings, VolumeManager volumeManager, GraphContainerRegistry graphContainerRegistry)
     : IAdventureRagManager, IWorldbookRagManager
 {
     private readonly GraphServiceSettings _settings = settings.Value;

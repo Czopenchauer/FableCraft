@@ -42,7 +42,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
     private readonly ConcurrentDictionary<ContainerKey, ContainerInfo> _containers = new();
     private readonly ConcurrentDictionary<ContainerKey, (CancellationTokenSource, Task)> _evictionTask = new();
     private readonly ContainerManager _containerManager;
-    private readonly IVolumeManager _volumeManager;
+    private readonly VolumeManager _volumeManager;
     private readonly IConfiguration _config;
     private readonly GraphServiceSettings _settings;
     private readonly ILogger _logger;
@@ -55,7 +55,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
         IConfiguration config,
         ILogger logger,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IVolumeManager volumeManager)
+        VolumeManager volumeManager)
     {
         _containerManager = containerManager;
         _config = config;

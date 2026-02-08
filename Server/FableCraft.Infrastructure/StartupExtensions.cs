@@ -94,7 +94,7 @@ public static class StartupExtensions
             });
             services.AddHostedService<AdventureLoader>();
 
-            services.AddSingleton<IVolumeManager, VolumeManager>();
+            services.AddSingleton<VolumeManager>();
             services.AddHttpClient<ContainerManager>()
                 .AddStandardResilienceHandler(options =>
                 {

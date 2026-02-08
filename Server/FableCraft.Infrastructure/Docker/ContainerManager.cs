@@ -11,7 +11,7 @@ namespace FableCraft.Infrastructure.Docker;
 /// <summary>
 /// Container status information.
 /// </summary>
-public sealed record ContainerStatus(
+internal sealed record ContainerStatus(
     string Id,
     string Name,
     string State,
@@ -21,7 +21,7 @@ public sealed record ContainerStatus(
 /// <summary>
 /// Configuration for creating a container.
 /// </summary>
-public sealed class ContainerConfig
+internal sealed class ContainerConfig
 {
     /// <summary>
     /// Container name.

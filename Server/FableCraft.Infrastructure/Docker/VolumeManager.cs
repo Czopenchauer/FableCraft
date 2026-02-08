@@ -9,7 +9,7 @@ using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
 
-internal sealed class VolumeManager : IVolumeManager
+internal sealed class VolumeManager
 {
     private readonly DockerClient _client;
     private readonly DockerSettings _settings;

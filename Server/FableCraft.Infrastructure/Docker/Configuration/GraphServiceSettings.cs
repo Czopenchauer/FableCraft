@@ -186,7 +186,6 @@ internal sealed class GraphServiceSettings
             if (!string.IsNullOrEmpty(graphRagSettings.EmbeddingApiVersion))
                 environment["EMBEDDING_API_VERSION"] = graphRagSettings.EmbeddingApiVersion;
 
-            // Use embedding API key if provided, otherwise fall back to LLM API key
             var embeddingApiKey = !string.IsNullOrEmpty(graphRagSettings.EmbeddingApiKey)
                 ? graphRagSettings.EmbeddingApiKey
                 : graphRagSettings.LlmApiKey;
