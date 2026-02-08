@@ -1,4 +1,5 @@
 ﻿using FableCraft.Application.Exceptions;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
@@ -75,15 +76,17 @@ internal class GameService : IGameService
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly SceneGenerationOrchestrator _sceneGenerationOrchestrator;
+    private readonly IRagClientFactory _clientFactory;
 
     public GameService(
         ApplicationDbContext dbContext,
         ILogger logger,
-        SceneGenerationOrchestrator sceneGenerationOrchestrator)
+        SceneGenerationOrchestrator sceneGenerationOrchestrator, IRagClientFactory clientFactory)
     {
         _dbContext = dbContext;
         _logger = logger;
         _sceneGenerationOrchestrator = sceneGenerationOrchestrator;
+        _clientFactory = clientFactory;
     }
 
     public async Task<GameScene> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken)
@@ -236,7 +239,6 @@ internal class GameService : IGameService
         });
     }
 
-    // TODO: clear knowledge graph entries related to the deleted scene
     public async Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken)
     {
         var scenes = await _dbContext.Scenes

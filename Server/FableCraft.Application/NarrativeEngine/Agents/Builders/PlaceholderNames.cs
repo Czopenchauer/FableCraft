@@ -57,4 +57,8 @@ internal static class PlaceholderNames
     public const string StoryBible = "{{story_bible}}";
 
     public const string ProgressionSystem = "{{progression_system}}";
+
+    public const string IdentitySchema = "{{identity_schema}}";
+
+    public const string RelationshipSchema = "{{relationship_schema}}";
 }

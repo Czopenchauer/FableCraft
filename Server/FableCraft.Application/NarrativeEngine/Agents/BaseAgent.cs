@@ -34,14 +34,18 @@ internal abstract class BaseAgent
         );
         var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
         var progressionSystem = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "ProgressionSystem.md"));
+        var identitySchema = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "IdentitySchema.md"));
+        var relationshipSchema = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "RelationshipSchema.md"));
         var worldSettingsPath = Path.Combine(generationContext.PromptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
-        var promp = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
-        return promp
+        var prompt = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
+        return prompt
             .Replace(PlaceholderNames.StoryBible, storyBible)
             .Replace(PlaceholderNames.ProgressionSystem, progressionSystem)
+            .Replace(PlaceholderNames.RelationshipSchema, relationshipSchema)
+            .Replace(PlaceholderNames.IdentitySchema, identitySchema)
             .Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 

@@ -112,10 +112,10 @@ public class PlayController : ControllerBase
         }
     }
 
-    [HttpDelete("scene/{sceneId:guid}")]
+    [HttpDelete("scene")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeleteLastScene(Guid adventureId, Guid sceneId, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteLastScene(Guid adventureId, CancellationToken cancellationToken)
     {
         try
         {
