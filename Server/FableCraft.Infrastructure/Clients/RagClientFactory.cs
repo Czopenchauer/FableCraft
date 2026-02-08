@@ -42,7 +42,7 @@ internal sealed class RagClientFactory : IRagClientFactory
         var baseUrl = await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventureId, cancellationToken);
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
-        return new MonitoredRagClient(inner, _containerMonitor, adventureId);
+        return new MonitoredRagClient(inner, _containerMonitor, new ContainerKey(adventureId, ContainerType.Adventure));
     }
 
     public async Task<IRagBuilder> CreateBuildClientForAdventure(Guid adventureId, CancellationToken cancellationToken)
@@ -50,7 +50,7 @@ internal sealed class RagClientFactory : IRagClientFactory
         var baseUrl = await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventureId, cancellationToken);
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
-        return new MonitoredRagClient(inner, _containerMonitor, adventureId);
+        return new MonitoredRagClient(inner, _containerMonitor, new ContainerKey(adventureId, ContainerType.Adventure));
     }
 
     public async Task<IRagBuilder> CreateBuildClientForWorldbook(Guid worldbookId, CancellationToken cancellationToken)
@@ -58,6 +58,6 @@ internal sealed class RagClientFactory : IRagClientFactory
         var baseUrl = await _graphContainerRegistry.EnsureWorldbookContainerRunningAsync(worldbookId, cancellationToken);
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         var inner = new RagClient(httpClient, baseUrl, _messageDispatcher, _logger);
-        return new MonitoredRagClient(inner, _containerMonitor, worldbookId);
+        return new MonitoredRagClient(inner, _containerMonitor, new ContainerKey(worldbookId, ContainerType.Worldbook));
     }
 }

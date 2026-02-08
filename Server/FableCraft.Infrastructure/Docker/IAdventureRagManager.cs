@@ -22,34 +22,26 @@ public interface IAdventureRagManager
     Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default);
 }
 
-internal sealed class AdventureRagManager : IAdventureRagManager, IWorldbookRagManager
+internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> settings, IVolumeManager volumeManager, GraphContainerRegistry graphContainerRegistry)
+    : IAdventureRagManager, IWorldbookRagManager
 {
-    private readonly GraphServiceSettings _settings;
-    private readonly IVolumeManager _volumeManager;
-    private readonly IGraphContainerRegistry _graphContainerRegistry;
-
-    public AdventureRagManager(IOptions<GraphServiceSettings> settings, IVolumeManager volumeManager, IGraphContainerRegistry graphContainerRegistry)
-    {
-        _settings = settings.Value;
-        _volumeManager = volumeManager;
-        _graphContainerRegistry = graphContainerRegistry;
-    }
+    private readonly GraphServiceSettings _settings = settings.Value;
 
     public async Task InitializeFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default)
     {
         var sourceVolume = _settings.GetWorldbookVolumeName(adventure.WorldbookId);
         var destVolume = _settings.GetAdventureVolumeName(adventure.Id);
-        if (!await _volumeManager.ExistsAsync(sourceVolume, cancellationToken))
+        if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
         {
             throw new WorldbookNotIndexedException(adventure.WorldbookId);
         }
 
-        if (!await _volumeManager.ExistsAsync(destVolume, cancellationToken))
+        if (!await volumeManager.ExistsAsync(destVolume, cancellationToken))
         {
-            await _volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
+            await volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
         }
 
-        await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
+        await graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
     }
 
     public async Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default)
@@ -57,31 +49,31 @@ internal sealed class AdventureRagManager : IAdventureRagManager, IWorldbookRagM
         var sourceVolume = _settings.GetWorldbookVolumeName(adventure.WorldbookId);
         var destVolume = _settings.GetAdventureVolumeName(adventure.Id);
 
-        if (!await _volumeManager.ExistsAsync(sourceVolume, cancellationToken))
+        if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
         {
             throw new WorldbookNotIndexedException(adventure.WorldbookId);
         }
 
-        await _graphContainerRegistry.RemoveContainerAsync(adventure.Id, cancellationToken);
+        await graphContainerRegistry.RemoveContainerAsync(new ContainerKey(adventure.Id, ContainerType.Adventure), cancellationToken);
 
-        if (await _volumeManager.ExistsAsync(destVolume, cancellationToken))
+        if (await volumeManager.ExistsAsync(destVolume, cancellationToken))
         {
-            await _volumeManager.DeleteAsync(destVolume, force: true, cancellationToken);
+            await volumeManager.DeleteAsync(destVolume, force: true, cancellationToken);
         }
 
-        await _volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
+        await volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
 
-        await _graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
+        await graphContainerRegistry.EnsureAdventureContainerRunningAsync(adventure.Id, cancellationToken);
     }
 
     public async Task IndexWorldbook(Guid worldbookId, CancellationToken cancellationToken = default)
     {
         var volumeName = _settings.GetWorldbookVolumeName(worldbookId);
-        if (!await _volumeManager.ExistsAsync(volumeName, cancellationToken))
+        if (!await volumeManager.ExistsAsync(volumeName, cancellationToken))
         {
-            await _volumeManager.CreateAsync(volumeName, cancellationToken);
+            await volumeManager.CreateAsync(volumeName, cancellationToken);
         }
 
-        await _graphContainerRegistry.EnsureWorldbookContainerRunningAsync(worldbookId, cancellationToken);
+        await graphContainerRegistry.EnsureWorldbookContainerRunningAsync(worldbookId, cancellationToken);
     }
 }

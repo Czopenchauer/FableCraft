@@ -15,40 +15,32 @@ using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
 
-/// <summary>
-/// Manages multiple graph service containers, one per adventure.
-/// Handles port allocation, LRU eviction, and container lifecycle.
-/// </summary>
-internal interface IGraphContainerRegistry
+internal readonly record struct ContainerKey(Guid Identifier, ContainerType ContainerType)
 {
-    /// <summary>
-    /// Gets or creates a container for the adventure.
-    /// Returns the base URL for the container (e.g., "http://localhost:8112").
-    /// </summary>
-    Task<string> EnsureAdventureContainerRunningAsync(Guid adventureId, CancellationToken ct);
+    public override string ToString()
+    {
+        return $"{Identifier}:{ContainerType}";
+    }
+}
 
-    /// <summary>
-    /// Gets or creates a container for the worldbook.
-    /// Returns the base URL for the container (e.g., "http://localhost:8112").
-    /// </summary>
-    Task<string> EnsureWorldbookContainerRunningAsync(Guid worldbookId, CancellationToken ct);
-
-    /// <summary>
-    /// Stops and removes the container for the given identifier (adventure or worldbook).
-    /// </summary>
-    Task RemoveContainerAsync(Guid identifier, CancellationToken ct);
+internal enum ContainerType
+{
+    Adventure,
+    Worldbook
 }
 
 internal interface IContainerMonitor
 {
-    void Increment(Guid? adventureIdValue);
+    void Increment(ContainerKey key);
 
-    void Decrement(Guid? adventureIdValue);
+    void Decrement(ContainerKey key);
 }
 
-internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContainerMonitor, IAsyncDisposable
+internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposable
 {
-    private readonly ConcurrentDictionary<Guid, ContainerInfo> _containers = new();
+    private readonly TimeSpan _evictionTime = TimeSpan.FromMinutes(15);
+    private readonly ConcurrentDictionary<ContainerKey, ContainerInfo> _containers = new();
+    private readonly ConcurrentDictionary<ContainerKey, (CancellationTokenSource, Task)> _evictionTask = new();
     private readonly ContainerManager _containerManager;
     private readonly IVolumeManager _volumeManager;
     private readonly IConfiguration _config;
@@ -61,7 +53,9 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         ContainerManager containerManager,
         IOptions<GraphServiceSettings> settings,
         IConfiguration config,
-        ILogger logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, IVolumeManager volumeManager)
+        ILogger logger,
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        IVolumeManager volumeManager)
     {
         _containerManager = containerManager;
         _config = config;
@@ -91,7 +85,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         }
 
         return await EnsureContainerAsync(
-            adventureId,
+            new ContainerKey(adventureId, ContainerType.Adventure),
             _settings.GetContainerName(adventure.Id.ToString()),
             _settings.GetAdventureVolumeName(adventureId),
             adventure.GraphRagSettings,
@@ -118,7 +112,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         }
 
         return await EnsureContainerAsync(
-            worldbookId,
+            new ContainerKey(worldbookId, ContainerType.Worldbook),
             _settings.GetContainerName(worldbook.Id.ToString()),
             _settings.GetWorldbookVolumeName(worldbookId),
             worldbook.GraphRagSettings,
@@ -126,7 +120,7 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
     }
 
     private async Task<string> EnsureContainerAsync(
-        Guid identifier,
+        ContainerKey identifier,
         string containerName,
         string volumeName,
         GraphRagSettings? graphRagSettings,
@@ -142,15 +136,24 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             }
         }
 
-        var creationLock = _operationLocks.GetOrAdd(identifier, _ => new SemaphoreSlim(1, 1));
-        await creationLock.WaitAsync(ct);
+        var creationLock = _operationLocks.GetOrAdd(identifier.Identifier, _ => new SemaphoreSlim(1, 1));
         try
         {
+            await creationLock.WaitAsync(ct);
+
             var hostPort = AllocatePort();
             var containerConfig = BuildContainerConfig(containerName, volumeName, hostPort, graphRagSettings);
             await _containerManager.StartAsync(containerConfig, ct);
             var baseUrl = _settings.GetContainerBaseUrl(_settings.ContainerPort, containerName);
             _containers.TryAdd(identifier, new ContainerInfo(containerName, baseUrl, hostPort, 0, DateTimeOffset.UtcNow));
+
+            if (_evictionTask.TryRemove(identifier, out var value))
+            {
+                await value.Item1.CancelAsync();
+                value.Item1.Dispose();
+            }
+            var newToken = new CancellationTokenSource();
+            _evictionTask.TryAdd(identifier, (newToken, Task.Run(() => Eviction(identifier, _evictionTime, newToken.Token), newToken.Token)));
             return baseUrl;
         }
         finally
@@ -159,12 +162,13 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         }
     }
 
-    public async Task RemoveContainerAsync(Guid identifier, CancellationToken ct)
+    public async Task RemoveContainerAsync(ContainerKey identifier, CancellationToken ct)
     {
-        var registryLock = _operationLocks.GetOrAdd(identifier, _ => new SemaphoreSlim(1, 1));
-        await registryLock.WaitAsync(ct);
+        var registryLock = _operationLocks.GetOrAdd(identifier.Identifier, _ => new SemaphoreSlim(1, 1));
         try
         {
+            await registryLock.WaitAsync(ct);
+
             if (!_containers.TryRemove(identifier, out var info))
             {
                 return;
@@ -174,6 +178,12 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
             {
                 await _containerManager.StopAsync(info.Name, TimeSpan.FromSeconds(10), ct);
                 await _containerManager.RemoveAsync(info.Name, force: true, ct);
+                if (_evictionTask.TryRemove(identifier, out var value))
+                {
+                    await value.Item1.CancelAsync();
+                    value.Item1.Dispose();
+                }
+
                 _logger.Information("Removed container {ContainerName} for adventure {AdventureId}", info.Name, identifier);
             }
             catch (Exception ex)
@@ -263,32 +273,95 @@ internal sealed class GraphContainerRegistry : IGraphContainerRegistry, IContain
         int PendingOperationCount,
         DateTimeOffset LastAccessed);
 
-    public void Decrement(Guid? adventureIdValue)
+    private async Task Eviction(ContainerKey key, TimeSpan delay, CancellationToken ct)
     {
-        if (adventureIdValue == null)
+        try
         {
+            _logger.Information("Waiting {delay} for container {ContainerName} to evict", delay, key.ToString());
+            await Task.Delay(delay, ct);
+            _logger.Information("Start evicting container {ContainerName}", key.ToString());
+            if (_containers.TryGetValue(key, out var containerInfo) && containerInfo.PendingOperationCount == 0 && DateTimeOffset.UtcNow - containerInfo.LastAccessed > delay)
+            {
+                var removalLock = _operationLocks.GetOrAdd(key.Identifier, _ => new SemaphoreSlim(1, 1));
+                try
+                {
+                    await removalLock.WaitAsync(ct);
+                    if (_containers.TryGetValue(key, out containerInfo)
+                        && containerInfo.PendingOperationCount == 0
+                        && DateTimeOffset.UtcNow - containerInfo.LastAccessed > delay)
+                    {
+                        await _containerManager.StopAsync(containerInfo.Name, TimeSpan.FromSeconds(10), ct);
+                        await _containerManager.RemoveAsync(containerInfo.Name, force: true, ct);
+                        _containers.TryRemove(key, out _);
+                    }
+                }
+                finally
+                {
+                    removalLock.Release();
+                }
+            }
+            else
+            {
+                _logger.Information("Evicting container {ContainerName} skipped as it does not meet criteria - Last accessed {lastAccessed}, operations {operations}", key.ToString(), containerInfo?.LastAccessed, containerInfo?.PendingOperationCount);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.Information("Eviction for {container} canceled", key.ToString());
+        }
+        catch (ObjectDisposedException)
+        {
+            _logger.Information("Eviction for {container} canceled", key.ToString());
+        }
+    }
+
+    public void Decrement(ContainerKey key)
+    {
+        if (!_containers.TryGetValue(key, out var containerInfo))
+        {
+            _logger.Information("Container {ContainerName} not found", key.ToString());
             return;
         }
 
-        if (_containers.TryGetValue(adventureIdValue.Value, out var containerInfo))
+        lock (containerInfo)
         {
-            var updated = containerInfo with { PendingOperationCount = Math.Max(containerInfo.PendingOperationCount - 1, 0) };
-            _containers.TryUpdate(adventureIdValue.Value, updated, containerInfo);
+            var updated = containerInfo with
+            {
+                PendingOperationCount = Math.Max(containerInfo.PendingOperationCount - 1, 0),
+                LastAccessed = DateTimeOffset.UtcNow
+            };
+            _containers.TryUpdate(key, updated, containerInfo);
+            if (_evictionTask.TryGetValue(key, out (CancellationTokenSource token, Task task) value))
+            {
+                value.token.Cancel();
+                value.token.Dispose();
+
+                var newToken = new CancellationTokenSource();
+                _evictionTask.TryRemove(key, out _);
+                _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, _evictionTime, newToken.Token), newToken.Token)));
+            }
+
             _logger.Information("Container {ContainerName} has {request} pending operation", containerInfo.Name, updated.PendingOperationCount);
         }
     }
 
-    public void Increment(Guid? adventureIdValue)
+    public void Increment(ContainerKey key)
     {
-        if (adventureIdValue is null)
+        if (!_containers.TryGetValue(key, out var containerInfo))
         {
+            _logger.Information("Container {ContainerName} not found", key.ToString());
             return;
         }
 
-        if (_containers.TryGetValue(adventureIdValue.Value, out var containerInfo))
+        lock (containerInfo)
         {
-            var updated = containerInfo with { PendingOperationCount = containerInfo.PendingOperationCount + 1 };
-            _containers.TryUpdate(adventureIdValue.Value, updated, containerInfo);
+            var updated = containerInfo with
+            {
+                PendingOperationCount = containerInfo.PendingOperationCount + 1,
+                LastAccessed = DateTimeOffset.UtcNow
+            };
+            _containers.TryUpdate(key, updated, containerInfo);
+
             _logger.Information("Container {ContainerName} has {request} pending operation", containerInfo.Name, updated.PendingOperationCount);
         }
     }

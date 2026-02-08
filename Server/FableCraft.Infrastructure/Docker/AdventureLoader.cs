@@ -7,7 +7,7 @@ using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
 
-internal sealed class AdventureLoader(IDbContextFactory<ApplicationDbContext> contextFactory, IGraphContainerRegistry containerRegistry, ILogger logger) : IHostedService
+internal sealed class AdventureLoader(IDbContextFactory<ApplicationDbContext> contextFactory, GraphContainerRegistry containerRegistry, ILogger logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {

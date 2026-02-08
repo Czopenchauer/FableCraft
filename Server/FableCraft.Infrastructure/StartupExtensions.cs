@@ -76,7 +76,6 @@ public static class StartupExtensions
 
             services.AddSingleton<IRagClientFactory, RagClientFactory>();
             services.AddSingleton<GraphContainerRegistry>();
-            services.AddSingleton<IGraphContainerRegistry>(sp => sp.GetRequiredService<GraphContainerRegistry>());
             services.AddSingleton<IContainerMonitor>(sp => sp.GetRequiredService<GraphContainerRegistry>());
             services.AddSingleton<IAdventureRagManager, AdventureRagManager>();
             services.AddSingleton<IWorldbookRagManager, AdventureRagManager>();

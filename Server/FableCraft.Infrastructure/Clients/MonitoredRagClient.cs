@@ -2,19 +2,12 @@ using FableCraft.Infrastructure.Docker;
 
 namespace FableCraft.Infrastructure.Clients;
 
-internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
+internal sealed class MonitoredRagClient(
+    RagClient inner,
+    IContainerMonitor monitor,
+    ContainerKey key)
+    : IRagSearch, IRagBuilder
 {
-    private readonly RagClient _inner;
-    private readonly IContainerMonitor _monitor;
-    private readonly Guid? _adventureId;
-
-    public MonitoredRagClient(RagClient inner, IContainerMonitor monitor, Guid? adventureId)
-    {
-        _inner = inner;
-        _monitor = monitor;
-        _adventureId = adventureId;
-    }
-
     public async Task<SearchResult[]> SearchAsync(
         CallerContext context,
         IEnumerable<string> datasets,
@@ -24,12 +17,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            return await _inner.SearchAsync(context, datasets, query, searchType, cancellationToken);
+            monitor.Increment(key);
+            return await inner.SearchAsync(context, datasets, query, searchType, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -40,12 +33,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            return await _inner.AddDataAsync(content, datasets, cancellationToken);
+            monitor.Increment(key);
+            return await inner.AddDataAsync(content, datasets, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -53,12 +46,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.CognifyAsync(datasets, temporal, cancellationToken);
+            monitor.Increment(key);
+            await inner.CognifyAsync(datasets, temporal, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -66,12 +59,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.MemifyAsync(datasets, cancellationToken);
+            monitor.Increment(key);
+            await inner.MemifyAsync(datasets, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -79,12 +72,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            return await _inner.GetDatasetsAsync(dataset, cancellationToken);
+            monitor.Increment(key);
+            return await inner.GetDatasetsAsync(dataset, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -92,12 +85,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.UpdateDataAsync(dataset, dataId, content, cancellationToken);
+            monitor.Increment(key);
+            await inner.UpdateDataAsync(dataset, dataId, content, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -105,12 +98,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.DeleteNodeAsync(datasetName, dataId, cancellationToken);
+            monitor.Increment(key);
+            await inner.DeleteNodeAsync(datasetName, dataId, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -118,12 +111,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.DeleteDatasetAsync(dataset, cancellationToken);
+            monitor.Increment(key);
+            await inner.DeleteDatasetAsync(dataset, cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 
@@ -131,12 +124,12 @@ internal sealed class MonitoredRagClient : IRagSearch, IRagBuilder
     {
         try
         {
-            _monitor.Increment(_adventureId);
-            await _inner.CleanAsync(cancellationToken);
+            monitor.Increment(key);
+            await inner.CleanAsync(cancellationToken);
         }
         finally
         {
-            _monitor.Decrement(_adventureId);
+            monitor.Decrement(key);
         }
     }
 }
