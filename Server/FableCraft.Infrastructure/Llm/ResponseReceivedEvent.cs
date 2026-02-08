@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FableCraft.Infrastructure.Llm;
 
-public sealed class ResponseReceivedEvent : IMessage
+internal sealed class ResponseReceivedEvent : IMessage
 {
     public required string CallerName { get; init; }
 

@@ -1,9 +1,6 @@
 namespace FableCraft.Infrastructure.Llm;
 
-/// <summary>
-/// Thrown when all retry attempts have been exhausted during streaming.
-/// </summary>
-public class LlmStreamingFailedException : Exception
+internal class LlmStreamingFailedException : Exception
 {
     public StreamingContext Context { get; }
 

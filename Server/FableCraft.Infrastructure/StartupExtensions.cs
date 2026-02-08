@@ -19,98 +19,99 @@ namespace FableCraft.Infrastructure;
 
 public static class StartupExtensions
 {
-    [Experimental("EXTEXP0001")]
-    public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        var channel = Channel.CreateBounded<MessageWithContext>(new BoundedChannelOptions(10_000)
+        [Experimental("EXTEXP0001")]
+        public IServiceCollection AddInfrastructureServices(IConfiguration configuration)
         {
-            SingleWriter = false,
-            SingleReader = false,
-            AllowSynchronousContinuations = true,
-            FullMode = BoundedChannelFullMode.Wait
-        });
-        services.AddSingleton(channel);
-        services.AddScoped<IRagChunkService, RagChunkService>();
-        services.AddHostedService<InMemoryMessageReader>();
-        services.AddSingleton<IMessageDispatcher, InMemoryMessageDispatcher>();
-
-        var connectionString = configuration.GetConnectionString("fablecraftdb");
-        ArgumentException.ThrowIfNullOrEmpty(connectionString);
-        connectionString += ";Include Error Detail=true";
-        services.AddDbContextPool<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
-                sqlOptions =>
-                {
-                    sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
-                }))
-            .AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
-                sqlOptions =>
-                {
-                    sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
-                }));
-        services.AddHostedService<MigratorApplier>();
-
-        services.AddHttpClient(RagClientFactory.HttpClientName, client =>
+            var channel = Channel.CreateBounded<MessageWithContext>(new BoundedChannelOptions(10_000)
             {
-                // LLM calls can take a while
-                client.Timeout = TimeSpan.FromMinutes(120);
-            })
-            .RemoveAllResilienceHandlers()
-            .AddStandardResilienceHandler(options =>
-            {
-                options.AttemptTimeout = new HttpTimeoutStrategyOptions
-                {
-                    Timeout = TimeSpan.FromMinutes(120)
-                };
-
-                options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
-                {
-                    Timeout = TimeSpan.FromMinutes(240)
-                };
-
-                options.Retry.MaxRetryAttempts = 5;
-                options.Retry.Delay = TimeSpan.FromSeconds(5);
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(240);
+                SingleWriter = false,
+                SingleReader = false,
+                AllowSynchronousContinuations = true,
+                FullMode = BoundedChannelFullMode.Wait
             });
+            services.AddSingleton(channel);
+            services.AddScoped<IRagChunkService, RagChunkService>();
+            services.AddHostedService<InMemoryMessageReader>();
+            services.AddSingleton<IMessageDispatcher, InMemoryMessageDispatcher>();
 
-        services.AddSingleton<IRagClientFactory, RagClientFactory>();
-        services.AddSingleton<GraphContainerRegistry>();
-        services.AddSingleton<IGraphContainerRegistry>(sp => sp.GetRequiredService<GraphContainerRegistry>());
-        services.AddSingleton<IContainerMonitor>(sp => sp.GetRequiredService<GraphContainerRegistry>());
-        services.AddSingleton<IAdventureRagManager, AdventureRagManager>();
-        services.AddSingleton<IWorldbookRagManager, AdventureRagManager>();
+            var connectionString = configuration.GetConnectionString("fablecraftdb");
+            ArgumentException.ThrowIfNullOrEmpty(connectionString);
+            connectionString += ";Include Error Detail=true";
+            services.AddDbContextPool<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
+                    sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+                    }))
+                .AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString,
+                    sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
+                    }));
+            services.AddHostedService<MigratorApplier>();
 
-        services.AddSingleton<KernelBuilderFactory>();
-        services.AddTransient<IAgentKernel, AgentKernel>();
-        services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
+            services.AddHttpClient(RagClientFactory.HttpClientName, client =>
+                {
+                    // LLM calls can take a while
+                    client.Timeout = TimeSpan.FromMinutes(120);
+                })
+                .RemoveAllResilienceHandlers()
+                .AddStandardResilienceHandler(options =>
+                {
+                    options.AttemptTimeout = new HttpTimeoutStrategyOptions
+                    {
+                        Timeout = TimeSpan.FromMinutes(120)
+                    };
 
-        services.Configure<DockerSettings>(configuration.GetSection(DockerSettings.SectionName));
-        services.Configure<GraphServiceSettings>(configuration.GetSection(GraphServiceSettings.SectionName));
+                    options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
+                    {
+                        Timeout = TimeSpan.FromMinutes(240)
+                    };
 
-        services.AddSingleton<DockerClient>(sp =>
-        {
-            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
-            return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(30)).CreateClient();
-        });
-        services.AddHostedService<AdventureLoader>();
+                    options.Retry.MaxRetryAttempts = 5;
+                    options.Retry.Delay = TimeSpan.FromSeconds(5);
+                    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(240);
+                });
 
-        services.AddSingleton<IVolumeManager, VolumeManager>();
-        services.AddHttpClient<ContainerManager>()
-            .AddStandardResilienceHandler(options =>
+            services.AddSingleton<IRagClientFactory, RagClientFactory>();
+            services.AddSingleton<GraphContainerRegistry>();
+            services.AddSingleton<IGraphContainerRegistry>(sp => sp.GetRequiredService<GraphContainerRegistry>());
+            services.AddSingleton<IContainerMonitor>(sp => sp.GetRequiredService<GraphContainerRegistry>());
+            services.AddSingleton<IAdventureRagManager, AdventureRagManager>();
+            services.AddSingleton<IWorldbookRagManager, AdventureRagManager>();
+
+            services.AddSingleton<KernelBuilderFactory>();
+            services.AddTransient<IAgentKernel, AgentKernel>();
+            services.AddMessageHandler<ResponseReceivedEvent, ResponseReceivedEventHandler>();
+
+            services.Configure<DockerSettings>(configuration.GetSection(DockerSettings.SectionName));
+            services.Configure<GraphServiceSettings>(configuration.GetSection(GraphServiceSettings.SectionName));
+
+            services.AddSingleton<DockerClient>(sp =>
             {
-                options.Retry.MaxRetryAttempts = 20;
-                options.Retry.Delay = TimeSpan.FromMilliseconds(500);
-                options.Retry.BackoffType = Polly.DelayBackoffType.Linear;
-                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
-                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
+                var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
+                return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(30)).CreateClient();
             });
+            services.AddHostedService<AdventureLoader>();
 
-        return services;
+            services.AddSingleton<IVolumeManager, VolumeManager>();
+            services.AddHttpClient<ContainerManager>()
+                .AddStandardResilienceHandler(options =>
+                {
+                    options.Retry.MaxRetryAttempts = 20;
+                    options.Retry.Delay = TimeSpan.FromMilliseconds(500);
+                    options.Retry.BackoffType = Polly.DelayBackoffType.Linear;
+                    options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+                    options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
+                });
+
+            return services;
+        }
+
+        public IServiceCollection AddMessageHandler<TMessage, THandler>()
+            where TMessage : IMessage
+            where THandler : class, IMessageHandler<TMessage> =>
+            services.AddTransient<IMessageHandler<TMessage>, THandler>();
     }
-
-    public static IServiceCollection AddMessageHandler<TMessage, THandler>(this IServiceCollection services)
-        where TMessage : IMessage
-        where THandler : class, IMessageHandler<TMessage> =>
-        services.AddTransient<IMessageHandler<TMessage>, THandler>();
 }

@@ -20,12 +20,14 @@ using Serilog.Core.Enrichers;
 
 namespace FableCraft.Infrastructure.Llm;
 
-internal record TokenUsage(int? InputTokens, int? OutputTokens, int? TotalTokens, int? CachedTokens);
+public class LlmEmptyResponseException() : Exception("The LLM returned an empty response.");
 
 public class AgentKernelOptions
 {
     public int MaxParsingRetries { get; init; } = 4;
 }
+
+internal record TokenUsage(int? InputTokens, int? OutputTokens, int? TotalTokens, int? CachedTokens);
 
 internal static class Telemetry
 {
@@ -340,7 +342,6 @@ internal sealed class AgentKernel : IAgentKernel
                 responseBuilder.Append(chunk.Content);
                 context.PartialResponse = responseBuilder.ToString();
                 context.ChunksReceived++;
-                context.LastChunkAt = DateTimeOffset.UtcNow;
             }
 
             lastChunk = chunk;

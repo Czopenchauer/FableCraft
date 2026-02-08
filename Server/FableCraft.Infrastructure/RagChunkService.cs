@@ -31,7 +31,6 @@ public interface IRagChunkService
     Task CognifyDatasetsAsync(
         IRagBuilder ragBuilder,
         string[] datasets,
-        bool temporal = false,
         CancellationToken cancellationToken = default);
 }
 
@@ -77,7 +76,6 @@ internal sealed class RagChunkService : IRagChunkService
     }
 
     private static string DataDirectory => Environment.GetEnvironmentVariable("FABLECRAFT_DATA_STORE")!;
-
 
     readonly struct ChunkKey(Guid entityId, string datasetName)
     {
@@ -131,7 +129,11 @@ internal sealed class RagChunkService : IRagChunkService
         }
 
         await Parallel.ForEachAsync(chunks,
-            new ParallelOptions { MaxDegreeOfParallelism = 5, CancellationToken = cancellationToken },
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = 5,
+                CancellationToken = cancellationToken
+            },
             (chunk, ct) =>
             {
                 return _ioResiliencePipeline.ExecuteAsync(async c => await File.WriteAllTextAsync(chunk.Path, chunk.Content, Encoding.UTF8, c), ct);
@@ -165,11 +167,10 @@ internal sealed class RagChunkService : IRagChunkService
     public async Task CognifyDatasetsAsync(
         IRagBuilder ragBuilder,
         string[] datasets,
-        bool temporal = false,
         CancellationToken cancellationToken = default)
     {
         await _httpResiliencePipeline.ExecuteAsync(async ct =>
-                await ragBuilder.CognifyAsync(datasets, temporal, ct),
+                await ragBuilder.CognifyAsync(datasets, temporal: false, ct),
             cancellationToken);
     }
 }

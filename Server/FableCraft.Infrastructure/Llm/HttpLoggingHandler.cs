@@ -6,15 +6,8 @@ using Serilog;
 
 namespace FableCraft.Infrastructure.Llm;
 
-internal sealed class HttpLoggingHandler : DelegatingHandler
+internal sealed class HttpLoggingHandler(ILogger logger) : DelegatingHandler
 {
-    private readonly ILogger _logger;
-
-    public HttpLoggingHandler(ILogger logger)
-    {
-        _logger = logger;
-    }
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -54,10 +47,10 @@ internal sealed class HttpLoggingHandler : DelegatingHandler
             }
             catch (JsonException ex)
             {
-                _logger.Warning(ex, "[{RequestId}] Failed to transform request body", requestId);
+                logger.Warning(ex, "[{RequestId}] Failed to transform request body", requestId);
             }
         }
 
-        _logger.Information("[{RequestId}] Request Body: {Body}", requestId, content);
+        logger.Information("[{RequestId}] Request Body: {Body}", requestId, content);
     }
 }
