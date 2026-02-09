@@ -12,6 +12,11 @@ internal sealed class GraphServiceSettings
     public const string SectionName = "GraphService";
 
     /// <summary>
+    /// Time of inactivity after which the container will be removed
+    /// </summary>
+    public TimeSpan EvictionTime { get; set; }
+
+    /// <summary>
     /// Docker image name for the graph service.
     /// </summary>
     public string ImageName { get; set; } = "graph-rag-api:latest";
@@ -67,6 +72,17 @@ internal sealed class GraphServiceSettings
     public string? ExportsHostPath { get; set; }
 
     /// <summary>
+    /// Path for container logs (relative, used in non-Docker scenarios).
+    /// </summary>
+    public string LogsPath { get; set; } = "./logs/graphrag";
+
+    /// <summary>
+    /// Absolute host path for container logs (for Docker volume mounts).
+    /// When set, this takes precedence over LogsPath.
+    /// </summary>
+    public string? LogsHostPath { get; set; }
+
+    /// <summary>
     /// Gets the effective data store path for Docker volume mounts.
     /// Returns the absolute host path if configured, otherwise falls back to relative path.
     /// </summary>
@@ -81,6 +97,11 @@ internal sealed class GraphServiceSettings
     /// Gets the effective exports path for Docker volume mounts.
     /// </summary>
     public string GetEffectiveExportsPath() => ExportsHostPath ?? ExportsPath;
+
+    /// <summary>
+    /// Gets the effective logs path for container log dumps.
+    /// </summary>
+    public string GetEffectiveLogsPath() => LogsHostPath ?? LogsPath;
 
     /// <summary>
     /// Volume name prefix for worldbook templates.

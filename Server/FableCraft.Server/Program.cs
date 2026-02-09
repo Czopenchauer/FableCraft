@@ -11,6 +11,18 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var externalConfigPath = Path.Combine("/app/config", "appsettings.json");
+if (File.Exists(externalConfigPath))
+{
+    builder.Configuration.AddJsonFile(externalConfigPath, optional: true, reloadOnChange: true);
+}
+
+var externalEnvConfigPath = Path.Combine("/app/config", $"appsettings.{builder.Environment.EnvironmentName}.json");
+if (File.Exists(externalEnvConfigPath))
+{
+    builder.Configuration.AddJsonFile(externalEnvConfigPath, optional: true, reloadOnChange: true);
+}
+
 builder.AddServiceDefaults();
 
 #pragma warning disable EXTEXP0001

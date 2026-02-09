@@ -38,20 +38,19 @@ internal interface IContainerMonitor
 
 internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposable
 {
-    private readonly TimeSpan _evictionTime = TimeSpan.FromMinutes(15);
     private readonly ConcurrentDictionary<ContainerKey, ContainerInfo> _containers = new();
     private readonly ConcurrentDictionary<ContainerKey, (CancellationTokenSource, Task)> _evictionTask = new();
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _operationLocks = new();
     private readonly ContainerManager _containerManager;
     private readonly VolumeManager _volumeManager;
     private readonly IConfiguration _config;
-    private readonly GraphServiceSettings _settings;
+    private readonly IOptionsMonitor<GraphServiceSettings> _settings;
     private readonly ILogger _logger;
-    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _operationLocks = new();
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
     public GraphContainerRegistry(
         ContainerManager containerManager,
-        IOptions<GraphServiceSettings> settings,
+        IOptionsMonitor<GraphServiceSettings> settings,
         IConfiguration config,
         ILogger logger,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
@@ -59,7 +58,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
     {
         _containerManager = containerManager;
         _config = config;
-        _settings = settings.Value;
+        _settings = settings;
         _logger = logger;
         _dbContextFactory = dbContextFactory;
         _volumeManager = volumeManager;
@@ -78,7 +77,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             })
             .SingleAsync(x => x.Id == adventureId, cancellationToken: ct);
 
-        var volumeExists = await _volumeManager.ExistsAsync(_settings.GetAdventureVolumeName(adventureId), ct);
+        var volumeExists = await _volumeManager.ExistsAsync(_settings.CurrentValue.GetAdventureVolumeName(adventureId), ct);
         if (!volumeExists)
         {
             throw new Exception($"Could not find volume for adventure {adventureId}");
@@ -86,8 +85,8 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
         return await EnsureContainerAsync(
             new ContainerKey(adventureId, ContainerType.Adventure),
-            _settings.GetContainerName(adventure.Id.ToString()),
-            _settings.GetAdventureVolumeName(adventureId),
+            _settings.CurrentValue.GetContainerName(adventure.Id.ToString()),
+            _settings.CurrentValue.GetAdventureVolumeName(adventureId),
             adventure.GraphRagSettings,
             ct);
     }
@@ -105,7 +104,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             })
             .SingleAsync(x => x.Id == worldbookId, cancellationToken: ct);
 
-        var volumeExists = await _volumeManager.ExistsAsync(_settings.GetWorldbookVolumeName(worldbookId), ct);
+        var volumeExists = await _volumeManager.ExistsAsync(_settings.CurrentValue.GetWorldbookVolumeName(worldbookId), ct);
         if (!volumeExists)
         {
             throw new Exception($"Could not find volume for worldbook {worldbookId}");
@@ -113,8 +112,8 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
         return await EnsureContainerAsync(
             new ContainerKey(worldbookId, ContainerType.Worldbook),
-            _settings.GetContainerName(worldbook.Id.ToString()),
-            _settings.GetWorldbookVolumeName(worldbookId),
+            _settings.CurrentValue.GetContainerName(worldbook.Id.ToString()),
+            _settings.CurrentValue.GetWorldbookVolumeName(worldbookId),
             worldbook.GraphRagSettings,
             ct);
     }
@@ -144,7 +143,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             var hostPort = AllocatePort();
             var containerConfig = BuildContainerConfig(containerName, volumeName, hostPort, graphRagSettings);
             await _containerManager.StartAsync(containerConfig, ct);
-            var baseUrl = _settings.GetContainerBaseUrl(_settings.ContainerPort, containerName);
+            var baseUrl = _settings.CurrentValue.GetContainerBaseUrl(_settings.CurrentValue.ContainerPort, containerName);
             _containers.TryAdd(identifier, new ContainerInfo(containerName, baseUrl, hostPort, 0, DateTimeOffset.UtcNow));
 
             if (_evictionTask.TryRemove(identifier, out var value))
@@ -153,7 +152,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                 value.Item1.Dispose();
             }
             var newToken = new CancellationTokenSource();
-            _evictionTask.TryAdd(identifier, (newToken, Task.Run(() => Eviction(identifier, _evictionTime, newToken.Token), newToken.Token)));
+            _evictionTask.TryAdd(identifier, (newToken, Task.Run(() => Eviction(identifier, _settings.CurrentValue.EvictionTime, newToken.Token), newToken.Token)));
             return baseUrl;
         }
         finally
@@ -176,6 +175,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
             try
             {
+                await DumpContainerLogsAsync(info.Name, ct);
                 await _containerManager.StopAsync(info.Name, TimeSpan.FromSeconds(10), ct);
                 await _containerManager.RemoveAsync(info.Name, force: true, ct);
                 if (_evictionTask.TryRemove(identifier, out var value))
@@ -199,7 +199,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
     private int AllocatePort()
     {
-        var port = _settings.BasePort;
+        var port = _settings.CurrentValue.BasePort;
         var usedPorts = _containers.Values.Select(c => c.Port).ToHashSet();
 
         while (usedPorts.Contains(port) || !IsPortAvailable(port))
@@ -244,25 +244,25 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
         return new ContainerConfig
         {
             Name = containerName,
-            Image = _settings.ImageName,
-            Environment = _settings.GetEnvVariable(_config, graphRagSettings),
+            Image = _settings.CurrentValue.ImageName,
+            Environment = _settings.CurrentValue.GetEnvVariable(_config, graphRagSettings),
             Volumes =
             [
-                $"{volumeName}:{_settings.VolumeMountPath}",
-                $"{_settings.GetEffectiveVisualizationPath()}/{containerName}:/app/visualization",
-                $"{_settings.GetEffectiveDataStorePath()}:/app/data-store"
+                $"{volumeName}:{_settings.CurrentValue.VolumeMountPath}",
+                $"{_settings.CurrentValue.GetEffectiveVisualizationPath()}/{containerName}:/app/visualization",
+                $"{_settings.CurrentValue.GetEffectiveDataStorePath()}:/app/data-store"
             ],
             Ports =
             [
-                $"{hostPort}:{_settings.ContainerPort}"
+                $"{hostPort}:{_settings.CurrentValue.ContainerPort}"
             ],
-            NetworkName = _settings.NetworkName,
+            NetworkName = _settings.CurrentValue.NetworkName,
             Labels = new Dictionary<string, string>
             {
                 ["fablecraft.managed"] = "true",
                 ["fablecraft.service"] = "knowledge-graph"
             },
-            HealthEndpoint = _settings.BuildHealthCheck(_settings.ContainerPort, containerName)
+            HealthEndpoint = _settings.CurrentValue.BuildHealthCheck(_settings.CurrentValue.ContainerPort, containerName)
         };
     }
 
@@ -290,6 +290,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                         && containerInfo.PendingOperationCount == 0
                         && DateTimeOffset.UtcNow - containerInfo.LastAccessed > delay)
                     {
+                        await DumpContainerLogsAsync(containerInfo.Name, ct);
                         await _containerManager.StopAsync(containerInfo.Name, TimeSpan.FromSeconds(10), ct);
                         await _containerManager.RemoveAsync(containerInfo.Name, force: true, ct);
                         _containers.TryRemove(key, out _);
@@ -302,7 +303,30 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             }
             else
             {
-                _logger.Information("Evicting container {ContainerName} skipped as it does not meet criteria - Last accessed {lastAccessed}, operations {operations}", key.ToString(), containerInfo?.LastAccessed, containerInfo?.PendingOperationCount);
+                var elapsed = containerInfo != null ? DateTimeOffset.UtcNow - containerInfo.LastAccessed : TimeSpan.Zero;
+                _logger.Information(
+                    "Evicting container {ContainerName} skipped - LastAccessed: {lastAccessed}, Elapsed: {elapsed}, Required: {delay}, Operations: {operations}",
+                    key.ToString(),
+                    containerInfo?.LastAccessed,
+                    elapsed,
+                    delay,
+                    containerInfo?.PendingOperationCount);
+
+                if (containerInfo != null && elapsed < delay)
+                {
+                    var remainingTime = delay - elapsed + TimeSpan.FromSeconds(5);
+                    _logger.Information("Rescheduling eviction for {ContainerName} in {remainingTime}", key.ToString(), remainingTime);
+
+                    if (_evictionTask.TryGetValue(key, out (CancellationTokenSource token, Task task) value))
+                    {
+                        await value.token.CancelAsync();
+                        value.token.Dispose();
+
+                        var newToken = new CancellationTokenSource();
+                        _evictionTask.TryRemove(key, out _);
+                        _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, _settings.CurrentValue.EvictionTime, newToken.Token), newToken.Token)));
+                    }
+                }
             }
         }
         catch (OperationCanceledException)
@@ -331,16 +355,6 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                 LastAccessed = DateTimeOffset.UtcNow
             };
             _containers.TryUpdate(key, updated, containerInfo);
-            if (_evictionTask.TryGetValue(key, out (CancellationTokenSource token, Task task) value))
-            {
-                value.token.Cancel();
-                value.token.Dispose();
-
-                var newToken = new CancellationTokenSource();
-                _evictionTask.TryRemove(key, out _);
-                _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, _evictionTime, newToken.Token), newToken.Token)));
-            }
-
             _logger.Information("Container {ContainerName} has {request} pending operation", containerInfo.Name, updated.PendingOperationCount);
         }
     }
@@ -361,7 +375,6 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                 LastAccessed = DateTimeOffset.UtcNow
             };
             _containers.TryUpdate(key, updated, containerInfo);
-
             _logger.Information("Container {ContainerName} has {request} pending operation", containerInfo.Name, updated.PendingOperationCount);
         }
     }
@@ -369,5 +382,18 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
     public async ValueTask DisposeAsync()
     {
         await Task.WhenAll(_containers.Select(x => RemoveContainerAsync(x.Key, CancellationToken.None)));
+    }
+
+    private async Task DumpContainerLogsAsync(string containerName, CancellationToken ct)
+    {
+        try
+        {
+            var logsPath = _settings.CurrentValue.GetEffectiveLogsPath();
+            await _containerManager.DumpLogsAsync(containerName, logsPath, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to dump logs for container {ContainerName}", containerName);
+        }
     }
 }

@@ -24,7 +24,7 @@ RUN dotnet publish -c Release -o /app/publish --no-restore -p:BuildingInDocker=t
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN mkdir -p /app/data-store /app/logs /app/prompts-root
+RUN mkdir -p /app/data-store /app/logs /app/logs/graphrag /app/prompts-root /app/config
 
 COPY --from=build /app/publish .
 

@@ -27,15 +27,15 @@ public interface IAdventureRagManager
     Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default);
 }
 
-internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> settings, VolumeManager volumeManager, GraphContainerRegistry graphContainerRegistry)
+internal sealed class AdventureRagManager(IOptionsMonitor<GraphServiceSettings> settings, VolumeManager volumeManager, GraphContainerRegistry graphContainerRegistry)
     : IAdventureRagManager, IWorldbookRagManager
 {
-    private readonly GraphServiceSettings _settings = settings.Value;
+    private GraphServiceSettings Settings => settings.CurrentValue;
 
     public async Task InitializeFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default)
     {
-        var sourceVolume = _settings.GetWorldbookVolumeName(adventure.WorldbookId);
-        var destVolume = _settings.GetAdventureVolumeName(adventure.Id);
+        var sourceVolume = Settings.GetWorldbookVolumeName(adventure.WorldbookId);
+        var destVolume = Settings.GetAdventureVolumeName(adventure.Id);
         if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
         {
             throw new WorldbookNotIndexedException(adventure.WorldbookId);
@@ -51,8 +51,8 @@ internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> setting
 
     public async Task RecreateFromWorldbook(Adventure adventure, CancellationToken cancellationToken = default)
     {
-        var sourceVolume = _settings.GetWorldbookVolumeName(adventure.WorldbookId);
-        var destVolume = _settings.GetAdventureVolumeName(adventure.Id);
+        var sourceVolume = Settings.GetWorldbookVolumeName(adventure.WorldbookId);
+        var destVolume = Settings.GetAdventureVolumeName(adventure.Id);
 
         if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
         {
@@ -73,7 +73,7 @@ internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> setting
 
     public async Task IndexWorldbook(Guid worldbookId, CancellationToken cancellationToken = default)
     {
-        var volumeName = _settings.GetWorldbookVolumeName(worldbookId);
+        var volumeName = Settings.GetWorldbookVolumeName(worldbookId);
         if (!await volumeManager.ExistsAsync(volumeName, cancellationToken))
         {
             await volumeManager.CreateAsync(volumeName, cancellationToken);
@@ -84,8 +84,8 @@ internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> setting
 
     public async Task CopyWorldbookVolume(Guid sourceWorldbookId, Guid destinationWorldbookId, CancellationToken cancellationToken = default)
     {
-        var sourceVolume = _settings.GetWorldbookVolumeName(sourceWorldbookId);
-        var destVolume = _settings.GetWorldbookVolumeName(destinationWorldbookId);
+        var sourceVolume = Settings.GetWorldbookVolumeName(sourceWorldbookId);
+        var destVolume = Settings.GetWorldbookVolumeName(destinationWorldbookId);
 
         if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
         {

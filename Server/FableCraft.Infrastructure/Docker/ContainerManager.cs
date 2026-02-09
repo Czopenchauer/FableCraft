@@ -234,4 +234,45 @@ internal sealed class ContainerManager
             return null;
         }
     }
+
+    /// <summary>
+    /// Dumps container logs to a file before removal.
+    /// </summary>
+    /// <param name="containerName">Name of the container</param>
+    /// <param name="logsDirectory">Directory to save logs to</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task DumpLogsAsync(string containerName, string logsDirectory, CancellationToken cancellationToken = default)
+    {
+        _logger.Information("Dumping logs for container {ContainerName} to {LogsDirectory}", containerName, logsDirectory);
+
+        try
+        {
+            Directory.CreateDirectory(logsDirectory);
+
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var logFileName = Path.Combine(logsDirectory, $"{containerName}_{timestamp}.log");
+
+            var logsParams = new ContainerLogsParameters
+            {
+                ShowStdout = true,
+                ShowStderr = true,
+                Timestamps = true,
+                Follow = false
+            };
+
+            using var logStream = await _client.Containers.GetContainerLogsAsync(containerName, logsParams, cancellationToken);
+            await using var fileStream = File.Create(logFileName);
+            await logStream.CopyOutputToAsync(null, fileStream, fileStream, cancellationToken);
+
+            _logger.Information("Saved logs for container {ContainerName} to {LogFileName}", containerName, logFileName);
+        }
+        catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.Warning("Container {ContainerName} not found, cannot dump logs", containerName);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to dump logs for container {ContainerName}", containerName);
+        }
+    }
 }

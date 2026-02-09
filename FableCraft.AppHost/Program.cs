@@ -76,6 +76,7 @@ var serverBuilder = builder
     .WithEnvironment("FABLECRAFT_EXPORTER_SEQ_LOG_ENDPOINT", "http://localhost:5341")
     .WithEnvironment("FABLECRAFT_DATA_STORE", @$"{TryGetSolutionDirectoryInfo().FullName}\data-store")
     .WithEnvironment("FABLECRAFT_LOG_PATH", @$"{TryGetSolutionDirectoryInfo().FullName}\logs\")
+    .WithEnvironment("GraphService__LogsHostPath", @$"{TryGetSolutionDirectoryInfo().FullName}\logs\graphrag")
     .WithEnvironment("DEFAULT_PROMPT_PATH", promptPath)
     .WaitFor(graphRagApi);
 
