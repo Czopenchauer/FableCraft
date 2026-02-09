@@ -280,7 +280,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             _logger.Information("Waiting {delay} for container {ContainerName} to evict", delay, key.ToString());
             await Task.Delay(delay, ct);
             _logger.Information("Start evicting container {ContainerName}", key.ToString());
-            if (_containers.TryGetValue(key, out var containerInfo) && containerInfo.PendingOperationCount == 0 && DateTimeOffset.UtcNow - containerInfo.LastAccessed - TimeSpan.FromSeconds(1) >= delay)
+            if (_containers.TryGetValue(key, out var containerInfo) && containerInfo.PendingOperationCount == 0 && DateTimeOffset.UtcNow - containerInfo.LastAccessed >= delay - TimeSpan.FromSeconds(10))
             {
                 var removalLock = _operationLocks.GetOrAdd(key.Identifier, _ => new SemaphoreSlim(1, 1));
                 try
@@ -294,15 +294,14 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                         await _containerManager.StopAsync(containerInfo.Name, TimeSpan.FromSeconds(10), ct);
                         await _containerManager.RemoveAsync(containerInfo.Name, force: true, ct);
                         _containers.TryRemove(key, out _);
+                        return;
                     }
                 }
                 finally
                 {
                     removalLock.Release();
                 }
-            }
-            else
-            {
+                
                 var elapsed = containerInfo != null ? DateTimeOffset.UtcNow - containerInfo.LastAccessed : TimeSpan.Zero;
                 _logger.Information(
                     "Evicting container {ContainerName} skipped - LastAccessed: {lastAccessed}, Elapsed: {elapsed}, Required: {delay}, Operations: {operations}",
