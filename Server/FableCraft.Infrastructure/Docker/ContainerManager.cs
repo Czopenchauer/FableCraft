@@ -235,44 +235,42 @@ internal sealed class ContainerManager
         }
     }
 
-    /// <summary>
-    /// Dumps container logs to a file before removal.
-    /// </summary>
-    /// <param name="containerName">Name of the container</param>
-    /// <param name="logsDirectory">Directory to save logs to</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    public async Task DumpLogsAsync(string containerName, string logsDirectory, CancellationToken cancellationToken = default)
+    public async Task StreamLogsAsync(string containerName, string logFilePath, CancellationToken cancellationToken = default)
     {
-        _logger.Information("Dumping logs for container {ContainerName} to {LogsDirectory}", containerName, logsDirectory);
+        _logger.Information("Starting log streaming for container {ContainerName} to {LogFilePath}", containerName, logFilePath);
 
         try
         {
-            Directory.CreateDirectory(logsDirectory);
-
-            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
-            var logFileName = Path.Combine(logsDirectory, $"{containerName}_{timestamp}.log");
+            var directory = Path.GetDirectoryName(logFilePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
             var logsParams = new ContainerLogsParameters
             {
                 ShowStdout = true,
                 ShowStderr = true,
                 Timestamps = true,
-                Follow = false
+                Follow = true
             };
 
             using var logStream = await _client.Containers.GetContainerLogsAsync(containerName, logsParams, cancellationToken);
-            await using var fileStream = File.Create(logFileName);
+            await using var fileStream = new FileStream(logFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await logStream.CopyOutputToAsync(null, fileStream, fileStream, cancellationToken);
-
-            _logger.Information("Saved logs for container {ContainerName} to {LogFileName}", containerName, logFileName);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.Information("Log streaming stopped for container {ContainerName}", containerName);
         }
         catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.Warning("Container {ContainerName} not found, cannot dump logs", containerName);
+            _logger.Warning("Container {ContainerName} not found, cannot stream logs", containerName);
         }
         catch (Exception ex)
         {
-            _logger.Warning(ex, "Failed to dump logs for container {ContainerName}", containerName);
+            // Shitty situation but it's unrecoverable. Imo it should mostly be during pod termination.
+            _logger.Warning(ex, "Log streaming failed for container {ContainerName}", containerName);
         }
     }
 }

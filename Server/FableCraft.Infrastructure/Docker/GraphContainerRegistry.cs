@@ -40,6 +40,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 {
     private readonly ConcurrentDictionary<ContainerKey, ContainerInfo> _containers = new();
     private readonly ConcurrentDictionary<ContainerKey, (CancellationTokenSource, Task)> _evictionTask = new();
+    private readonly ConcurrentDictionary<ContainerKey, CancellationTokenSource> _logStreamingTasks = new();
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _operationLocks = new();
     private readonly ContainerManager _containerManager;
     private readonly VolumeManager _volumeManager;
@@ -151,6 +152,14 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                 await value.Item1.CancelAsync();
                 value.Item1.Dispose();
             }
+
+            var logStreamCts = new CancellationTokenSource();
+            if (_logStreamingTasks.TryAdd(identifier, logStreamCts))
+            {
+                var logFilePath = GetLogFilePath(containerName);
+                _ = _containerManager.StreamLogsAsync(containerName, logFilePath, logStreamCts.Token);
+            }
+
             var newToken = new CancellationTokenSource();
             _evictionTask.TryAdd(identifier, (newToken, Task.Run(() => Eviction(identifier, _settings.CurrentValue.EvictionTime, newToken.Token), newToken.Token)));
             return baseUrl;
@@ -175,9 +184,15 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
             try
             {
-                await DumpContainerLogsAsync(info.Name, ct);
+                if (_logStreamingTasks.TryRemove(identifier, out var logCts))
+                {
+                    await logCts.CancelAsync();
+                    logCts.Dispose();
+                }
+
                 await _containerManager.StopAsync(info.Name, TimeSpan.FromSeconds(10), ct);
                 await _containerManager.RemoveAsync(info.Name, force: true, ct);
+
                 if (_evictionTask.TryRemove(identifier, out var value))
                 {
                     await value.Item1.CancelAsync();
@@ -280,7 +295,9 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             _logger.Information("Waiting {delay} for container {ContainerName} to evict", delay, key.ToString());
             await Task.Delay(delay, ct);
             _logger.Information("Start evicting container {ContainerName}", key.ToString());
-            if (_containers.TryGetValue(key, out var containerInfo) && containerInfo.PendingOperationCount == 0 && DateTimeOffset.UtcNow - containerInfo.LastAccessed >= delay - TimeSpan.FromSeconds(10))
+            if (_containers.TryGetValue(key, out var containerInfo)
+                && containerInfo.PendingOperationCount == 0
+                && DateTimeOffset.UtcNow - containerInfo.LastAccessed >= delay - TimeSpan.FromSeconds(10))
             {
                 var removalLock = _operationLocks.GetOrAdd(key.Identifier, _ => new SemaphoreSlim(1, 1));
                 try
@@ -290,7 +307,12 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                         && containerInfo.PendingOperationCount == 0
                         && DateTimeOffset.UtcNow - containerInfo.LastAccessed > delay)
                     {
-                        await DumpContainerLogsAsync(containerInfo.Name, ct);
+                        if (_logStreamingTasks.TryRemove(key, out var logCts))
+                        {
+                            await logCts.CancelAsync();
+                            logCts.Dispose();
+                        }
+
                         await _containerManager.StopAsync(containerInfo.Name, TimeSpan.FromSeconds(10), ct);
                         await _containerManager.RemoveAsync(containerInfo.Name, force: true, ct);
                         _containers.TryRemove(key, out _);
@@ -301,7 +323,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
                 {
                     removalLock.Release();
                 }
-                
+
                 var elapsed = containerInfo != null ? DateTimeOffset.UtcNow - containerInfo.LastAccessed : TimeSpan.Zero;
                 _logger.Information(
                     "Evicting container {ContainerName} skipped - LastAccessed: {lastAccessed}, Elapsed: {elapsed}, Required: {delay}, Operations: {operations}",
@@ -323,7 +345,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
 
                         var newToken = new CancellationTokenSource();
                         _evictionTask.TryRemove(key, out _);
-                        _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, _settings.CurrentValue.EvictionTime, newToken.Token), newToken.Token)));
+                        _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, remainingTime, newToken.Token), newToken.Token)));
                     }
                 }
             }
@@ -383,16 +405,10 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
         await Task.WhenAll(_containers.Select(x => RemoveContainerAsync(x.Key, CancellationToken.None)));
     }
 
-    private async Task DumpContainerLogsAsync(string containerName, CancellationToken ct)
+    private string GetLogFilePath(string containerName)
     {
-        try
-        {
-            var logsPath = _settings.CurrentValue.GetEffectiveLogsPath();
-            await _containerManager.DumpLogsAsync(containerName, logsPath, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning(ex, "Failed to dump logs for container {ContainerName}", containerName);
-        }
+        var logsPath = _settings.CurrentValue.GetEffectiveLogsPath();
+        var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+        return Path.Combine(logsPath, $"{containerName}_{timestamp}.log");
     }
 }

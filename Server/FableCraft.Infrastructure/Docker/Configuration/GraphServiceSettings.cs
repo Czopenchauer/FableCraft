@@ -132,12 +132,6 @@ internal sealed class GraphServiceSettings
         $"{AdventureVolumePrefix}{adventureId}";
 
     /// <summary>
-    /// Maximum number of concurrent graph service containers.
-    /// When exceeded, least recently used containers are evicted.
-    /// </summary>
-    public int MaxConcurrentContainers { get; set; } = 10;
-
-    /// <summary>
     /// Base port for dynamic port allocation.
     /// Containers will be assigned ports starting from this value.
     /// </summary>
@@ -163,15 +157,6 @@ internal sealed class GraphServiceSettings
     /// </summary>
     public string GetContainerBaseUrl(int port, string name) =>
         $"http://{name}:{port}";
-
-    /// <summary>
-    /// Builds environment variables from configuration/environment variables.
-    /// Used as fallback when no GraphRagSettings are provided.
-    /// </summary>
-    public Dictionary<string, string> GetEnvVariable(IConfiguration config)
-    {
-        return GetEnvVariable(config, graphRagSettings: null);
-    }
 
     /// <summary>
     /// Builds environment variables from GraphRagSettings entity if provided,
