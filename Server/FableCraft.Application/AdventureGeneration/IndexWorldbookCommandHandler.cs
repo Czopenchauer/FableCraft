@@ -116,7 +116,7 @@ internal sealed class IndexWorldbookCommandHandler : IMessageHandler<IndexWorldb
 
                 var chunks = await _ragChunkService.CreateChunk(entries, worldbook.Id, cancellationToken);
                 var ragBuilder = await _ragClientFactory.CreateBuildClientForWorldbook(worldbook.Id, cancellationToken);
-                var chunksToDelete = await _dbContext.Chunks.Where(x => softDeletedLorebooks.Select(y => y.Id).Contains(x.Id)).ToArrayAsync(cancellationToken);
+                var chunksToDelete = await _dbContext.Chunks.Where(x => softDeletedLorebooks.Select(y => y.Id).Contains(x.EntityId)).ToArrayAsync(cancellationToken);
                 if (chunksToDelete.Any())
                 {
                     _dbContext.Chunks.RemoveRange(chunksToDelete);
@@ -126,6 +126,7 @@ internal sealed class IndexWorldbookCommandHandler : IMessageHandler<IndexWorldb
                 await _ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
                 await _ragChunkService.CognifyDatasetsAsync(ragBuilder, [RagClientExtensions.GetWorldDatasetName()], cancellationToken: cancellationToken);
 
+                _dbContext.Chunks.AddRange(chunks);
                 _dbContext.LorebookSnapshots.RemoveRange(worldbook.IndexedSnapshots);
 
                 foreach (var lorebook in activeLorebooks)

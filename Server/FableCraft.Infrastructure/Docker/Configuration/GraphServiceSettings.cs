@@ -188,10 +188,14 @@ internal sealed class GraphServiceSettings
             environment["LLM_PROVIDER"] = graphRagSettings.LlmProvider;
 
             if (!string.IsNullOrEmpty(graphRagSettings.LlmEndpoint))
+            {
                 environment["LLM_ENDPOINT"] = graphRagSettings.LlmEndpoint;
+            }
 
             if (!string.IsNullOrEmpty(graphRagSettings.LlmApiVersion))
+            {
                 environment["LLM_API_VERSION"] = graphRagSettings.LlmApiVersion;
+            }
 
             environment["LLM_MAX_TOKENS"] = graphRagSettings.LlmMaxTokens.ToString();
             environment["LLM_RATE_LIMIT_ENABLED"] = graphRagSettings.LlmRateLimitEnabled.ToString().ToLowerInvariant();
@@ -202,10 +206,14 @@ internal sealed class GraphServiceSettings
             environment["EMBEDDING_MODEL"] = graphRagSettings.EmbeddingModel;
 
             if (!string.IsNullOrEmpty(graphRagSettings.EmbeddingEndpoint))
+            {
                 environment["EMBEDDING_ENDPOINT"] = graphRagSettings.EmbeddingEndpoint;
+            }
 
             if (!string.IsNullOrEmpty(graphRagSettings.EmbeddingApiVersion))
+            {
                 environment["EMBEDDING_API_VERSION"] = graphRagSettings.EmbeddingApiVersion;
+            }
 
             var embeddingApiKey = !string.IsNullOrEmpty(graphRagSettings.EmbeddingApiKey)
                 ? graphRagSettings.EmbeddingApiKey
@@ -215,9 +223,14 @@ internal sealed class GraphServiceSettings
             environment["EMBEDDING_DIMENSIONS"] = graphRagSettings.EmbeddingDimensions.ToString();
             environment["EMBEDDING_MAX_TOKENS"] = graphRagSettings.EmbeddingMaxTokens.ToString();
             environment["EMBEDDING_BATCH_SIZE"] = graphRagSettings.EmbeddingBatchSize.ToString();
+            environment["ENABLE_BACKEND_ACCESS_CONTROL"] = "true";
+            environment["TOKENIZERS_PARALLELISM"] = "true";
+            environment["TELEMETRY_DISABLED"] = "true";
 
             if (!string.IsNullOrEmpty(graphRagSettings.HuggingfaceTokenizer))
+            {
                 environment["HUGGINGFACE_TOKENIZER"] = graphRagSettings.HuggingfaceTokenizer;
+            }
         }
         else
         {
@@ -239,6 +252,10 @@ internal sealed class GraphServiceSettings
             AddEnvVar(environment, "EMBEDDING_MAX_TOKENS", "EMBEDDING_MAX_TOKENS");
             AddEnvVar(environment, "EMBEDDING_BATCH_SIZE", "EMBEDDING_BATCH_SIZE");
             AddEnvVar(environment, "HUGGINGFACE_TOKENIZER", "HUGGINGFACE_TOKENIZER");
+
+            environment["ENABLE_BACKEND_ACCESS_CONTROL"] = "true";
+            environment["TOKENIZERS_PARALLELISM"] = "true";
+            environment["TELEMETRY_DISABLED"] = "true";
 
             void AddEnvVar(Dictionary<string, string> env, string key, string envVarName)
             {

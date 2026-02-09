@@ -12,6 +12,7 @@ from cognee.modules.data.exceptions import DatasetNotFoundError
 from cognee.modules.observability.get_observe import get_observe
 from cognee.modules.search.types import SearchType
 from cognee.modules.users.methods import get_default_user
+from cognee.modules.users.permissions.methods.give_permission_on_dataset import give_permission_on_dataset
 from fastapi import FastAPI, HTTPException
 from opentelemetry import trace
 from opentelemetry._logs import set_logger_provider
@@ -122,6 +123,9 @@ class UpdateDataRequest(BaseModel):
 async def add_data(data: AddDataRequest):
     """Add data to multiple datasets without processing"""
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         all_results = {}
 
         for adventure_id in data.adventure_ids:
@@ -173,6 +177,9 @@ async def add_data(data: AddDataRequest):
 async def cognify_dataset(request: CognifyRequest):
     """Run cognify processing on multiple datasets"""
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         # Process all datasets in a single cognify call to avoid race conditions
         logger.info("Running cognify for datasets %s (temporal=%s)", request.adventure_ids, request.temporal)
         result = await cognee.cognify(datasets=request.adventure_ids, temporal_cognify=request.temporal)
@@ -199,6 +206,9 @@ async def cognify_dataset(request: CognifyRequest):
 async def memify_dataset(request: MemifyRequest):
     """Run memify processing on multiple datasets"""
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         # Process all datasets - memify may need to be called per dataset
         # depending on cognee's API, but we batch where possible
         for adventure_id in request.adventure_ids:
@@ -220,6 +230,13 @@ async def memify_dataset(request: MemifyRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Memify failed: {str(e)}"
         )
+
+
+@app.get("/datasets")
+async def list_all_datasets():
+    """List all datasets with their IDs and names"""
+    datasets = await cognee.datasets.list_datasets()
+    return [{"id": str(getattr(d, "id", None)), "name": getattr(d, "name", None)} for d in datasets]
 
 
 @app.get("/datasets/{adventure_id}")
@@ -293,6 +310,9 @@ async def nuke():
 @app.delete("/delete/node/{dataset_name}/{data_id}")
 async def delete_node(dataset_name: str, data_id: UUID):
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         datasets = await cognee.datasets.list_datasets()
         dataset = next((d for d in datasets if d.name == dataset_name), None)
 
@@ -302,8 +322,19 @@ async def delete_node(dataset_name: str, data_id: UUID):
                 detail=f"Dataset with name '{dataset_name}' not found"
             )
 
-        dataset_id = str(dataset.id)
-        await cognee.delete(data_id=str(data_id), dataset_id=dataset_id)
+        logger.info(f"Deleting data_id={data_id} (type={type(data_id)}) from dataset_id={dataset.id} (type={type(dataset.id)})")
+
+        try:
+            dataset_data = await cognee.datasets.list_data(dataset.id)
+            data_item = next((d for d in dataset_data if str(getattr(d, 'id', '')) == str(data_id)), None)
+            if data_item:
+                logger.info(f"Found data item: id={getattr(data_item, 'id', None)}, datasets={getattr(data_item, 'datasets', [])}")
+            else:
+                logger.warning(f"Data item {data_id} not found in dataset {dataset_name} and dataset.id {dataset.id}")
+        except Exception as lookup_err:
+            logger.warning(f"Could not look up data item: {lookup_err}")
+
+        await cognee.delete(data_id=data_id, dataset_id=dataset.id)
 
         return {"message": f"Successfully deleted node {data_id} from dataset {dataset_name}"}
     except HTTPException:
@@ -319,6 +350,9 @@ async def delete_node(dataset_name: str, data_id: UUID):
 @app.put("/update")
 async def update_node(request: UpdateDataRequest):
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         datasets = await cognee.datasets.list_datasets()
         dataset = next((d for d in datasets if d.name == request.adventure_id), None)
 
@@ -348,6 +382,9 @@ async def update_node(request: UpdateDataRequest):
 @app.delete("/delete/{adventure_id}")
 async def clear_adventure(adventure_id: str):
     try:
+        user = await get_default_user()
+        await set_session_user_context_variable(user)
+
         datasets = await cognee.datasets.list_datasets()
         dataset = next((d for d in datasets if d.name == adventure_id), None)
 
@@ -364,6 +401,41 @@ async def clear_adventure(adventure_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to clear adventure: {str(e)}"
+        )
+
+
+@app.post("/fix-permissions/{dataset_name}")
+async def fix_permissions(dataset_name: str):
+    """Grant all permissions (read, write, delete) to the default user on a dataset.
+    Use this to fix datasets created without proper user context."""
+    try:
+        user = await get_default_user()
+
+        datasets = await cognee.datasets.list_datasets()
+        dataset = next((d for d in datasets if d.name == dataset_name), None)
+
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Dataset with name '{dataset_name}' not found"
+            )
+
+        # Grant all permissions to the default user
+        for permission in ["read", "write", "delete"]:
+            try:
+                await give_permission_on_dataset(user, dataset.id, permission)
+                logger.info(f"Granted {permission} permission on dataset {dataset_name} to default user")
+            except Exception as perm_err:
+                logger.warning(f"Could not grant {permission} permission: {perm_err}")
+
+        return {"message": f"Fixed permissions for dataset {dataset_name}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: Error fixing permissions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fix permissions: {str(e)}"
         )
 
 

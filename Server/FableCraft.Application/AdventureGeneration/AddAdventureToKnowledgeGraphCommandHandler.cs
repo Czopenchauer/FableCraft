@@ -92,7 +92,8 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
                 var ragBuilder = await ragClientFactory.CreateBuildClientForAdventure(adventure.Id, cancellationToken);
                 await ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
                 await ragChunkService.CognifyDatasetsAsync(ragBuilder, mainCharacterDatasets, cancellationToken: cancellationToken);
-
+                dbContext.Chunks.AddRange(chunks);
+                await dbContext.SaveChangesAsync(cancellationToken);
                 logger.Information(
                     "Successfully initialized adventure {AdventureId} from worldbook {WorldbookId}",
                     adventure.Id,
