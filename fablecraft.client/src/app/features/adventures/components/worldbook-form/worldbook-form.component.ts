@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {WorldbookService} from '../../services/worldbook.service';
@@ -21,7 +21,7 @@ import {GraphRagSettingsSummaryDto} from '../../../settings/models/graph-rag-set
   templateUrl: './worldbook-form.component.html',
   styleUrl: './worldbook-form.component.css'
 })
-export class WorldbookFormComponent implements OnInit {
+export class WorldbookFormComponent implements OnInit, OnDestroy {
   worldbookForm: FormGroup;
   isEditMode = false;
   worldbookId: string | null = null;
@@ -37,6 +37,7 @@ export class WorldbookFormComponent implements OnInit {
 
   // GraphRAG Settings options
   graphRagSettingsOptions: GraphRagSettingsSummaryDto[] = [];
+  graphRagDropdownOpen = false;
 
   // Worldbook state
   worldbook: WorldbookResponseDto | null = null;
@@ -44,12 +45,34 @@ export class WorldbookFormComponent implements OnInit {
   hasPendingChanges = false;
   reverting = false;
 
+  // Polling for indexing status
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly POLLING_INTERVAL_MS = 3000;
+
   // Lorebook change tracking
   lorebookChangeStatuses: Map<string, LorebookChangeStatus> = new Map();
   deletedLorebookIds: Set<string> = new Set();
 
   // Pending deletes during current edit session (not yet saved to server)
   pendingDeletes: LorebookResponseDto[] = [];
+
+  // Filtering and sorting
+  searchTerm = '';
+  sortOption: 'title-asc' | 'title-desc' | 'category-asc' | 'category-desc' | 'status' = 'title-asc';
+  statusFilter: 'all' | 'Added' | 'Modified' | 'Deleted' | 'None' = 'all';
+  sortDropdownOpen = false;
+
+  // Filtered view
+  filteredIndices: number[] = [];
+
+  // Success message
+  successMessage: string | null = null;
+
+  // Selected lorebook for detail view
+  selectedLorebookIndex: number | null = null;
+
+  // Content type dropdown
+  contentTypeDropdownOpen = false;
 
   constructor(
     private fb: FormBuilder,
@@ -73,6 +96,39 @@ export class WorldbookFormComponent implements OnInit {
     return this.worldbookForm.get('name');
   }
 
+  // Count getters for filter badges
+  get addedCount(): number {
+    return this.lorebooks.controls.filter((_, i) => this.getLorebookChangeStatus(i) === 'Added').length;
+  }
+
+  get modifiedCount(): number {
+    return this.lorebooks.controls.filter((_, i) => this.getLorebookChangeStatus(i) === 'Modified').length;
+  }
+
+  get deletedCount(): number {
+    return this.lorebooks.controls.filter((_, i) => this.isLorebookDeleted(i)).length;
+  }
+
+  get unchangedCount(): number {
+    return this.lorebooks.controls.filter((_, i) =>
+      this.getLorebookChangeStatus(i) === 'None' && !this.isLorebookDeleted(i)
+    ).length;
+  }
+
+  // Check if editing is allowed (not Indexing or Failed)
+  get canEdit(): boolean {
+    return this.indexingStatus !== 'Indexing' && this.indexingStatus !== 'Failed';
+  }
+
+  // Check if reindex is available
+  get canReindex(): boolean {
+    return this.isEditMode &&
+           this.indexingStatus !== 'Indexing' &&
+           (this.indexingStatus === 'NotIndexed' ||
+            this.indexingStatus === 'NeedsReindexing' ||
+            this.indexingStatus === 'Failed');
+  }
+
   ngOnInit(): void {
     this.worldbookId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.worldbookId;
@@ -83,6 +139,58 @@ export class WorldbookFormComponent implements OnInit {
     if (this.isEditMode && this.worldbookId) {
       this.loadWorldbook(this.worldbookId);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  /**
+   * Close dropdowns when clicking outside
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown')) {
+      this.sortDropdownOpen = false;
+      this.graphRagDropdownOpen = false;
+      this.contentTypeDropdownOpen = false;
+    }
+  }
+
+  /**
+   * Toggle content type dropdown
+   */
+  toggleContentTypeDropdown(): void {
+    this.contentTypeDropdownOpen = !this.contentTypeDropdownOpen;
+    this.sortDropdownOpen = false;
+    this.graphRagDropdownOpen = false;
+  }
+
+  /**
+   * Get selected content type value
+   */
+  getSelectedContentType(): string {
+    if (this.selectedLorebookIndex === null) return 'txt';
+    return this.lorebooks.at(this.selectedLorebookIndex).get('contentType')?.value || 'txt';
+  }
+
+  /**
+   * Get content type label
+   */
+  getContentTypeLabel(): string {
+    const value = this.getSelectedContentType();
+    return value === 'json' ? 'JSON' : 'Text';
+  }
+
+  /**
+   * Select content type
+   */
+  selectContentType(value: string): void {
+    if (this.selectedLorebookIndex !== null) {
+      this.lorebooks.at(this.selectedLorebookIndex).patchValue({ contentType: value });
+    }
+    this.contentTypeDropdownOpen = false;
   }
 
   /**
@@ -100,6 +208,33 @@ export class WorldbookFormComponent implements OnInit {
   }
 
   /**
+   * Toggle GraphRAG settings dropdown
+   */
+  toggleGraphRagDropdown(): void {
+    this.graphRagDropdownOpen = !this.graphRagDropdownOpen;
+    // Close sort dropdown if open
+    this.sortDropdownOpen = false;
+  }
+
+  /**
+   * Select GraphRAG settings
+   */
+  selectGraphRagSettings(id: string | null): void {
+    this.worldbookForm.patchValue({ graphRagSettingsId: id });
+    this.graphRagDropdownOpen = false;
+  }
+
+  /**
+   * Get selected GraphRAG settings name
+   */
+  getSelectedGraphRagName(): string {
+    const selectedId = this.worldbookForm.get('graphRagSettingsId')?.value;
+    if (!selectedId) return '-- None --';
+    const found = this.graphRagSettingsOptions.find(s => s.id === selectedId);
+    return found?.name || '-- None --';
+  }
+
+  /**
    * Create a FormGroup for a lorebook
    */
   createLorebookGroup(lorebook?: any): FormGroup {
@@ -113,12 +248,97 @@ export class WorldbookFormComponent implements OnInit {
   }
 
   /**
+   * Generate a unique lorebook title
+   */
+  private generateUniqueTitle(): string {
+    const baseName = 'New Lorebook';
+    const existingTitles = new Set<string>();
+
+    // Collect all existing titles
+    for (let i = 0; i < this.lorebooks.length; i++) {
+      const title = this.lorebooks.at(i).get('title')?.value;
+      if (title) {
+        existingTitles.add(title.toLowerCase());
+      }
+    }
+
+    // Find a unique name
+    if (!existingTitles.has(baseName.toLowerCase())) {
+      return baseName;
+    }
+
+    let counter = 1;
+    while (existingTitles.has(`${baseName} ${counter}`.toLowerCase())) {
+      counter++;
+    }
+    return `${baseName} ${counter}`;
+  }
+
+  /**
+   * Check if all lorebook titles are unique
+   */
+  hasDuplicateTitles(): boolean {
+    const titles = new Map<string, number>();
+    for (let i = 0; i < this.lorebooks.length; i++) {
+      if (this.isLorebookDeleted(i)) continue;
+      const title = (this.lorebooks.at(i).get('title')?.value || '').toLowerCase().trim();
+      if (title) {
+        titles.set(title, (titles.get(title) || 0) + 1);
+      }
+    }
+    return Array.from(titles.values()).some(count => count > 1);
+  }
+
+  /**
+   * Check if a specific lorebook has a duplicate title
+   */
+  isDuplicateTitle(index: number): boolean {
+    if (this.isLorebookDeleted(index)) return false;
+    const title = (this.lorebooks.at(index).get('title')?.value || '').toLowerCase().trim();
+    if (!title) return false;
+
+    for (let i = 0; i < this.lorebooks.length; i++) {
+      if (i === index || this.isLorebookDeleted(i)) continue;
+      const otherTitle = (this.lorebooks.at(i).get('title')?.value || '').toLowerCase().trim();
+      if (title === otherTitle) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Check if a lorebook is indexed (cannot be modified directly)
+   */
+  isLorebookIndexed(index: number): boolean {
+    // Only applies when worldbook is indexed
+    if (this.indexingStatus !== 'Indexed' && this.indexingStatus !== 'NeedsReindexing') {
+      return false;
+    }
+
+    const lorebookId = this.lorebooks.at(index)?.get('id')?.value;
+    if (!lorebookId) {
+      return false; // New lorebook - can be edited
+    }
+
+    const changeStatus = this.getLorebookChangeStatus(index);
+    // Indexed lorebooks with no changes cannot be modified
+    return changeStatus === 'None' && !this.isLorebookDeleted(index);
+  }
+
+  /**
    * Add a new lorebook to the FormArray
    */
   addLorebook(): void {
+    if (!this.canEdit) return;
+
     const newIndex = this.lorebooks.length;
-    this.lorebooks.push(this.createLorebookGroup());
-    this.expandedPanels.add(newIndex);
+    this.lorebooks.push(this.createLorebookGroup({
+      title: this.generateUniqueTitle(),
+      content: 'Enter content here...',
+      category: 'General',
+      contentType: 'txt'
+    }));
+    this.applyFilters();
+    this.selectLorebook(newIndex);
 
     // Focus on title field after a short delay
     setTimeout(() => {
@@ -126,54 +346,131 @@ export class WorldbookFormComponent implements OnInit {
         `#lorebook-${newIndex}-title`
       ) as HTMLInputElement;
       titleInput?.focus();
+      titleInput?.select();
     }, 100);
+  }
+
+  /**
+   * Select a lorebook for detail view
+   */
+  selectLorebook(index: number | null): void {
+    // Force view refresh by briefly clearing selection
+    if (this.selectedLorebookIndex !== null && index !== null && this.selectedLorebookIndex !== index) {
+      this.selectedLorebookIndex = null;
+      setTimeout(() => {
+        this.selectedLorebookIndex = index;
+      }, 0);
+    } else {
+      this.selectedLorebookIndex = index;
+    }
+  }
+
+  /**
+   * Check if a lorebook is selected
+   */
+  isLorebookSelected(index: number): boolean {
+    return this.selectedLorebookIndex === index;
+  }
+
+  /**
+   * Copy a lorebook to create a new editable entry
+   */
+  copyLorebook(index: number): void {
+    if (!this.canEdit) return;
+
+    const sourceLorebook = this.lorebooks.at(index);
+    const sourceTitle = sourceLorebook.get('title')?.value || 'Lorebook';
+    const sourceContent = sourceLorebook.get('content')?.value || '';
+    const sourceCategory = sourceLorebook.get('category')?.value || 'General';
+    const sourceContentType = sourceLorebook.get('contentType')?.value || 'txt';
+
+    // Generate unique title for the copy
+    const copyTitle = this.generateUniqueCopyTitle(sourceTitle);
+
+    const newIndex = this.lorebooks.length;
+    this.lorebooks.push(this.createLorebookGroup({
+      title: copyTitle,
+      content: sourceContent,
+      category: sourceCategory,
+      contentType: sourceContentType
+    }));
+
+    this.applyFilters();
+    this.selectLorebook(newIndex);
+
+    // Focus on title field
+    setTimeout(() => {
+      const titleInput = document.querySelector(
+        `#lorebook-${newIndex}-title`
+      ) as HTMLInputElement;
+      titleInput?.focus();
+      titleInput?.select();
+    }, 100);
+  }
+
+  /**
+   * Generate a unique title for a copied lorebook
+   */
+  private generateUniqueCopyTitle(originalTitle: string): string {
+    const baseName = `Copy of ${originalTitle}`;
+    const existingTitles = new Set<string>();
+
+    for (let i = 0; i < this.lorebooks.length; i++) {
+      const title = this.lorebooks.at(i).get('title')?.value;
+      if (title) {
+        existingTitles.add(title.toLowerCase());
+      }
+    }
+
+    if (!existingTitles.has(baseName.toLowerCase())) {
+      return baseName;
+    }
+
+    let counter = 2;
+    while (existingTitles.has(`${baseName} ${counter}`.toLowerCase())) {
+      counter++;
+    }
+    return `${baseName} ${counter}`;
   }
 
   /**
    * Delete a lorebook from the FormArray
    */
   deleteLorebook(index: number): void {
+    if (!this.canEdit) return;
+
     const lorebookGroup = this.lorebooks.at(index);
     const lorebookId = lorebookGroup.get('id')?.value;
     const isIndexedWorldbook = this.indexingStatus === 'Indexed' || this.indexingStatus === 'NeedsReindexing';
 
-    // For indexed worldbooks with existing lorebooks, show soft-delete warning
+    // For indexed worldbooks with existing lorebooks, soft-delete
     if (isIndexedWorldbook && lorebookId) {
-      if (!confirm('This lorebook will be marked for deletion. The deletion will be applied when you re-index the worldbook. Continue?')) {
-        return;
+      // Mark as deleted instead of removing from FormArray
+      this.deletedLorebookIds.add(lorebookId);
+      this.lorebookChangeStatuses.set(lorebookId, 'Deleted');
+
+      // Clear selection if this was selected
+      if (this.selectedLorebookIndex === index) {
+        this.selectedLorebookIndex = null;
       }
 
-      // Track as pending delete so it shows in the "Deleted Lorebooks" section
-      const lorebookData: LorebookResponseDto = {
-        id: lorebookId,
-        worldbookId: this.worldbookId || '',
-        title: lorebookGroup.get('title')?.value || '',
-        content: lorebookGroup.get('content')?.value || '',
-        category: lorebookGroup.get('category')?.value || '',
-        contentType: lorebookGroup.get('contentType')?.value || 'txt',
-        isDeleted: true,
-        changeStatus: 'Deleted'
-      };
-      this.pendingDeletes.push(lorebookData);
-    } else {
-      // For new lorebooks or non-indexed worldbooks, just confirm deletion
-      if (!confirm('Are you sure you want to delete this lorebook?')) {
-        return;
+      this.applyFilters();
+      return;
+    }
+
+    // For new lorebooks or non-indexed worldbooks, remove from FormArray
+    this.lorebooks.removeAt(index);
+
+    // Adjust selection
+    if (this.selectedLorebookIndex !== null) {
+      if (this.selectedLorebookIndex === index) {
+        this.selectedLorebookIndex = null;
+      } else if (this.selectedLorebookIndex > index) {
+        this.selectedLorebookIndex--;
       }
     }
 
-    this.lorebooks.removeAt(index);
-
-    // Adjust expanded panels
-    const newExpanded = new Set<number>();
-    this.expandedPanels.forEach(i => {
-      if (i > index) {
-        newExpanded.add(i - 1);
-      } else if (i < index) {
-        newExpanded.add(i);
-      }
-    });
-    this.expandedPanels = newExpanded;
+    this.applyFilters();
   }
 
   /**
@@ -232,6 +529,126 @@ export class WorldbookFormComponent implements OnInit {
    */
   trackByIndex(index: number): number {
     return index;
+  }
+
+  /**
+   * TrackBy function for filtered indices
+   */
+  trackByFilteredIndex(index: number, item: number): number {
+    return item;
+  }
+
+  /**
+   * Check if lorebook at index is deleted
+   */
+  isLorebookDeleted(index: number): boolean {
+    const lorebookId = this.lorebooks.at(index)?.get('id')?.value;
+    if (!lorebookId) return false;
+    return this.deletedLorebookIds.has(lorebookId);
+  }
+
+  /**
+   * Set status filter and apply filters
+   */
+  setStatusFilter(filter: 'all' | 'Added' | 'Modified' | 'Deleted' | 'None'): void {
+    this.statusFilter = filter;
+    this.applyFilters();
+  }
+
+  /**
+   * Toggle sort dropdown
+   */
+  toggleSortDropdown(): void {
+    this.sortDropdownOpen = !this.sortDropdownOpen;
+    // Close GraphRAG dropdown if open
+    this.graphRagDropdownOpen = false;
+  }
+
+  /**
+   * Select sort option
+   */
+  selectSortOption(option: 'title-asc' | 'title-desc' | 'category-asc' | 'category-desc' | 'status'): void {
+    this.sortOption = option;
+    this.sortDropdownOpen = false;
+    this.applyFilters();
+  }
+
+  /**
+   * Get current sort label
+   */
+  getSortLabel(): string {
+    switch (this.sortOption) {
+      case 'title-asc': return 'A-Z';
+      case 'title-desc': return 'Z-A';
+      case 'category-asc': return 'Category';
+      case 'category-desc': return 'Category';
+      case 'status': return 'Status';
+      default: return 'Sort';
+    }
+  }
+
+  /**
+   * Apply filters and sorting to lorebooks
+   */
+  applyFilters(): void {
+    const searchLower = this.searchTerm.toLowerCase().trim();
+
+    // Get all indices
+    let indices = this.lorebooks.controls.map((_, i) => i);
+
+    // Filter by search term
+    if (searchLower) {
+      indices = indices.filter(i => {
+        const ctrl = this.lorebooks.at(i);
+        const title = (ctrl.get('title')?.value || '').toLowerCase();
+        const category = (ctrl.get('category')?.value || '').toLowerCase();
+        const content = (ctrl.get('content')?.value || '').toLowerCase();
+        return title.includes(searchLower) || category.includes(searchLower) || content.includes(searchLower);
+      });
+    }
+
+    // Filter by status
+    if (this.statusFilter !== 'all') {
+      indices = indices.filter(i => {
+        const isDeleted = this.isLorebookDeleted(i);
+        const status = this.getLorebookChangeStatus(i);
+
+        if (this.statusFilter === 'Deleted') {
+          return isDeleted;
+        } else if (this.statusFilter === 'None') {
+          return status === 'None' && !isDeleted;
+        } else {
+          return status === this.statusFilter && !isDeleted;
+        }
+      });
+    }
+
+    // Sort
+    indices.sort((a, b) => {
+      const ctrlA = this.lorebooks.at(a);
+      const ctrlB = this.lorebooks.at(b);
+
+      switch (this.sortOption) {
+        case 'title-asc':
+          return (ctrlA.get('title')?.value || '').localeCompare(ctrlB.get('title')?.value || '');
+        case 'title-desc':
+          return (ctrlB.get('title')?.value || '').localeCompare(ctrlA.get('title')?.value || '');
+        case 'category-asc':
+          return (ctrlA.get('category')?.value || '').localeCompare(ctrlB.get('category')?.value || '');
+        case 'category-desc':
+          return (ctrlB.get('category')?.value || '').localeCompare(ctrlA.get('category')?.value || '');
+        case 'status': {
+          const statusOrder = {'Deleted': 0, 'Modified': 1, 'Added': 2, 'None': 3};
+          const statusA = this.isLorebookDeleted(a) ? 'Deleted' : this.getLorebookChangeStatus(a);
+          const statusB = this.isLorebookDeleted(b) ? 'Deleted' : this.getLorebookChangeStatus(b);
+          return statusOrder[statusA] - statusOrder[statusB];
+        }
+        default:
+          return 0;
+      }
+    });
+
+    this.filteredIndices = indices;
   }
 
   /**
@@ -322,6 +739,7 @@ export class WorldbookFormComponent implements OnInit {
       }
     });
 
+    this.applyFilters();
     console.log(`Imported ${data.length} lorebooks from JSON`);
   }
 
@@ -365,21 +783,29 @@ export class WorldbookFormComponent implements OnInit {
           graphRagSettingsId: worldbook.graphRagSettingsId || null
         });
 
-        // Populate lorebooks FormArray (only non-deleted lorebooks for editing)
-        const lorebooksArray = this.lorebooks;
+        // Clear existing lorebooks before populating
+        this.lorebooks.clear();
+        this.expandedPanels.clear();
+        this.selectedLorebookIndex = null;
+
+        // Populate lorebooks FormArray (include ALL lorebooks, including deleted)
         if (worldbook.lorebooks && worldbook.lorebooks.length > 0) {
-          worldbook.lorebooks
-            .filter(lb => !lb.isDeleted)
-            .forEach(lb => {
-              console.log('Adding lorebook to FormArray:', lb.title);
-              lorebooksArray.push(this.createLorebookGroup(lb));
-            });
+          worldbook.lorebooks.forEach(lb => {
+            console.log('Adding lorebook to FormArray:', lb.title, lb.isDeleted ? '(deleted)' : '');
+            this.lorebooks.push(this.createLorebookGroup(lb));
+          });
           console.log('FormArray length after loading:', this.lorebooks.length);
         } else {
           console.log('No lorebooks found in response');
         }
 
+        this.applyFilters();
         this.loading = false;
+
+        // If currently indexing, start polling
+        if (this.indexingStatus === 'Indexing') {
+          this.startPolling();
+        }
       },
       error: (err) => {
         console.error('Error loading worldbook:', err);
@@ -390,7 +816,7 @@ export class WorldbookFormComponent implements OnInit {
   }
 
   /**
-   * Submit form (create or update)
+   * Submit form (create mode only - edit mode uses auto-save)
    */
   onSubmit(): void {
     if (this.worldbookForm.invalid) {
@@ -398,61 +824,197 @@ export class WorldbookFormComponent implements OnInit {
       return;
     }
 
+    // In edit mode, just trigger a manual save if needed
+    if (this.isEditMode && this.worldbookId) {
+      this.performSave();
+      return;
+    }
+
+    // Create mode: Build WorldbookDto
     this.saving = true;
     this.error = null;
-
     const formValue = this.worldbookForm.value;
 
-    if (this.isEditMode && this.worldbookId) {
-      // Edit mode: Build WorldbookUpdateDto
-      const dto: WorldbookUpdateDto = {
-        name: formValue.name,
-        graphRagSettingsId: formValue.graphRagSettingsId || null,
-        lorebooks: formValue.lorebooks.map((lb: any) => ({
-          id: lb.id || undefined,  // Include id for existing, omit for new
-          title: lb.title,
-          content: lb.content,
-          category: lb.category,
-          contentType: lb.contentType
-        } as UpdateLorebookDto))
-      };
+    const dto: WorldbookDto = {
+      name: formValue.name,
+      graphRagSettingsId: formValue.graphRagSettingsId || null,
+      lorebooks: formValue.lorebooks.map((lb: any) => ({
+        title: lb.title,
+        content: lb.content,
+        category: lb.category,
+        contentType: lb.contentType
+      } as CreateLorebookDto))
+    };
 
-      this.worldbookService.updateWorldbook(this.worldbookId, dto).subscribe({
-        next: () => {
-          this.saving = false;
-          this.router.navigate(['/worldbooks']);
-        },
-        error: (err) => {
-          console.error('Error updating worldbook:', err);
-          this.error = err.error?.message || 'Failed to update worldbook. Please try again.';
-          this.saving = false;
-        }
-      });
-    } else {
-      // Create mode: Build WorldbookDto
-      const dto: WorldbookDto = {
-        name: formValue.name,
-        graphRagSettingsId: formValue.graphRagSettingsId || null,
-        lorebooks: formValue.lorebooks.map((lb: any) => ({
-          title: lb.title,
-          content: lb.content,
-          category: lb.category,
-          contentType: lb.contentType
-        } as CreateLorebookDto))
-      };
+    this.worldbookService.createWorldbook(dto).subscribe({
+      next: (worldbook) => {
+        this.saving = false;
+        // Navigate to edit mode for the new worldbook
+        this.router.navigate(['/worldbooks/edit', worldbook.id]);
+      },
+      error: (err) => {
+        console.error('Error creating worldbook:', err);
+        this.error = err.error?.message || 'Failed to create worldbook. Please try again.';
+        this.saving = false;
+      }
+    });
+  }
 
-      this.worldbookService.createWorldbook(dto).subscribe({
-        next: () => {
-          this.saving = false;
-          this.router.navigate(['/worldbooks']);
-        },
-        error: (err) => {
-          console.error('Error creating worldbook:', err);
-          this.error = err.error?.message || 'Failed to create worldbook. Please try again.';
-          this.saving = false;
-        }
-      });
+  /**
+   * Perform the save operation
+   */
+  performSave(): void {
+    if (!this.worldbookId || this.saving) return;
+
+    this.saving = true;
+    const formValue = this.worldbookForm.value;
+
+    // Filter out deleted lorebooks from the update
+    const nonDeletedLorebooks = formValue.lorebooks.filter((_: any, i: number) => {
+      const lorebookId = this.lorebooks.at(i).get('id')?.value;
+      return !lorebookId || !this.deletedLorebookIds.has(lorebookId);
+    });
+
+    const dto: WorldbookUpdateDto = {
+      name: formValue.name,
+      graphRagSettingsId: formValue.graphRagSettingsId || null,
+      lorebooks: nonDeletedLorebooks.map((lb: any) => ({
+        id: lb.id || undefined,
+        title: lb.title,
+        content: lb.content,
+        category: lb.category,
+        contentType: lb.contentType
+      } as UpdateLorebookDto))
+    };
+
+    this.worldbookService.updateWorldbook(this.worldbookId, dto).subscribe({
+      next: (worldbook) => {
+        this.saving = false;
+        this.refreshAfterSave(worldbook);
+      },
+      error: (err) => {
+        console.error('Error saving worldbook:', err);
+        this.error = err.error?.message || 'Failed to save. Please try again.';
+        this.saving = false;
+      }
+    });
+  }
+
+  /**
+   * Start indexing/reindexing the worldbook
+   */
+  startReindex(): void {
+    if (!this.worldbookId || !this.canReindex) return;
+
+    this.worldbookService.startIndexing(this.worldbookId).subscribe({
+      next: () => {
+        this.indexingStatus = 'Indexing';
+        this.showSuccessMessage('Indexing started');
+        // Start polling for completion
+        this.startPolling();
+      },
+      error: (err) => {
+        console.error('Error starting indexing:', err);
+        this.error = err.error?.message || 'Failed to start indexing.';
+      }
+    });
+  }
+
+  /**
+   * Start polling for indexing status
+   */
+  private startPolling(): void {
+    this.stopPolling(); // Clear any existing polling
+
+    this.pollingInterval = setInterval(() => {
+      this.pollIndexingStatus();
+    }, this.POLLING_INTERVAL_MS);
+  }
+
+  /**
+   * Stop polling for indexing status
+   */
+  private stopPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
+  }
+
+  /**
+   * Poll for indexing status
+   */
+  private pollIndexingStatus(): void {
+    if (!this.worldbookId) {
+      this.stopPolling();
+      return;
+    }
+
+    this.worldbookService.getWorldbookById(this.worldbookId).subscribe({
+      next: (worldbook) => {
+        this.indexingStatus = worldbook.indexingStatus;
+
+        // Stop polling if indexing is complete or failed
+        if (worldbook.indexingStatus === 'Indexed' || worldbook.indexingStatus === 'Failed') {
+          this.stopPolling();
+
+          if (worldbook.indexingStatus === 'Indexed') {
+            this.showSuccessMessage('Indexing completed successfully');
+          } else {
+            this.error = 'Indexing failed. Please try again.';
+          }
+
+          // Reload the full worldbook data
+          this.loadWorldbook(this.worldbookId!);
+        }
+      },
+      error: (err) => {
+        console.error('Error polling indexing status:', err);
+        this.stopPolling();
+      }
+    });
+  }
+
+  /**
+   * Show success message with auto-dismiss
+   */
+  private showSuccessMessage(message: string): void {
+    this.successMessage = message;
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
+  }
+
+  /**
+   * Refresh component state after save
+   */
+  private refreshAfterSave(worldbook: WorldbookResponseDto): void {
+    this.worldbook = worldbook;
+    this.indexingStatus = worldbook.indexingStatus;
+    this.hasPendingChanges = worldbook.hasPendingChanges;
+
+    // Clear and rebuild tracking maps
+    this.lorebookChangeStatuses.clear();
+    this.deletedLorebookIds.clear();
+    this.pendingDeletes = [];
+    this.selectedLorebookIndex = null;
+
+    worldbook.lorebooks.forEach(lb => {
+      this.lorebookChangeStatuses.set(lb.id, lb.changeStatus);
+      if (lb.isDeleted) {
+        this.deletedLorebookIds.add(lb.id);
+      }
+    });
+
+    // Clear and rebuild FormArray
+    this.lorebooks.clear();
+    this.expandedPanels.clear();
+
+    worldbook.lorebooks.forEach(lb => {
+      this.lorebooks.push(this.createLorebookGroup(lb));
+    });
+
+    this.applyFilters();
   }
 
   cancel(): void {
@@ -492,17 +1054,20 @@ export class WorldbookFormComponent implements OnInit {
    * Revert all pending changes
    */
   revertAllChanges(): void {
-    if (!this.worldbookId || !confirm('Are you sure you want to revert all pending changes? This will restore all lorebooks to their last indexed state.')) {
+    if (!this.worldbookId) {
       return;
     }
 
     this.reverting = true;
+    this.selectedLorebookIndex = null;
     this.worldbookService.revertAllChanges(this.worldbookId).subscribe({
       next: (worldbook) => {
         this.reverting = false;
         // Reload the worldbook
         this.lorebooks.clear();
         this.expandedPanels.clear();
+        this.deletedLorebookIds.clear();
+        this.lorebookChangeStatuses.clear();
         this.loadWorldbook(this.worldbookId!);
       },
       error: (err) => {
@@ -519,10 +1084,6 @@ export class WorldbookFormComponent implements OnInit {
   revertLorebook(index: number): void {
     const lorebookId = this.lorebooks.at(index).get('id')?.value;
     if (!this.worldbookId || !lorebookId) {
-      return;
-    }
-
-    if (!confirm('Are you sure you want to revert this lorebook to its last indexed state?')) {
       return;
     }
 
@@ -543,6 +1104,8 @@ export class WorldbookFormComponent implements OnInit {
         if (!this.hasPendingChanges && this.indexingStatus === 'NeedsReindexing') {
           this.indexingStatus = 'Indexed';
         }
+
+        this.applyFilters();
       },
       error: (err) => {
         console.error('Error reverting lorebook:', err);
@@ -552,37 +1115,52 @@ export class WorldbookFormComponent implements OnInit {
   }
 
   /**
-   * Restore a deleted lorebook
+   * Restore a deleted lorebook by index
    */
-  restoreDeletedLorebook(lorebook: LorebookResponseDto): void {
-    if (!this.worldbookId) return;
+  restoreLorebookByIndex(index: number): void {
+    const lorebookId = this.lorebooks.at(index)?.get('id')?.value;
+    if (!this.worldbookId || !lorebookId) return;
 
-    this.worldbookService.revertLorebook(this.worldbookId, lorebook.id).subscribe({
+    this.worldbookService.revertLorebook(this.worldbookId, lorebookId).subscribe({
       next: (restored) => {
-        // Add the restored lorebook to the form
-        this.lorebooks.push(this.createLorebookGroup({
-          id: restored.id,
+        // Update the form with restored data
+        const group = this.lorebooks.at(index);
+        group.patchValue({
           title: restored.title,
           content: restored.content,
           category: restored.category,
           contentType: restored.contentType
-        }));
-        this.deletedLorebookIds.delete(lorebook.id);
-        this.lorebookChangeStatuses.set(lorebook.id, 'None');
+        });
+
+        this.deletedLorebookIds.delete(lorebookId);
+        this.lorebookChangeStatuses.set(lorebookId, 'None');
 
         // Update worldbook state
         if (this.worldbook) {
-          const idx = this.worldbook.lorebooks.findIndex(lb => lb.id === lorebook.id);
+          const idx = this.worldbook.lorebooks.findIndex(lb => lb.id === lorebookId);
           if (idx !== -1) {
             this.worldbook.lorebooks[idx].isDeleted = false;
             this.worldbook.lorebooks[idx].changeStatus = 'None';
           }
         }
+
+        this.applyFilters();
       },
       error: (err) => {
         console.error('Error restoring lorebook:', err);
         this.error = 'Failed to restore lorebook. Please try again.';
       }
     });
+  }
+
+  /**
+   * Restore a deleted lorebook (legacy method for compatibility)
+   */
+  restoreDeletedLorebook(lorebook: LorebookResponseDto): void {
+    // Find the index of the lorebook in the FormArray
+    const index = this.lorebooks.controls.findIndex(ctrl => ctrl.get('id')?.value === lorebook.id);
+    if (index !== -1) {
+      this.restoreLorebookByIndex(index);
+    }
   }
 }

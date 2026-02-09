@@ -192,3 +192,36 @@ a:hover {
     transform: rotate(360deg);
   }
 }
+
+/* Global select/dropdown styling for all themes */
+select {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+select option {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Medieval Fantasy theme - use explicit solid colors */
+[data-theme="medieval-fantasy"] select {
+  background-color: #3e2415;
+  color: #f5e6d3;
+}
+
+[data-theme="medieval-fantasy"] select option {
+  background-color: #3e2415;
+  color: #f5e6d3;
+}
+
+/* Modern Dark theme */
+[data-theme="modern-dark"] select {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="modern-dark"] select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}

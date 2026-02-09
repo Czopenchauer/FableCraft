@@ -1,121 +1,111 @@
-<div class="form-container">
-  <div class="form-content">
-    <!-- Header -->
-    <div class="form-header">
-      <div class="header-left">
-        <button (click)="cancel()" class="back-button">
-          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-            <path [attr.d]="'M10 19l-7-7m0 0l7-7m-7 7h18'" [attr.stroke-linecap]="'round'"
-                  [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-          </svg>
-        </button>
-        <h1 class="page-title">{{ isEditMode ? 'Edit Worldbook' : 'Create Worldbook' }}</h1>
-      </div>
-    </div>
+<div class="worldbook-manager">
+  <!-- Success Toast -->
+  <div *ngIf="successMessage" class="success-toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    {{ successMessage }}
+  </div>
 
-    <!-- Loading State -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="loading-content">
-        <svg [attr.fill]="'none'" class="spinner" viewBox="0 0 24 24">
-          <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
-                  class="opacity-25"></circle>
-          <path
-            [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
-            [attr.fill]="'currentColor'" class="opacity-75"></path>
-        </svg>
-        <p class="loading-text">Loading worldbook...</p>
-      </div>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-overlay">
+    <div class="loading-content">
+      <svg class="spinner" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" class="opacity-25"></circle>
+        <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path>
+      </svg>
+      <p class="loading-text">Loading worldbook...</p>
     </div>
+  </div>
 
-    <!-- Error State -->
-    <div *ngIf="error" class="error-state">
-      <div class="error-content">
-        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="error-icon" viewBox="0 0 24 24">
-          <path [attr.d]="'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'" [attr.stroke-linecap]="'round'"
-                [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
-        </svg>
-        <div class="error-text">
-          <h3 class="error-title">Error</h3>
-          <p class="error-message">{{ error }}</p>
-        </div>
-      </div>
-    </div>
+  <!-- Error State -->
+  <div *ngIf="error" class="error-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+    </svg>
+    <span>{{ error }}</span>
+    <button (click)="error = null" class="btn-close-error" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      </svg>
+    </button>
+  </div>
 
-    <!-- Pending Changes Banner -->
-    <div *ngIf="indexingStatus === 'NeedsReindexing'" class="pending-changes-banner">
-      <div class="banner-content">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="banner-icon">
-          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <div class="banner-text">
-          <strong>Pending Changes</strong>
-          <span>This worldbook has changes that need to be re-indexed to take effect.</span>
-        </div>
-        <button (click)="revertAllChanges()" [disabled]="reverting" class="btn-revert-all" type="button">
-          <svg *ngIf="!reverting" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          {{ reverting ? 'Reverting...' : 'Revert All Changes' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Deleted Lorebooks Section -->
-    <div *ngIf="getDeletedLorebooks().length > 0" class="deleted-lorebooks-section">
-      <h3 class="deleted-section-title">Deleted Lorebooks (pending removal)</h3>
-      <div class="deleted-lorebooks-list">
-        <div *ngFor="let lorebook of getDeletedLorebooks()" class="deleted-lorebook-item">
-          <span class="deleted-lorebook-title">{{ lorebook.title }}</span>
-          <span class="deleted-lorebook-category">{{ lorebook.category }}</span>
-          <button (click)="restoreDeletedLorebook(lorebook)" class="btn-restore" type="button">
+  <!-- Main Form -->
+  <form *ngIf="!loading" [formGroup]="worldbookForm" (ngSubmit)="onSubmit()" class="manager-form">
+    <!-- Two Panel Layout -->
+    <div class="two-panel-layout">
+      <!-- LEFT PANEL: Worldbook Settings + Lorebook List -->
+      <div class="left-panel">
+        <!-- Header -->
+        <div class="panel-header">
+          <button (click)="cancel()" class="back-button" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
             </svg>
-            Restore
           </button>
+          <h1 class="panel-title">{{ isEditMode ? 'Edit Worldbook' : 'Create Worldbook' }}</h1>
         </div>
-      </div>
-    </div>
 
-    <!-- Form -->
-    <form (ngSubmit)="onSubmit()" *ngIf="!loading" [formGroup]="worldbookForm" class="worldbook-form">
-      <div class="form-card">
-        <!-- Name Field -->
-        <div class="form-group">
-          <label class="form-label" for="name">
-            Worldbook Name
-            <span class="required">*</span>
-          </label>
-          <input
-            [class.error]="nameControl?.invalid && nameControl?.touched"
-            class="form-input"
-            formControlName="name"
-            id="name"
-            placeholder="Enter worldbook name"
-            type="text"
-          />
-          <div *ngIf="nameControl?.invalid && nameControl?.touched" class="field-error">
-            <span *ngIf="nameControl?.errors?.['required']">Worldbook name is required</span>
-            <span *ngIf="nameControl?.errors?.['maxlength']">Worldbook name must not exceed 200 characters</span>
+        <!-- Worldbook Settings -->
+        <div class="worldbook-settings" [class.disabled]="!canEdit">
+          <!-- Name Field -->
+          <div class="form-group">
+            <label class="form-label" for="name">
+              Worldbook Name <span class="required">*</span>
+            </label>
+            <input
+              [class.error]="nameControl?.invalid && nameControl?.touched"
+              class="form-input"
+              formControlName="name"
+              id="name"
+              placeholder="Enter worldbook name"
+              type="text"
+              [readonly]="!canEdit"
+            />
+            <div *ngIf="nameControl?.invalid && nameControl?.touched" class="field-error">
+              <span *ngIf="nameControl?.errors?.['required']">Worldbook name is required</span>
+              <span *ngIf="nameControl?.errors?.['maxlength']">Max 200 characters</span>
+            </div>
+          </div>
+
+          <!-- GraphRAG Settings -->
+          <div class="form-group">
+            <label class="form-label" for="graphRagSettingsId">GraphRAG Settings</label>
+            <div class="custom-dropdown settings-dropdown" [class.open]="graphRagDropdownOpen" [class.disabled]="!canEdit">
+              <button type="button" class="dropdown-trigger" (click)="canEdit && toggleGraphRagDropdown()" [disabled]="!canEdit">
+                <span>{{ getSelectedGraphRagName() }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="dropdown-arrow">
+                  <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="dropdown-options" *ngIf="graphRagDropdownOpen">
+                <button type="button" class="dropdown-option" [class.selected]="worldbookForm.get('graphRagSettingsId')?.value === null" (click)="selectGraphRagSettings(null)">-- None --</button>
+                <button type="button" *ngFor="let settings of graphRagSettingsOptions" class="dropdown-option" [class.selected]="worldbookForm.get('graphRagSettingsId')?.value === settings.id" (click)="selectGraphRagSettings(settings.id)">
+                  {{ settings.name }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- GraphRAG Settings Field -->
-        <div class="form-group">
-          <label class="form-label" for="graphRagSettingsId">
-            GraphRAG Settings
-          </label>
-          <select
-            class="form-input"
-            formControlName="graphRagSettingsId"
-            id="graphRagSettingsId"
-          >
-            <option [ngValue]="null">-- None --</option>
-            <option *ngFor="let settings of graphRagSettingsOptions" [ngValue]="settings.id">
-              {{ settings.name }}
-            </option>
-          </select>
-          <div class="field-help">Optional. Select GraphRAG settings for knowledge graph indexing.</div>
+        <!-- Pending Changes Banner -->
+        <div *ngIf="indexingStatus === 'NeedsReindexing'" class="pending-changes-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Pending changes need re-indexing</span>
+          <button (click)="revertAllChanges()" [disabled]="reverting" class="btn-revert-all" type="button">
+            {{ reverting ? 'Reverting...' : 'Revert All' }}
+          </button>
+        </div>
+
+        <!-- Duplicate Titles Warning -->
+        <div *ngIf="hasDuplicateTitles()" class="duplicate-warning-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Lorebook titles must be unique. Please fix duplicate titles before saving.</span>
         </div>
 
         <!-- Lorebooks Section -->
@@ -123,236 +113,341 @@
           <div class="section-header">
             <h3 class="section-title">Lorebooks</h3>
             <div class="section-actions">
-              <button (click)="triggerFileInput()" [disabled]="saving" class="btn-import-json"
-                      title="Import lorebooks from JSON"
-                      type="button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round"
-                        stroke-linejoin="round" stroke-width="2"/>
+              <button (click)="triggerFileInput()" [disabled]="saving || !canEdit" class="btn-icon" title="Import JSON" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
-                Import JSON
               </button>
-              <button (click)="addLorebook()" [disabled]="saving" class="btn-add-lorebook" type="button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button (click)="addLorebook()" [disabled]="saving || !canEdit" class="btn-add" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
-                Add Lorebook
+                Add
               </button>
             </div>
           </div>
 
-          <!-- Hidden file input for JSON import -->
-          <input
-            (change)="onFileSelected($event)"
-            accept=".json"
-            id="json-file-input"
-            style="display: none;"
-            type="file"
-          />
+          <!-- Hidden file input -->
+          <input (change)="onFileSelected($event)" accept=".json" id="json-file-input" style="display: none;" type="file"/>
 
-          <!-- Import Error Message -->
+          <!-- Import Error -->
           <div *ngIf="importError" class="import-error">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
-                    stroke-width="2"/>
-            </svg>
             <span>{{ importError }}</span>
-            <button (click)="importError = null" class="btn-close-error" type="button">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            <button (click)="importError = null" type="button">&times;</button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="lorebooks-toolbar" *ngIf="lorebooks.length > 0">
+            <div class="toolbar-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
+              <input type="text" placeholder="Search..." [(ngModel)]="searchTerm" [ngModelOptions]="{standalone: true}" (input)="applyFilters()">
+            </div>
+            <!-- Custom Sort Dropdown -->
+            <div class="custom-dropdown" [class.open]="sortDropdownOpen">
+              <button type="button" class="dropdown-trigger" (click)="toggleSortDropdown()">
+                <span>{{ getSortLabel() }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="dropdown-arrow">
+                  <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="dropdown-options" *ngIf="sortDropdownOpen">
+                <button type="button" class="dropdown-option" [class.selected]="sortOption === 'title-asc'" (click)="selectSortOption('title-asc')">A-Z</button>
+                <button type="button" class="dropdown-option" [class.selected]="sortOption === 'title-desc'" (click)="selectSortOption('title-desc')">Z-A</button>
+                <button type="button" class="dropdown-option" [class.selected]="sortOption === 'category-asc'" (click)="selectSortOption('category-asc')">Category</button>
+                <button type="button" class="dropdown-option" [class.selected]="sortOption === 'status'" (click)="selectSortOption('status')">Status</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Chips -->
+          <div class="filter-chips" *ngIf="lorebooks.length > 0">
+            <button [class.active]="statusFilter === 'all'" (click)="setStatusFilter('all')" type="button">
+              All <span class="count">{{ lorebooks.length }}</span>
+            </button>
+            <button *ngIf="addedCount > 0" [class.active]="statusFilter === 'Added'" (click)="setStatusFilter('Added')" type="button" class="chip-added">
+              Added <span class="count">{{ addedCount }}</span>
+            </button>
+            <button *ngIf="modifiedCount > 0" [class.active]="statusFilter === 'Modified'" (click)="setStatusFilter('Modified')" type="button" class="chip-modified">
+              Modified <span class="count">{{ modifiedCount }}</span>
+            </button>
+            <button *ngIf="deletedCount > 0" [class.active]="statusFilter === 'Deleted'" (click)="setStatusFilter('Deleted')" type="button" class="chip-deleted">
+              Deleted <span class="count">{{ deletedCount }}</span>
             </button>
           </div>
 
-          <!-- Empty State -->
-          <div *ngIf="lorebooks.length === 0" class="lorebooks-empty">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-            </svg>
-            <p>No lorebooks yet. Click "Add Lorebook" to get started.</p>
-          </div>
+          <!-- Lorebook List -->
+          <div class="lorebook-list" formArrayName="lorebooks">
+            <!-- Empty State -->
+            <div *ngIf="lorebooks.length === 0" class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              </svg>
+              <p>No lorebooks yet</p>
+            </div>
 
-          <!-- Lorebook Panels -->
-          <div formArrayName="lorebooks">
-            <div *ngFor="let lorebookCtrl of lorebooks.controls; let i = index; trackBy: trackByIndex"
+            <!-- No Results -->
+            <div *ngIf="lorebooks.length > 0 && filteredIndices.length === 0" class="no-results">
+              <p>No matches found</p>
+              <button (click)="searchTerm = ''; statusFilter = 'all'; applyFilters()" type="button">Clear filters</button>
+            </div>
+
+            <!-- Lorebook Items -->
+            <div *ngFor="let i of filteredIndices; trackBy: trackByFilteredIndex"
                  [formGroupName]="i"
-                 class="lorebook-panel">
+                 class="lorebook-item"
+                 [class.selected]="isLorebookSelected(i)"
+                 [class.is-deleted]="isLorebookDeleted(i)"
+                 [class.is-added]="isLorebookAdded(i) && !isLorebookDeleted(i)"
+                 [class.is-modified]="isLorebookModified(i) && !isLorebookDeleted(i)"
+                 (click)="selectLorebook(i)">
 
-              <!-- Panel Header (clickable) -->
-              <div (click)="togglePanel(i)"
-                   (keydown)="onKeyDown($event, i)"
-                   [attr.aria-expanded]="isPanelExpanded(i)"
-                   [attr.aria-label]="'Toggle ' + getLorebookTitle(i) + ' panel'"
-                   [class.expanded]="isPanelExpanded(i)"
-                   [class.has-errors]="hasLorebookErrors(i)"
-                   [class.is-added]="isLorebookAdded(i)"
-                   [class.is-modified]="isLorebookModified(i)"
-                   class="lorebook-panel-header"
-                   role="button"
-                   tabindex="0">
-
-                <!-- Chevron icon (rotates when expanded) -->
-                <svg [class.expanded]="isPanelExpanded(i)" class="chevron-icon" fill="none" stroke="currentColor"
-                     viewBox="0 0 24 24">
-                  <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-                </svg>
-
-                <!-- Title -->
-                <span
-                  [class.placeholder]="!lorebookCtrl.get('title')?.value || lorebookCtrl.get('title')?.value === '' || getLorebookTitle(i) === 'New Lorebook'"
-                  class="panel-title">
+              <div class="item-content">
+                <span class="item-title" [class.deleted-title]="isLorebookDeleted(i)">
                   {{ getLorebookTitle(i) }}
                 </span>
+                <span *ngIf="getLorebookCategory(i)" class="item-category">{{ getLorebookCategory(i) }}</span>
+              </div>
 
-                <!-- Change status badge -->
-                <span *ngIf="isLorebookAdded(i)" class="change-badge added">Added</span>
-                <span *ngIf="isLorebookModified(i)" class="change-badge modified">Modified</span>
+              <div class="item-badges">
+                <span *ngIf="isDuplicateTitle(i)" class="badge duplicate" title="Duplicate title">DUP</span>
+                <span *ngIf="isLorebookDeleted(i)" class="badge deleted">DEL</span>
+                <span *ngIf="isLorebookAdded(i) && !isLorebookDeleted(i)" class="badge added">NEW</span>
+                <span *ngIf="isLorebookModified(i) && !isLorebookDeleted(i)" class="badge modified">MOD</span>
+                <span *ngIf="isLorebookIndexed(i)" class="badge indexed" title="Indexed (read-only)">IDX</span>
+              </div>
 
-                <!-- Category badge (if category exists) -->
-                <span *ngIf="getLorebookCategory(i)" class="category-badge">
-                  {{ getLorebookCategory(i) }}
-                </span>
-
-                <!-- Revert button (for modified lorebooks) -->
-                <button *ngIf="isLorebookModified(i)"
-                        (click)="revertLorebook(i); $event.stopPropagation()"
-                        [attr.aria-label]="'Revert ' + getLorebookTitle(i)"
-                        class="btn-revert-lorebook"
-                        title="Revert to indexed state"
+              <div class="item-actions" *ngIf="canEdit">
+                <!-- Restore button for deleted -->
+                <button *ngIf="isLorebookDeleted(i)"
+                        (click)="restoreLorebookByIndex(i); $event.stopPropagation()"
+                        class="btn-action restore"
+                        title="Restore"
                         type="button">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
-
-                <!-- Delete button -->
-                <button (click)="deleteLorebook(i); $event.stopPropagation()"
-                        [attr.aria-label]="'Delete ' + getLorebookTitle(i)"
-                        class="btn-delete-lorebook"
-                        title="Delete lorebook"
+                <!-- Copy button for indexed entries -->
+                <button *ngIf="isLorebookIndexed(i) && !isLorebookDeleted(i)"
+                        (click)="copyLorebook(i); $event.stopPropagation()"
+                        class="btn-action copy"
+                        title="Copy to new lorebook"
                         type="button">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <!-- Delete button for non-deleted -->
+                <button *ngIf="!isLorebookDeleted(i)"
+                        (click)="deleteLorebook(i); $event.stopPropagation()"
+                        class="btn-action delete"
+                        title="Delete"
+                        type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                   </svg>
                 </button>
               </div>
-
-              <!-- Panel Content (shown when expanded) -->
-              <div *ngIf="isPanelExpanded(i)" class="lorebook-panel-content">
-                <div class="lorebook-form-grid">
-
-                  <!-- Title Field -->
-                  <div class="form-group">
-                    <label [for]="'lorebook-' + i + '-title'" class="form-label">
-                      Title
-                      <span class="required">*</span>
-                    </label>
-                    <input
-                      [class.error]="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched"
-                      [id]="'lorebook-' + i + '-title'"
-                      class="form-input"
-                      formControlName="title"
-                      placeholder="Enter lorebook title"
-                      type="text"
-                    />
-                    <div *ngIf="lorebookCtrl.get('title')?.invalid && lorebookCtrl.get('title')?.touched"
-                         class="field-error">
-                      <span *ngIf="lorebookCtrl.get('title')?.errors?.['required']">Title is required</span>
-                      <span *ngIf="lorebookCtrl.get('title')?.errors?.['maxlength']">Title must not exceed 200 characters</span>
-                    </div>
-                  </div>
-
-                  <!-- Category Field -->
-                  <div class="form-group">
-                    <label [for]="'lorebook-' + i + '-category'" class="form-label">
-                      Category
-                      <span class="required">*</span>
-                    </label>
-                    <input
-                      [class.error]="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched"
-                      [id]="'lorebook-' + i + '-category'"
-                      class="form-input"
-                      formControlName="category"
-                      placeholder="e.g., Characters, Locations, History"
-                      type="text"
-                    />
-                    <div *ngIf="lorebookCtrl.get('category')?.invalid && lorebookCtrl.get('category')?.touched"
-                         class="field-error">
-                      <span *ngIf="lorebookCtrl.get('category')?.errors?.['required']">Category is required</span>
-                      <span *ngIf="lorebookCtrl.get('category')?.errors?.['maxlength']">Category must not exceed 100 characters</span>
-                    </div>
-                  </div>
-
-                  <!-- Content Type Field -->
-                  <div class="form-group">
-                    <label [for]="'lorebook-' + i + '-contentType'" class="form-label">
-                      Content Type
-                      <span class="required">*</span>
-                    </label>
-                    <select
-                      [class.error]="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched"
-                      [id]="'lorebook-' + i + '-contentType'"
-                      class="form-input"
-                      formControlName="contentType"
-                    >
-                      <option value="txt">Text</option>
-                      <option value="json">JSON</option>
-                    </select>
-                    <div *ngIf="lorebookCtrl.get('contentType')?.invalid && lorebookCtrl.get('contentType')?.touched"
-                         class="field-error">
-                      <span
-                        *ngIf="lorebookCtrl.get('contentType')?.errors?.['required']">Content type is required</span>
-                    </div>
-                  </div>
-
-                  <!-- Content Field -->
-                  <div class="form-group">
-                    <label [for]="'lorebook-' + i + '-content'" class="form-label">
-                      Content
-                      <span class="required">*</span>
-                    </label>
-                    <textarea
-                      [class.error]="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched"
-                      [id]="'lorebook-' + i + '-content'"
-                      class="form-textarea"
-                      formControlName="content"
-                      placeholder="Enter lorebook content..."
-                      rows="6"
-                    ></textarea>
-                    <div *ngIf="lorebookCtrl.get('content')?.invalid && lorebookCtrl.get('content')?.touched"
-                         class="field-error">
-                      <span *ngIf="lorebookCtrl.get('content')?.errors?.['required']">Content is required</span>
-                      <span *ngIf="lorebookCtrl.get('content')?.errors?.['minlength']">Content must be at least 10 characters</span>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Status Banner -->
+        <div *ngIf="indexingStatus === 'Indexing'" class="status-banner indexing">
+          <svg class="spinner-small" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" class="opacity-25"></circle>
+            <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path>
+          </svg>
+          <span>Indexing in progress...</span>
+        </div>
+        <div *ngIf="indexingStatus === 'Failed'" class="status-banner failed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          <span>Indexing failed</span>
         </div>
 
         <!-- Action Buttons -->
         <div class="form-actions">
-          <button (click)="cancel()" [disabled]="saving" class="btn-cancel" type="button">
-            Cancel
-          </button>
-          <button [disabled]="saving || worldbookForm.invalid" class="btn-submit" type="submit">
-            <svg *ngIf="saving" [attr.fill]="'none'" class="btn-spinner" viewBox="0 0 24 24">
-              <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
-                      class="opacity-25"></circle>
-              <path
-                [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
-                [attr.fill]="'currentColor'" class="opacity-75"></path>
+          <button (click)="cancel()" [disabled]="saving" class="btn-cancel" type="button">Back</button>
+
+          <!-- Create mode: Show Create button -->
+          <button *ngIf="!isEditMode" [disabled]="saving || worldbookForm.invalid || hasDuplicateTitles()" class="btn-submit" type="submit">
+            <svg *ngIf="saving" class="btn-spinner" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" class="opacity-25"></circle>
+              <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path>
             </svg>
-            <span>{{ saving ? 'Saving...' : (isEditMode ? 'Update Worldbook' : 'Create Worldbook') }}</span>
+            {{ saving ? 'Creating...' : 'Create' }}
+          </button>
+
+          <!-- Edit mode: Show Save button -->
+          <button *ngIf="isEditMode && canEdit"
+                  (click)="performSave()"
+                  [disabled]="saving || worldbookForm.invalid || hasDuplicateTitles()"
+                  class="btn-submit"
+                  type="button">
+            <svg *ngIf="saving" class="btn-spinner" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" class="opacity-25"></circle>
+              <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path>
+            </svg>
+            {{ saving ? 'Saving...' : 'Save' }}
+          </button>
+
+          <!-- Edit mode: Show Reindex button -->
+          <button *ngIf="isEditMode && canReindex"
+                  (click)="startReindex()"
+                  [disabled]="saving || indexingStatus === 'Indexing'"
+                  class="btn-reindex"
+                  type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ indexingStatus === 'NotIndexed' ? 'Index' : 'Re-index' }}
           </button>
         </div>
       </div>
-    </form>
-  </div>
+
+      <!-- RIGHT PANEL: Lorebook Detail -->
+      <div class="right-panel" formArrayName="lorebooks">
+        <!-- No Selection State -->
+        <div *ngIf="selectedLorebookIndex === null" class="no-selection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          <p>Select a lorebook to edit</p>
+        </div>
+
+        <!-- Lorebook Detail Form -->
+        <div *ngIf="selectedLorebookIndex !== null" [formGroupName]="selectedLorebookIndex" class="lorebook-detail">
+          <!-- Detail Header -->
+          <div class="detail-header">
+            <h2 class="detail-title">{{ getLorebookTitle(selectedLorebookIndex) }}</h2>
+            <div class="detail-badges">
+              <span *ngIf="isLorebookDeleted(selectedLorebookIndex)" class="badge deleted">Deleted</span>
+              <span *ngIf="isLorebookAdded(selectedLorebookIndex) && !isLorebookDeleted(selectedLorebookIndex)" class="badge added">Added</span>
+              <span *ngIf="isLorebookModified(selectedLorebookIndex) && !isLorebookDeleted(selectedLorebookIndex)" class="badge modified">Modified</span>
+            </div>
+            <div class="detail-actions">
+              <button *ngIf="isLorebookModified(selectedLorebookIndex) && !isLorebookDeleted(selectedLorebookIndex)"
+                      (click)="revertLorebook(selectedLorebookIndex)"
+                      class="btn-revert"
+                      title="Revert to indexed state"
+                      type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Revert
+              </button>
+            </div>
+          </div>
+
+          <!-- Deleted Notice -->
+          <div *ngIf="isLorebookDeleted(selectedLorebookIndex)" class="deleted-notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>This lorebook is marked for deletion. Changes will be applied on re-index.</span>
+            <button (click)="restoreLorebookByIndex(selectedLorebookIndex)" class="btn-restore" type="button">Restore</button>
+          </div>
+
+          <!-- Indexed Notice (read-only) -->
+          <div *ngIf="isLorebookIndexed(selectedLorebookIndex)" class="indexed-notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>This lorebook is indexed and read-only. To modify, copy it, delete the original, then re-index.</span>
+            <button (click)="copyLorebook(selectedLorebookIndex)" class="btn-copy" type="button" title="Copy to new lorebook">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Copy
+            </button>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="detail-form" [class.disabled]="isLorebookDeleted(selectedLorebookIndex) || !canEdit || isLorebookIndexed(selectedLorebookIndex)">
+            <!-- Title Field -->
+            <div class="form-group">
+              <label [for]="'lorebook-' + selectedLorebookIndex + '-title'" class="form-label">
+                Title <span class="required">*</span>
+              </label>
+              <input
+                [class.error]="(lorebooks.at(selectedLorebookIndex).get('title')?.invalid && lorebooks.at(selectedLorebookIndex).get('title')?.touched) || isDuplicateTitle(selectedLorebookIndex)"
+                [id]="'lorebook-' + selectedLorebookIndex + '-title'"
+                class="form-input"
+                formControlName="title"
+                placeholder="Enter lorebook title"
+                type="text"
+              />
+              <div *ngIf="lorebooks.at(selectedLorebookIndex).get('title')?.invalid && lorebooks.at(selectedLorebookIndex).get('title')?.touched" class="field-error">
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('title')?.errors?.['required']">Title is required</span>
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('title')?.errors?.['maxlength']">Max 200 characters</span>
+              </div>
+              <div *ngIf="isDuplicateTitle(selectedLorebookIndex)" class="field-error">
+                <span>Title must be unique. Another lorebook has the same title.</span>
+              </div>
+            </div>
+
+            <!-- Category Field -->
+            <div class="form-group">
+              <label [for]="'lorebook-' + selectedLorebookIndex + '-category'" class="form-label">
+                Category <span class="required">*</span>
+              </label>
+              <input
+                [class.error]="lorebooks.at(selectedLorebookIndex).get('category')?.invalid && lorebooks.at(selectedLorebookIndex).get('category')?.touched"
+                [id]="'lorebook-' + selectedLorebookIndex + '-category'"
+                class="form-input"
+                formControlName="category"
+                placeholder="e.g., Characters, Locations, History"
+                type="text"
+              />
+              <div *ngIf="lorebooks.at(selectedLorebookIndex).get('category')?.invalid && lorebooks.at(selectedLorebookIndex).get('category')?.touched" class="field-error">
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('category')?.errors?.['required']">Category is required</span>
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('category')?.errors?.['maxlength']">Max 100 characters</span>
+              </div>
+            </div>
+
+            <!-- Content Type Field -->
+            <div class="form-group">
+              <label [for]="'lorebook-' + selectedLorebookIndex + '-contentType'" class="form-label">
+                Content Type <span class="required">*</span>
+              </label>
+              <div class="custom-dropdown content-type-dropdown" [class.open]="contentTypeDropdownOpen">
+                <button type="button" class="dropdown-trigger" (click)="toggleContentTypeDropdown()">
+                  <span>{{ getContentTypeLabel() }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="dropdown-arrow">
+                    <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="dropdown-options" *ngIf="contentTypeDropdownOpen">
+                  <button type="button" class="dropdown-option" [class.selected]="getSelectedContentType() === 'txt'" (click)="selectContentType('txt')">Text</button>
+                  <button type="button" class="dropdown-option" [class.selected]="getSelectedContentType() === 'json'" (click)="selectContentType('json')">JSON</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Field -->
+            <div class="form-group form-group-grow">
+              <label [for]="'lorebook-' + selectedLorebookIndex + '-content'" class="form-label">
+                Content <span class="required">*</span>
+              </label>
+              <textarea
+                [class.error]="lorebooks.at(selectedLorebookIndex).get('content')?.invalid && lorebooks.at(selectedLorebookIndex).get('content')?.touched"
+                [id]="'lorebook-' + selectedLorebookIndex + '-content'"
+                class="form-textarea"
+                formControlName="content"
+                placeholder="Enter lorebook content..."
+              ></textarea>
+              <div *ngIf="lorebooks.at(selectedLorebookIndex).get('content')?.invalid && lorebooks.at(selectedLorebookIndex).get('content')?.touched" class="field-error">
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('content')?.errors?.['required']">Content is required</span>
+                <span *ngIf="lorebooks.at(selectedLorebookIndex).get('content')?.errors?.['minlength']">Min 10 characters</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
 </div>
