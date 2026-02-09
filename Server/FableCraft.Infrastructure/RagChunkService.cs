@@ -188,7 +188,7 @@ internal sealed class RagChunkService : IRagChunkService
         var eligibleChunks = chunks.Where(x => !string.IsNullOrEmpty(x.KnowledgeGraphNodeId)).ToArray();
         if (!eligibleChunks.Any())
         {
-            _logger.Information("No eligible chunks found.");
+            _logger.Information("No eligible chunks for deletion found.");
             return;
         }
 

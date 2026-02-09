@@ -69,97 +69,108 @@ internal sealed class IndexWorldbookCommandHandler : IMessageHandler<IndexWorldb
         worldbook.IndexingError = null;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        try
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await _worldbookRagManager.IndexWorldbook(worldbook.Id, cancellationToken);
-            var now = DateTimeOffset.UtcNow;
-            var softDeletedLorebooks = worldbook.Lorebooks.Where(l => l.IsDeleted).ToList();
-            foreach (var lorebook in softDeletedLorebooks)
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
             {
-                _dbContext.Lorebooks.Remove(lorebook);
-                worldbook.Lorebooks.Remove(lorebook);
-            }
+                await _worldbookRagManager.IndexWorldbook(worldbook.Id, cancellationToken);
+                var now = DateTimeOffset.UtcNow;
+                var softDeletedLorebooks = worldbook.Lorebooks.Where(l => l.IsDeleted).ToList();
+                foreach (var lorebook in softDeletedLorebooks)
+                {
+                    _dbContext.Lorebooks.Remove(lorebook);
+                    worldbook.Lorebooks.Remove(lorebook);
+                }
 
-            var activeLorebooks = worldbook.Lorebooks.Where(l => !l.IsDeleted).ToList();
+                var activeLorebooks = worldbook.Lorebooks.Where(l => !l.IsDeleted).ToList();
 
-            if (activeLorebooks.Count == 0)
-            {
-                _logger.Warning("Worldbook {WorldbookId} has no lorebook entries to index", command.WorldbookId);
+                if (activeLorebooks.Count == 0)
+                {
+                    _logger.Warning("Worldbook {WorldbookId} has no lorebook entries to index", command.WorldbookId);
+                    worldbook.IndexingStatus = IndexingStatus.Indexed;
+                    worldbook.IndexingError = null;
+                    worldbook.LastIndexedAt = now;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+
+                var entries = activeLorebooks
+                    .Select(e => new ChunkCreationRequest(
+                        e.Id,
+                        $"""
+                         {e.Title}
+                         {e.Content}
+
+                         Category: {e.Category}
+                         """,
+                        e.ContentType,
+                        [RagClientExtensions.GetWorldDatasetName()]))
+                    .ToList();
+
+                _logger.Information(
+                    "Starting worldbook indexing for {WorldbookId} with {EntryCount} entries",
+                    worldbook.Id,
+                    entries.Count);
+
+                var chunks = await _ragChunkService.CreateChunk(entries, worldbook.Id, cancellationToken);
+                var ragBuilder = await _ragClientFactory.CreateBuildClientForWorldbook(worldbook.Id, cancellationToken);
+                var chunksToDelete = await _dbContext.Chunks.Where(x => softDeletedLorebooks.Select(y => y.Id).Contains(x.Id)).ToArrayAsync(cancellationToken);
+                if (chunksToDelete.Any())
+                {
+                    _dbContext.Chunks.RemoveRange(chunksToDelete);
+                    await _ragChunkService.DeleteNodes(ragBuilder, chunksToDelete, cancellationToken);
+                }
+
+                await _ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
+                await _ragChunkService.CognifyDatasetsAsync(ragBuilder, [RagClientExtensions.GetWorldDatasetName()], cancellationToken: cancellationToken);
+
+                _dbContext.LorebookSnapshots.RemoveRange(worldbook.IndexedSnapshots);
+
+                foreach (var lorebook in activeLorebooks)
+                {
+                    worldbook.IndexedSnapshots.Add(new LorebookSnapshot
+                    {
+                        WorldbookId = worldbook.Id,
+                        LorebookId = lorebook.Id,
+                        Title = lorebook.Title,
+                        Content = lorebook.Content,
+                        Category = lorebook.Category,
+                        ContentType = lorebook.ContentType,
+                        IndexedAt = now
+                    });
+                }
+
                 worldbook.IndexingStatus = IndexingStatus.Indexed;
                 worldbook.IndexingError = null;
                 worldbook.LastIndexedAt = now;
                 await _dbContext.SaveChangesAsync(cancellationToken);
-                return;
+                await transaction.CommitAsync(cancellationToken);
+
+                _logger.Information(
+                    "Successfully indexed worldbook {WorldbookId} with {ChunkCount} chunks",
+                    worldbook.Id,
+                    chunks.Count);
             }
-
-            var entries = activeLorebooks
-                .Select(e => new ChunkCreationRequest(
-                    e.Id,
-                    $"""
-                     {e.Title}
-                     {e.Content}
-
-                     Category: {e.Category}
-                     """,
-                    e.ContentType,
-                    [RagClientExtensions.GetWorldDatasetName()]))
-                .ToList();
-
-            _logger.Information(
-                "Starting worldbook indexing for {WorldbookId} with {EntryCount} entries",
-                worldbook.Id,
-                entries.Count);
-
-            var chunks = await _ragChunkService.CreateChunk(entries, worldbook.Id, cancellationToken);
-            var ragBuilder = await _ragClientFactory.CreateBuildClientForWorldbook(worldbook.Id, cancellationToken);
-            var chunksToDelete = await _dbContext.Chunks.Where(x => softDeletedLorebooks.Select(y => y.Id).Contains(x.Id)).ToArrayAsync(cancellationToken);
-            await _ragChunkService.DeleteNodes(ragBuilder, chunksToDelete, cancellationToken);
-            await _ragChunkService.CommitChunksToRagAsync(ragBuilder, chunks, cancellationToken);
-            await _ragChunkService.CognifyDatasetsAsync(ragBuilder, [RagClientExtensions.GetWorldDatasetName()], cancellationToken: cancellationToken);
-
-            _dbContext.LorebookSnapshots.RemoveRange(worldbook.IndexedSnapshots);
-
-            foreach (var lorebook in activeLorebooks)
+            catch (Exception ex)
             {
-                worldbook.IndexedSnapshots.Add(new LorebookSnapshot
+                _logger.Error(ex, "Failed to index worldbook {WorldbookId}", worldbook.Id);
+                await transaction.RollbackAsync(cancellationToken);
+                try
                 {
-                    Id = Guid.NewGuid(),
-                    WorldbookId = worldbook.Id,
-                    LorebookId = lorebook.Id,
-                    Title = lorebook.Title,
-                    Content = lorebook.Content,
-                    Category = lorebook.Category,
-                    ContentType = lorebook.ContentType,
-                    IndexedAt = now
-                });
+                    await _dbContext.Worldbooks
+                        .Where(w => w.Id == command.WorldbookId)
+                        .ExecuteUpdateAsync(w => w
+                                .SetProperty(x => x.IndexingStatus, IndexingStatus.Failed)
+                                .SetProperty(x => x.IndexingError, ex.Message),
+                            cancellationToken);
+                }
+                catch (Exception dbEx)
+                {
+                    _logger.Warning(dbEx, "Failed to update indexing status for worldbook {WorldbookId}", worldbook.Id);
+                }
             }
-
-            worldbook.IndexingStatus = IndexingStatus.Indexed;
-            worldbook.IndexingError = null;
-            worldbook.LastIndexedAt = now;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            _logger.Information(
-                "Successfully indexed worldbook {WorldbookId} with {ChunkCount} chunks",
-                worldbook.Id,
-                chunks.Count);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Failed to index worldbook {WorldbookId}", worldbook.Id);
-
-            try
-            {
-                worldbook.IndexingStatus = IndexingStatus.Failed;
-                worldbook.IndexingError = ex.Message;
-                await _dbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception dbEx)
-            {
-                _logger.Warning(dbEx, "Failed to update indexing status for worldbook {WorldbookId}", worldbook.Id);
-            }
-        }
-
-        _logger.Information("Successfully indexed worldbook {WorldbookId}", command.WorldbookId);
+        });
     }
 }
