@@ -2,12 +2,13 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {forkJoin, interval, Subject} from 'rxjs';
 import {startWith, switchMap, takeUntil} from 'rxjs/operators';
-import {IndexingStatus, WorldbookResponseDto} from '../../models/worldbook.model';
+import {CopyWorldbookDto, IndexingStatus, PendingChangeSummaryDto, WorldbookResponseDto} from '../../models/worldbook.model';
 import {WorldbookService} from '../../services/worldbook.service';
 
 interface IndexStateInfo {
   status: IndexingStatus;
   error?: string;
+  pendingChanges?: PendingChangeSummaryDto;
 }
 
 @Component({
@@ -30,6 +31,14 @@ export class WorldbookListComponent implements OnInit, OnDestroy {
   indexStates = new Map<string, IndexStateInfo>();
   private pollingSubjects = new Map<string, Subject<void>>();
   private destroy$ = new Subject<void>();
+
+  // Copy modal state
+  showCopyModal = false;
+  worldbookToCopy: WorldbookResponseDto | null = null;
+  copyName = '';
+  copyIndexedVolume = true;
+  isCopying = false;
+  copyError: string | null = null;
 
   constructor(
     private worldbookService: WorldbookService,
@@ -135,25 +144,15 @@ export class WorldbookListComponent implements OnInit, OnDestroy {
   private loadInitialIndexStatuses(): void {
     if (this.worldbooks.length === 0) return;
 
-    const statusRequests = this.worldbooks.map(wb =>
-      this.worldbookService.getIndexStatus(wb.id)
-    );
-
-    forkJoin(statusRequests).subscribe({
-      next: (statuses) => {
-        statuses.forEach(status => {
-          this.indexStates.set(status.worldbookId, {
-            status: status.status,
-            error: status.error
-          });
-          // Resume polling if still indexing
-          if (status.status === 'Indexing') {
-            this.startPolling(status.worldbookId);
-          }
-        });
-      },
-      error: (err) => {
-        console.error('Error loading index statuses:', err);
+    // Use worldbook response data for index status and pending changes
+    this.worldbooks.forEach(wb => {
+      this.indexStates.set(wb.id, {
+        status: wb.indexingStatus,
+        pendingChanges: wb.pendingChangeSummary || undefined
+      });
+      // Resume polling if still indexing
+      if (wb.indexingStatus === 'Indexing') {
+        this.startPolling(wb.id);
       }
     });
   }
@@ -199,5 +198,74 @@ export class WorldbookListComponent implements OnInit, OnDestroy {
       subject.complete();
     });
     this.pollingSubjects.clear();
+  }
+
+  // Copy worldbook methods
+  openCopyModal(event: Event, worldbook: WorldbookResponseDto): void {
+    event.stopPropagation();
+    this.worldbookToCopy = worldbook;
+    this.copyName = `${worldbook.name} (Copy)`;
+    this.copyIndexedVolume = worldbook.indexingStatus === 'Indexed';
+    this.copyError = null;
+    this.showCopyModal = true;
+  }
+
+  closeCopyModal(): void {
+    if (!this.isCopying) {
+      this.showCopyModal = false;
+      this.worldbookToCopy = null;
+      this.copyName = '';
+      this.copyError = null;
+    }
+  }
+
+  confirmCopy(): void {
+    if (!this.worldbookToCopy || !this.copyName.trim()) {
+      return;
+    }
+
+    this.isCopying = true;
+    this.copyError = null;
+
+    const dto: CopyWorldbookDto = {
+      name: this.copyName.trim(),
+      copyIndexedVolume: this.copyIndexedVolume
+    };
+
+    this.worldbookService.copyWorldbook(this.worldbookToCopy.id, dto).subscribe({
+      next: (newWorldbook) => {
+        this.isCopying = false;
+        this.showCopyModal = false;
+        this.worldbookToCopy = null;
+        this.copyName = '';
+        this.loadWorldbooks();
+      },
+      error: (err) => {
+        console.error('Error copying worldbook:', err);
+        this.copyError = err.error?.message || 'Failed to copy worldbook. Please try again.';
+        this.isCopying = false;
+      }
+    });
+  }
+
+  canCopyWithIndex(worldbook: WorldbookResponseDto): boolean {
+    return worldbook.indexingStatus === 'Indexed';
+  }
+
+  getPendingChangesDisplay(worldbookId: string): string {
+    const state = this.indexStates.get(worldbookId);
+    if (!state?.pendingChanges) return '';
+
+    const parts: string[] = [];
+    if (state.pendingChanges.addedCount > 0) {
+      parts.push(`+${state.pendingChanges.addedCount}`);
+    }
+    if (state.pendingChanges.modifiedCount > 0) {
+      parts.push(`~${state.pendingChanges.modifiedCount}`);
+    }
+    if (state.pendingChanges.deletedCount > 0) {
+      parts.push(`-${state.pendingChanges.deletedCount}`);
+    }
+    return parts.join(' ');
   }
 }

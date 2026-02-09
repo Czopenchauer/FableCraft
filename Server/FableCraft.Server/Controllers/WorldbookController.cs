@@ -1,6 +1,7 @@
 using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Model;
 using FableCraft.Application.Model.Worldbook;
+using FableCraft.Application.Worldbook;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
@@ -17,10 +18,12 @@ namespace FableCraft.Server.Controllers;
 public class WorldbookController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly WorldbookChangeService _changeService;
 
     public WorldbookController(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
+        _changeService = new WorldbookChangeService();
     }
 
     [HttpGet]
@@ -30,36 +33,13 @@ public class WorldbookController : ControllerBase
         var worldbooks = await _dbContext
             .Worldbooks
             .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
             .Include(w => w.GraphRagSettings)
-            .Select(w => new WorldbookResponseDto
-            {
-                Id = w.Id,
-                Name = w.Name,
-                GraphRagSettingsId = w.GraphRagSettingsId,
-                GraphRagSettings = w.GraphRagSettings != null
-                    ? new GraphRagSettingsSummaryDto
-                    {
-                        Id = w.GraphRagSettings.Id,
-                        Name = w.GraphRagSettings.Name,
-                        LlmProvider = w.GraphRagSettings.LlmProvider,
-                        LlmModel = w.GraphRagSettings.LlmModel,
-                        EmbeddingProvider = w.GraphRagSettings.EmbeddingProvider,
-                        EmbeddingModel = w.GraphRagSettings.EmbeddingModel
-                    }
-                    : null,
-                Lorebooks = w.Lorebooks.Select(l => new LorebookResponseDto
-                {
-                    Id = l.Id,
-                    WorldbookId = l.WorldbookId,
-                    Title = l.Title,
-                    Content = l.Content,
-                    Category = l.Category,
-                    ContentType = l.ContentType
-                }).ToList()
-            })
             .ToListAsync(cancellationToken);
 
-        return Ok(worldbooks);
+        var results = worldbooks.Select(MapToResponseDto).ToList();
+
+        return Ok(results);
     }
 
     /// <summary>
@@ -73,42 +53,16 @@ public class WorldbookController : ControllerBase
         var worldbook = await _dbContext
             .Worldbooks
             .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
             .Include(w => w.GraphRagSettings)
-            .Where(w => w.Id == id)
-            .Select(w => new WorldbookResponseDto
-            {
-                Id = w.Id,
-                Name = w.Name,
-                GraphRagSettingsId = w.GraphRagSettingsId,
-                GraphRagSettings = w.GraphRagSettings != null
-                    ? new GraphRagSettingsSummaryDto
-                    {
-                        Id = w.GraphRagSettings.Id,
-                        Name = w.GraphRagSettings.Name,
-                        LlmProvider = w.GraphRagSettings.LlmProvider,
-                        LlmModel = w.GraphRagSettings.LlmModel,
-                        EmbeddingProvider = w.GraphRagSettings.EmbeddingProvider,
-                        EmbeddingModel = w.GraphRagSettings.EmbeddingModel
-                    }
-                    : null,
-                Lorebooks = w.Lorebooks.Select(l => new LorebookResponseDto
-                {
-                    Id = l.Id,
-                    WorldbookId = l.WorldbookId,
-                    Title = l.Title,
-                    Content = l.Content,
-                    Category = l.Category,
-                    ContentType = l.ContentType
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
         if (worldbook == null)
         {
             return NotFound();
         }
 
-        return Ok(worldbook);
+        return Ok(MapToResponseDto(worldbook));
     }
 
     [HttpPost]
@@ -241,6 +195,8 @@ public class WorldbookController : ControllerBase
 
         var worldbook = await _dbContext.Worldbooks
             .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
+            .Include(w => w.GraphRagSettings)
             .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
         if (worldbook == null)
@@ -291,6 +247,9 @@ public class WorldbookController : ControllerBase
             }
         }
 
+        var wasIndexed = worldbook.IndexingStatus == IndexingStatus.Indexed ||
+                         worldbook.IndexingStatus == IndexingStatus.NeedsReindexing;
+
         worldbook.Name = dto.Name;
         worldbook.GraphRagSettingsId = dto.GraphRagSettingsId;
 
@@ -300,12 +259,19 @@ public class WorldbookController : ControllerBase
             .ToHashSet();
 
         var lorebooksToRemove = worldbook.Lorebooks
-            .Where(l => !updatedLorebookIds.Contains(l.Id))
+            .Where(l => !updatedLorebookIds.Contains(l.Id) && !l.IsDeleted)
             .ToList();
 
         foreach (var lorebook in lorebooksToRemove)
         {
-            _dbContext.Lorebooks.Remove(lorebook);
+            if (wasIndexed)
+            {
+                lorebook.IsDeleted = true;
+            }
+            else
+            {
+                _dbContext.Lorebooks.Remove(lorebook);
+            }
         }
 
         foreach (var lorebookDto in dto.Lorebooks)
@@ -319,6 +285,7 @@ public class WorldbookController : ControllerBase
                     existingLorebook.Content = lorebookDto.Content;
                     existingLorebook.Category = lorebookDto.Category;
                     existingLorebook.ContentType = lorebookDto.ContentType;
+                    existingLorebook.IsDeleted = false;
                     _dbContext.Lorebooks.Update(existingLorebook);
                 }
             }
@@ -333,7 +300,18 @@ public class WorldbookController : ControllerBase
                     ContentType = lorebookDto.ContentType
                 };
                 worldbook.Lorebooks.Add(newLorebook);
-                _dbContext.Worldbooks.Update(worldbook);
+            }
+        }
+
+        if (wasIndexed && worldbook.IndexingStatus == IndexingStatus.Indexed)
+        {
+            var hasPendingChanges = _changeService.HasPendingChanges(
+                worldbook.Lorebooks,
+                worldbook.IndexedSnapshots);
+
+            if (hasPendingChanges)
+            {
+                worldbook.IndexingStatus = IndexingStatus.NeedsReindexing;
             }
         }
 
@@ -341,34 +319,7 @@ public class WorldbookController : ControllerBase
 
         await _dbContext.Entry(worldbook).Collection(w => w.Lorebooks).LoadAsync(cancellationToken);
 
-        var response = new WorldbookResponseDto
-        {
-            Id = worldbook.Id,
-            Name = worldbook.Name,
-            GraphRagSettingsId = worldbook.GraphRagSettingsId,
-            GraphRagSettings = graphRagSettings != null
-                ? new GraphRagSettingsSummaryDto
-                {
-                    Id = graphRagSettings.Id,
-                    Name = graphRagSettings.Name,
-                    LlmProvider = graphRagSettings.LlmProvider,
-                    LlmModel = graphRagSettings.LlmModel,
-                    EmbeddingProvider = graphRagSettings.EmbeddingProvider,
-                    EmbeddingModel = graphRagSettings.EmbeddingModel
-                }
-                : null,
-            Lorebooks = worldbook.Lorebooks.Select(l => new LorebookResponseDto
-            {
-                Id = l.Id,
-                WorldbookId = l.WorldbookId,
-                Title = l.Title,
-                Content = l.Content,
-                Category = l.Category,
-                ContentType = l.ContentType
-            }).ToList()
-        };
-
-        return Ok(response);
+        return Ok(MapToResponseDto(worldbook));
     }
 
     /// <summary>
@@ -479,6 +430,335 @@ public class WorldbookController : ControllerBase
             Error = worldbook.IndexingError
         });
     }
+
+    /// <summary>
+    ///     Get pending changes for a worldbook
+    /// </summary>
+    [HttpGet("{id:guid}/pending-changes")]
+    [ProducesResponseType(typeof(PendingChangesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PendingChangesResponse>> GetPendingChanges(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var worldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
+        {
+            return NotFound();
+        }
+
+        var snapshotByLorebookId = worldbook.IndexedSnapshots.ToDictionary(s => s.LorebookId);
+        var changes = new List<LorebookChangeDto>();
+
+        foreach (var lorebook in worldbook.Lorebooks)
+        {
+            snapshotByLorebookId.TryGetValue(lorebook.Id, out var snapshot);
+            var status = _changeService.GetChangeStatus(lorebook, snapshot);
+
+            if (status != LorebookChangeStatus.None)
+            {
+                changes.Add(new LorebookChangeDto
+                {
+                    LorebookId = lorebook.Id,
+                    Title = lorebook.Title,
+                    ChangeStatus = status
+                });
+            }
+        }
+
+        var summary = _changeService.CalculatePendingChangeSummary(
+            worldbook.Lorebooks,
+            worldbook.IndexedSnapshots);
+
+        return Ok(new PendingChangesResponse
+        {
+            WorldbookId = id,
+            Changes = changes,
+            Summary = summary
+        });
+    }
+
+    /// <summary>
+    ///     Revert all pending changes for a worldbook
+    /// </summary>
+    [HttpPost("{id:guid}/revert")]
+    [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<WorldbookResponseDto>> RevertAllChanges(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var worldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
+            .Include(w => w.GraphRagSettings)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
+        {
+            return NotFound();
+        }
+
+        var snapshotByLorebookId = worldbook.IndexedSnapshots.ToDictionary(s => s.LorebookId);
+
+        var lorebooksToRemove = worldbook.Lorebooks
+            .Where(l => !snapshotByLorebookId.ContainsKey(l.Id))
+            .ToList();
+        foreach (var lorebook in lorebooksToRemove)
+        {
+            _dbContext.Lorebooks.Remove(lorebook);
+        }
+
+        foreach (var lorebook in worldbook.Lorebooks)
+        {
+            if (snapshotByLorebookId.TryGetValue(lorebook.Id, out var snapshot))
+            {
+                lorebook.Title = snapshot.Title;
+                lorebook.Content = snapshot.Content;
+                lorebook.Category = snapshot.Category;
+                lorebook.ContentType = snapshot.ContentType;
+                lorebook.IsDeleted = false;
+            }
+        }
+
+        if (worldbook.IndexedSnapshots.Count > 0)
+        {
+            worldbook.IndexingStatus = IndexingStatus.Indexed;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(MapToResponseDto(worldbook));
+    }
+
+    /// <summary>
+    ///     Revert a single lorebook to its indexed state
+    /// </summary>
+    [HttpPost("{id:guid}/lorebooks/{lorebookId:guid}/revert")]
+    [ProducesResponseType(typeof(LorebookResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<LorebookResponseDto>> RevertLorebook(
+        Guid id,
+        Guid lorebookId,
+        CancellationToken cancellationToken)
+    {
+        var worldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
+        {
+            return NotFound();
+        }
+
+        var lorebook = worldbook.Lorebooks.FirstOrDefault(l => l.Id == lorebookId);
+        var snapshot = worldbook.IndexedSnapshots.FirstOrDefault(s => s.LorebookId == lorebookId);
+
+        if (lorebook == null && snapshot == null)
+        {
+            return NotFound();
+        }
+
+        if (lorebook != null && snapshot == null)
+        {
+            _dbContext.Lorebooks.Remove(lorebook);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await UpdateIndexingStatusAfterRevert(worldbook, cancellationToken);
+
+            return Ok(new LorebookResponseDto
+            {
+                Id = lorebookId,
+                WorldbookId = id,
+                Title = lorebook.Title,
+                Content = lorebook.Content,
+                Category = lorebook.Category,
+                ContentType = lorebook.ContentType,
+                IsDeleted = true,
+                ChangeStatus = LorebookChangeStatus.None
+            });
+        }
+
+        if (lorebook != null && snapshot != null)
+        {
+            lorebook.Title = snapshot.Title;
+            lorebook.Content = snapshot.Content;
+            lorebook.Category = snapshot.Category;
+            lorebook.ContentType = snapshot.ContentType;
+            lorebook.IsDeleted = false;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await UpdateIndexingStatusAfterRevert(worldbook, cancellationToken);
+
+            return Ok(_changeService.ToResponseDto(lorebook, snapshot));
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    ///     Copy a worldbook with optional indexed volume
+    /// </summary>
+    [HttpPost("{id:guid}/copy")]
+    [ProducesResponseType(typeof(WorldbookResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<WorldbookResponseDto>> CopyWorldbook(
+        Guid id,
+        [FromBody] CopyWorldbookDto dto,
+        [FromServices] Infrastructure.Docker.IWorldbookRagManager worldbookRagManager,
+        CancellationToken cancellationToken)
+    {
+        var sourceWorldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .Include(w => w.IndexedSnapshots)
+            .Include(w => w.GraphRagSettings)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (sourceWorldbook == null)
+        {
+            return NotFound();
+        }
+
+        var nameExists = await _dbContext.Worldbooks
+            .AnyAsync(w => w.Name == dto.Name, cancellationToken);
+
+        if (nameExists)
+        {
+            return Conflict(new
+            {
+                error = "Duplicate worldbook name",
+                message = $"A worldbook with the name '{dto.Name}' already exists."
+            });
+        }
+
+        var newWorldbook = new Worldbook
+        {
+            Id = Guid.NewGuid(),
+            Name = dto.Name,
+            GraphRagSettingsId = sourceWorldbook.GraphRagSettingsId,
+            IndexingStatus = IndexingStatus.NotIndexed
+        };
+
+        var lorebookIdMapping = new Dictionary<Guid, Guid>();
+        foreach (var lorebook in sourceWorldbook.Lorebooks.Where(l => !l.IsDeleted))
+        {
+            var newLorebookId = Guid.NewGuid();
+            lorebookIdMapping[lorebook.Id] = newLorebookId;
+
+            newWorldbook.Lorebooks.Add(new Lorebook
+            {
+                Id = newLorebookId,
+                WorldbookId = newWorldbook.Id,
+                Title = lorebook.Title,
+                Content = lorebook.Content,
+                Category = lorebook.Category,
+                ContentType = lorebook.ContentType,
+                IsDeleted = false
+            });
+        }
+
+        if (dto.CopyIndexedVolume && sourceWorldbook.IndexingStatus == IndexingStatus.Indexed)
+        {
+            try
+            {
+                await worldbookRagManager.CopyWorldbookVolume(sourceWorldbook.Id, newWorldbook.Id, cancellationToken);
+
+                foreach (var snapshot in sourceWorldbook.IndexedSnapshots)
+                {
+                    if (lorebookIdMapping.TryGetValue(snapshot.LorebookId, out var newLorebookId))
+                    {
+                        newWorldbook.IndexedSnapshots.Add(new LorebookSnapshot
+                        {
+                            Id = Guid.NewGuid(),
+                            WorldbookId = newWorldbook.Id,
+                            LorebookId = newLorebookId,
+                            Title = snapshot.Title,
+                            Content = snapshot.Content,
+                            Category = snapshot.Category,
+                            ContentType = snapshot.ContentType,
+                            IndexedAt = snapshot.IndexedAt
+                        });
+                    }
+                }
+
+                newWorldbook.IndexingStatus = IndexingStatus.Indexed;
+                newWorldbook.LastIndexedAt = sourceWorldbook.LastIndexedAt;
+            }
+            catch (Exception)
+            {
+                newWorldbook.IndexingStatus = IndexingStatus.NotIndexed;
+            }
+        }
+
+        _dbContext.Worldbooks.Add(newWorldbook);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return CreatedAtAction(nameof(GetById), new { id = newWorldbook.Id }, MapToResponseDto(newWorldbook));
+    }
+
+    private async Task UpdateIndexingStatusAfterRevert(
+        Worldbook worldbook,
+        CancellationToken cancellationToken)
+    {
+        var hasPendingChanges = _changeService.HasPendingChanges(
+            worldbook.Lorebooks,
+            worldbook.IndexedSnapshots);
+
+        if (!hasPendingChanges && worldbook.IndexingStatus == IndexingStatus.NeedsReindexing)
+        {
+            worldbook.IndexingStatus = IndexingStatus.Indexed;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private WorldbookResponseDto MapToResponseDto(Worldbook worldbook)
+    {
+        var snapshotByLorebookId = worldbook.IndexedSnapshots.ToDictionary(s => s.LorebookId);
+
+        var lorebooks = worldbook.Lorebooks
+            .Select(l =>
+            {
+                snapshotByLorebookId.TryGetValue(l.Id, out var snapshot);
+                return _changeService.ToResponseDto(l, snapshot);
+            })
+            .ToList();
+
+        var summary = _changeService.CalculatePendingChangeSummary(
+            worldbook.Lorebooks,
+            worldbook.IndexedSnapshots);
+
+        var hasPendingChanges = summary.AddedCount > 0 || summary.ModifiedCount > 0 || summary.DeletedCount > 0;
+
+        return new WorldbookResponseDto
+        {
+            Id = worldbook.Id,
+            Name = worldbook.Name,
+            GraphRagSettingsId = worldbook.GraphRagSettingsId,
+            GraphRagSettings = worldbook.GraphRagSettings != null
+                ? new GraphRagSettingsSummaryDto
+                {
+                    Id = worldbook.GraphRagSettings.Id,
+                    Name = worldbook.GraphRagSettings.Name,
+                    LlmProvider = worldbook.GraphRagSettings.LlmProvider,
+                    LlmModel = worldbook.GraphRagSettings.LlmModel,
+                    EmbeddingProvider = worldbook.GraphRagSettings.EmbeddingProvider,
+                    EmbeddingModel = worldbook.GraphRagSettings.EmbeddingModel
+                }
+                : null,
+            Lorebooks = lorebooks,
+            IndexingStatus = worldbook.IndexingStatus,
+            LastIndexedAt = worldbook.LastIndexedAt,
+            HasPendingChanges = hasPendingChanges,
+            PendingChangeSummary = hasPendingChanges ? summary : null
+        };
+    }
 }
 
 public record IndexStatusResponse
@@ -486,4 +766,18 @@ public record IndexStatusResponse
     public Guid WorldbookId { get; init; }
     public required string Status { get; init; }
     public string? Error { get; init; }
+}
+
+public record PendingChangesResponse
+{
+    public Guid WorldbookId { get; init; }
+    public List<LorebookChangeDto> Changes { get; init; } = new();
+    public PendingChangeSummaryDto Summary { get; init; } = null!;
+}
+
+public record LorebookChangeDto
+{
+    public Guid LorebookId { get; init; }
+    public string Title { get; init; } = string.Empty;
+    public LorebookChangeStatus ChangeStatus { get; init; }
 }

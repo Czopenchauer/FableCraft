@@ -18,6 +18,16 @@ export interface WorldbookResponseDto {
   lorebooks: LorebookResponseDto[];
   graphRagSettingsId?: string | null;
   graphRagSettings?: GraphRagSettingsSummaryDto | null;
+  indexingStatus: IndexingStatus;
+  lastIndexedAt?: string | null;
+  hasPendingChanges: boolean;
+  pendingChangeSummary?: PendingChangeSummaryDto | null;
+}
+
+export interface PendingChangeSummaryDto {
+  addedCount: number;
+  modifiedCount: number;
+  deletedCount: number;
 }
 
 export interface LorebookDto {
@@ -44,6 +54,8 @@ export interface UpdateLorebookDto {
   contentType: ContentType;
 }
 
+export type LorebookChangeStatus = 'None' | 'Added' | 'Modified' | 'Deleted';
+
 export interface LorebookResponseDto {
   id: string;
   worldbookId: string;
@@ -51,9 +63,11 @@ export interface LorebookResponseDto {
   content: string;
   category: string;
   contentType: ContentType;
+  isDeleted: boolean;
+  changeStatus: LorebookChangeStatus;
 }
 
-export type IndexingStatus = 'NotIndexed' | 'Indexing' | 'Indexed' | 'Failed';
+export type IndexingStatus = 'NotIndexed' | 'Indexing' | 'Indexed' | 'Failed' | 'NeedsReindexing';
 
 export interface IndexStatusResponse {
   worldbookId: string;
@@ -65,4 +79,21 @@ export interface IndexStartResponse {
   worldbookId: string;
   message: string;
   lorebookCount: number;
+}
+
+export interface PendingChangesResponse {
+  worldbookId: string;
+  changes: LorebookChangeDto[];
+  summary: PendingChangeSummaryDto;
+}
+
+export interface LorebookChangeDto {
+  lorebookId: string;
+  title: string;
+  changeStatus: LorebookChangeStatus;
+}
+
+export interface CopyWorldbookDto {
+  name: string;
+  copyIndexedVolume: boolean;
 }

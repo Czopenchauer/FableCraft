@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Polly;
 using Polly.Retry;
 
+using Serilog;
+
 namespace FableCraft.Infrastructure;
 
 public record ChunkCreationRequest(Guid EntityId, string Content, ContentType ContentType, string[] DatasetName);
@@ -32,6 +34,11 @@ public interface IRagChunkService
         IRagBuilder ragBuilder,
         string[] datasets,
         CancellationToken cancellationToken = default);
+
+    Task DeleteNodes(
+        IRagBuilder ragBuilder,
+        Chunk[] chunks,
+        CancellationToken cancellationToken = default);
 }
 
 internal sealed class RagChunkService : IRagChunkService
@@ -40,10 +47,12 @@ internal sealed class RagChunkService : IRagChunkService
     private readonly ResiliencePipeline _ioResiliencePipeline;
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger _logger;
 
-    public RagChunkService(ApplicationDbContext dbContext)
+    public RagChunkService(ApplicationDbContext dbContext, ILogger logger)
     {
         _dbContext = dbContext;
+        _logger = logger;
 
         _httpResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
@@ -131,7 +140,7 @@ internal sealed class RagChunkService : IRagChunkService
         await Parallel.ForEachAsync(chunks,
             new ParallelOptions
             {
-                MaxDegreeOfParallelism = 5,
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
                 CancellationToken = cancellationToken
             },
             (chunk, ct) =>
@@ -172,5 +181,27 @@ internal sealed class RagChunkService : IRagChunkService
         await _httpResiliencePipeline.ExecuteAsync(async ct =>
                 await ragBuilder.CognifyAsync(datasets, temporal: false, ct),
             cancellationToken);
+    }
+
+    public async Task DeleteNodes(IRagBuilder ragBuilder, Chunk[] chunks, CancellationToken cancellationToken = default)
+    {
+        var eligibleChunks = chunks.Where(x => !string.IsNullOrEmpty(x.KnowledgeGraphNodeId)).ToArray();
+        if (!eligibleChunks.Any())
+        {
+            _logger.Information("No eligible chunks found.");
+            return;
+        }
+
+        _logger.Information("Deleting {count} eligible chunks...", eligibleChunks.Length);
+        await Parallel.ForEachAsync(eligibleChunks,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
+                CancellationToken = cancellationToken
+            },
+            (chunk, ct) =>
+            {
+                return _httpResiliencePipeline.ExecuteAsync(async c => await ragBuilder.DeleteNodeAsync(chunk.DatasetName, chunk.KnowledgeGraphNodeId!, c), ct);
+            });
     }
 }

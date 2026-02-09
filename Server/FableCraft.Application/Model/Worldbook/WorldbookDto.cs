@@ -1,4 +1,8 @@
-﻿using FluentValidation;
+using System.Text.Json.Serialization;
+
+using FableCraft.Infrastructure.Persistence.Entities;
+
+using FluentValidation;
 
 namespace FableCraft.Application.Model.Worldbook;
 
@@ -31,6 +35,28 @@ public class WorldbookResponseDto
     public Guid? GraphRagSettingsId { get; init; }
 
     public GraphRagSettingsSummaryDto? GraphRagSettings { get; init; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public IndexingStatus IndexingStatus { get; init; }
+
+    public DateTimeOffset? LastIndexedAt { get; init; }
+
+    public bool HasPendingChanges { get; init; }
+
+    public PendingChangeSummaryDto? PendingChangeSummary { get; init; }
+}
+
+public class PendingChangeSummaryDto
+{
+    public int AddedCount { get; init; }
+    public int ModifiedCount { get; init; }
+    public int DeletedCount { get; init; }
+}
+
+public class CopyWorldbookDto
+{
+    public required string Name { get; init; }
+    public bool CopyIndexedVolume { get; init; }
 }
 
 public class WorldbookDtoValidator : AbstractValidator<WorldbookDto>

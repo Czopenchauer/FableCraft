@@ -15,4 +15,6 @@ public class Lorebook : IEntity
     public required ContentType ContentType { get; set; }
 
     public Guid Id { get; set; }
+
+    public bool IsDeleted { get; set; } = false;
 }

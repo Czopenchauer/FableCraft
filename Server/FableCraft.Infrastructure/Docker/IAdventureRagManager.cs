@@ -9,6 +9,11 @@ namespace FableCraft.Infrastructure.Docker;
 public interface IWorldbookRagManager
 {
     Task IndexWorldbook(Guid worldbookId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copy a worldbook's indexed volume to a new worldbook.
+    /// </summary>
+    Task CopyWorldbookVolume(Guid sourceWorldbookId, Guid destinationWorldbookId, CancellationToken cancellationToken = default);
 }
 
 public interface IAdventureRagManager
@@ -75,5 +80,18 @@ internal sealed class AdventureRagManager(IOptions<GraphServiceSettings> setting
         }
 
         await graphContainerRegistry.EnsureWorldbookContainerRunningAsync(worldbookId, cancellationToken);
+    }
+
+    public async Task CopyWorldbookVolume(Guid sourceWorldbookId, Guid destinationWorldbookId, CancellationToken cancellationToken = default)
+    {
+        var sourceVolume = _settings.GetWorldbookVolumeName(sourceWorldbookId);
+        var destVolume = _settings.GetWorldbookVolumeName(destinationWorldbookId);
+
+        if (!await volumeManager.ExistsAsync(sourceVolume, cancellationToken))
+        {
+            throw new WorldbookNotIndexedException(sourceWorldbookId);
+        }
+
+        await volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
     }
 }

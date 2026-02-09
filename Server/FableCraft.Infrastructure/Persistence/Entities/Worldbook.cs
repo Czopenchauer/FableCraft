@@ -15,6 +15,12 @@ public class Worldbook : IEntity
     public Guid? GraphRagSettingsId { get; set; }
 
     public GraphRagSettings? GraphRagSettings { get; set; }
+
+    public DateTimeOffset CreatedAt { get; init; } =  DateTimeOffset.UtcNow;
+
+    public DateTimeOffset? LastIndexedAt { get; set; }
+
+    public List<LorebookSnapshot> IndexedSnapshots { get; set; } = new();
 }
 
 public enum IndexingStatus
@@ -22,5 +28,6 @@ public enum IndexingStatus
     NotIndexed = 0,
     Indexing = 1,
     Indexed = 2,
-    Failed = 3
+    Failed = 3,
+    NeedsReindexing = 4
 }

@@ -38,6 +38,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Lorebook> Lorebooks { get; set; }
 
+    public DbSet<LorebookSnapshot> LorebookSnapshots { get; set; }
+
     public DbSet<AdventureAgentLlmPreset> AdventureAgentLlmPresets { get; set; }
 
     public DbSet<Character> Characters { get; set; }

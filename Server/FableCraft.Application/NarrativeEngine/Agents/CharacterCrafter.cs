@@ -137,8 +137,10 @@ internal sealed class CharacterCrafter : BaseAgent
 
     private class InitialRelationship
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public required string Toward { get; set; }
 
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public required string Dynamic { get; set; }
 
         [JsonExtensionData]

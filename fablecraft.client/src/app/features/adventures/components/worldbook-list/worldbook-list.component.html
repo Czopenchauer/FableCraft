@@ -104,6 +104,28 @@
             <span>Indexed</span>
           </div>
 
+          <!-- NeedsReindexing Badge with pending changes count -->
+          <div *ngIf="getIndexState(worldbook.id).status === 'NeedsReindexing'" class="index-badge needs-reindex">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Needs Re-index</span>
+            <span *ngIf="getPendingChangesDisplay(worldbook.id)" class="pending-changes-count">
+              {{ getPendingChangesDisplay(worldbook.id) }}
+            </span>
+          </div>
+
+          <!-- Re-index button for NeedsReindexing -->
+          <button
+            *ngIf="getIndexState(worldbook.id).status === 'NeedsReindexing'"
+            (click)="startIndexing($event, worldbook.id)"
+            class="index-button reindex">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Re-index</span>
+          </button>
+
           <!-- Not Indexed - Show Index Button -->
           <button
             *ngIf="getIndexState(worldbook.id).status === 'NotIndexed'"
@@ -142,6 +164,17 @@
               <span>Retry</span>
             </button>
           </div>
+
+          <!-- Copy Button (shown for indexed worldbooks) -->
+          <button
+            *ngIf="canCopyWithIndex(worldbook)"
+            (click)="openCopyModal($event, worldbook)"
+            class="copy-button"
+            title="Copy worldbook">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
 
         <!-- Hover Arrow -->
@@ -163,4 +196,47 @@
     [isDeleting]="isDeleting"
     [isOpen]="showDeleteModal">
   </app-delete-confirmation-modal>
+
+  <!-- Copy Worldbook Modal -->
+  <div *ngIf="showCopyModal" class="modal-overlay" (click)="closeCopyModal()">
+    <div class="modal-content copy-modal" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Copy Worldbook</h2>
+      <p class="modal-subtitle">Create a copy of "{{ worldbookToCopy?.name }}"</p>
+
+      <div class="form-group">
+        <label class="form-label" for="copy-name">New Name</label>
+        <input
+          [(ngModel)]="copyName"
+          class="form-input"
+          id="copy-name"
+          placeholder="Enter new worldbook name"
+          type="text"
+        />
+      </div>
+
+      <div *ngIf="canCopyWithIndex(worldbookToCopy!)" class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input
+            [(ngModel)]="copyIndexedVolume"
+            type="checkbox"
+          />
+          <span>Copy indexed knowledge graph</span>
+        </label>
+        <p class="checkbox-help">If checked, the copy will include the indexed data and be ready to use immediately.</p>
+      </div>
+
+      <div *ngIf="copyError" class="copy-error">
+        {{ copyError }}
+      </div>
+
+      <div class="modal-actions">
+        <button (click)="closeCopyModal()" [disabled]="isCopying" class="btn-cancel" type="button">
+          Cancel
+        </button>
+        <button (click)="confirmCopy()" [disabled]="isCopying || !copyName.trim()" class="btn-confirm" type="button">
+          {{ isCopying ? 'Copying...' : 'Copy Worldbook' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

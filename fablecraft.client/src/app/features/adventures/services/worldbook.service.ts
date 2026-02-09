@@ -1,7 +1,16 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {IndexStartResponse, IndexStatusResponse, WorldbookDto, WorldbookResponseDto, WorldbookUpdateDto} from '../models/worldbook.model';
+import {
+  CopyWorldbookDto,
+  IndexStartResponse,
+  IndexStatusResponse,
+  LorebookResponseDto,
+  PendingChangesResponse,
+  WorldbookDto,
+  WorldbookResponseDto,
+  WorldbookUpdateDto
+} from '../models/worldbook.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -60,5 +69,33 @@ export class WorldbookService {
    */
   getIndexStatus(id: string): Observable<IndexStatusResponse> {
     return this.http.get<IndexStatusResponse>(`${this.apiUrl}/${id}/index/status`);
+  }
+
+  /**
+   * Get pending changes for a worldbook
+   */
+  getPendingChanges(id: string): Observable<PendingChangesResponse> {
+    return this.http.get<PendingChangesResponse>(`${this.apiUrl}/${id}/pending-changes`);
+  }
+
+  /**
+   * Revert all pending changes for a worldbook
+   */
+  revertAllChanges(id: string): Observable<WorldbookResponseDto> {
+    return this.http.post<WorldbookResponseDto>(`${this.apiUrl}/${id}/revert`, {});
+  }
+
+  /**
+   * Revert a single lorebook to its indexed state
+   */
+  revertLorebook(worldbookId: string, lorebookId: string): Observable<LorebookResponseDto> {
+    return this.http.post<LorebookResponseDto>(`${this.apiUrl}/${worldbookId}/lorebooks/${lorebookId}/revert`, {});
+  }
+
+  /**
+   * Copy a worldbook with optional indexed volume
+   */
+  copyWorldbook(id: string, dto: CopyWorldbookDto): Observable<WorldbookResponseDto> {
+    return this.http.post<WorldbookResponseDto>(`${this.apiUrl}/${id}/copy`, dto);
   }
 }

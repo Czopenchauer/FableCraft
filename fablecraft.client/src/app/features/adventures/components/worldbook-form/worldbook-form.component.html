@@ -41,6 +41,42 @@
       </div>
     </div>
 
+    <!-- Pending Changes Banner -->
+    <div *ngIf="indexingStatus === 'NeedsReindexing'" class="pending-changes-banner">
+      <div class="banner-content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="banner-icon">
+          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="banner-text">
+          <strong>Pending Changes</strong>
+          <span>This worldbook has changes that need to be re-indexed to take effect.</span>
+        </div>
+        <button (click)="revertAllChanges()" [disabled]="reverting" class="btn-revert-all" type="button">
+          <svg *ngIf="!reverting" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ reverting ? 'Reverting...' : 'Revert All Changes' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Deleted Lorebooks Section -->
+    <div *ngIf="getDeletedLorebooks().length > 0" class="deleted-lorebooks-section">
+      <h3 class="deleted-section-title">Deleted Lorebooks (pending removal)</h3>
+      <div class="deleted-lorebooks-list">
+        <div *ngFor="let lorebook of getDeletedLorebooks()" class="deleted-lorebook-item">
+          <span class="deleted-lorebook-title">{{ lorebook.title }}</span>
+          <span class="deleted-lorebook-category">{{ lorebook.category }}</span>
+          <button (click)="restoreDeletedLorebook(lorebook)" class="btn-restore" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Form -->
     <form (ngSubmit)="onSubmit()" *ngIf="!loading" [formGroup]="worldbookForm" class="worldbook-form">
       <div class="form-card">
@@ -151,6 +187,8 @@
                    [attr.aria-label]="'Toggle ' + getLorebookTitle(i) + ' panel'"
                    [class.expanded]="isPanelExpanded(i)"
                    [class.has-errors]="hasLorebookErrors(i)"
+                   [class.is-added]="isLorebookAdded(i)"
+                   [class.is-modified]="isLorebookModified(i)"
                    class="lorebook-panel-header"
                    role="button"
                    tabindex="0">
@@ -168,10 +206,26 @@
                   {{ getLorebookTitle(i) }}
                 </span>
 
+                <!-- Change status badge -->
+                <span *ngIf="isLorebookAdded(i)" class="change-badge added">Added</span>
+                <span *ngIf="isLorebookModified(i)" class="change-badge modified">Modified</span>
+
                 <!-- Category badge (if category exists) -->
                 <span *ngIf="getLorebookCategory(i)" class="category-badge">
                   {{ getLorebookCategory(i) }}
                 </span>
+
+                <!-- Revert button (for modified lorebooks) -->
+                <button *ngIf="isLorebookModified(i)"
+                        (click)="revertLorebook(i); $event.stopPropagation()"
+                        [attr.aria-label]="'Revert ' + getLorebookTitle(i)"
+                        class="btn-revert-lorebook"
+                        title="Revert to indexed state"
+                        type="button">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
 
                 <!-- Delete button -->
                 <button (click)="deleteLorebook(i); $event.stopPropagation()"

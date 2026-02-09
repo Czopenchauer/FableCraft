@@ -244,17 +244,13 @@
 
               <div class="form-group">
                 <label class="form-label" [for]="'loreCategory-' + i">Category *</label>
-                <select
-                  class="form-select"
+                <input
+                  class="form-input"
                   formControlName="category"
                   [id]="'loreCategory-' + i"
-                >
-                  <option value="Lore">Lore</option>
-                  <option value="Location">Location</option>
-                  <option value="Item">Item</option>
-                  <option value="Character">Character</option>
-                  <option value="Event">Event</option>
-                </select>
+                  placeholder="e.g., Lore, Location, Item, Character, Event"
+                  type="text"
+                />
               </div>
             </div>
 

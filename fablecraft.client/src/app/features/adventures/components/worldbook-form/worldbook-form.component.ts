@@ -4,6 +4,9 @@ import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {WorldbookService} from '../../services/worldbook.service';
 import {
   CreateLorebookDto,
+  IndexingStatus,
+  LorebookChangeStatus,
+  LorebookResponseDto,
   UpdateLorebookDto,
   WorldbookDto,
   WorldbookResponseDto,
@@ -34,6 +37,19 @@ export class WorldbookFormComponent implements OnInit {
 
   // GraphRAG Settings options
   graphRagSettingsOptions: GraphRagSettingsSummaryDto[] = [];
+
+  // Worldbook state
+  worldbook: WorldbookResponseDto | null = null;
+  indexingStatus: IndexingStatus = 'NotIndexed';
+  hasPendingChanges = false;
+  reverting = false;
+
+  // Lorebook change tracking
+  lorebookChangeStatuses: Map<string, LorebookChangeStatus> = new Map();
+  deletedLorebookIds: Set<string> = new Set();
+
+  // Pending deletes during current edit session (not yet saved to server)
+  pendingDeletes: LorebookResponseDto[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -117,9 +133,33 @@ export class WorldbookFormComponent implements OnInit {
    * Delete a lorebook from the FormArray
    */
   deleteLorebook(index: number): void {
-    // Show confirmation dialog
-    if (!confirm('Are you sure you want to delete this lorebook?')) {
-      return;
+    const lorebookGroup = this.lorebooks.at(index);
+    const lorebookId = lorebookGroup.get('id')?.value;
+    const isIndexedWorldbook = this.indexingStatus === 'Indexed' || this.indexingStatus === 'NeedsReindexing';
+
+    // For indexed worldbooks with existing lorebooks, show soft-delete warning
+    if (isIndexedWorldbook && lorebookId) {
+      if (!confirm('This lorebook will be marked for deletion. The deletion will be applied when you re-index the worldbook. Continue?')) {
+        return;
+      }
+
+      // Track as pending delete so it shows in the "Deleted Lorebooks" section
+      const lorebookData: LorebookResponseDto = {
+        id: lorebookId,
+        worldbookId: this.worldbookId || '',
+        title: lorebookGroup.get('title')?.value || '',
+        content: lorebookGroup.get('content')?.value || '',
+        category: lorebookGroup.get('category')?.value || '',
+        contentType: lorebookGroup.get('contentType')?.value || 'txt',
+        isDeleted: true,
+        changeStatus: 'Deleted'
+      };
+      this.pendingDeletes.push(lorebookData);
+    } else {
+      // For new lorebooks or non-indexed worldbooks, just confirm deletion
+      if (!confirm('Are you sure you want to delete this lorebook?')) {
+        return;
+      }
     }
 
     this.lorebooks.removeAt(index);
@@ -305,19 +345,35 @@ export class WorldbookFormComponent implements OnInit {
         console.log('Loaded worldbook:', worldbook);
         console.log('Lorebooks count:', worldbook.lorebooks?.length || 0);
 
+        this.worldbook = worldbook;
+        this.indexingStatus = worldbook.indexingStatus;
+        this.hasPendingChanges = worldbook.hasPendingChanges;
+
+        // Track change statuses and deleted lorebooks
+        this.lorebookChangeStatuses.clear();
+        this.deletedLorebookIds.clear();
+        worldbook.lorebooks.forEach(lb => {
+          this.lorebookChangeStatuses.set(lb.id, lb.changeStatus);
+          if (lb.isDeleted) {
+            this.deletedLorebookIds.add(lb.id);
+          }
+        });
+
         // Patch worldbook name and settings
         this.worldbookForm.patchValue({
           name: worldbook.name,
           graphRagSettingsId: worldbook.graphRagSettingsId || null
         });
 
-        // Populate lorebooks FormArray
+        // Populate lorebooks FormArray (only non-deleted lorebooks for editing)
         const lorebooksArray = this.lorebooks;
         if (worldbook.lorebooks && worldbook.lorebooks.length > 0) {
-          worldbook.lorebooks.forEach(lb => {
-            console.log('Adding lorebook to FormArray:', lb.title);
-            lorebooksArray.push(this.createLorebookGroup(lb));
-          });
+          worldbook.lorebooks
+            .filter(lb => !lb.isDeleted)
+            .forEach(lb => {
+              console.log('Adding lorebook to FormArray:', lb.title);
+              lorebooksArray.push(this.createLorebookGroup(lb));
+            });
           console.log('FormArray length after loading:', this.lorebooks.length);
         } else {
           console.log('No lorebooks found in response');
@@ -401,5 +457,132 @@ export class WorldbookFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/worldbooks']);
+  }
+
+  /**
+   * Get the change status for a lorebook by its ID
+   */
+  getLorebookChangeStatus(index: number): LorebookChangeStatus {
+    const lorebookId = this.lorebooks.at(index).get('id')?.value;
+    if (!lorebookId) {
+      return 'Added'; // New lorebook without ID
+    }
+    return this.lorebookChangeStatuses.get(lorebookId) || 'None';
+  }
+
+  /**
+   * Check if lorebook has a specific change status
+   */
+  isLorebookAdded(index: number): boolean {
+    return this.getLorebookChangeStatus(index) === 'Added';
+  }
+
+  isLorebookModified(index: number): boolean {
+    return this.getLorebookChangeStatus(index) === 'Modified';
+  }
+
+  /**
+   * Get deleted lorebooks for display
+   */
+  getDeletedLorebooks(): LorebookResponseDto[] {
+    return this.worldbook?.lorebooks.filter(lb => lb.isDeleted) || [];
+  }
+
+  /**
+   * Revert all pending changes
+   */
+  revertAllChanges(): void {
+    if (!this.worldbookId || !confirm('Are you sure you want to revert all pending changes? This will restore all lorebooks to their last indexed state.')) {
+      return;
+    }
+
+    this.reverting = true;
+    this.worldbookService.revertAllChanges(this.worldbookId).subscribe({
+      next: (worldbook) => {
+        this.reverting = false;
+        // Reload the worldbook
+        this.lorebooks.clear();
+        this.expandedPanels.clear();
+        this.loadWorldbook(this.worldbookId!);
+      },
+      error: (err) => {
+        console.error('Error reverting changes:', err);
+        this.error = 'Failed to revert changes. Please try again.';
+        this.reverting = false;
+      }
+    });
+  }
+
+  /**
+   * Revert a single lorebook
+   */
+  revertLorebook(index: number): void {
+    const lorebookId = this.lorebooks.at(index).get('id')?.value;
+    if (!this.worldbookId || !lorebookId) {
+      return;
+    }
+
+    if (!confirm('Are you sure you want to revert this lorebook to its last indexed state?')) {
+      return;
+    }
+
+    this.worldbookService.revertLorebook(this.worldbookId, lorebookId).subscribe({
+      next: (lorebook) => {
+        // Update the form with reverted data
+        const group = this.lorebooks.at(index);
+        group.patchValue({
+          title: lorebook.title,
+          content: lorebook.content,
+          category: lorebook.category,
+          contentType: lorebook.contentType
+        });
+        this.lorebookChangeStatuses.set(lorebookId, 'None');
+
+        // Check if there are still pending changes
+        this.hasPendingChanges = Array.from(this.lorebookChangeStatuses.values()).some(s => s !== 'None');
+        if (!this.hasPendingChanges && this.indexingStatus === 'NeedsReindexing') {
+          this.indexingStatus = 'Indexed';
+        }
+      },
+      error: (err) => {
+        console.error('Error reverting lorebook:', err);
+        this.error = 'Failed to revert lorebook. Please try again.';
+      }
+    });
+  }
+
+  /**
+   * Restore a deleted lorebook
+   */
+  restoreDeletedLorebook(lorebook: LorebookResponseDto): void {
+    if (!this.worldbookId) return;
+
+    this.worldbookService.revertLorebook(this.worldbookId, lorebook.id).subscribe({
+      next: (restored) => {
+        // Add the restored lorebook to the form
+        this.lorebooks.push(this.createLorebookGroup({
+          id: restored.id,
+          title: restored.title,
+          content: restored.content,
+          category: restored.category,
+          contentType: restored.contentType
+        }));
+        this.deletedLorebookIds.delete(lorebook.id);
+        this.lorebookChangeStatuses.set(lorebook.id, 'None');
+
+        // Update worldbook state
+        if (this.worldbook) {
+          const idx = this.worldbook.lorebooks.findIndex(lb => lb.id === lorebook.id);
+          if (idx !== -1) {
+            this.worldbook.lorebooks[idx].isDeleted = false;
+            this.worldbook.lorebooks[idx].changeStatus = 'None';
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error restoring lorebook:', err);
+        this.error = 'Failed to restore lorebook. Please try again.';
+      }
+    });
   }
 }

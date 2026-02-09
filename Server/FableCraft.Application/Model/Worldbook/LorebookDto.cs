@@ -60,6 +60,19 @@ public class LorebookResponseDto
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required ContentType ContentType { get; init; }
+
+    public bool IsDeleted { get; init; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public LorebookChangeStatus ChangeStatus { get; init; } = LorebookChangeStatus.None;
+}
+
+public enum LorebookChangeStatus
+{
+    None = 0,
+    Added = 1,
+    Modified = 2,
+    Deleted = 3
 }
 
 public class LorebookDtoValidator : AbstractValidator<LorebookDto>
