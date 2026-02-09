@@ -14,6 +14,12 @@ public interface IWorldbookRagManager
     /// Copy a worldbook's indexed volume to a new worldbook.
     /// </summary>
     Task CopyWorldbookVolume(Guid sourceWorldbookId, Guid destinationWorldbookId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delete a worldbook's container and volume.
+    /// Stops the container if running, then deletes the volume.
+    /// </summary>
+    Task DeleteWorldbookVolume(Guid worldbookId, CancellationToken cancellationToken = default);
 }
 
 public interface IAdventureRagManager
@@ -93,5 +99,16 @@ internal sealed class AdventureRagManager(IOptionsMonitor<GraphServiceSettings> 
         }
 
         await volumeManager.CopyAsync(sourceVolume, destVolume, cancellationToken);
+    }
+
+    public async Task DeleteWorldbookVolume(Guid worldbookId, CancellationToken cancellationToken = default)
+    {
+        await graphContainerRegistry.RemoveContainerAsync(new ContainerKey(worldbookId, ContainerType.Worldbook), cancellationToken);
+
+        var volumeName = Settings.GetWorldbookVolumeName(worldbookId);
+        if (await volumeManager.ExistsAsync(volumeName, cancellationToken))
+        {
+            await volumeManager.DeleteAsync(volumeName, force: true, cancellationToken);
+        }
     }
 }

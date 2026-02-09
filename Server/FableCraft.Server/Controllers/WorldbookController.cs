@@ -323,18 +323,33 @@ public class WorldbookController : ControllerBase
     }
 
     /// <summary>
-    ///     Delete a worldbook (cascades to delete all lorebooks)
+    ///     Delete a worldbook (cascades to delete all lorebooks and chunks)
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromServices] Infrastructure.Docker.IWorldbookRagManager worldbookRagManager,
+        CancellationToken cancellationToken)
     {
-        var worldbook = await _dbContext.Worldbooks.FindAsync([id], cancellationToken);
+        var worldbook = await _dbContext.Worldbooks
+            .Include(w => w.Lorebooks)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
         if (worldbook == null)
         {
             return NotFound();
+        }
+
+        await worldbookRagManager.DeleteWorldbookVolume(id, cancellationToken);
+
+        var lorebookIds = worldbook.Lorebooks.Select(l => l.Id).ToList();
+        if (lorebookIds.Count > 0)
+        {
+            await _dbContext.Chunks
+                .Where(c => lorebookIds.Contains(c.EntityId))
+                .ExecuteDeleteAsync(cancellationToken);
         }
 
         _dbContext.Worldbooks.Remove(worldbook);
@@ -703,6 +718,45 @@ public class WorldbookController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = newWorldbook.Id }, MapToResponseDto(newWorldbook));
     }
 
+    /// <summary>
+    ///     Get the visualization URL for an indexed worldbook
+    /// </summary>
+    [HttpGet("{id:guid}/visualization")]
+    [ProducesResponseType(typeof(VisualizationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<VisualizationResponse>> GetVisualization(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var worldbook = await _dbContext.Worldbooks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
+        if (worldbook == null)
+        {
+            return NotFound();
+        }
+
+        if (worldbook.IndexingStatus != IndexingStatus.Indexed &&
+            worldbook.IndexingStatus != IndexingStatus.NeedsReindexing)
+        {
+            return BadRequest(new
+            {
+                error = "Worldbook not indexed",
+                message = "The worldbook must be indexed before viewing the graph visualization."
+            });
+        }
+
+        var visualizationUrl = $"/visualization/worldbook-{id}/world/cognify_graph_visualization.html";
+
+        return Ok(new VisualizationResponse
+        {
+            WorldbookId = id,
+            VisualizationUrl = visualizationUrl
+        });
+    }
+
     private async Task UpdateIndexingStatusAfterRevert(
         Worldbook worldbook,
         CancellationToken cancellationToken)
@@ -780,4 +834,10 @@ public record LorebookChangeDto
     public Guid LorebookId { get; init; }
     public string Title { get; init; } = string.Empty;
     public LorebookChangeStatus ChangeStatus { get; init; }
+}
+
+public record VisualizationResponse
+{
+    public Guid WorldbookId { get; init; }
+    public required string VisualizationUrl { get; init; }
 }
