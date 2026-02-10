@@ -6,6 +6,8 @@ public class DirectoryListingDto
 
     public string? ParentPath { get; init; }
 
+    public required string RootPath { get; init; }
+
     public required DirectoryEntryDto[] Directories { get; init; }
 }
 

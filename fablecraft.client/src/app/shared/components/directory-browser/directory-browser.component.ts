@@ -19,10 +19,6 @@ export class DirectoryBrowserComponent implements OnChanges {
   listing: DirectoryListingDto | null = null;
   errorMessage = '';
 
-  // Manual input mode
-  isManualMode = false;
-  manualPath = '';
-
   constructor(private adventureService: AdventureService) {
   }
 
@@ -37,10 +33,9 @@ export class DirectoryBrowserComponent implements OnChanges {
 
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
-      const startPath = this.currentPath || this.basePath;
-      if (startPath) {
-        this.loadDirectories(startPath);
-      }
+      // If no current path, load without path to get the root
+      const startPath = this.currentPath || this.basePath || '';
+      this.loadDirectories(startPath);
     }
   }
 
@@ -49,15 +44,11 @@ export class DirectoryBrowserComponent implements OnChanges {
   }
 
   loadDirectories(path: string): void {
-    if (!path) {
-      this.listing = null;
-      return;
-    }
-
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.adventureService.getPromptDirectories(path).subscribe({
+    // Pass empty string or path - backend will default to root if empty
+    this.adventureService.getPromptDirectories(path || undefined).subscribe({
       next: (result) => {
         this.listing = result;
         this.isLoading = false;
@@ -92,49 +83,77 @@ export class DirectoryBrowserComponent implements OnChanges {
     this.closeDropdown();
   }
 
+  /**
+   * Gets the display path relative to the root path.
+   * If at root, shows "Prompts Root". Otherwise shows the relative path.
+   */
   getDisplayPath(): string {
     if (!this.currentPath) return 'Select directory...';
-    // Show only the last part of the path for display
-    const parts = this.currentPath.replace(/\\/g, '/').split('/');
-    return parts[parts.length - 1] || this.currentPath;
+
+    const rootPath = this.listing?.rootPath || '';
+    const relativePath = this.getRelativePath(this.currentPath, rootPath);
+
+    return relativePath || 'Prompts Root';
   }
 
+  /**
+   * Gets path parts for breadcrumb, starting after the root path.
+   * Returns parts that are relative to the prompts root.
+   */
   getPathParts(): { name: string; path: string }[] {
-    if (!this.listing?.currentPath) return [];
+    if (!this.listing?.currentPath || !this.listing?.rootPath) return [];
+
+    const rootPath = this.listing.rootPath.replace(/\\/g, '/').replace(/\/$/, '');
     const fullPath = this.listing.currentPath.replace(/\\/g, '/');
-    const parts = fullPath.split('/').filter(p => p);
+
+    // Get the relative path after the root
+    const relativePath = this.getRelativePath(fullPath, rootPath);
+    if (!relativePath) {
+      // At root level - return empty array (no breadcrumb parts to show)
+      return [];
+    }
+
+    const parts = relativePath.split('/').filter(p => p);
     const result: { name: string; path: string }[] = [];
 
-    let accumulated = '';
+    // Build accumulated paths starting from root
+    let accumulated = rootPath;
     for (const part of parts) {
-      accumulated += (accumulated ? '/' : '') + part;
+      accumulated += '/' + part;
       result.push({name: part, path: accumulated});
     }
 
     return result;
   }
 
+  /**
+   * Gets the relative path by removing the root prefix.
+   */
+  private getRelativePath(fullPath: string, rootPath: string): string {
+    const normalizedFull = fullPath.replace(/\\/g, '/').replace(/\/$/, '');
+    const normalizedRoot = rootPath.replace(/\\/g, '/').replace(/\/$/, '');
+
+    if (normalizedFull === normalizedRoot) {
+      return '';
+    }
+
+    if (normalizedFull.startsWith(normalizedRoot + '/')) {
+      return normalizedFull.substring(normalizedRoot.length + 1);
+    }
+
+    // Fallback: return the last segment
+    const parts = normalizedFull.split('/');
+    return parts[parts.length - 1] || '';
+  }
+
   navigateToPath(path: string): void {
     this.loadDirectories(path);
   }
 
-  toggleManualMode(): void {
-    this.isManualMode = !this.isManualMode;
-    if (this.isManualMode) {
-      this.manualPath = this.currentPath;
-    }
-  }
-
-  applyManualPath(): void {
-    if (this.manualPath.trim()) {
-      this.pathSelected.emit(this.manualPath.trim());
-      this.closeDropdown();
-    }
-  }
-
-  onManualPathKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      this.applyManualPath();
-    }
+  /**
+   * Checks if currently at the root level (cannot navigate up further).
+   */
+  isAtRoot(): boolean {
+    return !this.listing?.parentPath;
   }
 }

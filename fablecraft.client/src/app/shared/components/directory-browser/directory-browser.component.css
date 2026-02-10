@@ -84,105 +84,6 @@
   border-color: var(--color-primary);
 }
 
-/* Mode toggle */
-.mode-toggle {
-  display: flex;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: 1px solid var(--border-primary);
-  background: var(--bg-secondary);
-}
-
-.mode-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: transparent;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.mode-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--text-primary);
-}
-
-.mode-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-.mode-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* Manual input section */
-.manual-input-section {
-  padding: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.manual-input-wrapper {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.manual-input {
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-family: monospace;
-}
-
-.manual-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.manual-input::placeholder {
-  color: var(--text-tertiary);
-}
-
-.apply-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  color: white;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-
-.apply-btn:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.apply-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.manual-help-text {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-}
-
 /* Breadcrumb navigation */
 .breadcrumb {
   display: flex;
@@ -260,6 +161,12 @@
 .breadcrumb-separator {
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
+}
+
+.breadcrumb-root {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
 }
 
 /* Loading state */

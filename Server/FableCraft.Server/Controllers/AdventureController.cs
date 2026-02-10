@@ -146,12 +146,24 @@ public class AdventureController : ControllerBase
     [ProducesResponseType(typeof(DirectoryListingDto), StatusCodes.Status200OK)]
     public IActionResult GetPromptDirectories([FromQuery] string? path)
     {
+        var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
+        defaultPromptPath = defaultPromptPath.TrimEnd('/', '\\');
+        var promptsRoot = Path.GetDirectoryName(defaultPromptPath) ?? "";
+        promptsRoot = promptsRoot.Replace('\\', '/');
+
         var basePath = path;
         if (string.IsNullOrEmpty(basePath))
         {
-            var defaultPromptPath = Environment.GetEnvironmentVariable("DEFAULT_PROMPT_PATH") ?? "";
-            defaultPromptPath = defaultPromptPath.TrimEnd('/', '\\');
-            basePath = Path.GetDirectoryName(defaultPromptPath) ?? "";
+            basePath = promptsRoot;
+        }
+
+        var normalizedBasePath = basePath.Replace('\\', '/').TrimEnd('/');
+        var normalizedRoot = promptsRoot.TrimEnd('/');
+
+        if (!normalizedBasePath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            basePath = promptsRoot;
+            normalizedBasePath = normalizedRoot;
         }
 
         if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
@@ -160,13 +172,23 @@ public class AdventureController : ControllerBase
             {
                 CurrentPath = basePath ?? "",
                 ParentPath = null,
+                RootPath = promptsRoot,
                 Directories = []
             });
         }
 
         try
         {
-            var parentPath = Path.GetDirectoryName(basePath);
+            string? parentPath = null;
+            if (!normalizedBasePath.Equals(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Path.GetDirectoryName(basePath)?.Replace('\\', '/');
+                if (parent != null && parent.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    parentPath = parent;
+                }
+            }
+
             var directories = Directory.GetDirectories(basePath)
                 .Select(d => new DirectoryEntryDto
                 {
@@ -179,7 +201,8 @@ public class AdventureController : ControllerBase
             return Ok(new DirectoryListingDto
             {
                 CurrentPath = basePath.Replace('\\', '/'),
-                ParentPath = parentPath?.Replace('\\', '/'),
+                ParentPath = parentPath,
+                RootPath = promptsRoot,
                 Directories = directories
             });
         }
@@ -189,6 +212,7 @@ public class AdventureController : ControllerBase
             {
                 CurrentPath = basePath.Replace('\\', '/'),
                 ParentPath = null,
+                RootPath = promptsRoot,
                 Directories = []
             });
         }

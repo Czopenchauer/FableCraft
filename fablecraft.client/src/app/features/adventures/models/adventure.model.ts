@@ -107,6 +107,7 @@ export interface AdventureDefaultsDto {
 export interface DirectoryListingDto {
   currentPath: string;
   parentPath: string | null;
+  rootPath: string;
   directories: DirectoryEntryDto[];
 }
 
