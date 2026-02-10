@@ -921,6 +921,48 @@ select.form-input option {
   height: 16px;
 }
 
+/* View Graph Button */
+.btn-view-graph {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: var(--radius-md);
+  color: #3b82f6;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-view-graph:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+.btn-view-graph svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-view-graph:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme="medieval-fantasy"] .btn-view-graph {
+  background: rgba(70, 130, 180, 0.1);
+  border-color: rgba(70, 130, 180, 0.5);
+  color: #4682b4;
+}
+
+[data-theme="medieval-fantasy"] .btn-view-graph:hover:not(:disabled) {
+  background: rgba(70, 130, 180, 0.2);
+  border-color: #4682b4;
+}
+
 /* ===== Saving Indicator ===== */
 .saving-indicator {
   display: flex;

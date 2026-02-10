@@ -986,6 +986,30 @@ export class WorldbookFormComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Open graph visualization in a new tab
+   */
+  viewGraph(): void {
+    if (!this.worldbookId) return;
+
+    this.worldbookService.getVisualizationUrl(this.worldbookId).subscribe({
+      next: (response) => {
+        window.open(response.visualizationUrl, '_blank');
+      },
+      error: (err) => {
+        console.error('Error getting visualization URL:', err);
+        this.error = err.error?.message || 'Failed to get visualization URL. Make sure the worldbook is indexed.';
+      }
+    });
+  }
+
+  /**
+   * Check if graph can be viewed (indexed or needs reindexing)
+   */
+  get canViewGraph(): boolean {
+    return this.indexingStatus === 'Indexed' || this.indexingStatus === 'NeedsReindexing';
+  }
+
+  /**
    * Refresh component state after save
    */
   private refreshAfterSave(worldbook: WorldbookResponseDto): void {

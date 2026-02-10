@@ -1,6 +1,7 @@
 import {Component, Input, OnChanges, SimpleChanges} from '@angular/core';
 import {LorebookCategoryGroup, LorebookEntryResponseDto} from '../../models/lorebook-entry.model';
 import {LorebookEntryService} from '../../services/lorebook-entry.service';
+import {AdventureService} from '../../services/adventure.service';
 import {ToastService} from '../../../../core/services/toast.service';
 
 @Component({
@@ -26,6 +27,7 @@ export class LoreContentComponent implements OnChanges {
 
   constructor(
     private lorebookEntryService: LorebookEntryService,
+    private adventureService: AdventureService,
     private toastService: ToastService
   ) {
   }
@@ -68,11 +70,16 @@ export class LoreContentComponent implements OnChanges {
   }
 
   openWorldGraph(): void {
-    console.log('openWorldGraph called, adventureId:', this.adventureId);
     if (this.adventureId) {
-      const url = `/visualization/${this.adventureId}_world/cognify_graph_visualization.html`;
-      console.log('Opening URL:', url);
-      window.open(url, '_blank');
+      this.adventureService.getVisualizationUrl(this.adventureId, 'world').subscribe({
+        next: (response) => {
+          window.open(response.visualizationUrl, '_blank');
+        },
+        error: (err) => {
+          console.error('Error getting visualization URL:', err);
+          this.toastService.error('Failed to get visualization URL.');
+        }
+      });
     }
   }
 

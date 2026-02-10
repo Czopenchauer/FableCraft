@@ -1,6 +1,7 @@
 ﻿using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.Model.Adventure;
+using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Infrastructure.Queue;
@@ -359,4 +360,41 @@ public class AdventureController : ControllerBase
 
         return Ok(response);
     }
+
+    /// <summary>
+    /// Get the visualization URL for an adventure's dataset.
+    /// </summary>
+    [HttpGet("{adventureId:guid}/visualization/{dataset}")]
+    [ProducesResponseType(typeof(AdventureVisualizationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AdventureVisualizationResponse>> GetVisualization(
+        Guid adventureId,
+        string dataset,
+        [FromServices] IVisualizationProvider visualizationProvider,
+        CancellationToken cancellationToken)
+    {
+        var adventureExists = await _dbContext.Adventures
+            .AnyAsync(a => a.Id == adventureId, cancellationToken);
+
+        if (!adventureExists)
+        {
+            return NotFound();
+        }
+
+        var visualizationUrl = visualizationProvider.GetVisualizationUrl(adventureId, dataset);
+
+        return Ok(new AdventureVisualizationResponse
+        {
+            AdventureId = adventureId,
+            Dataset = dataset,
+            VisualizationUrl = visualizationUrl
+        });
+    }
+}
+
+public record AdventureVisualizationResponse
+{
+    public Guid AdventureId { get; init; }
+    public required string Dataset { get; init; }
+    public required string VisualizationUrl { get; init; }
 }

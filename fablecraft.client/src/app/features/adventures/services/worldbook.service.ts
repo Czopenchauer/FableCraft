@@ -98,4 +98,16 @@ export class WorldbookService {
   copyWorldbook(id: string, dto: CopyWorldbookDto): Observable<WorldbookResponseDto> {
     return this.http.post<WorldbookResponseDto>(`${this.apiUrl}/${id}/copy`, dto);
   }
+
+  /**
+   * Get visualization URL for an indexed worldbook
+   */
+  getVisualizationUrl(id: string): Observable<VisualizationResponse> {
+    return this.http.get<VisualizationResponse>(`${this.apiUrl}/${id}/visualization`);
+  }
+}
+
+export interface VisualizationResponse {
+  worldbookId: string;
+  visualizationUrl: string;
 }

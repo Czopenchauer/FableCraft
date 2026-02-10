@@ -215,6 +215,19 @@ export class AdventureService {
   updateAdventureSettings(adventureId: string, settings: UpdateAdventureSettingsDto): Observable<AdventureSettingsResponseDto> {
     return this.http.put<AdventureSettingsResponseDto>(`${this.apiUrl}/${adventureId}/settings`, settings);
   }
+
+  /**
+   * Get visualization URL for an adventure's dataset
+   */
+  getVisualizationUrl(adventureId: string, dataset: string): Observable<AdventureVisualizationResponse> {
+    return this.http.get<AdventureVisualizationResponse>(`${this.apiUrl}/${adventureId}/visualization/${dataset}`);
+  }
+}
+
+export interface AdventureVisualizationResponse {
+  adventureId: string;
+  dataset: string;
+  visualizationUrl: string;
 }
 
 // ===== Types and mappers for server/client contract bridging =====

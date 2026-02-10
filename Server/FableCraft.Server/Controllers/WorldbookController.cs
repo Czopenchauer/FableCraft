@@ -2,6 +2,7 @@ using FableCraft.Application.AdventureGeneration;
 using FableCraft.Application.Model;
 using FableCraft.Application.Model.Worldbook;
 using FableCraft.Application.Worldbook;
+using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Infrastructure.Queue;
@@ -727,6 +728,7 @@ public class WorldbookController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<VisualizationResponse>> GetVisualization(
         Guid id,
+        [FromServices] IVisualizationProvider visualizationProvider,
         CancellationToken cancellationToken)
     {
         var worldbook = await _dbContext.Worldbooks
@@ -748,7 +750,7 @@ public class WorldbookController : ControllerBase
             });
         }
 
-        var visualizationUrl = $"/visualization/worldbook-{id}/world/cognify_graph_visualization.html";
+        var visualizationUrl = visualizationProvider.GetVisualizationUrl(id);
 
         return Ok(new VisualizationResponse
         {

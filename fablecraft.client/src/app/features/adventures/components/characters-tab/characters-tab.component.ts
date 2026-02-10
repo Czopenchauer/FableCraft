@@ -1,5 +1,6 @@
 import {Component, Input, OnChanges, SimpleChanges} from '@angular/core';
 import {CharacterService} from '../../services/character.service';
+import {AdventureService} from '../../services/adventure.service';
 import {ToastService} from '../../../../core/services/toast.service';
 import {CharacterDetail, CharacterImportance, CharacterListItem} from '../../models/character.model';
 
@@ -23,6 +24,7 @@ export class CharactersTabComponent implements OnChanges {
 
   constructor(
     private characterService: CharacterService,
+    private adventureService: AdventureService,
     private toastService: ToastService
   ) {
   }
@@ -89,13 +91,29 @@ export class CharactersTabComponent implements OnChanges {
 
   openMainCharacterGraph(): void {
     if (this.adventureId) {
-      window.open(`/visualization/${this.adventureId}_main_character/cognify_graph_visualization.html`, '_blank');
+      this.adventureService.getVisualizationUrl(this.adventureId, 'main_character').subscribe({
+        next: (response) => {
+          window.open(response.visualizationUrl, '_blank');
+        },
+        error: (err) => {
+          console.error('Error getting visualization URL:', err);
+          this.toastService.error('Failed to get visualization URL.');
+        }
+      });
     }
   }
 
   openCharacterGraph(characterId: string): void {
     if (this.adventureId) {
-      window.open(`/visualization/${this.adventureId}_${characterId}/cognify_graph_visualization.html`, '_blank');
+      this.adventureService.getVisualizationUrl(this.adventureId, `character_${characterId}`).subscribe({
+        next: (response) => {
+          window.open(response.visualizationUrl, '_blank');
+        },
+        error: (err) => {
+          console.error('Error getting visualization URL:', err);
+          this.toastService.error('Failed to get visualization URL.');
+        }
+      });
     }
   }
 

@@ -3,9 +3,11 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +31,19 @@ internal enum ContainerType
     Worldbook
 }
 
+public interface IVisualizationProvider
+{
+    /// <summary>
+    /// Gets the URL path for accessing an adventure's dataset visualization.
+    /// </summary>
+    public string GetVisualizationUrl(Guid adventureId, string dataset);
+
+    /// <summary>
+    /// Gets the URL path for accessing a worldbook's visualization.
+    /// </summary>
+    public string GetVisualizationUrl(Guid worldbookId);
+}
+
 internal interface IContainerMonitor
 {
     void Increment(ContainerKey key);
@@ -36,7 +51,7 @@ internal interface IContainerMonitor
     void Decrement(ContainerKey key);
 }
 
-internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposable
+internal sealed class GraphContainerRegistry : IContainerMonitor, IVisualizationProvider, IAsyncDisposable
 {
     private readonly ConcurrentDictionary<ContainerKey, ContainerInfo> _containers = new();
     private readonly ConcurrentDictionary<ContainerKey, (CancellationTokenSource, Task)> _evictionTask = new();
@@ -264,7 +279,7 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
             Volumes =
             [
                 $"{volumeName}:{_settings.CurrentValue.VolumeMountPath}",
-                $"{_settings.CurrentValue.GetEffectiveVisualizationPath()}/{containerName}:/app/visualization",
+                $"{GetVisualizationPathInternal(containerName)}:/app/visualization",
                 $"{_settings.CurrentValue.GetEffectiveDataStorePath()}:/app/data-store"
             ],
             Ports =
@@ -411,4 +426,18 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IAsyncDisposab
         var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
         return Path.Combine(logsPath, $"{containerName}_{timestamp}.log");
     }
+
+    public string GetVisualizationUrl(Guid adventureId, string dataset)
+    {
+        var containerName = _settings.CurrentValue.GetContainerName(adventureId.ToString());
+        return $"/visualization/{containerName}/{dataset}/cognify_graph_visualization.html";
+    }
+
+    public string GetVisualizationUrl(Guid worldbookId)
+    {
+        var containerName = _settings.CurrentValue.GetContainerName(worldbookId.ToString());
+        return $"/visualization/{containerName}/{RagClientExtensions.GetWorldDatasetName()}/cognify_graph_visualization.html";
+    }
+
+    private string GetVisualizationPathInternal(string containerName) => $"{_settings.CurrentValue.GetEffectiveVisualizationPath()}/{containerName}";
 }
