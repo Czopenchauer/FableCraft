@@ -2,37 +2,37 @@
 
 An interactive fiction engine that produces NPCs with genuine agency. Characters act rather than react. Antagonists scheme without waiting for player input. The world moves.
 
-- **Per-character knowledge graphs** — Each character only knows what they've experienced
-- **Character emulation** — Full psychological context when characters act in scenes
-- **Off-screen simulation** — Arc-important characters pursue their own goals between encounters
-- **Narrative awareness** — Story fabric tracking, dramatic questions, world momentum
+- **Per-character knowledge graphs** - Each character only knows what they've experienced
+- **Character emulation** - Full psychological context when characters act in scenes
+- **Off-screen simulation** - Arc-important characters pursue their own goals between encounters
+- **Narrative awareness** - Story fabric tracking, dramatic questions, world momentum
 
 ## The Vision
 
-I built FableCraft after years of using SillyTavern and hitting the same walls repeatedly.
+I built FableCraft after using SillyTavern and hitting the same walls repeatedly.
 
 ### The Manual Memory Problem
 
-Single-model systems require constant human curation. You end up managing lorebooks, story summaries, memory books, character cards—all to work around the context window. You spend more time *maintaining* the fiction than *playing* it.
+Single-model systems require constant human curation. You end up managing lorebooks, story summaries, memory books, character cards-all to work around the context window. You spend more time *maintaining* the fiction than *playing* it.
 
 **FableCraft's approach:** Entire scenes are persisted automatically. A RAG system backed by knowledge graphs handles retrieval. World information (lore, locations, factions, events) lives in a dedicated World KG. Narrative history lives in character-specific graphs. No manual memory management. The system remembers so you don't have to.
 
 ### The Omniscient Model Problem
 
-In a single-model system, one LLM knows everything—every character's secrets, every plot point, every private conversation. It's up to the model to *pretend* the bartender doesn't know what the villain whispered in the dungeon. This works until it doesn't. Knowledge bleeds. Characters reference things they couldn't know. Immersion breaks.
+In a single-model system, one LLM knows everything-every character's secrets, every plot point, every private conversation. It's up to the model to *pretend* the bartender doesn't know what the villain whispered in the dungeon. This works until it doesn't. Knowledge bleeds. Characters reference things they couldn't know. Immersion breaks.
 
-**FableCraft's approach:** Each important character has their own knowledge graph. When a scene happens, a CharacterReflection agent rewrites it from that character's perspective—with their biases, their incomplete information, their interpretation of events. This subjective memory gets stored in their personal graph. During scene generation, characters only query their own graph. They literally cannot access information they didn't witness.
+**FableCraft's approach:** Each important character has their own knowledge graph. When a scene happens, a CharacterReflection agent rewrites it from that character's perspective-with their biases, their incomplete information, their interpretation of events. This subjective memory gets stored in their personal graph. During scene generation, characters only query their own graph. They literally cannot access information they didn't witness.
 
 ### The Puppet Problem
 
-In single-model systems, one LLM plays every character. The same model that writes the scene also decides how the villain responds, what the merchant says, whether the guard lets you pass. Characters become puppets of the narrator—their responses shaped by what makes a good scene rather than what they would actually do.
+In single-model systems, one LLM plays every character. The same model that writes the scene also decides how the villain responds, what the merchant says, whether the guard lets you pass. Characters become puppets of the narrator-their responses shaped by what makes a good scene rather than what they would actually do.
 
-**FableCraft's approach:** Important characters are separate agents with their own psychological profiles, memories, goals, and current state. During scene generation, the Writer doesn't invent their responses—it *asks* them. The Writer calls `emulate_character_action("Marcus", situation, "What do you do?")` and the character agent responds based on their own context. The Writer then renders that response through the protagonist's perception. Characters have genuine agency because they're literally separate decision-makers.
+**FableCraft's approach:** Important characters are separate agents with their own psychological profiles, memories, goals, and current state. During scene generation, the Writer doesn't invent their responses-it *asks* them. The Writer calls `emulate_character_action("Marcus", situation, "What do you do?")` and the character agent responds based on their own context. The Writer then renders that response through the protagonist's perception. Characters have genuine agency because they're literally separate decision-makers.
 
 The character tiers:
-- **Arc-important / Significant** — Full agents with psychological profiles, personal knowledge graphs, and memories. Must be emulated—the Writer cannot invent their responses.
-- **Background** — Lightweight profiles (voice, appearance, behavioral patterns). Written directly by the Writer using the profile as reference.
-- **GEARS** — New characters invented on the spot using a framework: Goal, Emotion, Attention, Reaction style, Self-interest.
+- **Arc-important / Significant** - Full agents with psychological profiles, personal knowledge graphs, and memories. Must be emulated-the Writer cannot invent their responses.
+- **Background** - Lightweight profiles (voice, appearance, behavioral patterns). Written directly by the Writer using the profile as reference.
+- **GEARS** - New characters invented on the spot using a framework: Goal, Emotion, Attention, Reaction style, Self-interest.
 
 ### The Reactive World Problem
 
@@ -40,11 +40,11 @@ NPCs in traditional systems wait. The villain doesn't scheme until you walk into
 
 **FableCraft's approach:** Characters live between encounters. The system runs off-screen simulation based on character tier:
 
-**Arc-important characters** (4-8 max) get full simulation. When enough in-world time passes since their last update, the Simulation agent runs them through their own scenes—pursuing goals, making decisions, interacting with each other. These simulated experiences become memories in their personal knowledge graph. They might decide to seek out the protagonist, and that intent gets queued for the next scene. When you encounter them again, they've been *living*—scheming, traveling, forming relationships, changing their minds.
+**Arc-important characters** (4-8 max) get full simulation. When enough in-world time passes since their last update, the Simulation agent runs them through their own scenes-pursuing goals, making decisions, interacting with each other. These simulated experiences become memories in their personal knowledge graph. They might decide to seek out the protagonist, and that intent gets queued for the next scene. When you encounter them again, they've been *living*-scheming, traveling, forming relationships, changing their minds.
 
-**Significant characters** (10-20) get lightweight simulation via OffscreenInference. When one is likely to appear in the next scene, the system generates a brief catch-up—what they've been doing, what's on their mind. Not full scenes, but enough continuity that they don't feel like they spawned into existence when you walked in.
+**Significant characters** (10-20) get lightweight simulation via OffscreenInference. When one is likely to appear in the next scene, the system generates a brief catch-up-what they've been doing, what's on their mind. Not full scenes, but enough continuity that they don't feel like they spawned into existence when you walked in.
 
-**Background characters** don't simulate. They're functional—the bartender serves drinks, the guard patrols. They exist to populate the world, not to drive story.
+**Background characters** don't simulate. They're functional-the bartender serves drinks, the guard patrols. They exist to populate the world, not to drive story.
 
 The hard cap on arc-important characters is intentional. Stories have limited bandwidth for characters with genuine agency. Eight is already a lot to track narratively. More would dilute the simulation quality and overwhelm the narrative.
 
@@ -71,17 +71,17 @@ Background processing (runs in parallel while player reads):
 
 | Agent | Role |
 |-------|------|
-| **SceneTracker** | Updates mechanical state—time, location, weather, who's present. |
-| **MainCharacterTracker** | Updates protagonist's physical state—vitals, equipment, skills, condition. |
+| **SceneTracker** | Updates mechanical state-time, location, weather, who's present. |
+| **MainCharacterTracker** | Updates protagonist's physical state-vitals, equipment, skills, condition. |
 | **CharacterReflection** | Rewrites each scene from each NPC's perspective. Creates their subjective memories. |
 | **CharacterTracker** | Updates NPC physical state after reflection. |
-| **Chronicler** | Tracks narrative fabric—dramatic questions, promises, stakes, world momentum. Provides guidance to Writer. |
+| **Chronicler** | Tracks narrative fabric-dramatic questions, promises, stakes, world momentum. Provides guidance to Writer. |
 | **Simulation** | Runs arc-important characters' off-screen lives when enough in-world time passes. |
 | **OffscreenInference** | Lightweight catch-up for significant characters about to appear. |
 | **ContextGatherer** | Queries knowledge graphs for relevant context before next scene. |
 | **Crafters** | Generate full profiles for new characters, locations, items, lore on demand. |
 
-Everything that would normally require manual curation—tracking what characters know, maintaining continuity, updating character states, remembering plot threads—happens automatically in the background.
+Everything that would normally require manual curation-tracking what characters know, maintaining continuity, updating character states, remembering plot threads-happens automatically in the background.
 
 ## Installation
 
