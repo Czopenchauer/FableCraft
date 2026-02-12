@@ -9,7 +9,8 @@ An interactive fiction engine that produces NPCs with genuine agency. Characters
 
 ## The Vision
 
-I built FableCraft after using SillyTavern and hitting the same walls repeatedly.
+I built FableCraft after using [SillyTavern](https://github.com/SillyTavern/SillyTavern) and hitting the same walls 
+repeatedly.
 
 ### The Manual Memory Problem
 
@@ -29,6 +30,8 @@ In single-model systems, one LLM plays every character. The same model that writ
 
 **FableCraft's approach:** Important characters are separate agents with their own psychological profiles, memories, goals, and current state. During scene generation, the Writer doesn't invent their responses-it *asks* them. The Writer calls `emulate_character_action("Marcus", situation, "What do you do?")` and the character agent responds based on their own context. The Writer then renders that response through the protagonist's perception. Characters have genuine agency because they're literally separate decision-makers.
 
+**Concrete example:** You confront a merchant about smuggling. In a traditional system, the same model that writes the scene decides how the merchant responds-often defaulting to whatever makes for good drama. In FableCraft, the Writer asks the merchant agent "What do you do?" The merchant has his own memories (he knows you helped his daughter last week), his own fears (the smuggling ring threatened his family), and his own goals (protect his shop). He might lie, confess, deflect, or attack-based on his actual psychological state, not narrative convenience.
+
 The character tiers:
 - **Arc-important / Significant** - Full agents with psychological profiles, personal knowledge graphs, and memories. Must be emulated-the Writer cannot invent their responses.
 - **Background** - Lightweight profiles (voice, appearance, behavioral patterns). Written directly by the Writer using the profile as reference.
@@ -38,15 +41,13 @@ The character tiers:
 
 NPCs in traditional systems wait. The villain doesn't scheme until you walk into their lair. The love interest doesn't have a life outside your scenes. The world freezes between player actions.
 
-**FableCraft's approach:** Characters live between encounters. The system runs off-screen simulation based on character tier:
+**FableCraft's approach:** Characters live between encounters. The system runs off-screen simulation based on the tiers above:
 
 **Arc-important characters** (4-8 max) get full simulation. When enough in-world time passes since their last update, the Simulation agent runs them through their own scenes-pursuing goals, making decisions, interacting with each other. These simulated experiences become memories in their personal knowledge graph. They might decide to seek out the protagonist, and that intent gets queued for the next scene. When you encounter them again, they've been *living*-scheming, traveling, forming relationships, changing their minds.
 
 **Significant characters** (10-20) get lightweight simulation via OffscreenInference. When one is likely to appear in the next scene, the system generates a brief catch-up-what they've been doing, what's on their mind. Not full scenes, but enough continuity that they don't feel like they spawned into existence when you walked in.
 
 **Background characters** don't simulate. They're functional-the bartender serves drinks, the guard patrols. They exist to populate the world, not to drive story.
-
-The hard cap on arc-important characters is intentional. Stories have limited bandwidth for characters with genuine agency. Eight is already a lot to track narratively. More would dilute the simulation quality and overwhelm the narrative.
 
 ## How It Works
 

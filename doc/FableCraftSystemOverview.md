@@ -4,7 +4,7 @@ FableCraft is a standalone interactive fiction engine that produces NPCs with ge
 
 ## The Problem FableCraft Solves
 
-Single-model interactive fiction systems (e.g., SillyTavern) have one model juggling everything. This leads to:
+Single-model interactive fiction systems have one model juggling everything. This leads to:
 
 - Knowledge bleed between characters (the bartender somehow knows what the villain said in private)
 - Memory inconsistency (characters forget important events, remember things they shouldn't)
