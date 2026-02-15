@@ -51,6 +51,28 @@ internal sealed class HttpLoggingHandler(ILogger logger) : DelegatingHandler
             }
         }
 
+        if (content.Contains("glm", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var jsonNode = JsonNode.Parse(content);
+                if (jsonNode is JsonObject jsonObject)
+                {
+                    jsonObject["thinking"] = new JsonObject
+                    {
+                        ["type"] = "enabled"
+                    };
+
+                    content = jsonObject.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+                    request.Content = new StringContent(content, Encoding.UTF8, "application/json");
+                }
+            }
+            catch (JsonException ex)
+            {
+                logger.Warning(ex, "[{RequestId}] Failed to add thinking to request body", requestId);
+            }
+        }
+
         logger.Information("[{RequestId}] Request Body: {Body}", requestId, content);
     }
 }

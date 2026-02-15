@@ -1,6 +1,6 @@
 import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
@@ -64,6 +64,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   // RAG Knowledge Chat state
   private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
   private destroy$ = new Subject<void>();
+  private sceneSubmissionSubscription: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -165,11 +166,12 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.enrichmentData = null; // Reset enrichment data
     this.enrichmentFailed = false; // Reset enrichment failure state
 
-    this.adventureService.submitAction(this.adventureId, choice)
+    this.sceneSubmissionSubscription = this.adventureService.submitAction(this.adventureId, choice)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
           this.isLoading = false;
+          this.sceneSubmissionSubscription = null;
           this.cdr.detectChanges();
         })
       )
@@ -611,6 +613,19 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.onCustomActionSubmit();
+    }
+  }
+
+  /**
+   * Cancel the ongoing scene submission
+   */
+  cancelSceneSubmission(): void {
+    if (this.sceneSubmissionSubscription) {
+      this.sceneSubmissionSubscription.unsubscribe();
+      this.sceneSubmissionSubscription = null;
+      this.isLoading = false;
+      this.toastService.info('Scene submission cancelled.');
+      this.cdr.detectChanges();
     }
   }
 

@@ -557,7 +557,34 @@
           <!-- Choices -->
           <div class="choices-container">
             <!-- Title for current scene -->
-            <h2 *ngIf="isCurrentScene()" class="choices-title">What do you do?</h2>
+            <h2 *ngIf="isCurrentScene() && !isLoading" class="choices-title">What do you do?</h2>
+
+            <!-- Loading state with cancel button -->
+            <div *ngIf="isCurrentScene() && isLoading" class="submission-loading">
+              <div class="submission-loading-content">
+                <svg [attr.fill]="'none'" class="spinner-small" viewBox="0 0 24 24">
+                  <circle [attr.cx]="12" [attr.cy]="12" [attr.r]="10" [attr.stroke-width]="4" [attr.stroke]="'currentColor'"
+                          class="opacity-25"></circle>
+                  <path
+                    [attr.d]="'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'"
+                    [attr.fill]="'currentColor'"
+                    class="opacity-75"></path>
+                </svg>
+                <span class="submission-loading-text">Generating scene...</span>
+                <button
+                  (click)="cancelSceneSubmission()"
+                  class="btn-cancel-submission"
+                  title="Cancel scene generation"
+                  type="button"
+                >
+                  <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                    <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'"
+                          [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  </svg>
+                  <span>Cancel</span>
+                </button>
+              </div>
+            </div>
 
             <!-- Title for historical scene -->
             <h2 *ngIf="!isCurrentScene()" class="choices-title">Available choices were:</h2>

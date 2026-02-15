@@ -24,7 +24,6 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
 {
     public readonly static LlmProvider OpenAi = new("openai");
     public static readonly LlmProvider Gemini = new("gemini");
-    public readonly static LlmProvider Anthropic = new("anthropic");
 
     public string Value { get; }
 
@@ -39,7 +38,6 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
                {
                    "openai" => OpenAi,
                    "gemini" => Gemini,
-                   "anthropic" => Anthropic,
                    _ => OpenAi
                };
     }
@@ -109,12 +107,12 @@ internal class OpenAiKernelBuilder : IKernelBuilder
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
             hp.ConfigureHttpClient((_, c) =>
-            {
-                c.Timeout = TimeSpan.FromMinutes(10);
-            })
-            .AddHttpMessageHandler<HttpLoggingHandler>()
-            .RemoveAllResilienceHandlers()
-            .AddDefaultLlmResiliencePolicies();
+                {
+                    c.Timeout = TimeSpan.FromMinutes(10);
+                })
+                .AddHttpMessageHandler<HttpLoggingHandler>()
+                .RemoveAllResilienceHandlers()
+                .AddDefaultLlmResiliencePolicies();
         });
 
         return builder;
@@ -182,12 +180,11 @@ internal class GeminiKernelBuilder : IKernelBuilder
         builder.Services.ConfigureHttpClientDefaults(hp =>
         {
             hp.ConfigureHttpClient((_, c) =>
-            {
-                c.Timeout = TimeSpan.FromMinutes(10);
-            })
-            .AddHttpMessageHandler<HttpLoggingHandler>()
-            .RemoveAllResilienceHandlers()
-            .AddDefaultLlmResiliencePolicies();
+                {
+                    c.Timeout = TimeSpan.FromMinutes(10);
+                })
+                .RemoveAllResilienceHandlers()
+                .AddDefaultLlmResiliencePolicies();
         });
 
         return builder;
@@ -200,7 +197,12 @@ internal class GeminiKernelBuilder : IKernelBuilder
             Temperature = _preset.Temperature,
             TopP = _preset.TopP,
             TopK = _preset.TopK,
-            SafetySettings = DefaultSafetySettings
+            SafetySettings = DefaultSafetySettings,
+            ThinkingConfig = new GeminiThinkingConfig()
+            {
+                IncludeThoughts = true,
+                ThinkingBudget = 24576
+            }
         };
 
     public PromptExecutionSettings GetDefaultFunctionPromptExecutionSettings() =>
@@ -211,6 +213,11 @@ internal class GeminiKernelBuilder : IKernelBuilder
             TopP = _preset.TopP,
             TopK = _preset.TopK,
             ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
-            SafetySettings = DefaultSafetySettings
+            SafetySettings = DefaultSafetySettings,
+            ThinkingConfig = new GeminiThinkingConfig()
+            {
+                IncludeThoughts = true,
+                ThinkingBudget = 24576
+            }
         };
 }

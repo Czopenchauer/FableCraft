@@ -2907,3 +2907,82 @@
   background: rgba(139, 0, 0, 0.2);
   color: #8b0000;
 }
+
+/* ========== Submission Loading with Cancel ========== */
+
+.submission-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-lg) 0;
+}
+
+.submission-loading-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+}
+
+[data-theme="modern-dark"] .submission-loading-content {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: var(--backdrop-blur);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .submission-loading-content {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-accent);
+}
+
+.submission-loading-text {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.btn-cancel-submission {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid var(--status-error);
+  background: transparent;
+  color: var(--status-error);
+}
+
+.btn-cancel-submission svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-cancel-submission:hover {
+  background: rgba(239, 68, 68, 0.1);
+  transform: translateY(-1px);
+}
+
+[data-theme="modern-dark"] .btn-cancel-submission {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="modern-dark"] .btn-cancel-submission:hover {
+  background: rgba(248, 113, 113, 0.15);
+}
+
+[data-theme="medieval-fantasy"] .btn-cancel-submission {
+  border-color: #8b0000;
+  color: #cd5c5c;
+}
+
+[data-theme="medieval-fantasy"] .btn-cancel-submission:hover {
+  background: rgba(139, 0, 0, 0.15);
+}

@@ -36,7 +36,7 @@ internal static class ResponseParser
     {
         var content = ExtractTagContent(response, tag);
         var options = PromptSections.GetJsonOptions(ignoreNull);
-        if (content == null)
+        if (string.IsNullOrEmpty(content))
         {
             return default;
         }
@@ -51,7 +51,7 @@ internal static class ResponseParser
     public static string ExtractText(string response, string tag)
     {
         var content = ExtractTagContent(response, tag);
-        if (content == null)
+        if (string.IsNullOrEmpty(content))
         {
             throw new InvalidOperationException($"Failed to extract text from response: <{tag}> tag not found.");
         }

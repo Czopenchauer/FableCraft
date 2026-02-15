@@ -112,6 +112,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              {PromptSections.PlayerAction(context.PlayerAction)}
 
                              ---
+                             Ensure the output is wrapped in correct XML tags. Remember about the <scene> tag!
                              ## Quick Reference
                              
                              **Emulation:**

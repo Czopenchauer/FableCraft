@@ -109,13 +109,13 @@ internal sealed class CharacterAgent : BaseAgent
 
                 {BuildMainCharacterSection(_generationContext, context)}
 
+                {_generationContext.PreviouslyGeneratedLore}
+
+                {memoriesSection}
+
                 <previous_scenes>
                 {string.Join("\n\n---\n\n", previousScenes)}
                 </previous_scenes>
-
-                {_generationContext.PreviouslyGeneratedLore}
-                
-                {memoriesSection}
 
                 <current_time>
                 {latestScene?.Metadata.Tracker?.Scene?.Time}
@@ -235,6 +235,12 @@ internal sealed class CharacterAgent : BaseAgent
             kernelWithKg,
             CancellationToken.None);
         _logger.Information("Received response for character {CharacterName}: {Response}", characterName, result.FullResponse);
+
+        // Accumulate history for subsequent queries
+        chatHistory.AddUserMessage(situation);
+        chatHistory.AddUserMessage(query);
+        chatHistory.AddAssistantMessage(result.FullResponse);
+
         return result;
     }
 
