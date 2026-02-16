@@ -5,6 +5,7 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
     public static readonly LlmProvider OpenAi = new("openai");
     public static readonly LlmProvider Gemini = new("gemini");
     public static readonly LlmProvider NanoGpt = new("nanogpt");
+    public static readonly LlmProvider Ollama = new("ollama");
 
     public string Value { get; }
 
@@ -20,6 +21,7 @@ public readonly struct LlmProvider : IEquatable<LlmProvider>
             "openai" => OpenAi,
             "gemini" => Gemini,
             "nanogpt" => NanoGpt,
+            "ollama" => Ollama,
             _ => OpenAi
         };
     }

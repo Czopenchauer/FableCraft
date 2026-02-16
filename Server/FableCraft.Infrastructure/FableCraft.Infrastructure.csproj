@@ -27,6 +27,7 @@
         <PackageReference Include="Microsoft.SemanticKernel.Agents.Orchestration"/>
         <PackageReference Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess"/>
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" />
         <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
         <PackageReference Include="Polly"/>
