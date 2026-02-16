@@ -93,8 +93,6 @@ internal sealed class CharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(generationContext.PromptPath)}
-
                              {PromptSections.SceneTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}
@@ -116,7 +114,6 @@ internal sealed class CharacterTrackerAgent(
         var kernelWithKg = kernel.Build();
 
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-        promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.None();
 
         var trackerDelta = await agentKernel.SendRequestAsync(
             chatHistory,

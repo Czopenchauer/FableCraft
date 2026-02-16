@@ -266,6 +266,7 @@ internal class RagClient : IRagBuilder, IRagSearch
                 InputToken = null,
                 OutputToken = null,
                 TotalToken = null,
+                CachedToken = null,
                 Duration = stopwatch.ElapsedMilliseconds
             },
             cancellationToken);

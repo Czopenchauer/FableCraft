@@ -322,3 +322,5 @@ Wrap your output in `<tracker>` tags:
 </tracker>
 
 Remember: You are the source of truth. The `tracker` you output becomes the canonical state. Accuracy, consistency, and completeness are your core responsibilities.
+
+{{world_setting}}

@@ -299,3 +299,5 @@ VALIDATE location hierarchy:
 - PRESERVE canonical naming and spelling
 - MERGE new features with existing (don't overwrite)
 - FLAG truly new locations for graph addition
+
+{{world_setting}}

@@ -143,3 +143,5 @@ Wrap your response in `<character_response>` tags:
 9. **Subtext exists.** You rarely say exactly what you mean.
 
 10. **You can be wrong.** Misunderstand situations. Make assumptions. Jump to conclusions.
+
+{{world_setting}}

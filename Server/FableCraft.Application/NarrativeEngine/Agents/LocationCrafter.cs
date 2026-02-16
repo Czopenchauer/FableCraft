@@ -35,8 +35,6 @@ internal sealed class LocationCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.Context(context)}
 
                              {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}

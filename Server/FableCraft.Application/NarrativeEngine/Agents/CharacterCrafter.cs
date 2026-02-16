@@ -43,8 +43,6 @@ internal sealed class CharacterCrafter : BaseAgent
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
         var promptContext = $"""
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.Context(context)}
 
                              {PromptSections.LastScenes(context.SceneContext, 3)}

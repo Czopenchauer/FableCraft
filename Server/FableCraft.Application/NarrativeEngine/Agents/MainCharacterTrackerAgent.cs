@@ -33,8 +33,6 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.SceneTracker(context, sceneTrackerResult)}
 
                              {PromptSections.NewItems(context.NewItems)}

@@ -506,3 +506,5 @@ Wrap your output in `<item>` tags as valid JSON:
 
 1. Complete reasoning in `<think>` tags
 2. Item JSON in `<item>` tags
+
+{{world_setting}}

@@ -170,3 +170,5 @@ How the guard responds (press attack, retreat, surrender, call for help) is Writ
 - Physical facts only
 - Fast and impartial
 - Stats are stats—don't bend outcomes for narrative convenience
+
+{{world_setting}}

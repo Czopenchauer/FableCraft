@@ -39,15 +39,11 @@ internal sealed class PartialProfileCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = $"""
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.CurrentScene(context)}
 
                              Create a partial profile for this background character based on the following request:

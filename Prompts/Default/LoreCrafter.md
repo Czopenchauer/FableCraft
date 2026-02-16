@@ -478,3 +478,5 @@ Or if conflicted:
 }
 ```
 </lore>
+
+{{world_setting}}

@@ -37,8 +37,6 @@ internal sealed class ResolutionAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.MainCharacterTracker(context.SceneContext)}

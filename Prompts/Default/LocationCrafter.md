@@ -793,3 +793,5 @@ Wrap your output in `<location>` tags as valid JSON:
 
 1. Complete reasoning in `<think>` tags
 2. Location JSON in `<location>` tags
+
+{{world_setting}}

@@ -20,6 +20,8 @@ public sealed class LlmLog : IEntity
 
     public required int? TotalToken { get; set; }
 
+    public int? CachedToken { get; set; }
+
     public required long Duration { get; set; }
 
     public Guid Id { get; set; }

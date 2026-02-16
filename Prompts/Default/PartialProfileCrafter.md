@@ -189,3 +189,5 @@ If the request is minimal:
 
 1. Reasoning in `<think>` tags
 2. Profile in `<partial_profile>` tags
+
+{{world_setting}}

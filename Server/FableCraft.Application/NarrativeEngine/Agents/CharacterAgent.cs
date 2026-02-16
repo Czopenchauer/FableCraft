@@ -62,12 +62,12 @@ internal sealed class CharacterAgent : BaseAgent
                 var systemPrompt = promptTemplate.Replace(PlaceholderNames.CharacterName, context.Name);
                 var chatHistory = new ChatHistory();
                 chatHistory.AddSystemMessage(systemPrompt);
-                chatHistory.AddUserMessage(BuildContextMessage(context));
+                BuildContextMessage(context, chatHistory);
                 return (context, chatHistory);
             });
     }
 
-    private string BuildContextMessage(CharacterContext context)
+    private void BuildContextMessage(CharacterContext context, ChatHistory chatHistory)
     {
         var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
@@ -75,6 +75,7 @@ internal sealed class CharacterAgent : BaseAgent
             .Take(20)
             .OrderBy(x => x.SequenceNumber)
             .Select(s => $"""
+                          ----
                           SCENE NUMBER: {s.SequenceNumber}
                           <scene_tracker>
                           TIME: {s.SceneTracker?.Time}
@@ -84,6 +85,8 @@ internal sealed class CharacterAgent : BaseAgent
                           </scene_tracker>
 
                           {s.Content}
+                          ----
+
                           """);
 
         var latestScene = _generationContext.SceneContext.MaxBy(x => x.SequenceNumber);
@@ -91,39 +94,42 @@ internal sealed class CharacterAgent : BaseAgent
         var memoriesSection = BuildMemoriesSection(context);
 
         var relationshipsSection = BuildRelationshipsSection(context);
+        foreach (string previousScene in previousScenes)
+        {
+            chatHistory.AddUserMessage(previousScene);
+        }
 
-        return $"""
-                <character_description>
-                {context.Description}
-                </character_description>
+        chatHistory.AddUserMessage($"""
+                                    <current_time>
+                                    {latestScene?.Metadata.Tracker?.Scene?.Time}
+                                    </current_time>
+                                    <current_location>
+                                    {latestScene?.Metadata.Tracker?.Scene?.Location}
+                                    </current_location>
+                                    """);
 
-                {relationshipsSection}
+        var contextPrompt = $"""
+                             {BuildMainCharacterSection(_generationContext, context)}
 
-                <character_state>
-                {context.CharacterState.ToJsonString()}
-                </character_state>
+                             {memoriesSection}
 
-                <character_tracker>
-                {context.CharacterTracker.ToJsonString()}
-                </character_tracker>
+                             {_generationContext.PreviouslyGeneratedLore}
 
-                {BuildMainCharacterSection(_generationContext, context)}
+                             <character_description>
+                             {context.Description}
+                             </character_description>
 
-                {_generationContext.PreviouslyGeneratedLore}
+                             {relationshipsSection}
 
-                {memoriesSection}
+                             <character_tracker>
+                             {context.CharacterTracker.ToJsonString()}
+                             </character_tracker>
 
-                <previous_scenes>
-                {string.Join("\n\n---\n\n", previousScenes)}
-                </previous_scenes>
-
-                <current_time>
-                {latestScene?.Metadata.Tracker?.Scene?.Time}
-                </current_time>
-                <current_location>
-                {latestScene?.Metadata.Tracker?.Scene?.Location}
-                </current_location>
-                """;
+                             <character_state>
+                             {context.CharacterState.ToJsonString()}
+                             </character_state>
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
     }
 
     private string BuildMemoriesSection(CharacterContext context)

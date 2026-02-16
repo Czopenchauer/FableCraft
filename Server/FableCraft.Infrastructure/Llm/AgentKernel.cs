@@ -9,6 +9,7 @@ using FableCraft.Infrastructure.Queue;
 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.Google;
 using Microsoft.SemanticKernel.Services;
 
 using Polly;
@@ -206,6 +207,7 @@ internal sealed class AgentKernel : IAgentKernel
                                     InputToken = usage?.InputTokens,
                                     OutputToken = usage?.OutputTokens,
                                     TotalToken = usage?.TotalTokens,
+                                    CachedToken = usage?.CachedTokens,
                                     Duration = stopwatch.ElapsedMilliseconds
                                 },
                                 token);
@@ -326,8 +328,6 @@ internal sealed class AgentKernel : IAgentKernel
         {
             foreach (var item in chunk.Items)
             {
-                itemTypes.Add(item.GetType().Name);
-
                 if (item.GetType().Name.Contains("Reasoning", StringComparison.OrdinalIgnoreCase))
                 {
                     if (item is StreamingTextContent textContent)
@@ -364,9 +364,22 @@ internal sealed class AgentKernel : IAgentKernel
         TokenUsage? usage = null;
         if (lastChunk?.Metadata != null)
         {
+            _logger.Information("Chunk inner content: {ChunkMetadata}", lastChunk.InnerContent.ToJsonString());
+            _logger.Information("Chunk metadata: {ChunkMetadata}", lastChunk.Metadata.ToJsonString());
             if (lastChunk.Metadata.TryGetValue("Usage", out var usageObj) && usageObj != null)
             {
                 usage = ExtractUsageFromObject(usageObj);
+            }
+
+            if (usage?.CachedTokens == null && lastChunk.Metadata.TryGetValue("CachedContentTokenCount", out var cachedObj))
+            {
+                var cachedTokens = cachedObj as int? ?? (cachedObj is long l ? (int?)l : null);
+                if (cachedTokens != null)
+                {
+                    usage = usage != null
+                        ? usage with { CachedTokens = cachedTokens }
+                        : new TokenUsage(null, null, null, cachedTokens);
+                }
             }
         }
 
@@ -379,9 +392,13 @@ internal sealed class AgentKernel : IAgentKernel
         {
             var type = usageObj.GetType();
             var inputTokens = type.GetProperty("InputTokenCount")?.GetValue(usageObj) as int?
-                              ?? type.GetProperty("PromptTokens")?.GetValue(usageObj) as int?;
+                              ?? type.GetProperty("PromptTokens")?.GetValue(usageObj) as int?
+                              ?? type.GetProperty("PromptTokenCount")?.GetValue(usageObj) as int?;
+
             var outputTokens = type.GetProperty("OutputTokenCount")?.GetValue(usageObj) as int?
-                               ?? type.GetProperty("CompletionTokens")?.GetValue(usageObj) as int?;
+                               ?? type.GetProperty("CompletionTokens")?.GetValue(usageObj) as int?
+                               ?? type.GetProperty("CandidatesTokenCount")?.GetValue(usageObj) as int?;
+
             var totalTokens = type.GetProperty("TotalTokenCount")?.GetValue(usageObj) as int?
                               ?? type.GetProperty("TotalTokens")?.GetValue(usageObj) as int?;
 
@@ -391,6 +408,7 @@ internal sealed class AgentKernel : IAgentKernel
             {
                 cachedTokens = inputDetails.GetType().GetProperty("CachedTokenCount")?.GetValue(inputDetails) as int?;
             }
+            cachedTokens ??= type.GetProperty("CachedContentTokenCount")?.GetValue(usageObj) as int?;
 
             return new TokenUsage(inputTokens, outputTokens, totalTokens, cachedTokens);
         }

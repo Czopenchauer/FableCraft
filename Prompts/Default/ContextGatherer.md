@@ -444,3 +444,5 @@ If no previous query results are provided (first scene or system reset):
 - Full budget of 20 available for new queries (minus any extracted lore)
 - Note in `analysis_summary.context_continuity`: `"initial"`
 - **New lore extraction still applies** - if lore was created, extract relevant facts
+
+{{world_setting}}

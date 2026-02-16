@@ -22,6 +22,8 @@ internal sealed class ResponseReceivedEvent : IMessage
 
     public required int? TotalToken { get; init; }
 
+    public required int? CachedToken { get; init; }
+
     public required long Duration { get; init; }
 
     public Guid? SceneId { get; set; }
@@ -44,6 +46,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
             InputToken = message.InputToken,
             OutputToken = message.OutputToken,
             TotalToken = message.TotalToken,
+            CachedToken = message.CachedToken,
             Duration = message.Duration
         };
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);

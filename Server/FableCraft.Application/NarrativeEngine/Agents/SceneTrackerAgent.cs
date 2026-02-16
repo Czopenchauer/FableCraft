@@ -38,8 +38,6 @@ internal sealed class SceneTrackerAgent(
         }
 
         var contextPrompt = $"""
-                             {PromptSections.WorldSettings(context.PromptPath)}
-
                              {PromptSections.MainCharacter(context)}
 
                              {PromptSections.ExistingCharactersMinimal(context.Characters)}

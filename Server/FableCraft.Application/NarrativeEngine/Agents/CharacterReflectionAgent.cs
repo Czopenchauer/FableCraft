@@ -57,16 +57,20 @@ internal sealed class CharacterReflectionAgent(
                             {relationshipsText}
                             </character_relationships>
                             """;
+
+        chatHistory.AddUserMessage($"""
+                                    Always use exact names for characters!
+                                    {PromptSections.ExistingCharacters(generationContext.Characters)}
+                                    
+                                    <character>
+                                    Name: {generationContext.MainCharacter.Name}
+                                    Appearance: {generationContext.LatestTracker()?.MainCharacter?.MainCharacter?.Appearance}
+                                    GeneralBuild: {generationContext.LatestTracker()?.MainCharacter?.MainCharacter?.GeneralBuild}
+                                    {generationContext.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? generationContext.MainCharacter.Description}
+                                    <character>
+                                    """);
+        chatHistory.AddUserMessage(relationship);
         var contextPrompt = $"""
-                             Always use exact names for characters!
-                             {PromptSections.ExistingCharacters(generationContext.Characters)}
-
-                             {relationship}
-
-                             {PromptSections.MainCharacter(generationContext)}
-
-                             {PromptSections.WorldSettings(generationContext.PromptPath)}
-
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(context)}
