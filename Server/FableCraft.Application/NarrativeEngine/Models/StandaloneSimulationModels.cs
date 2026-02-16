@@ -67,6 +67,12 @@ internal sealed class StandaloneSimulationOutput
     [JsonPropertyName("character_events")]
     public List<SimulationCharacterEvent>? CharacterEvents { get; init; }
 
+    /// <summary>
+    ///     Creation requests for locations, items, or lore that should become canonical.
+    /// </summary>
+    [JsonPropertyName("creation_requests")]
+    public CreationRequests? CreationRequests { get; init; }
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 }

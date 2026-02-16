@@ -2,7 +2,6 @@ using System.Diagnostics;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
-using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Serilog;
@@ -21,6 +20,9 @@ internal sealed class SimulationOrchestrator(
     SimulationModeratorAgent cohortModeratorAgent,
     OffscreenInferenceAgent offscreenInferenceAgent,
     CharacterTrackerAgent characterTrackerAgent,
+    LoreCrafter loreCrafter,
+    LocationCrafter locationCrafter,
+    ItemCrafter itemCrafter,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -88,7 +90,7 @@ internal sealed class SimulationOrchestrator(
                     throw new UnreachableException($"Requested simulation for unknown character: {standalone.Character}");
                 }
 
-                if (context.CharacterUpdates.Any(c => c.Name != character.Name))
+                if (context.CharacterUpdates.Any(c => c.Name == character.Name))
                 {
                     logger.Information("Skipping already simulated standalone character: {CharacterName}", character.Name);
                     return default;
@@ -220,7 +222,12 @@ internal sealed class SimulationOrchestrator(
 
                 try
                 {
-                    var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+                    var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+                    var creationTask = ProcessCreationRequests(context, result.CreationRequests, cancellationToken);
+
+                    await Task.WhenAll(trackerTask, creationTask);
+
+                    var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = tracker.IsDead;
 
@@ -346,7 +353,7 @@ internal sealed class SimulationOrchestrator(
                         return null;
                     }
 
-                    if (context.CharacterUpdates.Any(c => c.Name != character.Name))
+                    if (context.CharacterUpdates.Any(c => c.Name == character.Name))
                     {
                         logger.Information("Skipping already simulated cohort character: {CharacterName}", character.Name);
                         return null;
@@ -472,7 +479,12 @@ internal sealed class SimulationOrchestrator(
             }
         }
 
-        var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+        var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+        var creationTask = ProcessCreationRequests(context, result.CreationRequests, cancellationToken);
+
+        await Task.WhenAll(trackerTask, creationTask);
+
+        var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
         characterContext.IsDead = tracker.IsDead;
 
@@ -515,6 +527,65 @@ internal sealed class SimulationOrchestrator(
             context.NewWorldEvents.AddRange(worldEvents);
 
             context.NewCharacterEvents.AddRange(characterEvents);
+        }
+    }
+
+    private async Task ProcessCreationRequests(GenerationContext context, CreationRequests? requests, CancellationToken cancellationToken)
+    {
+        if (requests == null)
+        {
+            return;
+        }
+
+        var tasks = new List<Task>();
+
+        foreach (var loc in requests.Locations.Where(l => !l.Processed))
+        {
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await locationCrafter.Invoke(context, loc, cancellationToken);
+                    lock (context)
+                    {
+                        loc.Processed = true;
+
+                        context.NewLocations = [.. (context.NewLocations ?? []), result];
+                    }
+                },
+                cancellationToken));
+        }
+
+        foreach (var item in requests.Items.Where(i => !i.Processed))
+        {
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await itemCrafter.Invoke(context, item, cancellationToken);
+                    lock (context)
+                    {
+                        item.Processed = true;
+                        context.NewItems = [.. (context.NewItems ?? []), result];
+                    }
+                },
+                cancellationToken));
+        }
+
+        foreach (var lore in requests.Lore.Where(l => !l.Processed))
+        {
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await loreCrafter.Invoke(context, lore, cancellationToken);
+                    lock (context)
+                    {
+                        lore.Processed = true;
+                        context.NewLore.Add(result);
+                    }
+                },
+                cancellationToken));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+            logger.Information("Processed {Count} creation requests from simulation", tasks.Count);
         }
     }
 }

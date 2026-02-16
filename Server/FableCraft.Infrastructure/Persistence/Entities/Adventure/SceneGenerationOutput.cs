@@ -30,18 +30,27 @@ public class CharacterRequest
 
 public class LoreRequest
 {
+    [JsonPropertyName("processed")]
+    public bool Processed { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }
 
 public class ItemRequest
 {
+    [JsonPropertyName("processed")]
+    public bool Processed { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }
 
 public class LocationRequest
 {
+    [JsonPropertyName("processed")]
+    public bool Processed { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }
