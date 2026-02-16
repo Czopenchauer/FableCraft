@@ -79,7 +79,7 @@ internal sealed class AgentKernel : IAgentKernel
     }
 
     public async Task<T> SendRequestAsync<T>(
-        ChatHistory chatHistory,
+        ChatHistory chatHistoryOriginal,
         Func<string, T> outputFunc,
         PromptExecutionSettings promptExecutionSettings,
         string operationName,
@@ -90,6 +90,7 @@ internal sealed class AgentKernel : IAgentKernel
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
                                     ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
         var maxParsingRetries = options?.MaxParsingRetries ?? 4;
+        ChatHistory chatHistory = new(chatHistoryOriginal);
         for (int attempt = 1; attempt <= maxParsingRetries; attempt++)
         {
             try

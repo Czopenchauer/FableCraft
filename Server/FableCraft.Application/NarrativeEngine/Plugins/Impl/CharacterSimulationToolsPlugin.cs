@@ -1,9 +1,7 @@
 using System.ComponentModel;
 using System.Text;
-using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
-using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 
@@ -15,7 +13,7 @@ namespace FableCraft.Application.NarrativeEngine.Plugins.Impl;
 
 /// <summary>
 ///     Plugin providing tools for character agents during cohort simulation.
-///     Includes knowledge graph queries and reflection submission.
+///     Includes knowledge graph queries.
 /// </summary>
 internal class CharacterSimulationToolsPlugin : CharacterPluginBase
 {
@@ -29,12 +27,6 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
         _ragClientFactory = ragClientFactory;
         _logger = logger;
     }
-
-    /// <summary>
-    ///     The submitted reflection output from the character.
-    ///     Set when submit_reflection is called.
-    /// </summary>
-    public StandaloneSimulationOutput? SubmittedReflection { get; private set; }
 
     [KernelFunction("query_knowledge_graph")]
     [Description(
@@ -92,46 +84,5 @@ internal class CharacterSimulationToolsPlugin : CharacterPluginBase
         }
 
         return response.ToString();
-    }
-
-    [KernelFunction("submit_reflection")]
-    [Description(
-        "Submit your complete simulation output. Call this only during the reflection query to provide your scenes, state updates, and other outputs.")]
-    public string SubmitReflection(
-        [Description("Your complete reflection output as JSON (scenes, relationship, identity, tracker, etc.)")]
-        string outputJson)
-    {
-        try
-        {
-            var options = PromptSections.GetJsonOptions(true);
-            var reflection = JsonSerializer.Deserialize<StandaloneSimulationOutput>(outputJson, options);
-
-            if (reflection == null)
-            {
-                _logger.Error("Failed to parse reflection output - deserialize returned null");
-                return "Error: Failed to parse reflection output. Please ensure it's valid JSON.";
-            }
-
-            if (reflection.Scenes.Count == 0)
-            {
-                _logger.Warning("Reflection submitted with no scenes for character {CharacterId}", CharacterId);
-                return "Warning: Reflection submitted but contains no scenes. Please include at least one scene.";
-            }
-
-            SubmittedReflection = reflection;
-
-            _logger.Information(
-                "Reflection submitted for character {CharacterId}: {SceneCount} scenes, {RelCount} relationship updates",
-                CharacterId,
-                reflection.Scenes.Count,
-                reflection.RelationshipUpdates?.Count ?? 0);
-
-            return "Reflection submitted successfully.";
-        }
-        catch (JsonException ex)
-        {
-            _logger.Error(ex, "JSON parse error in reflection submission for character {CharacterId}", CharacterId);
-            return $"Error: Invalid JSON in reflection output. {ex.Message}";
-        }
     }
 }

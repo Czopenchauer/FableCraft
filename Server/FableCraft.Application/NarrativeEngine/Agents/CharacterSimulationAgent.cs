@@ -19,7 +19,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
 ///     Agent for simulating a character during cohort simulation.
-///     Responds to Moderator queries (intention, response, reflection).
+///     Responds to Moderator queries (intention, response).
 ///     Maintains accumulated ChatHistory across multiple queries.
 /// </summary>
 internal sealed class CharacterSimulationAgent(
@@ -78,15 +78,13 @@ internal sealed class CharacterSimulationAgent(
         chatHistory.AddAssistantMessage(response);
 
         logger.Information(
-            "Character {CharacterName} responded to {QueryType} query. Reflection submitted: {ReflectionSubmitted}",
+            "Character {CharacterName} responded to {QueryType} query",
             character.Name,
-            queryType,
-            toolsPlugin.SubmittedReflection != null);
+            queryType);
 
         return new CharacterQueryResponse
         {
-            ProseResponse = response,
-            SubmittedReflection = toolsPlugin.SubmittedReflection
+            ProseResponse = response
         };
     }
 
@@ -230,11 +228,5 @@ internal sealed class CharacterSimulationAgent(
         ///     The character's prose response to the query.
         /// </summary>
         public required string ProseResponse { get; init; }
-
-        /// <summary>
-        ///     The submitted reflection (if character called submit_reflection).
-        ///     Only populated during reflection queries.
-        /// </summary>
-        public StandaloneSimulationOutput? SubmittedReflection { get; init; }
     }
 }

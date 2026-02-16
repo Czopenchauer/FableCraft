@@ -146,6 +146,12 @@ internal sealed class GenerationContext
     /// </summary>
     public Dictionary<Guid, CachedReflectionResult> PendingReflectionCache { get; set; } = new();
 
+    /// <summary>
+    ///     Saved cohort simulation state for resuming reflection collection.
+    ///     Set when moderation completes, cleared when all reflections succeed.
+    /// </summary>
+    public CohortSimulationState? CohortSimulationState { get; set; }
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,

@@ -356,7 +356,6 @@ internal sealed class SimulationOrchestrator(
                         result,
                         character,
                         reflection,
-                        plan,
                         context,
                         cancellationToken);
                 }).Where(x => x is not null).ToArray()!);
@@ -379,7 +378,6 @@ internal sealed class SimulationOrchestrator(
         CohortSimulationResult cohortSimulationResult,
         CharacterContext character,
         StandaloneSimulationOutput result,
-        SimulationPlannerOutput plan,
         GenerationContext context,
         CancellationToken cancellationToken)
     {

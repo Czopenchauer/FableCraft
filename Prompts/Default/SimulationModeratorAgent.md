@@ -41,8 +41,8 @@ Profiled NPCs without active simulation. Characters CAN interact with these—th
 Query a character for their response.
 ```
 query_character(
-  character: string,      // Character name (exact match)
-  query_type: "intention" | "response" | "reflection",
+  character: string,      // Character name (case-insensitive)
+  query_type: "intention" | "response",
   stimulus: string,       // Current situation / context
   query: string           // What you're asking
 )
@@ -52,7 +52,6 @@ query_character(
 |------|------|---------|
 | `intention` | Start of simulation | Their plans for the period |
 | `response` | During solo periods or interactions | Their actions, speech, experience |
-| `reflection` | End of simulation | Confirmation that processing is complete |
 
 ---
 
@@ -133,17 +132,7 @@ query_character(
 
 ### Phase 3: Conclude
 
-After all time segments are processed, query each character for reflection:
-```
-query_character(
-  character: "Kira",
-  query_type: "reflection",
-  stimulus: "The simulation period has concluded.",
-  query: "Process your reflection."
-)
-```
-
-Wait for confirmation from each character before outputting results.
+After all time segments are processed, output your simulation summary. The system will automatically collect reflections from each character—you do not need to query for them.
 
 ---
 
@@ -208,9 +197,6 @@ Afternoon (interaction):
 Evening (solo):
   - Query Kira: What do you do after leaving Tam?
   - Query Tam: What do you do after Kira leaves?
-
-Conclude:
-  - Query both for reflection
 ```
 
 ### Travel
@@ -237,7 +223,6 @@ Morning: Solo queries
 Afternoon: Kira-Tam interaction
 Post-interaction: Query Tam (his state may have changed)
 Evening: Tam-Merchant interaction (informed by afternoon events)
-Conclude: Reflections
 ```
 
 A bad negotiation with Kira might make Tam more aggressive with the Merchant.
@@ -271,7 +256,7 @@ Before each phase, consider:
 
 ## Output
 
-After all characters confirm reflection, output results in `<simulation>` tags:
+After all time segments are processed, output your simulation summary in `<simulation>` tags:
 
 <simulation>
 ```json
@@ -314,12 +299,10 @@ After all characters confirm reflection, output results in `<simulation>` tags:
 - Query characters using tools—never speak for them
 - Strip internal state when passing information between characters
 - Maintain knowledge asymmetries throughout
-- Wait for all reflection confirmations before output
 - Cover the full time period before concluding
 
 ### MUST NOT
 - Assume character responses
 - Pass Character A's internal state to Character B
 - Resolve interactions with characters outside the cohort
-- Output before all characters confirm reflection
 - Skip solo periods—they're content too

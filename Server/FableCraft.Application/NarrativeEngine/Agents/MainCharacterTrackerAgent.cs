@@ -2,6 +2,9 @@ using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -15,6 +18,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class MainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IPluginFactory pluginFactory,
     KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.MainCharacterTrackerAgent;
@@ -76,8 +80,11 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<MainCharacterTracker>>("tracker");
-        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
         var kernel = kernelBuilder.Create();
+        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
         var tracker = await agentKernel.SendRequestAsync(

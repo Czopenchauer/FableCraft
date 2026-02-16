@@ -82,19 +82,15 @@ internal sealed class CharacterSimulationSession
 
     /// <summary>
     ///     Accumulated chat history for this character during simulation.
+    ///     Contains system prompt and all prior queries/responses.
     /// </summary>
     public ChatHistory ChatHistory { get; } = new();
 
     /// <summary>
-    ///     The character's submitted reflection output (same structure as standalone).
-    ///     Set when character calls submit_reflection tool.
+    ///     Whether the reflection prompt has been added to ChatHistory.
+    ///     Used to avoid duplicate prompts on retry.
     /// </summary>
-    public StandaloneSimulationOutput? SubmittedReflection { get; set; }
-
-    /// <summary>
-    ///     Whether the character has submitted their reflection.
-    /// </summary>
-    public bool ReflectionSubmitted => SubmittedReflection != null;
+    public bool ReflectionPromptAdded { get; set; }
 }
 
 /// <summary>
@@ -130,4 +126,36 @@ internal sealed class CohortSimulationResult
     ///     Each value is a StandaloneSimulationOutput (same structure as standalone simulation).
     /// </summary>
     public required Dictionary<string, StandaloneSimulationOutput> CharacterReflections { get; init; }
+}
+
+/// <summary>
+///     Saved state from a cohort simulation that can be used to resume reflection collection.
+///     Stored in GenerationContext.CohortSimulationState.
+/// </summary>
+internal sealed class CohortSimulationState
+{
+    /// <summary>
+    ///     The moderator's simulation output.
+    /// </summary>
+    public required CohortSimulationOutput ModeratorResult { get; init; }
+
+    /// <summary>
+    ///     Reference to the generation context (for accessing Characters list during resume).
+    /// </summary>
+    public required GenerationContext Context { get; init; }
+
+    /// <summary>
+    ///     Character sessions with accumulated ChatHistory, indexed by character name (case-insensitive).
+    /// </summary>
+    public required Dictionary<string, CharacterSimulationSession> Sessions { get; init; }
+
+    /// <summary>
+    ///     Characters that still need reflections collected.
+    /// </summary>
+    public required List<CharacterContext> PendingCharacters { get; init; }
+
+    /// <summary>
+    ///     Successfully collected reflections so far (case-insensitive keys).
+    /// </summary>
+    public Dictionary<string, StandaloneSimulationOutput> CollectedReflections { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }

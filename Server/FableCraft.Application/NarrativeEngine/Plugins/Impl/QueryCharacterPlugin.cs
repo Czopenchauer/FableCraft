@@ -21,9 +21,10 @@ internal sealed class QueryCharacterPlugin : PluginBase
     private readonly ILogger _logger;
 
     /// <summary>
-    ///     Sessions indexed by character name.
+    ///     Sessions indexed by character name (case-insensitive).
     /// </summary>
-    private readonly Dictionary<string, CharacterSimulationSession> _sessions = new();
+    private readonly Dictionary<string, CharacterSimulationSession> _sessions =
+        new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     ///     Cohort simulation input context.
@@ -37,9 +38,12 @@ internal sealed class QueryCharacterPlugin : PluginBase
     }
 
     /// <summary>
-    ///     Check if all characters have submitted their reflections.
+    ///     Get all sessions for state persistence.
     /// </summary>
-    public bool AllReflectionsSubmitted => _sessions.Values.All(s => s.ReflectionSubmitted);
+    public Dictionary<string, CharacterSimulationSession> GetAllSessions()
+    {
+        return new Dictionary<string, CharacterSimulationSession>(_sessions, StringComparer.OrdinalIgnoreCase);
+    }
 
     public Task SetupAsync(GenerationContext context, CallerContext callerContext, CohortSimulationInput cohortInput)
     {
@@ -70,12 +74,11 @@ internal sealed class QueryCharacterPlugin : PluginBase
     [KernelFunction("query_character")]
     [Description(
         "Query a character for their response to a situation. Returns the character's prose response. "
-        + "Use query_type 'intention' to ask what they plan to do, 'response' for reactions to situations, "
-        + "'reflection' for final simulation output.")]
+        + "Use query_type 'intention' to ask what they plan to do, 'response' for reactions to situations.")]
     public async Task<string> QueryCharacterAsync(
         [Description("Character name (exact match from cohort members)")]
         string character,
-        [Description("Query type: 'intention', 'response', or 'reflection'")]
+        [Description("Query type: 'intention' or 'response'")]
         string queryType,
         [Description("What's happening that they're responding to")]
         string stimulus,
@@ -92,9 +95,9 @@ internal sealed class QueryCharacterPlugin : PluginBase
             return $"Error: Character '{character}' not found in cohort. Available characters: {availableCharacters}";
         }
 
-        if (!Enum.TryParse(queryType, true, out CharacterQueryType parsedType))
+        if (!Enum.TryParse(queryType, true, out CharacterQueryType parsedType) || parsedType == CharacterQueryType.Reflection)
         {
-            return $"Error: Invalid query_type '{queryType}'. Must be 'intention', 'response', or 'reflection'.";
+            return $"Error: Invalid query_type '{queryType}'. Must be 'intention' or 'response'.";
         }
 
         var characterContext = Context!.Characters.FirstOrDefault(c => c.Name == character);
@@ -107,7 +110,7 @@ internal sealed class QueryCharacterPlugin : PluginBase
             "Querying character {Character} with {QueryType}: {Query}",
             character,
             parsedType,
-            query.Length > 100 ? query[..100] + "..." : query);
+            query);
 
         try
         {
@@ -121,15 +124,6 @@ internal sealed class QueryCharacterPlugin : PluginBase
                 _cohortInput,
                 cancellationToken);
 
-            if (parsedType == CharacterQueryType.Reflection && response.SubmittedReflection != null)
-            {
-                session.SubmittedReflection = response.SubmittedReflection;
-                _logger.Information(
-                    "Character {Character} submitted reflection with {SceneCount} scenes",
-                    character,
-                    response.SubmittedReflection.Scenes.Count);
-            }
-
             return response.ProseResponse;
         }
         catch (Exception ex)
@@ -137,27 +131,5 @@ internal sealed class QueryCharacterPlugin : PluginBase
             _logger.Error(ex, "Error querying character {Character}", character);
             return $"Error: Failed to query character '{character}': {ex.Message}";
         }
-    }
-
-    /// <summary>
-    ///     Get all completed reflections (characters who submitted their reflection).
-    /// </summary>
-    public Dictionary<string, StandaloneSimulationOutput> GetCompletedReflections()
-    {
-        return _sessions
-            .Where(s => s.Value.ReflectionSubmitted)
-            .ToDictionary(
-                s => s.Key,
-                s => s.Value.SubmittedReflection!);
-    }
-
-    /// <summary>
-    ///     Get list of characters who haven't submitted reflections yet.
-    /// </summary>
-    public IEnumerable<string> GetPendingReflectionCharacters()
-    {
-        return _sessions
-            .Where(s => !s.Value.ReflectionSubmitted)
-            .Select(s => s.Key);
     }
 }

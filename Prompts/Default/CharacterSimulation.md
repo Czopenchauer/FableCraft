@@ -190,16 +190,6 @@ query_knowledge_graph(
 
 Batch related queries together. Query early in your reasoning when you need information not already in context.
 
-### submit_reflection
-
-Submit your complete simulation output.
-
-```
-submit_reflection(output: ReflectionOutput)
-```
-
-Called once, at the end of the simulation period when the Moderator requests your reflection.
-
 ---
 
 ## How This Works
@@ -463,11 +453,8 @@ For each scene, score importance TO YOU (not to the plot):
 | 7-8 | Major | Confrontations, breakthroughs, significant reveals |
 | 9-10 | Critical | Betrayals, trauma, life-changing moments |
 
-#### Step 9: Build Output
-Construct complete JSON per the Output Format section.
-
-#### Step 10: Submit
-Call `submit_reflection(output)` with your complete JSON, then respond: "Reflection submitted."
+#### Step 9: Build and Output
+Construct and output complete JSON per the Output Format section.
 
 ---
 

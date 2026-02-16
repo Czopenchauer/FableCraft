@@ -19,7 +19,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
 ///     Orchestrates cohort simulation by querying characters via tools.
-///     Manages time, facilitates interactions, and ensures all characters produce reflection output.
+///     Manages time, facilitates interactions, then directly queries each character for their reflection.
 /// </summary>
 internal sealed class SimulationModeratorAgent(
     IAgentKernel agentKernel,
@@ -32,6 +32,7 @@ internal sealed class SimulationModeratorAgent(
 
     /// <summary>
     ///     Run cohort simulation and return results.
+    ///     Idempotent: if called again after a reflection failure, resumes from saved state.
     /// </summary>
     public async Task<CohortSimulationResult> Invoke(
         GenerationContext context,
@@ -39,6 +40,16 @@ internal sealed class SimulationModeratorAgent(
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
+
+        if (context.CohortSimulationState != null)
+        {
+            logger.Information(
+                "Resuming cohort simulation from saved state. {Collected} reflections collected, {Pending} pending.",
+                context.CohortSimulationState.CollectedReflections.Count,
+                context.CohortSimulationState.PendingCharacters.Count);
+
+            return await CollectReflectionsAsync(context, kernelBuilder, cancellationToken);
+        }
 
         var systemPrompt = await GetPromptAsync(context);
 
@@ -72,36 +83,112 @@ internal sealed class SimulationModeratorAgent(
             builtKernel,
             cancellationToken);
 
-        var reflections = queryPlugin.GetCompletedReflections();
-
-        var pendingCharacters = queryPlugin.GetPendingReflectionCharacters();
-        if (pendingCharacters.Any())
+        context.CohortSimulationState = new CohortSimulationState
         {
-            logger.Warning(
-                "Characters did not submit reflections: {Characters}",
-                string.Join(", ", pendingCharacters));
+            ModeratorResult = response,
+            Context = context,
+            Sessions = queryPlugin.GetAllSessions(),
+            PendingCharacters = input.CohortMembers.ToList()
+        };
 
-            chatHistory.AddUserMessage($"The following characters did not submit reflections: {string.Join(", ", pendingCharacters)}");
-            response = await agentKernel.SendRequestAsync(
-                chatHistory,
-                output,
-                promptExecutionSettings,
-                nameof(SimulationModeratorAgent),
-                builtKernel,
-                cancellationToken);
+        return await CollectReflectionsAsync(context, kernelBuilder, cancellationToken);
+    }
 
-            if (queryPlugin.GetPendingReflectionCharacters().Any())
+    /// <summary>
+    ///     Collect reflections from all pending characters in parallel.
+    ///     Saves successful reflections to state before throwing on failure.
+    /// </summary>
+    private async Task<CohortSimulationResult> CollectReflectionsAsync(
+        GenerationContext context,
+        Infrastructure.Llm.IKernelBuilder kernelBuilder,
+        CancellationToken cancellationToken)
+    {
+        var state = context.CohortSimulationState!;
+        if (state.PendingCharacters.Count == 0)
+        {
+            logger.Information("All reflections already collected from previous run.");
+            context.CohortSimulationState = null;
+            return new CohortSimulationResult
             {
-                throw new InvalidOperationException(
-                    $"Characters still missing reflections after retry: {string.Join(", ", queryPlugin.GetPendingReflectionCharacters())}");
-            }
+                CharacterReflections = new Dictionary<string, StandaloneSimulationOutput>(
+                    state.CollectedReflections,
+                    StringComparer.OrdinalIgnoreCase),
+                Result = state.ModeratorResult
+            };
         }
+
+        logger.Information(
+            "Collecting reflections from {Count} characters in parallel.",
+            state.PendingCharacters.Count);
+
+        var reflectionTasks = state.PendingCharacters
+            .Select(async member =>
+            {
+                if (!state.Sessions.TryGetValue(member.Name, out var session))
+                {
+                    throw new InvalidOperationException(
+                        $"No session found for character '{member.Name}' - character was not queried during simulation");
+                }
+
+                var result = await QueryCharacterReflectionAsync(member, session, kernelBuilder, cancellationToken);
+                state.CollectedReflections[member.Name] = result;
+                logger.Information(
+                    "Character {Name} reflection collected: {SceneCount} scenes",
+                    member.Name,
+                    result.Scenes.Count);
+                state.PendingCharacters.Remove(member);
+            })
+            .ToList();
+
+        await Task.WhenAll(reflectionTasks);
+
+        var reflections = new Dictionary<string, StandaloneSimulationOutput>(
+            state.CollectedReflections,
+            StringComparer.OrdinalIgnoreCase);
 
         return new CohortSimulationResult
         {
             CharacterReflections = reflections,
-            Result = response
+            Result = state.ModeratorResult
         };
+    }
+
+    /// <summary>
+    ///     Query a character directly for their reflection using their accumulated ChatHistory.
+    /// </summary>
+    private async Task<StandaloneSimulationOutput> QueryCharacterReflectionAsync(
+        CharacterContext character,
+        CharacterSimulationSession session,
+        Infrastructure.Llm.IKernelBuilder kernelBuilder,
+        CancellationToken cancellationToken)
+    {
+        var chatHistory = session.ChatHistory;
+
+        if (!session.ReflectionPromptAdded)
+        {
+            chatHistory.AddUserMessage("""
+                                       The simulation period has concluded.
+
+                                       Process your reflection following the Output Format in your instructions.
+                                       Provide your complete simulation output as JSON.
+                                       """);
+            session.ReflectionPromptAdded = true;
+        }
+
+        var kernel = kernelBuilder.Create().Build();
+        var settings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+
+        var parser = ResponseParser.CreateJsonParser<StandaloneSimulationOutput>("reflection", true);
+
+        var reflection = await agentKernel.SendRequestAsync(
+            chatHistory,
+            parser,
+            settings,
+            $"{nameof(CharacterSimulationAgent)}_Reflection_{character.Name}",
+            kernel,
+            cancellationToken);
+
+        return reflection;
     }
 
     private static string BuildContextMessage(CohortSimulationInput input)
@@ -115,9 +202,8 @@ internal sealed class SimulationModeratorAgent(
         {
             sb.AppendLine($"### {member.Name}");
             sb.AppendLine($"- Location: {member.CharacterTracker?.Location ?? "Unknown"}");
-            sb.AppendLine($"- Primary Goal: {ExtractPrimaryGoal(member)}");
+            sb.AppendLine($"- Description: {member.Description}");
 
-            // Extract relationships within cohort
             var cohortRelationships = member.Relationships
                 .Where(r => cohortNames.Contains(r.TargetCharacterName))
                 .ToList();
@@ -183,6 +269,4 @@ internal sealed class SimulationModeratorAgent(
                 Begin.
                 """;
     }
-
-    private static string ExtractPrimaryGoal(CharacterContext character) => character.CharacterState.Motivations.ToJsonString();
 }
