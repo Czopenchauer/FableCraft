@@ -72,7 +72,7 @@ internal sealed class CharacterAgent : BaseAgent
         var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
             .Skip(1)
-            .Take(20)
+            .Take(30)
             .OrderBy(x => x.SequenceNumber)
             .Select(s => $"""
                           ----
@@ -132,19 +132,21 @@ internal sealed class CharacterAgent : BaseAgent
         chatHistory.AddUserMessage(contextPrompt);
     }
 
-    private string BuildMemoriesSection(CharacterContext context)
+    private async Task<string> BuildMemoriesSection(CharacterContext context)
     {
-        if (context.CharacterMemories.Count == 0)
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        var memories = await dbContext.CharacterMemories.Where(x => x.CharacterId == context.CharacterId).ToArrayAsync();
+        if (memories.Length == 0)
         {
             return string.Empty;
         }
 
         var memoriesText = string.Join("\n",
-            context.CharacterMemories.Select(m => $"- [Time: {m.SceneTracker.Time}, Location: {m.SceneTracker.Location}] {m.MemoryContent} [{m.Data.ToJsonString()}]"));
+            memories.OrderBy(x => x.SceneTracker.Time).Select(m => $"- [Time: {m.SceneTracker.Time}, Location: {m.SceneTracker.Location}] {m.Summary} [{m.Data.ToJsonString()}]"));
 
         return $"""
                 <character_memories>
-                These are the {context.Name}'s memories from past scenes (ordered by recency):
+                These are the {context.Name}'s memories from past scenes:
                 {memoriesText}
                 </character_memories>
                 """;
