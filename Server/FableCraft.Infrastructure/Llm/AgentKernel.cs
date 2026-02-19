@@ -61,10 +61,8 @@ internal sealed class AgentKernel : IAgentKernel
             .AddRetry(new RetryStrategyOptions
             {
                 ShouldHandle = new PredicateBuilder()
-                    .Handle<HttpOperationException>(e => e.StatusCode == HttpStatusCode.TooManyRequests)
-                    .Handle<HttpOperationException>(e => e.StatusCode == HttpStatusCode.InternalServerError)
-                    .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.InternalServerError)
-                    .Handle<HttpRequestException>(e => e.StatusCode == HttpStatusCode.TooManyRequests),
+                    .Handle<HttpOperationException>(e => e.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable)
+                    .Handle<HttpRequestException>(e => e.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable),
                 MaxRetryAttempts = 4,
                 Delay = TimeSpan.FromSeconds(5),
                 OnRetry = args =>

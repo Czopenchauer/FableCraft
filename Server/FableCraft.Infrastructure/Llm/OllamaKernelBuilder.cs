@@ -1,7 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
-
 using FableCraft.Infrastructure.Persistence.Entities;
-using FableCraft.ServiceDefaults;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,28 +20,24 @@ internal sealed class OllamaKernelBuilder : IKernelBuilder
         _preset = preset;
     }
 
-    [Experimental("SKEXP0070")]
     public Microsoft.SemanticKernel.IKernelBuilder Create()
     {
+        var innerHandler = new HttpClientHandler();
+        var nanoGptHandler = new NanoGptRequestTransformer(_logger) { InnerHandler = innerHandler };
+        var loggingHandler = new HttpLoggingHandler(_logger) { InnerHandler = nanoGptHandler };
+
+        var httpClient = new HttpClient(loggingHandler)
+        {
+            BaseAddress = new Uri(_preset.BaseUrl ?? "http://host.docker.internal:11434"),
+            Timeout = TimeSpan.FromMinutes(10),
+        };
+
         var builder = Kernel
             .CreateBuilder()
-            .AddOllamaChatCompletion(_preset.Model, new Uri(_preset.BaseUrl ?? "http://host.docker.internal:11434"));
+            .AddOllamaChatCompletion(_preset.Model, httpClient: httpClient);
 
         builder.Services.AddSingleton(_loggerFactory);
         builder.Services.AddSingleton(_logger);
-        builder.Services.AddTransient<HttpLoggingHandler>();
-
-        builder.Services.ConfigureHttpClientDefaults(hp =>
-        {
-            hp.ConfigureHttpClient((_, c) =>
-                {
-                    c.Timeout = TimeSpan.FromMinutes(10);
-                })
-                .AddHttpMessageHandler<HttpLoggingHandler>()
-                .AddHttpMessageHandler<NanoGptRequestTransformer>()
-                .RemoveAllResilienceHandlers()
-                .AddDefaultLlmResiliencePolicies();
-        });
 
         return builder;
     }

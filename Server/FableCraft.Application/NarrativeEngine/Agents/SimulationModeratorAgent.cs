@@ -124,7 +124,7 @@ internal sealed class SimulationModeratorAgent(
         var reflectionTasks = state.PendingCharacters
             .Select(async member =>
             {
-                if (!state.Sessions.TryGetValue(member.Name, out var session))
+                if (!state.Sessions.TryGetValue(member.Name, out var session) || session.ChatHistory.Count == 0)
                 {
                     throw new InvalidOperationException(
                         $"No session found for character '{member.Name}' - character was not queried during simulation");

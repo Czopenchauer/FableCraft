@@ -73,7 +73,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                                    Time: {x.Metadata.Tracker!.Scene!.Time}
                                    Location: {x.Metadata.Tracker.Scene.Location}
                                    Weather: {x.Metadata.Tracker.Scene.Weather}
-                                   Characters: {x.Metadata.Tracker.Scene.CharactersPresent}
+                                   Characters: {string.Join(", ", x.Metadata.Tracker.Scene.CharactersPresent)}
                                    {x.SceneContent}
                                    """))
         {
