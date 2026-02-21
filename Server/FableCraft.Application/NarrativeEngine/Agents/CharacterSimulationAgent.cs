@@ -56,7 +56,7 @@ internal sealed class CharacterSimulationAgent(
         chatHistory.AddUserMessage(userMessage);
 
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
+        var callerContext = new CallerContext($"{nameof(CharacterSimulationAgent)}:{character.Name}", context.AdventureId, context.NewSceneId);
 
         var toolsPlugin = await pluginFactory.CreateCharacterPluginAsync<CharacterSimulationToolsPlugin>(
             context,
@@ -71,7 +71,7 @@ internal sealed class CharacterSimulationAgent(
             chatHistory,
             raw => raw,
             promptExecutionSettings,
-            $"{nameof(CharacterSimulationAgent)}_{character.Name}",
+            $"{nameof(CharacterSimulationAgent)}:{character.Name}",
             builtKernel,
             cancellationToken);
 
