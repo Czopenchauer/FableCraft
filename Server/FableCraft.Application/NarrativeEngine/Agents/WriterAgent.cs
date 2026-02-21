@@ -60,7 +60,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              {PromptSections.PreviousCharacterObservations(context.SceneContext)}
                              """;
         chatHistory.AddUserMessage($"""
-                                    {PromptSections.CharacterForEmulation(context.Characters, context)}
+                                    {PromptSections.CharacterForEmulation(context)}
 
                                     {PromptSections.BackgroundCharacterProfiles(context.BackgroundCharacters)}
                                     """);
@@ -116,7 +116,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              ## Quick Reference
                              
                              **Emulation:**
-                             - Call for EVERY full-profile character, EVERY beat
+                             - Call for EVERY full-profile character ON THE SCENE, EVERY beat
                              - Multiple calls per scene is normal and expected
                              - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
                              - Speech is verbatim. Actions rendered through MC's perception.

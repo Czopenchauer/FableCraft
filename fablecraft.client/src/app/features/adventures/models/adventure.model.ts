@@ -259,6 +259,7 @@ export interface SceneEnrichmentResult {
   sceneId: string;
   tracker: TrackerDto;
   newLore: LoreInfo[];
+  metadata: SceneMetadataDto | null;
 }
 
 export interface LoreInfo {

@@ -102,6 +102,8 @@ public class SceneEnrichmentOutput
 
     public required List<LoreDto> NewLore { get; init; }
 
+    public SceneMetadataDto? Metadata { get; init; }
+
     public static SceneEnrichmentOutput CreateFromScene(Scene scene)
     {
         return new SceneEnrichmentOutput
@@ -128,7 +130,15 @@ public class SceneEnrichmentOutput
             {
                 Title = x.Category,
                 Summary = x.Description
-            }).ToList()
+            }).ToList(),
+            Metadata = new SceneMetadataDto
+            {
+                ResolutionOutput = scene.Metadata.ResolutionOutput,
+                GatheredContext = scene.Metadata.GatheredContext,
+                WriterObservation = scene.Metadata.WriterObservation,
+                ChroniclerState = scene.Metadata.ChroniclerState,
+                WriterGuidance = scene.Metadata.WriterGuidance
+            }
         };
     }
 }

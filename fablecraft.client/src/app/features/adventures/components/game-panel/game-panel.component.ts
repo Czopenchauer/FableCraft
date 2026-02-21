@@ -226,9 +226,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           console.log('Regenerated enrichment received:', enrichment);
           this.enrichmentData = enrichment;
 
-          // Update the current scene's tracker with regenerated data
+          // Update the current scene's tracker and metadata with regenerated data
           if (this.currentScene) {
             this.currentScene.tracker = enrichment.tracker;
+            this.currentScene.metadata = enrichment.metadata;
           }
 
           this.previousTrackerData = null; // Clear the backup
@@ -1002,9 +1003,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           console.log('Scene enrichment received:', enrichment);
           this.enrichmentData = enrichment;
 
-          // Update the current scene's tracker with enriched data
+          // Update the current scene's tracker and metadata with enriched data
           if (this.currentScene) {
             this.currentScene.tracker = enrichment.tracker;
+            this.currentScene.metadata = enrichment.metadata;
           }
 
           // Update diff availability now that current scene has tracker

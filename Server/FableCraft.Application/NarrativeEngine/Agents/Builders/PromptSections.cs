@@ -208,8 +208,19 @@ internal static class PromptSections
                 """;
     }
 
-    public static string CharacterForEmulation(IEnumerable<CharacterContext> characters, GenerationContext context)
+    public static string CharacterForEmulation(GenerationContext context)
     {
+        var pendingInteractions = context.Characters
+            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
+            .Select(c => c.Name)
+            .ToList();
+        var charactersOnScene = context.LatestTracker()?.Scene!.CharactersPresent;
+        pendingInteractions.AddRange(charactersOnScene ?? Enumerable.Empty<string>());
+        var characters = context.Characters.Where(x => pendingInteractions.Contains(x.Name)).ToList();
+        if (characters.Count == 0)
+        {
+            return string.Empty;
+        }
         var names = string.Join("\n- ",
             characters.Select(c => c.Name));
 
@@ -228,7 +239,7 @@ internal static class PromptSections
         return $"""
                 ## Profiled Characters for Emulation
 
-                The following characters have full profiles. You MUST call `emulate_character_action()` before writing ANY speech, action, or reaction from these characters.
+                The following characters have full profiles. You MUST call `emulate_character_action()` before writing ANY speech, action, or reaction from these characters. USE ONLY FOR CHARACTERS ON SCENE OR RESOLVING INTERACTIONS.
 
                 **EMULATION LIST (call function for these):**{names}
 
