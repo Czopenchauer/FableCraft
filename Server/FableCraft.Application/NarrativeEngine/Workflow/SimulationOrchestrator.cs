@@ -184,12 +184,12 @@ internal sealed class SimulationOrchestrator(
                                 })
                                 .ToList(),
                             Relationships = characterRelationships,
-                            SceneRewrites = result.Scenes.Select(x => new CharacterSceneContext
+                            SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                                 {
                                     Content = x.Narrative,
-                                    SequenceNumber = character.SceneRewrites.Count > 0
-                                        ? character.SceneRewrites.Max(s => s.SequenceNumber) + 1
-                                        : 1,
+                                    SequenceNumber = (character.SceneRewrites.Count > 0
+                                        ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                                        : 0) + idx + 1,
                                     SceneTracker = x.SceneTracker
                                 })
                                 .ToList(),
@@ -452,9 +452,9 @@ internal sealed class SimulationOrchestrator(
                 SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                     {
                         Content = x.Narrative,
-                        SequenceNumber = character.SceneRewrites.Count > 0
-                            ? character.SceneRewrites.Max(s => s.SequenceNumber) + idx + 1
-                            : 1,
+                        SequenceNumber = (character.SceneRewrites.Count > 0
+                            ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                            : 0) + idx + 1,
                         SceneTracker = x.SceneTracker
                     })
                     .ToList(),

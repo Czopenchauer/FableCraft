@@ -138,8 +138,13 @@ internal sealed class OffscreenInferenceAgent(
 
                         if (result.Scenes is { Count: > 0 })
                         {
-                            foreach (var scene in result.Scenes)
+                            var baseSequenceNumber = character.SceneRewrites.Count > 0
+                                ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                                : 0;
+
+                            for (var idx = 0; idx < result.Scenes.Count; idx++)
                             {
+                                var scene = result.Scenes[idx];
                                 var sceneTracker = new SceneTracker
                                 {
                                     Time = scene.SceneTracker.DateTime,
@@ -159,7 +164,7 @@ internal sealed class OffscreenInferenceAgent(
                                 sceneRewrites.Add(new CharacterSceneContext
                                 {
                                     Content = scene.Narrative,
-                                    SequenceNumber = 0,
+                                    SequenceNumber = baseSequenceNumber + idx + 1,
                                     SceneTracker = sceneTracker
                                 });
                             }
