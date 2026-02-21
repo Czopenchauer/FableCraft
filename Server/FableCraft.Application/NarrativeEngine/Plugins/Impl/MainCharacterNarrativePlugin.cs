@@ -46,6 +46,7 @@ internal class MainCharacterNarrativePlugin : PluginBase
             RagClientExtensions.GetMainCharacterDatasetName()
         };
 
+        time ??= Context?.LatestTracker()?.Scene?.Time;
         var queryCombined = query.Select(x =>
         {
             if (!string.IsNullOrEmpty(time))

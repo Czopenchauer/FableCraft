@@ -48,6 +48,7 @@ internal class CharacterNarrativePlugin : CharacterPluginBase
             RagClientExtensions.GetCharacterDatasetName(CharacterId)
         };
 
+        time ??= Context?.Characters.Single(x => x.CharacterId == CharacterId).SceneRewrites.OrderByDescending(x => x.SequenceNumber).Take(1).SingleOrDefault()?.SceneTracker?.Time;
         var queryCombined = query.Select(x =>
         {
             if (!string.IsNullOrEmpty(time))
