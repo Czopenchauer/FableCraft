@@ -46,7 +46,7 @@ internal sealed class StandaloneSimulationAgent(
         chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
+        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
 
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
 

@@ -254,7 +254,7 @@ internal class RagClient : IRagBuilder, IRagSearch
         var results = await Task.WhenAll(request);
         await _messageDispatcher.PublishAsync(new ResponseReceivedEvent
             {
-                CallerName = $"{nameof(IRagSearch)}:{context.CallerType.Name}",
+                CallerName = $"{nameof(IRagSearch)}:{context.CallerName}",
                 AdventureId = context.AdventureId,
                 SceneId = context.SceneId,
                 RequestContent = queries.ToJsonString(),

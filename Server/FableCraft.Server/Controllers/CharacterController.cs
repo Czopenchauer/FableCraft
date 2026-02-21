@@ -69,7 +69,7 @@ public class CharacterController(IRagClientFactory ragClientFactory, MainCharact
             : RagClientExtensions.GetCharacterDatasetName(request.CharacterId!.Value);
 
         string[] datasets = [RagClientExtensions.GetWorldDatasetName(), datasetName];
-        var context = new CallerContext(typeof(CharacterController), adventureId, null);
+        var context = new CallerContext(nameof(CharacterController), adventureId, null);
         var ragSearch = await ragClientFactory.CreateSearchClientForAdventure(adventureId, cancellationToken);
         var results = await ragSearch.SearchAsync(
             context,
@@ -124,7 +124,7 @@ public class CharacterController(IRagClientFactory ragClientFactory, MainCharact
             return BadRequest(new { error = "Invalid dataset type. Use 'world' or 'main_character'" });
         }
 
-        var context = new CallerContext(typeof(CharacterController), adventureId, null);
+        var context = new CallerContext(nameof(CharacterController), adventureId, null);
         var ragSearch = await ragClientFactory.CreateSearchClientForAdventure(adventureId, cancellationToken);
         var results = await ragSearch.SearchAsync(
             context,

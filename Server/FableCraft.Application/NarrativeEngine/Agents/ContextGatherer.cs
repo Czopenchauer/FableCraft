@@ -83,7 +83,7 @@ internal sealed class ContextGatherer(
             kernel,
             cancellationToken);
 
-        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
+        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
         try
         {
             var ragSearchClient = await ragClientFactory.CreateSearchClientForAdventure(context.AdventureId, cancellationToken);

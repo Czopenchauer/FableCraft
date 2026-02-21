@@ -53,7 +53,7 @@ internal sealed class ChroniclerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), context.AdventureId, context.NewSceneId);
+        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();

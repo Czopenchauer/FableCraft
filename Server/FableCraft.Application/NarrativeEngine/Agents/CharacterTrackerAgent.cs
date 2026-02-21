@@ -108,7 +108,7 @@ internal sealed class CharacterTrackerAgent(
         var outputParser = CreateOutputParser();
 
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType(), generationContext.AdventureId, generationContext.NewSceneId);
+        var callerContext = new CallerContext(GetType().Name, generationContext.AdventureId, generationContext.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, generationContext, callerContext, context.CharacterId);
         var kernelWithKg = kernel.Build();

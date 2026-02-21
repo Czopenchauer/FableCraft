@@ -44,7 +44,7 @@ internal class WorldKnowledgePlugin : PluginBase
         {
             _logger.Warning("Maximum number of world knowledge queries reached for AdventureId: {AdventureId} and caller {caller}",
                 CallerContext?.AdventureId,
-                CallerContext?.CallerType);
+                CallerContext?.CallerName);
             return $"Maximum number of world knowledge queries ({MaxQueries}) reached. You cannot perform more searches!";
         }
 

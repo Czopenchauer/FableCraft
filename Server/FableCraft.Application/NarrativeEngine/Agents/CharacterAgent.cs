@@ -222,7 +222,7 @@ internal sealed class CharacterAgent : BaseAgent
         var (characterContext, chatHistory) = ctx;
         var kernel = _kernelBuilder.Create();
 
-        var callerContext = new CallerContext(GetType(), _generationContext.AdventureId, _generationContext.NewSceneId);
+        var callerContext = new CallerContext($"{nameof(CharacterAgent)}:{characterName}", _generationContext.AdventureId, _generationContext.NewSceneId);
         await _pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
         await _pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
 
