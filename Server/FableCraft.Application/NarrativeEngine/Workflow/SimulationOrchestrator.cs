@@ -27,6 +27,12 @@ internal sealed class SimulationOrchestrator(
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
     {
+        if (context.SkipSimulation)
+        {
+            logger.Information("SimulationOrchestrator: Skipping simulation (not selected for regeneration)");
+            return;
+        }
+
         var sceneTracker = context.NewTracker?.Scene;
         if (sceneTracker == null)
         {

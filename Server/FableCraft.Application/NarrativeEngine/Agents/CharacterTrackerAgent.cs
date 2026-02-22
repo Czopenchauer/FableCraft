@@ -51,7 +51,7 @@ internal sealed class CharacterTrackerAgent(
                              """;
         return await InvokeInternal(requestPrompt, generationContext, context, sceneTrackerResult, cancellationToken);
     }
-    
+
     public async Task<(CharacterTracker Tracker, bool IsDead)> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
@@ -80,8 +80,8 @@ internal sealed class CharacterTrackerAgent(
 
     private async Task<(CharacterTracker Tracker, bool IsDead)> InvokeInternal(
         string request,
-        GenerationContext generationContext, 
-        CharacterContext context, 
+        GenerationContext generationContext,
+        CharacterContext context,
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
@@ -93,6 +93,8 @@ internal sealed class CharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldContext(generationContext)}
+
                              {PromptSections.SceneTracker(generationContext, sceneTrackerResult)}
 
                              {PromptSections.NewItems(generationContext.NewItems)}

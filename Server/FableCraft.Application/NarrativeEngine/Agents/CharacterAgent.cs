@@ -109,6 +109,8 @@ internal sealed class CharacterAgent : BaseAgent
                                     """);
 
         var contextPrompt = $"""
+                             {PromptSections.WorldContext(_generationContext)}
+                             
                              {BuildMainCharacterSection(_generationContext, context)}
 
                              {memoriesSection}

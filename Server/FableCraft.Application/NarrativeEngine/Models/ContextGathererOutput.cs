@@ -16,6 +16,9 @@ internal class ContextGathererOutput
     [JsonPropertyName("background_roster")]
     public string[] BackgroundRoster { get; set; } = [];
 
+    [JsonPropertyName("co_located_characters")]
+    public CoLocatedCharacter[] CoLocatedCharacters { get; set; } = [];
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

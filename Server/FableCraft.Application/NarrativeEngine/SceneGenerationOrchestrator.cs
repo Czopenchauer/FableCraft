@@ -389,6 +389,10 @@ internal sealed class SceneGenerationOrchestrator(
 
         ClearFieldsForAgents(context, agentsToRegenerate);
 
+        context.SkipSimulation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Simulation));
+        context.SkipChronicler = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
+        context.SkipContextGatherer = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
+
         var stopwatch = Stopwatch.StartNew();
         try
         {
@@ -404,7 +408,8 @@ internal sealed class SceneGenerationOrchestrator(
 
         var parallelProcessors = new[]
         {
-            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator)
+            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
+            processors.First(p => p is ContextGatherer)
         };
 
         stopwatch.Restart();

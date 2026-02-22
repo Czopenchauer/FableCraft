@@ -152,6 +152,27 @@ internal sealed class GenerationContext
     /// </summary>
     public CohortSimulationState? CohortSimulationState { get; set; }
 
+    /// <summary>
+    ///     When true, SimulationOrchestrator should skip execution.
+    ///     Set during regeneration when Simulation was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipSimulation { get; set; }
+
+    /// <summary>
+    ///     When true, ChroniclerAgent should skip execution.
+    ///     Set during regeneration when Chronicler was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipChronicler { get; set; }
+
+    /// <summary>
+    ///     When true, ContextGatherer should skip execution.
+    ///     Set during regeneration when ContextGatherer was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipContextGatherer { get; set; }
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,

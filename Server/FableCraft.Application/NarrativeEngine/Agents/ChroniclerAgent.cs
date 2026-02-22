@@ -83,6 +83,8 @@ internal sealed class ChroniclerAgent(
             : string.Empty;
 
         return $"""
+                {PromptSections.Context(context)}
+                
                 {PromptSections.MainCharacter(context)}
 
                 {PromptSections.ExistingCharacters(context.Characters)}

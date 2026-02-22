@@ -16,7 +16,12 @@ public enum EnrichmentAgent
     MainCharacterTracker,
 
     // All updates for side characters, state, tracker are treated atomically. They cannot be partially regenerated.
-    CharacterTracker
+    CharacterTracker,
+
+    // Simulation and story tracking - skipped during regeneration unless explicitly selected
+    Simulation,
+    Chronicler,
+    ContextGatherer
 }
 
 internal enum LorebookCategory

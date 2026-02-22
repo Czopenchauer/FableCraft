@@ -49,6 +49,8 @@ internal sealed class SceneTrackerAgent(
                              {newCharactersSection}
 
                              {(context.NewLocations?.Length > 0 ? PromptSections.NewLocations(context.NewLocations) : "")}
+
+                             {(!isFirstScene ? PromptSections.CoLocatedCharactersForTracker(context) : "")}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

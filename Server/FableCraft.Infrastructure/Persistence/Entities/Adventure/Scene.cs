@@ -98,6 +98,12 @@ public sealed class GatheredContext
 
     public string[] BackgroundRoster { get; set; } = [];
 
+    /// <summary>
+    ///     Characters discovered to be at the same location as the scene.
+    ///     Determined by ContextGatherer comparing character locations against scene location.
+    /// </summary>
+    public GatheredCoLocatedCharacter[] CoLocatedCharacters { get; set; } = [];
+
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
 }
@@ -110,6 +116,16 @@ public sealed class GatheredContextItem
     public required string Topic { get; set; }
 
     public required string Content { get; set; }
+}
+
+/// <summary>
+///     A character discovered to be co-located with the scene.
+/// </summary>
+public sealed class GatheredCoLocatedCharacter
+{
+    public required string Name { get; set; }
+
+    public required string Reason { get; set; }
 }
 
 /// <summary>

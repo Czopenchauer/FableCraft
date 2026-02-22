@@ -71,6 +71,8 @@ internal sealed class CharacterReflectionAgent(
                                     """);
         chatHistory.AddUserMessage(relationship);
         var contextPrompt = $"""
+                             {PromptSections.WorldContext(generationContext)}
+                             
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(context)}

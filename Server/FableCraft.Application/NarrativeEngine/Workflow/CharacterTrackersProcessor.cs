@@ -147,6 +147,12 @@ internal sealed class CharacterTrackersProcessor(
 
     private async Task ProcessChronicler(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
     {
+        if (context.SkipChronicler)
+        {
+            logger.Information("Chronicler: Skipping (not selected for regeneration)");
+            return;
+        }
+
         if (context.ChroniclerOutput is null)
         {
             var chroniclerOutput = await chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken);

@@ -216,11 +216,16 @@ internal static class PromptSections
             .ToList();
         var charactersOnScene = context.LatestTracker()?.Scene!.CharactersPresent;
         pendingInteractions.AddRange(charactersOnScene ?? Enumerable.Empty<string>());
+
+        var coLocatedCharacters = GetCoLocatedCharactersFromContext(context);
+        pendingInteractions.AddRange(coLocatedCharacters);
+
         var characters = context.Characters.Where(x => pendingInteractions.Contains(x.Name)).ToList();
         if (characters.Count == 0)
         {
             return string.Empty;
         }
+
         var names = string.Join("\n- ",
             characters.Select(c => c.Name));
 
@@ -249,6 +254,46 @@ internal static class PromptSections
                 {profiles}
                 </character_profiles>
                 """;
+    }
+
+    /// <summary>
+    ///     Formats co-located characters from previous scene for SceneTrackerAgent.
+    ///     Instructs the tracker to include these characters in CharactersPresent.
+    /// </summary>
+    public static string CoLocatedCharactersForTracker(GenerationContext context)
+    {
+        var coLocated = GetCoLocatedCharactersFromContext(context).ToList();
+        if (coLocated.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var names = string.Join("\n- ", coLocated);
+        return $"""
+                ## Co-Located Characters (from previous context analysis)
+
+                The following characters were determined to be at the same location as this scene based on their tracked locations. Double check their location and consider adding them to CharacterPresent:
+
+                - {names}
+                """;
+    }
+
+    /// <summary>
+    ///     Retrieves co-located character names from the previous scene's gathered context.
+    ///     These are characters the ContextGatherer determined to be at the same location as the scene.
+    /// </summary>
+    private static IEnumerable<string> GetCoLocatedCharactersFromContext(GenerationContext context)
+    {
+        var gatheredContext = context.SceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
+
+        if (gatheredContext?.CoLocatedCharacters == null || gatheredContext.CoLocatedCharacters.Length == 0)
+        {
+            return [];
+        }
+
+        return gatheredContext.CoLocatedCharacters.Select(c => c.Name);
     }
 
     public static string CharacterStateContext(CharacterContext context, bool ignoreNull = true)
@@ -510,6 +555,47 @@ internal static class PromptSections
                 """;
     }
 
+    public static string WorldContext(GenerationContext generationContext)
+    {
+        var context = generationContext.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.GatheredContext;
+        if (context == null)
+        {
+            return string.Empty;
+        }
+
+        var worldContext = context.WorldContext.Length > 0
+            ? string.Join("\n", context.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No world context available.";
+
+        var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var locationContent = generationContext.PreviouslyGeneratedLocations.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLocations.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var itemContent = generationContext.PreviouslyGeneratedItems.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedItems.Select(x => $"- {x.Content}"))
+            : "None";
+
+        return $"""
+                <knowledge_graph_context>
+                **World Knowledge** (locations, lore, items, events):
+                {worldContext}
+
+                **Recently Created Lore**:
+                {loreContent}
+
+                **Recently Created Locations**:
+                {locationContent}
+
+                **Recently Created Items**:
+                {itemContent}
+                </knowledge_graph_context>
+                """;
+    }
+
     /// <summary>
     ///     Gets the gathered context from the previous scene's metadata.
     ///     Used when ContextGatherer runs after scene generation.
@@ -674,13 +760,13 @@ internal static class PromptSections
 
         var formatted = string.Join("\n\n---\n\n",
             outputs.OrderBy(o => o.SequenceNumber).Select(o => $"""
-                <emulation sequence="{o.SequenceNumber}">
-                **Situation:** {o.Stimulus}
-                **Query:** {o.Query}
+                                                                <emulation sequence="{o.SequenceNumber}">
+                                                                **Situation:** {o.Stimulus}
+                                                                **Query:** {o.Query}
 
-                {o.Response}
-                </emulation>
-                """));
+                                                                {o.Response}
+                                                                </emulation>
+                                                                """));
 
         return $"""
                 ## Your Internal Experience During This Scene

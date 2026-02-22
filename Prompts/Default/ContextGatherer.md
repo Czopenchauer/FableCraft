@@ -276,6 +276,13 @@ Your output must be a valid JSON object. Output should be wrapped in `<output>` 
       "topic": "What was dropped",
       "reason": "Why it's no longer relevant"
     }
+  ],
+
+  "co_located_characters": [
+    {
+      "name": "Character Name",
+      "reason": "Why this character is determined to be at the scene location"
+    }
   ]
 }
 ```
@@ -419,6 +426,59 @@ Last scene created lore for "Old Mira" and "The Unmarked Door shop":
 **Final Count**: 5 carried + 4 new = 9 total (under 20 ✓)
 </think>
 ```
+
+---
+
+## Co-Located Character Discovery
+
+You receive `character_locations` — a registry of all tracked characters and their last known locations. You also receive the current `scene_location`.
+
+Your job: identify which characters are at the same location as the current scene.
+
+### What "Same Location" Means
+
+Two location strings point to the same place if they describe the same physical space, regardless of phrasing differences. Examples of matches:
+
+- "Wall Passage Checkpoint" = "The Wall Passage Checkpoint" = "checkpoint at the Wall Passage"
+- "Classroom Three" = "Third Classroom" = "the third classroom"
+- "The Rusty Anchor > Main taproom" matches a scene at "The Rusty Anchor Tavern > Taproom"
+
+A character whose location is MORE SPECIFIC than the scene location is co-located:
+- Scene: "The Rusty Anchor Tavern"
+- Character: "The Rusty Anchor Tavern > Back storage room"
+- Result: CO-LOCATED (they're inside the scene's area)
+
+A character whose location is LESS SPECIFIC than the scene location is NOT co-located:
+- Scene: "The Rusty Anchor Tavern > Main taproom"
+- Character: "Commercial District"
+- Result: NOT co-located (they're somewhere in the district, not necessarily here)
+
+A character at a SIBLING or ADJACENT location is NOT co-located:
+- Scene: "East Administrative Tower > Third Floor"
+- Character: "East Administrative Tower > First Floor"
+- Result: NOT co-located (same building, different floor — not in the scene)
+
+### Process
+
+For each character in `character_locations`:
+1. Compare their location against `scene_location`
+2. Determine: same place, more specific (inside), less specific (broader), or different
+3. If same place or more specific → co-located
+4. If less specific or different → not co-located
+
+### Output
+
+Add `co_located_characters` to your output — an array of character names confirmed at the scene location.
+
+Only include characters you are confident are at the same physical location. When uncertain, exclude — false absence is preferable to false presence for less important characters, but err toward inclusion for arc_important and significant characters at ambiguous locations.
+
+Do NOT include characters already listed in the current `CharactersPresent`.
+
+### Processing Order
+
+Determine co-located characters FIRST, before fetching memories and relationships. The discovered characters need their context fetched in the same pass — otherwise downstream agents receive "this character is here" with no memory or relationship data to work with.
+
+Your full on-scene character list = existing CharactersPresent + your co_located_characters. Fetch memories and relationships for ALL of them.
 
 ---
 

@@ -52,6 +52,11 @@ internal sealed class SaveSceneEnrichment(
                     Content = x.Content
                 }).ToArray(),
                 BackgroundRoster = context.ContextGathered.BackgroundRoster,
+                CoLocatedCharacters = context.ContextGathered.CoLocatedCharacters.Select(x => new GatheredCoLocatedCharacter
+                {
+                    Name = x.Name,
+                    Reason = x.Reason
+                }).ToArray(),
                 AdditionalProperties = context.ContextGathered.AdditionalData
             };
         }

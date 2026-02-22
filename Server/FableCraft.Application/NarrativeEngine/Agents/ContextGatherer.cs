@@ -29,6 +29,12 @@ internal sealed class ContextGatherer(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        if (context.SkipContextGatherer)
+        {
+            logger.Information("ContextGatherer: Skipping (not selected for regeneration)");
+            return;
+        }
+
         if (context.ContextGathered != null)
         {
             logger.Information("Context already gathered for adventure {AdventureId}, skipping context gathering step.", context.AdventureId);
@@ -42,6 +48,7 @@ internal sealed class ContextGatherer(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var previousContext = GetPreviousContextSummary(context);
+        var sceneLocation = context.NewTracker?.Scene?.Location ?? context.LatestTracker()?.Scene?.Location;
         var contextPrompt = $"""
                              {PromptSections.MainCharacter(context)}
 
@@ -54,6 +61,8 @@ internal sealed class ContextGatherer(
                              {previousContext}
 
                              {CharacterRoster(context)}
+
+                             {CharacterLocationsForDiscovery(context, sceneLocation)}
 
                              {(context.SceneContext.Length > 0 ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
 
@@ -143,7 +152,8 @@ internal sealed class ContextGatherer(
                 WorldContext = worldContext.ToArray(),
                 NarrativeContext = narrativeContext.ToArray(),
                 AdditionalData = output.AdditionalData,
-                BackgroundRoster = output.BackgroundRoster
+                BackgroundRoster = output.BackgroundRoster,
+                CoLocatedCharacters = output.CoLocatedCharacters
             };
 
             logger.Information(
@@ -172,6 +182,65 @@ internal sealed class ContextGatherer(
         }
 
         return string.Empty;
+    }
+
+    private static string CharacterLocationsForDiscovery(GenerationContext context, string? sceneLocation)
+    {
+        if (string.IsNullOrEmpty(sceneLocation))
+        {
+            return string.Empty;
+        }
+
+        var currentCharactersPresent = context.NewTracker?.Scene?.CharactersPresent
+                                       ?? context.LatestTracker()?.Scene?.CharactersPresent
+                                       ?? [];
+
+        var characterLocations = new List<object>();
+
+        foreach (var character in context.Characters.Where(c => !c.IsDead && c.CharacterTracker?.Location != null))
+        {
+            if (currentCharactersPresent.Contains(character.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            characterLocations.Add(new
+            {
+                name = character.Name,
+                importance = character.Importance.ToString().ToLowerInvariant(),
+                location = character.CharacterTracker!.Location
+            });
+        }
+
+        foreach (var bgChar in context.BackgroundCharacters.Where(c => !string.IsNullOrEmpty(c.LastLocation)))
+        {
+            if (currentCharactersPresent.Contains(bgChar.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            characterLocations.Add(new
+            {
+                name = bgChar.Name,
+                importance = "background",
+                location = bgChar.LastLocation
+            });
+        }
+
+        if (characterLocations.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return $"""
+                <scene_location>
+                {sceneLocation}
+                </scene_location>
+
+                <character_locations>
+                {characterLocations.ToJsonString()}
+                </character_locations>
+                """;
     }
 
     private static string GetPreviousContextSummary(GenerationContext context)
