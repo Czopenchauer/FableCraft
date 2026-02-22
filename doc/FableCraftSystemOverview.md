@@ -34,10 +34,12 @@ Before gameplay begins, the player/creator provides:
 
 Once provided, the system:
 
-1. Commits the worldbook to the World Knowledge Graph
-2. Initializes the Main Character tracker state
-3. Generates the first scene
-4. Returns the scene with three choices to the player
+1. Validates the worldbook is already indexed in the Knowledge Graph
+2. Creates the adventure with all setup inputs
+3. Initializes RAG from the worldbook (per-adventure isolation)
+4. Generates the first scene via WriterAgent
+5. Returns the scene with three choices to the player
+6. Enrichment runs in background (initializes Main Character tracker state, etc.)
 
 ---
 
@@ -49,9 +51,8 @@ flowchart TD
         PI[Select from 3 choices<br/>OR type custom action]
     end
 
-    subgraph Scene["SCENE GENERATION"]
-        R[Resolution] --> W[Writer]
-        W --> SO[Scene Output<br/>narrative + 3 choices]
+    subgraph Scene["SCENE GENERATION (synchronous)"]
+        W[Writer] --> SO[Scene Output<br/>narrative + 3 choices]
     end
 
     subgraph Return["RETURN TO PLAYER"]
@@ -80,7 +81,7 @@ flowchart TD
         KGCommit[Commit to KG:<br/>previous scene, lore,<br/>locations, items]
     end
 
-    PI --> R
+    PI --> W
     SO --> Display
     Display --> Background
     Background --> Commit
@@ -93,21 +94,55 @@ Each player input triggers one full cycle. The scene boundary is the player acti
 
 ## Scene Generation Pipeline
 
-### Step 1: Resolution
+### Step 1: Writer
 
-The Resolution Agent determines what physically happens when the player attempts an action. It functions as a physics engine—fast, impartial, mechanical.
+The Writer is the core of scene generation. It processes player actions, determines outcomes, emulates NPCs, and produces first-person narrative.
 
-**Action Types:**
+#### Action Processing
 
-| Type | Definition | What Resolution Determines |
-|------|------------|---------------------------|
-| PHYSICAL | Against environment only | Full outcome |
-| FORCE_CONTESTED | Imposing on NPC through force | Whether force lands (hit/miss, damage). NOT behavioral response. |
-| SOCIAL_CONTESTED | Attempting to change NPC's mind | Execution quality only. Outcome emerges from NPC emulation. |
+The Writer parses player input to separate what MC *does* from what MC *hopes happens*:
 
-### Step 2: Writer
+| Element | Definition | Handling |
+|---------|------------|----------|
+| **Physical action** | What MC's body does | This happens (subject to capability) |
+| **Wishful thinking** | Hoped-for outcomes, intentions | Inner monologue only—does not affect world |
 
-The Writer transforms resolved actions into immersive first-person present-tense narrative. Core rules:
+**Example:** "I convince the guard to let me through"
+- Physical: MC speaks to the guard
+- Wishful: "convince," "let me through"—MC's hope, not guaranteed outcome
+
+#### Mechanism Check
+
+Does MC's physical action have a plausible path to the intended outcome?
+
+**Mechanism exists when:**
+- Physical task with relevant skill/equipment
+- Force with capability to overcome resistance
+- Social action with actual argument, leverage, offer, or threat
+
+**No mechanism when:**
+- Social action with no argument (just assertion of outcome)
+- Intimidation without visible threat or leverage
+- Command without authority
+
+When there's no mechanism: MC does the physical action. The world doesn't bend.
+
+#### Outcome Determination
+
+**Physical tasks against environment:**
+
+| Effective Skill vs Difficulty | Result |
+|-------------------------------|--------|
+| 2+ tiers below | Failure, possibly dangerous |
+| 1 tier below | Failure or partial |
+| Equal | Could go either way |
+| 1+ tier above | Success |
+
+**Force against NPCs:** Compare capability, determine if force lands. Behavioral response comes from emulation.
+
+**Social actions:** With mechanism + full-profile NPC → emulation determines response. Without mechanism → MC acts, NPC continues unaffected.
+
+#### Core Rules
 
 - **First person present tense** — "I see the blade swing toward me" not "I saw"
 - **Continuity is absolute** — Every scene continues directly from the previous one
@@ -115,8 +150,9 @@ The Writer transforms resolved actions into immersive first-person present-tense
 - **Knowledge boundaries real** — MC only knows what MC knows
 - **Characters autonomous** — NPCs have goals, emotions, agency
 - **Scene moves** — Everyone acts simultaneously; the world doesn't pause for MC
+- **Present, don't resolve** — Scenes present situations, they don't tie off tension
 
-**Character Handling During Scene:**
+#### Character Handling
 
 | Tier | How Writer Handles Them |
 |------|------------------------|
@@ -125,13 +161,15 @@ The Writer transforms resolved actions into immersive first-person present-tense
 | Background | Writes directly using partial profile |
 | New background | Uses GEARS framework (Goal, Emotion, Attention, Reaction, Self-interest) |
 
-### Step 3: Output
+**Emulation is mandatory for full-profile characters.** The Writer cannot invent their responses. Emulation results are canonical—if emulation contradicts the planned scene, emulation wins.
+
+### Step 2: Output
 
 The Writer produces:
 
-- **Scene prose** — 3-5 paragraphs, first-person present-tense
+- **Scene prose** — 3-6 paragraphs, first-person present-tense
 - **Three choices** — Meaningfully different approaches, phrased in first person
-- **Creation requests** — Characters, locations, or items that need full profiles
+- **Creation requests** — Characters, locations, items, or lore that need profiles
 - **Importance flags** — Requests to promote/demote character tiers
 
 ---
@@ -141,22 +179,174 @@ The Writer produces:
 All background processing runs while the player reads the scene and decides their next action.
 
 ### Phase 1: SceneTracker (runs first)
-Updates mechanical scene state. Other agents depend on this output.
-- DateTime
-- Location
-- Weather
-- CharactersPresent
+
+Updates mechanical scene state. Other agents depend on this output, so SceneTracker must complete before parallel processing begins.
+
+#### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Current Scene** | The newly generated scene prose from Writer |
+| **Previous Scene Trackers** | Tracker states from recent scenes (up to 5) for continuity |
+| **Main Character** | MC name and description |
+| **Character List** | Minimal registry of all established characters with canonical names and last known locations |
+| **Background Characters** | Partial profiles for recurring background NPCs |
+| **New Characters** | Any characters created by Crafters this cycle |
+| **New Locations** | Any locations created by Crafters this cycle |
+| **Co-located Characters** | Characters at the same location as MC (for presence tracking) |
+| **Adventure Start Time** | Initial time reference (first scene only) |
+
+#### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `search_world_knowledge` | Query Knowledge Graph for location data |
+| `search_main_character_narrative` | Query MC history for context |
+| `fetch_character_details(name)` | Resolve partial names, aliases, or descriptions to canonical names |
+
+#### Output
+
+SceneTracker outputs a `<scene_tracker>` JSON object with four fields:
+
+```json
+{
+  "Time": "14:30 15-03-1247 (Afternoon)",
+  "Location": "Ironhaven > Portside District > The Rusty Anchor Tavern > Main Hall | Features: [dim lantern light], [crowded tables], [ale-stained floor], [back door to alley]",
+  "Weather": "Overcast | Cool | Light drizzle audible on roof",
+  "CharactersPresent": ["Thalan Silverwind", "Marcus the Bartender", "Guard"]
+}
+```
+
+**Consumers of this output:**
+
+| Agent | How It Uses SceneTracker Output |
+|-------|--------------------------------|
+| **CharacterReflection** | `CharactersPresent` determines which NPCs get reflection processing |
+| **Simulation** | Characters NOT in `CharactersPresent` are candidates for off-screen simulation |
+| **ContextGatherer** | `Location` drives world context queries |
+| **Chronicler** | `Time` tracks deadlines, windows, and story pacing |
+| **Writer (next scene)** | All fields inform scene continuity and context |
+
+#### Tracker Fields
+
+| Field | Format | Description |
+|-------|--------|-------------|
+| **Time** | `HH:MM DD-MM-YYYY (Time of Day)` | 24-hour clock with Dawn/Morning/Afternoon/Evening/Night labels |
+| **Location** | `Region > Settlement > Building > Room \| Features: [...]` | Hierarchical location with scene-setting features |
+| **Weather** | `Conditions \| Temperature \| Effects` | External conditions; interiors note awareness of outside weather |
+| **CharactersPresent** | `Array<String>` | All NPCs in scene (MC never included—always assumed present) |
+
+#### Character Resolution Protocol
+
+SceneTracker maintains character name consistency using a strict resolution process:
+
+**Sources:**
+- `character_list` — Authoritative registry of all established characters with canonical full names
+- `previous_scene_tracker` — Continuity reference (may contain errors to correct)
+- `fetch_character_details(name)` — Tool to resolve partial names, aliases, or descriptions
+
+**Resolution Steps:**
+
+1. **Exact match check** — If narrative reference exactly matches a name in `character_list`, use directly
+2. **Fetch to resolve** — For partial names ("Thalan"), aliases ("the ranger"), or descriptions ("the silver-haired elf"), call `fetch_character_details` to get canonical name
+3. **Correct previous tracker** — Validate names carried from previous scene; fix any incomplete names (e.g., "Thalan" → "Thalan Silverwind")
+4. **Handle unmatched** — New proper names kept as-is; generic references ("a guard") use generic identifiers
+
+| Narrative Reference | character_list Has | Action | Output |
+|---------------------|-------------------|--------|--------|
+| "Thalan Silverwind" | "Thalan Silverwind" | Use directly | "Thalan Silverwind" |
+| "Thalan" | "Thalan Silverwind" | FETCH | "Thalan Silverwind" |
+| "the ranger" | (multiple rangers) | FETCH | Resolved name or flag ambiguous |
+| "a random guard" | — | No fetch | "Guard" |
+
+#### Location Resolution Protocol
+
+SceneTracker matches locations against the Knowledge Graph to maintain consistency:
+
+1. **Extract** — Location name, descriptive elements, relative position, associated characters
+2. **Query Knowledge Graph** — Fuzzy match on name, parent location overlap, or unique features
+3. **Resolution:**
+   - **Exact match** — Use canonical hierarchy, merge new features with existing
+   - **Partial match** (same building, different room) — Inherit parent hierarchy, create new room entry
+   - **No match** — Create new location, infer hierarchy from context, flag as `[NEW]`
+
+**Hierarchy Inheritance Example:**
+```
+IF entering "the cellar" AND current_location = "The Rusty Anchor Tavern"
+THEN location = "Portside District > Ironhaven > The Rusty Anchor Tavern > Cellar"
+```
+
+**Feature Consistency:**
+- Established locations retain base features unless narrative changes them
+- Time-sensitive features update (lighting changes with Time)
+- Temporary features marked with context (e.g., "[bodies on floor - recent combat]")
+
+#### Temporal Logic
+
+- Time moves forward unless narrative explicitly states otherwise
+- Small increments unless stated otherwise (sleeping, travel)
+- Time of Day labels: Dawn (05:00-06:59), Morning (07:00-11:59), Afternoon (12:00-16:59), Evening (17:00-20:59), Night (21:00-04:59)
+
+#### Why SceneTracker Runs First
+
+Other agents depend on SceneTracker output:
+- **CharacterReflection** needs to know which characters were present
+- **Simulation** needs to know who was NOT present (to simulate off-screen)
+- **ContextGatherer** uses location to query relevant world context
+- **Chronicler** uses time for deadline/opportunity tracking
 
 ### Phase 2: Parallel Processing
 
 Everything else runs in parallel after SceneTracker completes:
 
 #### MainCharacterTracker (MC only)
-Updates the protagonist's physical state:
-- Vitals, needs, resources
-- Equipment changes
-- Skill progression
-- Physical condition
+
+Maintains the complete, authoritative state of the main character. The tracker is the source of truth for who the character is and what condition they're in.
+
+##### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Previous Tracker State** | Complete JSON from end of previous scene—the baseline |
+| **Current Time** | In-world timestamp from SceneTracker |
+| **Scene Content** | The narrative that just occurred |
+| **Tracker Schema** | Structure definition for all trackable fields (configurable per adventure) |
+| **World Setting** | Context for racial traits, magic systems, etc. |
+| **Progression System** | XP thresholds, skill tiers, advancement rules |
+
+##### Core Principles
+
+1. **Observe and Record** — Extract changes from narrative, don't invent them
+2. **Precision over Approximation** — Track exact values where possible
+3. **Continuity is Sacred** — Never reset fields without narrative justification
+4. **Show the Math** — For calculated changes (XP, resources, time), include calculations
+5. **Internal Consistency** — Related fields must align logically
+6. **Narrative Justification** — Every change needs a reason from scene content
+7. **Complete Output** — Always output entire tracker state, not partial updates
+
+##### Responsibilities
+
+- **Immediate State** — Physical condition, mental state, needs, resources, active effects
+- **Long-term Development** — Skills, abilities, traits, progression (XP tracking)
+- **Equipment State** — What's worn, carried, or equipped
+- **Situational Context** — Current positioning, who's present, ongoing activities
+- **Time-based Progression** — Needs increase, resources regenerate, effects expire
+
+##### Dynamic Development
+
+Skills and abilities are tracked as arrays—entries created dynamically as character develops:
+- First meaningful use of a skill → create entry
+- Learning new spell or technique → create entry
+- Existing competence from backstory → create with appropriate starting values
+
+##### Output
+
+The agent produces:
+- **Time Update** — Previous time, current time, elapsed
+- **Changes Summary** — Audit trail of what changed and why (state, development, resources)
+- **Complete Tracker** — The ENTIRE character state with all changes applied
+
+**Critical:** The tracker output is a complete snapshot, not a diff. This eliminates merge logic and drift from partial updates.
 
 #### CharacterReflection → CharacterTracker (NPCs in scene, sequential chain)
 Runs for each meaningful NPC present in the scene.
@@ -296,8 +486,7 @@ Three separate knowledge graphs enforce strict knowledge boundaries:
 ```mermaid
 flowchart TD
     subgraph SceneGen["Scene Generation"]
-        Input[Player Input] --> Res[Resolution]
-        Res --> Writer
+        Input[Player Input] --> Writer
         Writer -->|emulates| CP[CharacterPlugin<br/>arc-important/significant]
         Writer -->|writes directly| Partial[Partial Profiles<br/>background NPCs]
         Writer -->|invents| GEARS[GEARS Framework<br/>new background NPCs]
