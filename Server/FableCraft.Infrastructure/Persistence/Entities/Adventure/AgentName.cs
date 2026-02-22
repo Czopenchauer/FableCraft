@@ -23,5 +23,6 @@ public enum AgentName
     OffscreenInferenceAgent,
     IntentCheckAgent,
     CharacterSimulation,
-    SimulationModeratorAgent
+    SimulationModeratorAgent,
+    WorldInfoExtractorAgent
 }

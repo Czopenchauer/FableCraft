@@ -112,4 +112,26 @@ public sealed class MaintenanceController(
 
         return Accepted();
     }
+
+    /// <summary>
+    ///     Gathers context for all characters in an adventure.
+    ///     This is a maintenance operation to backfill GatheredContext for existing characters.
+    /// </summary>
+    [HttpPost("gather-character-context/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GatherCharacterContext(
+        Guid adventureId,
+        CancellationToken cancellationToken)
+    {
+        var result = await characterReflectionMaintenanceService.GatherContextForAllCharactersAsync(
+            adventureId, cancellationToken);
+
+        if (!result.Success && result.Message == "Adventure not found")
+        {
+            return NotFound(result.Message);
+        }
+
+        return Ok(result);
+    }
 }

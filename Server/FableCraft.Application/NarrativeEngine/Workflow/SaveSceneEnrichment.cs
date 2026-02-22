@@ -101,6 +101,31 @@ internal sealed class SaveSceneEnrichment(
 
             loreEntities.AddRange(worldEventEntities);
             loreEntities.AddRange(backgroundCharacterEntities);
+
+            var activityEntries = (context.WorldInfoExtractions?.Activity ?? [])
+                .Select(x => new LorebookEntry
+                {
+                    AdventureId = context.AdventureId,
+                    Title = $"Activity at {x.Location}",
+                    Description = $"[{x.Time}] {string.Join(", ", x.Who)}",
+                    Category = nameof(LorebookCategory.Activity),
+                    Content = x.ToJsonString(),
+                    ContentType = ContentType.json
+                }).ToList();
+
+            var extractedWorldFactEntries = (context.WorldInfoExtractions?.WorldFacts ?? [])
+                .Select(x => new LorebookEntry
+                {
+                    AdventureId = context.AdventureId,
+                    Title = x.Name,
+                    Description = "Extracted world fact",
+                    Category = nameof(LorebookCategory.ExtractedWorldFact),
+                    Content = x.Content,
+                    ContentType = ContentType.txt
+                }).ToList();
+
+            loreEntities.AddRange(activityEntries);
+            loreEntities.AddRange(extractedWorldFactEntries);
         }
 
         var chroniclerLore = context.ChroniclerLore?.Select(x => new LorebookEntry

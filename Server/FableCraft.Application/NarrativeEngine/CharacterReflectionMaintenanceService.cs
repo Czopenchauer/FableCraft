@@ -290,6 +290,159 @@ public sealed class CharacterReflectionMaintenanceService(
             await transaction.CommitAsync(cancellationToken);
         });
     }
+
+    /// <summary>
+    ///     Runs context gathering for all characters in an adventure.
+    ///     This is a maintenance operation to backfill GatheredContext.
+    /// </summary>
+    public async Task<CharacterContextGatheringMaintenanceResult> GatherContextForAllCharactersAsync(
+    Guid adventureId,
+    CancellationToken cancellationToken)
+{
+    await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+    var adventure = await dbContext.Adventures
+        .Include(a => a.MainCharacter)
+        .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+
+    if (adventure is null)
+    {
+        return new CharacterContextGatheringMaintenanceResult
+        {
+            Success = false,
+            Message = "Adventure not found",
+            ProcessedCharacters = []
+        };
+    }
+
+    var characters = await dbContext.Characters
+        .Where(c => c.AdventureId == adventureId)
+        .Include(c => c.CharacterStates.OrderByDescending(cs => cs.SequenceNumber).Take(1))
+        .Include(c => c.CharacterSceneRewrites.OrderByDescending(sr => sr.SequenceNumber).Take(20))
+        .ToListAsync(cancellationToken);
+
+    if (characters.Count == 0)
+    {
+        return new CharacterContextGatheringMaintenanceResult
+        {
+            Success = true,
+            Message = "No characters found in adventure",
+            ProcessedCharacters = []
+        };
+    }
+
+    var lastScene = await dbContext.Scenes
+        .Where(s => s.AdventureId == adventureId)
+        .OrderByDescending(s => s.SequenceNumber)
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (lastScene is null)
+    {
+        return new CharacterContextGatheringMaintenanceResult
+        {
+            Success = false,
+            Message = "No scenes found in adventure",
+            ProcessedCharacters = []
+        };
+    }
+
+    var generationContextBuilder = serviceProvider.GetRequiredService<IGenerationContextBuilder>();
+    var generationContext = await generationContextBuilder.BuildRegenerationContextAsync(
+        adventureId, lastScene, cancellationToken);
+
+    var characterContextGatherer = serviceProvider.GetRequiredService<CharacterContextGatherer>();
+
+    var results = new List<CharacterContextGatheringResult>();
+    var tasks = characters.Select(async character =>
+    {
+        try
+        {
+            var latestState = character.CharacterStates.FirstOrDefault();
+            var sceneRewrites = character.CharacterSceneRewrites
+                .OrderByDescending(sr => sr.SequenceNumber)
+                .Take(20)
+                .ToList();
+
+            if (sceneRewrites.Count == 0)
+            {
+                return new CharacterContextGatheringResult
+                {
+                    CharacterId = character.Id,
+                    CharacterName = character.Name,
+                    Success = false,
+                    Message = "No scene rewrites found"
+                };
+            }
+
+            var characterContext = new CharacterContext
+            {
+                CharacterId = character.Id,
+                Name = character.Name,
+                Description = character.Description,
+                Importance = character.Importance,
+                CharacterState = latestState?.CharacterStats ?? new CharacterStats { Name = character.Name, Motivations = null, Routine = null },
+                CharacterTracker = latestState?.Tracker,
+                CharacterMemories = [],
+                Relationships = [],
+                SceneRewrites = sceneRewrites.Select(sr => new CharacterSceneContext
+                {
+                    Content = sr.Content,
+                    SceneTracker = sr.SceneTracker,
+                    SequenceNumber = sr.SequenceNumber,
+                    GatheredContext = sr.GatheredContext
+                }).ToList(),
+                SimulationMetadata = latestState?.SimulationMetadata,
+                IsDead = latestState?.IsDead ?? false
+            };
+
+            var gatheredContext = await characterContextGatherer.Invoke(
+                generationContext, characterContext, cancellationToken);
+
+            // Save to the latest scene rewrite
+            var latestRewrite = sceneRewrites.First();
+            latestRewrite.GatheredContext = gatheredContext;
+
+            return new CharacterContextGatheringResult
+            {
+                CharacterId = character.Id,
+                CharacterName = character.Name,
+                Success = true,
+                WorldContextCount = gatheredContext.WorldContext.Length,
+                NarrativeContextCount = gatheredContext.NarrativeContext.Length,
+                Message = "Context gathered successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to gather context for character {CharacterName}", character.Name);
+            return new CharacterContextGatheringResult
+            {
+                CharacterId = character.Id,
+                CharacterName = character.Name,
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }).ToList();
+
+    var taskResults = await Task.WhenAll(tasks);
+    results.AddRange(taskResults);
+
+    // Save all changes
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    var successCount = results.Count(r => r.Success);
+    logger.Information(
+        "Context gathering completed for adventure {AdventureId}: {SuccessCount}/{TotalCount} characters processed",
+        adventureId, successCount, results.Count);
+
+    return new CharacterContextGatheringMaintenanceResult
+    {
+        Success = true,
+        Message = $"Processed {successCount}/{results.Count} characters",
+        ProcessedCharacters = results
+    };
+}
 }
 
 /// <summary>
@@ -308,4 +461,27 @@ public sealed class CharacterReflectionMaintenanceResult
     public required bool AlreadyProcessed { get; init; }
 
     public required string? Message { get; init; }
+}
+
+/// <summary>
+///     Result of context gathering for a single character.
+/// </summary>
+public sealed class CharacterContextGatheringResult
+{
+    public required Guid CharacterId { get; init; }
+    public required string CharacterName { get; init; }
+    public required bool Success { get; init; }
+    public int WorldContextCount { get; init; }
+    public int NarrativeContextCount { get; init; }
+    public string? Message { get; init; }
+}
+
+/// <summary>
+///     Result of context gathering maintenance operation.
+/// </summary>
+public sealed class CharacterContextGatheringMaintenanceResult
+{
+    public required bool Success { get; init; }
+    public required string Message { get; init; }
+    public required List<CharacterContextGatheringResult> ProcessedCharacters { get; init; }
 }

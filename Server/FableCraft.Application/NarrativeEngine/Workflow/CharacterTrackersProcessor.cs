@@ -21,6 +21,7 @@ internal sealed class CharacterTrackersProcessor(
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
     ChroniclerAgent chroniclerAgent,
     LoreCrafter loreCrafter,
+    WorldInfoExtractorAgent worldInfoExtractorAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -31,6 +32,7 @@ internal sealed class CharacterTrackersProcessor(
                                      + "Ensure SceneTrackerProcessor runs before this processor.");
 
         var chroniclerTask = ProcessChronicler(context, storyTrackerResult, cancellationToken);
+        var mainNarrativeExtractionTask = ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken);
 
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
@@ -92,8 +94,9 @@ internal sealed class CharacterTrackersProcessor(
 
                     var trackerTask = characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
                     var contextGatheringTask = GatherAndStoreCharacterContext(context, characterContext, cancellationToken);
+                    var worldInfoTask = ExtractWorldInfoFromReflection(context, characterContext, storyTrackerResult, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, contextGatheringTask);
+                    await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask);
 
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
@@ -109,7 +112,7 @@ internal sealed class CharacterTrackersProcessor(
                 .ToArray();
         }
 
-        await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask);
+        await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask);
     }
 
     private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req) => JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
@@ -214,5 +217,67 @@ internal sealed class CharacterTrackersProcessor(
         {
             logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
         }
+    }
+
+    private async Task ExtractWorldInfoFromMainNarrative(
+        GenerationContext context,
+        SceneTracker sceneTracker,
+        CancellationToken cancellationToken)
+    {
+        var narrativeText = context.NewScene?.Scene;
+        if (string.IsNullOrEmpty(narrativeText))
+            return;
+
+        try
+        {
+            var alreadyHandled = BuildAlreadyHandledContent(context);
+            var result = await worldInfoExtractorAgent.Invoke(context, narrativeText, sceneTracker, alreadyHandled, cancellationToken);
+            logger.Information("Extracted {ActivityCount} activities and {FactCount} world facts from main narrative",
+                result.Activity.Count, result.WorldFacts.Count);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to extract world info from main narrative, continuing without it");
+        }
+    }
+
+    private async Task ExtractWorldInfoFromReflection(
+        GenerationContext context,
+        CharacterContext characterContext,
+        SceneTracker sceneTracker,
+        CancellationToken cancellationToken)
+    {
+        var lastRewrite = characterContext.SceneRewrites
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault();
+
+        if (lastRewrite == null || string.IsNullOrEmpty(lastRewrite.Content))
+            return;
+
+        try
+        {
+            var alreadyHandled = BuildAlreadyHandledContent(context);
+            var result = await worldInfoExtractorAgent.Invoke(context, lastRewrite.Content, sceneTracker, alreadyHandled, cancellationToken);
+            logger.Debug("Extracted {ActivityCount} activities and {FactCount} world facts from {Character} reflection",
+                result.Activity.Count, result.WorldFacts.Count, characterContext.Name);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to extract world info from {Character} reflection, continuing without it", characterContext.Name);
+        }
+    }
+
+    private static AlreadyHandledContent BuildAlreadyHandledContent(GenerationContext context)
+    {
+        var creationRequests = context.NewScene?.CreationRequests;
+        return new AlreadyHandledContent
+        {
+            Characters = creationRequests?.Characters,
+            Locations = creationRequests?.Locations,
+            Items = creationRequests?.Items,
+            Lore = creationRequests?.Lore,
+            WorldEvents = context.NewWorldEvents,
+            BackgroundCharacters = context.NewBackgroundCharacters
+        };
     }
 }

@@ -30,5 +30,7 @@ internal enum LorebookCategory
     Item,
     Lore,
     WorldEvent,
-    BackgroundCharacter
+    BackgroundCharacter,
+    Activity,
+    ExtractedWorldFact
 }

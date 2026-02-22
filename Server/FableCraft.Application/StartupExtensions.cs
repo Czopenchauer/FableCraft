@@ -56,6 +56,7 @@ public static class StartupExtensions
             .AddScoped<OffscreenInferenceAgent>()
             .AddScoped<CharacterContextGatherer>()
             .AddScoped<IntentCheckAgent>()
+            .AddScoped<WorldInfoExtractorAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 

@@ -173,6 +173,11 @@ internal sealed class GenerationContext
     [JsonIgnore]
     public bool SkipContextGatherer { get; set; }
 
+    /// <summary>
+    ///     World info extractions accumulated from main narrative and character reflections.
+    /// </summary>
+    public WorldInfoExtractionOutput? WorldInfoExtractions { get; set; }
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,
