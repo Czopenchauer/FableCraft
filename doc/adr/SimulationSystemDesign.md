@@ -216,7 +216,7 @@ When an arc_important character's simulation involves a significant character, t
 
 When MC later encounters Tam, OffscreenInference consumes this log to derive his current state and produce his memories of the event.
 
-**Cleanup:** Events are deleted after consumption by OffscreenInference. No accumulation.
+**Cleanup:** Events are flagged as `Consumed = true` after processing by OffscreenInference. The database records persist for debugging and auditing, but consumed events are excluded from future inference runs. No accumulation in active processing.
 
 ---
 
@@ -300,19 +300,21 @@ When momentum advances significantly, Chronicler emits a world_event describing 
 
 ### Simulation Event Integration (Off-By-One)
 
-Chronicler processes `world_events_emitted` from the **previous** simulation cycle, not the current one. This is because simulation and Chronicler run in parallel.
+> **⚠️ IMPLEMENTATION NOTE (as of Feb 2026):** The prompt expects `world_events_emitted` to be passed to Chronicler, but the current code implementation does NOT provide simulation events to Chronicler. The `ChroniclerAgent.BuildContextPrompt()` method constructs context from scene content, main character, characters, scene tracker, and previous chronicler state—but omits simulation events entirely. This is a **code gap** that should be addressed to match the documented design.
+
+Chronicler **should** process `world_events_emitted` from the **previous** simulation cycle, not the current one. This is because simulation and Chronicler run in parallel.
 
 **Timeline example:**
 1. Scene 5 ends
 2. Post-processing runs in parallel:
-    - Chronicler processes Scene 4's simulation events
+    - Chronicler should process Scene 4's simulation events
     - Simulation runs for Scene 5
 3. Scene 6 starts
 4. Post-processing runs in parallel:
-    - Chronicler processes Scene 5's simulation events
+    - Chronicler should process Scene 5's simulation events
     - ...
 
-When Chronicler receives simulation events, it checks:
+When Chronicler receives simulation events (once implemented), it should check:
 - Does this event affect any momentum item?
 - If yes: update that momentum item's status/trajectory
 - The character's action becomes part of the world's story (with one-scene delay)

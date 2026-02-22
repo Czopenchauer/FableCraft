@@ -57,12 +57,13 @@ internal sealed class CharacterSimulationAgent(
 
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext($"{nameof(CharacterSimulationAgent)}:{character.Name}", context.AdventureId, context.NewSceneId);
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
 
-        var toolsPlugin = await pluginFactory.CreateCharacterPluginAsync<CharacterSimulationToolsPlugin>(
+        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(
+            kernel,
             context,
             callerContext,
             character.CharacterId);
-        kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(toolsPlugin));
 
         var builtKernel = kernel.Build();
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();

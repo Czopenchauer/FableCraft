@@ -2,6 +2,9 @@ using System.Text;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
+using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -24,6 +27,7 @@ internal sealed class OffscreenInferenceAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     CharacterTrackerAgent characterTrackerAgent,
+    IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.OffscreenInferenceAgent;
@@ -248,7 +252,16 @@ internal sealed class OffscreenInferenceAgent(
         chatHistory.AddUserMessage(BuildContextPrompt(input));
         chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
-        var kernel = kernelBuilder.Create().Build();
+        var callerContext = new CallerContext($"{nameof(OffscreenInferenceAgent)}:{input.Character.Name}",  context.AdventureId, context.NewSceneId);
+        
+        var kernelB =  kernelBuilder.Create();
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernelB, context, callerContext);
+        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(
+            kernelB,
+            context,
+            callerContext,
+            input.Character.CharacterId);
+        var kernel = kernelB.Build();
 
         var outputParser = ResponseParser.CreateJsonParser<OffscreenInferenceOutput>(
             "offscreen_inference",

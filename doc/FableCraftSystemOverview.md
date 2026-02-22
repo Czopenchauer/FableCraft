@@ -7,12 +7,16 @@ FableCraft is a standalone interactive fiction engine that produces NPCs with ge
 ## Table of Contents
 
 1. [The Problem FableCraft Solves](#the-problem-fablecraft-solves)
-2. [Setup Phase](#setup-phase)
-3. [Core Gameplay Loop](#core-gameplay-loop)
-4. [Scene Generation Pipeline](#scene-generation-pipeline)
+2. [Why FableCraft?](#why-fablecraft)
+3. [Setup Phase](#setup-phase)
+4. [What You Experience as a Player](#what-you-experience-as-a-player)
+5. [Example: What Happens When You Act](#example-what-happens-when-you-act)
+6. [Core Gameplay Loop](#core-gameplay-loop)
+7. [Scene Generation Pipeline](#scene-generation-pipeline)
+   - [Enrichment Flow](#enrichment-flow)
    - [Step 1: Writer](#step-1-writer)
    - [Step 2: Output](#step-2-output)
-5. [Background Processing](#background-processing)
+8. [Background Processing](#background-processing)
    - [Phase 1: SceneTracker](#phase-1-scenetracker-runs-first)
    - [Phase 2: Parallel Processing](#phase-2-parallel-processing)
      - [MainCharacterTracker](#maincharactertracker-mc-only)
@@ -20,14 +24,16 @@ FableCraft is a standalone interactive fiction engine that produces NPCs with ge
      - [Chronicler](#chronicler)
      - [ContextGatherer](#contextgatherer)
      - [Crafters](#crafters)
-6. [SceneGeneratedEvent Handler](#scenegeneratedevent-handler)
-7. [Character Tiers](#character-tiers)
-8. [Knowledge Architecture](#knowledge-architecture)
-9. [Data Flow Summary](#data-flow-summary)
-10. [Simulation](#simulation)
+9. [SceneGeneratedEvent Handler](#scenegeneratedevent-handler)
+10. [Character Tiers](#character-tiers)
+11. [Knowledge Architecture](#knowledge-architecture)
+12. [Data Flow Summary](#data-flow-summary)
+13. [Simulation](#simulation)
     - [Simulation Pipeline](#simulation-pipeline)
     - [OffscreenInference](#offscreeninference)
-11. [Key Design Decisions](#key-design-decisions)
+14. [Key Design Decisions](#key-design-decisions)
+15. [Implementation Details](#implementation-details)
+16. [Glossary](#glossary)
 
 ---
 
@@ -46,6 +52,50 @@ FableCraft's approach:
 - Character emulation at write-time (full psychological context when characters act)
 - Off-screen simulation (characters live between encounters)
 - Narrative awareness (story fabric tracking, world momentum, writer guidance)
+
+---
+
+## Why FableCraft?
+
+If you've used SillyTavern or similar tools, you know the frustration:
+- Constantly reminding the AI what happened three scenes ago
+- Characters "forgetting" crucial information mid-conversation
+- Manually updating lorebooks after every session
+- Writing elaborate system prompts to stop knowledge bleed
+- The bartender somehow knowing the villain's secret plan
+- Restarting because memory got too corrupted to fix
+
+**FableCraft eliminates memory management entirely.**
+
+### The Memory Problem, Solved
+
+| Traditional RP Tools | FableCraft |
+|---------------------|------------|
+| You manually update lorebooks | Events automatically commit to Knowledge Graphs |
+| One model "remembers" everything for everyone | Each character has isolated memory—they only know what they experienced |
+| Context window fills up, old info drops | Structured storage with semantic retrieval—context stays ~60k, queries pull what's relevant |
+| "The AI forgot again" | Queryable memory—recall depends on smart queries, not stuffing everything into context |
+| Characters bleed knowledge | Hard boundaries—the bartender can't access the villain's thoughts |
+| You babysit continuity | Background processing maintains world state automatically |
+| Hoping the model infers correctly | Explicit tracking of time, location, character states |
+| NPCs wait in place until you visit them | Characters move, work, travel—you might encounter them unexpectedly |
+
+### How It Works (Without You Managing It)
+
+**After each scene, automatically:**
+- Scene content commits to the protagonist's memory
+- Each NPC present gets the scene from their perspective
+- World facts (new locations, items, lore) commit to shared knowledge
+- Character states update (health, equipment, relationships)
+- Time advances consistently for everyone
+
+**When generating the next scene:**
+- Relevant memories are retrieved (not everything, just what matters)
+- Each character only accesses their own knowledge
+- The Writer queries world facts as needed
+- Previous character observations inform current behavior
+
+**The result:** You play. Memory just works.
 
 ---
 
@@ -69,6 +119,102 @@ Once provided, the system:
 4. Generates the first scene via WriterAgent
 5. Returns the scene with three choices to the player
 6. Enrichment runs in background (initializes Main Character tracker state, etc.)
+
+---
+
+## What You Experience as a Player
+
+### The Play Loop
+
+1. **You see a scene** — First-person prose, present tense
+2. **You get three choices** — Or write your own
+3. **You pick**
+4. **New scene generates**
+5. **Repeat**
+
+That's the entire interaction. No memory management. No lorebook updates. No "remind the AI" prompts.
+
+### Memory That Just Works
+
+**You never:**
+- Update a lorebook entry
+- Remind the AI what happened last session
+- Worry about context window limits
+- Fix "the AI forgot" errors
+- Manage character knowledge manually
+
+**The system automatically:**
+- Records what happened from each character's perspective
+- Retrieves relevant memories when generating scenes (via semantic queries—recall depends on query quality, not context size)
+- Maintains hard boundaries between character knowledge
+- Tracks time, location, equipment, relationships
+- Preserves continuity across sessions (context stays ~60k; old info is stored, not stuffed into context)
+
+### What Changes Feel Like
+
+**Session 1:** You insult the merchant and leave without paying.
+
+**Session 47:** You return to that shop.
+- The merchant remembers (it's in their memory, retrieved automatically)
+- Their greeting reflects that history
+- Other merchants may have heard (if simulation ran)
+- You didn't maintain any of this—it just works
+
+### NPCs Live Their Own Lives
+
+Characters don't wait in place for you to show up. They have jobs, routines, and goals.
+
+**Example:** You met an adventurer named Kira at the guild hall last week.
+
+**Today:** You're exploring a forest outside the city and—Kira is there. Not because you looked for her, but because she took a contract to clear out wolves. She recognizes you, mentions the guild, maybe asks for help.
+
+This happens because:
+- Characters have tracked locations that update during simulation
+- When you enter a scene, the system checks who else is at that location
+- Co-located characters appear naturally in your scene
+- They remember you from before (automatic memory retrieval)
+
+**The world doesn't revolve around you.** Characters go about their business, and sometimes your paths cross.
+
+### Knowledge Boundaries in Practice
+
+| Character | What They Know | What They Don't Know |
+|-----------|---------------|---------------------|
+| Bartender | Gossip, who's been in lately, your tab | The king's secret plan |
+| Villain's Lieutenant | The plan, their orders | That you overheard them |
+| Your Companion | Everything you've done together | What you did before meeting them |
+
+These boundaries are enforced by architecture, not by hoping the model infers correctly.
+
+---
+
+## Example: What Happens When You Act
+
+**You type:** "I try to convince the guard to let me into the restricted area"
+
+**What the Writer does:**
+
+1. **Separates action from wishful thinking**
+   - Physical action: You speak to the guard
+   - Wishful thinking: "convince," "let me in"—your hope, not guaranteed
+
+2. **Checks mechanism**
+   - Do you have an argument? A bribe? Authority? A threat?
+   - If yes → proceed to emulation
+   - If no → you speak, the guard is unmoved (no mechanism = no world-bending)
+
+3. **Emulates the guard** (if they have a profile)
+   - Loads their psychology, their current mood, their relationship to you
+   - Generates their response in isolation—they don't know your internal thoughts
+   - Their response is canonical—the Writer can't override it
+
+4. **Writes the scene**
+   - Your attempt rendered in first-person present tense
+   - The guard's response (from emulation or GEARS framework)
+   - Consequences that flow naturally
+   - Three new choices
+
+**What you see:** A scene where you try to talk your way past the guard, they respond according to their actual personality and circumstances, and you get new options based on what actually happened—not what you hoped would happen.
 
 ---
 
@@ -123,6 +269,45 @@ Each player input triggers one full cycle. The scene boundary is the player acti
 
 ## Scene Generation Pipeline
 
+Scene generation and enrichment are **two separate API calls**:
+
+1. **Scene Generation** (`GenerateSceneAsync`) - Produces the scene prose and choices, returns immediately to player
+2. **Enrichment** (`EnrichSceneAsync`) - Runs background processing while player reads
+
+This separation ensures responsive gameplay—the player sees the scene immediately while enrichment runs asynchronously.
+
+### Enrichment Flow
+
+```mermaid
+flowchart TD
+    subgraph Gen["Scene Generation (synchronous)"]
+        Input[Player Action] --> Writer
+        Writer --> Scene[Scene + Choices]
+        Scene --> Save1["Save Scene (EnrichmentStatus: NotStarted)"]
+        Save1 --> Return[Return to Player]
+    end
+
+    subgraph Enrich["Enrichment (asynchronous)"]
+        Return -.->|"async"| Start["EnrichmentStatus: Enriching"]
+        Start --> ST[SceneTracker runs FIRST]
+        ST --> Parallel["Parallel Processing:<br/>MainCharacterTracker, CharacterReflection,<br/>Chronicler, Simulation, ContextGatherer, Crafters"]
+        Parallel --> Save2["Save Enrichment (EnrichmentStatus: Enriched)"]
+    end
+
+    Save2 --> Ready["Ready for Next Scene"]
+```
+
+**EnrichmentStatus values:**
+- `NotStarted` — Scene saved, enrichment not yet begun
+- `Enriching` — Background processing in progress
+- `Enriched` — All processing complete
+- `EnrichmentFailed` — Error during enrichment (scene still usable)
+
+**Why this matters:**
+- Players get immediate scene response (no waiting for AI processing)
+- Enrichment failures don't block gameplay—the scene is already saved
+- Allows recovery from partial enrichment if needed
+
 ### Step 1: Writer
 
 The Writer is the core of scene generation. It processes player actions, determines outcomes, emulates NPCs, and produces first-person narrative.
@@ -142,6 +327,14 @@ The Writer is the core of scene generation. It processes player actions, determi
 | **Pending Interactions** | NPCs who decided to seek MC (from Simulation) |
 | **World Context** | Retrieved context from ContextGatherer |
 | **Previous Character Observations** | What MC observed about NPCs in recent scenes |
+
+**Pending Interactions Handling:**
+- `manifesting_now` urgency — Must be included in current scene
+- `high` urgency — Weave into scene transition or opening
+- `medium` urgency — Find appropriate moment in next few scenes
+- `low` urgency — Background thread, address when natural
+
+Writer is FREE to choose HOW to include them (except `manifesting_now`). Urgency guides timing, not mandate.
 
 **First scene only:**
 - First Scene Guidance (adventure setup instructions)
@@ -359,6 +552,8 @@ Everything else runs in parallel after SceneTracker completes:
 
 Maintains the complete, authoritative state of the main character. The tracker is the source of truth for who the character is and what condition they're in.
 
+**First Scene Handling:** For the first scene only, `InitMainCharacterTrackerAgent` is used instead of the regular `MainCharacterTrackerAgent`. This creates the initial tracker state from the character description, establishing baseline values for all trackable fields.
+
 ##### Inputs
 
 | Input | Description |
@@ -495,6 +690,13 @@ If either test says NO → don't update. Peak emotional states are not stable st
 
 Runs immediately after CharacterReflection. Updates the NPC's physical state using the same principles as MainCharacterTracker—observe narrative, record changes, maintain consistency. Separated due to complexity, but logically one flow with CharacterReflection.
 
+**Processing Locations:**
+- **Existing characters in scene** → `CharacterTrackersProcessor` (enrichment)
+- **Newly created characters** → `ContentGenerator` (enrichment)
+- **Simulated characters** → `SimulationOrchestrator` (enrichment)
+
+This split processing is an implementation detail—all paths use the same CharacterTracker agent.
+
 #### Chronicler
 
 The story's memory and conscience. Watches what happens and understands the *narrative implications*—not mechanical state, but artistic state. Serves two masters: the MC's story and the world's story.
@@ -506,9 +708,11 @@ The story's memory and conscience. Watches what happens and understands the *nar
 | **Current Scene** | The narrative that just occurred |
 | **Time Context** | Current and previous in-world timestamps (to calculate elapsed time) |
 | **Previous Story State** | Chronicler's own output from previous scene |
-| **Simulation Events** | `world_events_emitted` from character simulations (if any) |
+| **Simulation Events** | `world_events_emitted` from character simulations (if any) — **⚠️ Note: Not yet implemented in code** |
 | **World Setting** | Geography, factions, power systems, cultures |
 | **Story Bible** | Tone, themes, content calibration |
+
+> **⚠️ Code Gap:** The prompt expects `world_events_emitted` from simulation, but the current implementation does not pass simulation events to Chronicler. See [Implementation Details](#implementation-details) for more information.
 
 ##### Tools
 
@@ -619,6 +823,8 @@ Events emitted are written from the **world's perspective**—what could be disc
 | **world_events** | Discoverable facts to emit to World KG (usually empty) |
 | **lore_requests** | Usually empty; only for recurring elements that need consistency |
 
+> **Note on Binding:** "Mandatory" means prompt-level expectation, not code enforcement. The Writer prompt instructs it to include `manifesting_now` consequences, but there's no validation layer that rejects scenes missing them. This is by design—LLM outputs are guided, not constrained.
+
 #### ContextGatherer
 
 Strategic information retrieval specialist. Analyzes recent narrative and generates targeted queries to retrieve relevant world knowledge and story history for the next scene.
@@ -675,6 +881,12 @@ Identifies characters at the same location as current scene:
 - Same place or more specific (inside) → co-located
 - Less specific (broader area) or different → not co-located
 - Discovered characters need their context fetched in the same pass
+
+**Flow:**
+1. ContextGatherer identifies co-located characters and outputs `co_located_characters` list
+2. Co-located characters are passed to SceneTracker as input for presence tracking
+3. SceneTracker includes them in `CharactersPresent` if they appear in the scene
+4. Writer receives co-located characters in context, may include them in narrative
 
 ##### Core Principles
 
@@ -930,6 +1142,8 @@ Runs when arc-important characters are stale (>6 in-world hours since last simul
 
 **All-or-Nothing Rule:** If any arc-important character simulates, ALL arc-important characters simulate (except those in scene). This prevents temporal paradoxes where one character is "caught up" but another isn't.
 
+> **Implementation Note:** This rule is implicit—SimulationPlanner builds a roster of ALL arc-important characters when triggered. Characters are excluded only if: currently in scene (handled by CharacterReflection), or simulated within last 2 hours. There's no explicit enforcement check—the rule emerges from roster construction logic.
+
 **Outputs:**
 - Character scenes and memories (what they experienced)
 - State updates (physical/mental changes)
@@ -943,8 +1157,11 @@ For significant characters likely to appear in the next scene. Lightweight simul
 Unlike full Simulation:
 - Doesn't generate full scenes
 - Produces minimal memories ("I've been working at the docks all morning")
+- Salience capped at 6 (prompt guidance—inference doesn't produce high-salience memories)
 - Runs only for characters about to appear
 - Much faster execution
+
+**Event Consumption:** When processing events from arc-important characters' simulations, events are marked as `Consumed = true` (not deleted). This preserves audit trail while preventing duplicate processing.
 
 ---
 
@@ -970,3 +1187,79 @@ Immersion. The player IS the character experiencing the moment, not reading abou
 
 **Why commit the previous scene instead of the current one?**
 Error recovery. The current scene can be regenerated if the AI makes mistakes. Only when the player moves forward is the previous scene "finalized" and committed to the KG. This keeps the knowledge graph clean of discarded content.
+
+---
+
+## Implementation Details
+
+### Thread Safety
+
+All parallel processors in the enrichment phase use `lock(context)` for shared state updates. This prevents race conditions when multiple agents (ContentGenerator, SimulationOrchestrator, CharacterTrackersProcessor) write to the same context object simultaneously.
+
+### Scene History Limits by Agent
+
+| Agent | Scene Limit | Purpose |
+|-------|-------------|---------|
+| **Writer** | 30 scenes | Full narrative continuity |
+| **StandaloneSimulation** | 20 scenes | Character history for simulation |
+| **CharacterSimulation** | 20 scenes | Cohort simulation context |
+| **OffscreenInference** | 10 scenes | Lightweight inference |
+| **ContextGatherer** | 20 scenes | Pattern recognition |
+
+### Context Budget
+
+ContextGatherer enforces a hard limit on information items:
+
+| Prompt Set | Item Limit |
+|------------|------------|
+| **Own** | 40 items |
+| **Default** | 20 items |
+
+This includes carried-forward world context, story history, and new queries combined.
+
+### Caching
+
+**PendingReflectionCache** prevents duplicate CharacterReflection calls within the same enrichment cycle. This is critical when both scene processing and simulation could trigger reflection for the same character.
+
+**CohortSimulationState** persists cohort simulation progress, allowing resumption after partial completion. Contains chat history per character and reflection status flags.
+
+### Creation Request Processing
+
+Writer and Simulation both produce `creation_requests` but they're processed in different locations:
+
+| Source | Processing Location |
+|--------|---------------------|
+| Writer's `creation_requests` | ContentGenerator (enrichment) |
+| Simulation's `creation_requests` | SimulationOrchestrator (inline) |
+
+Both use the same Crafter agents.
+
+### Known Code Gaps
+
+> **Chronicler Simulation Events:** The documentation describes Chronicler receiving `world_events_emitted` from simulation, but the current implementation does NOT pass simulation events to Chronicler. This is a code gap—the prompt expects it, but `ChroniclerAgent.BuildContextPrompt()` omits this context.
+
+### Importance Flag Processing
+
+The `importance_flags` output from Writer (upgrade/downgrade requests) is processed in `SaveSceneEnrichment.ProcessImportanceFlags()`:
+
+- Only transitions between `arc_important` ↔ `significant` are valid
+- Invalid requests (e.g., `background` → `arc_important`) are logged and ignored
+- Missing characters are logged and skipped
+
+---
+
+## Glossary
+
+| Term | Definition |
+|------|------------|
+| **Knowledge Graph (KG)** | A structured database of facts, relationships, and memories. Unlike a lorebook, it's queryable and characters can only access their own portions. |
+| **RAG** | Retrieval-Augmented Generation. The system queries the Knowledge Graph for relevant context before generating. Recall quality depends on the model's ability to ask good questions—context stays capped (~60k tokens) rather than growing unbounded. |
+| **Emulation** | When a character acts, the system loads their full psychological profile and generates their response in isolation—they don't have access to information they shouldn't know. |
+| **Simulation** | Off-screen characters continue living between scenes. The villain schemes. The merchant restocks. Time passes for everyone, not just the player. |
+| **Arc-important** | Characters central to the story who get full simulation, psychological profiles, and independent agency. |
+| **Significant** | Supporting characters with profiles but lighter processing. |
+| **Background** | Minor characters (guards, shopkeepers) who appear briefly and don't need full profiles. |
+| **Enrichment** | Background processing that happens while you read—updating character states, running simulations, preparing context. |
+| **Story Bible** | Your creative direction document: tone, themes, what's allowed, what's off-limits. |
+| **Worldbook** | Your world's facts: geography, factions, history, magic system. Indexed into the Knowledge Graph. |
+| **Co-location** | Characters at the same location appear together in scenes. NPCs move around based on their routines and goals, so you might encounter them unexpectedly. |
