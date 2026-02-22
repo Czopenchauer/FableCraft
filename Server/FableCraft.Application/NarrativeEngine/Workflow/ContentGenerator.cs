@@ -42,6 +42,8 @@ internal class ContentGenerator(
         Task<LocationGenerationResult[]>? locationTask = null;
         Task<GeneratedItem[]>? itemTask = null;
 
+        var sceneContext = context.SceneContext;
+
         if (fullProfileCharacterRequests.Count > 0)
         {
             fullCharacterTask = Task.WhenAll(fullProfileCharacterRequests
@@ -54,7 +56,7 @@ internal class ContentGenerator(
                     }
                     else
                     {
-                        character = await characterCrafter.Invoke(context, x, cancellationToken);
+                        character = await characterCrafter.Invoke(context, x, sceneContext, cancellationToken);
                         lock (context)
                         {
                             x.CharacterId = character.CharacterId;
@@ -85,7 +87,7 @@ internal class ContentGenerator(
         if (backgroundCharacterRequests.Count > 0 && !hasBackgroundCharacters)
         {
             backgroundCharacterTask = Task.WhenAll(backgroundCharacterRequests
-                .Select(x => partialProfileCrafter.Invoke(context, x, cancellationToken)).ToArray());
+                .Select(x => partialProfileCrafter.Invoke(context, x, sceneContext, cancellationToken)).ToArray());
         }
 
         if (context.NewLore.Any())
@@ -95,7 +97,7 @@ internal class ContentGenerator(
         else
         {
             loreTask = Task.WhenAll(creationRequests.Lore
-                .Select(x => loreCrafter.Invoke(context, x, cancellationToken)).ToArray());
+                .Select(x => loreCrafter.Invoke(context, x, sceneContext, cancellationToken)).ToArray());
         }
 
         if (context.NewLocations?.Any() ?? false)
@@ -105,7 +107,7 @@ internal class ContentGenerator(
         else
         {
             locationTask = Task.WhenAll(creationRequests.Locations
-                .Select(location => locationCrafter.Invoke(context, location, cancellationToken)).ToArray());
+                .Select(location => locationCrafter.Invoke(context, location, sceneContext, cancellationToken)).ToArray());
         }
 
         if (context.NewItems?.Any() ?? false)
@@ -115,7 +117,7 @@ internal class ContentGenerator(
         else
         {
             itemTask = Task.WhenAll(creationRequests.Items
-                .Select(item => itemCrafter.Invoke(context, item, cancellationToken)).ToArray());
+                .Select(item => itemCrafter.Invoke(context, item, sceneContext, cancellationToken)).ToArray());
         }
 
         await Task.WhenAll(fullCharacterTask);

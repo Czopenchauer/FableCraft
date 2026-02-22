@@ -24,6 +24,7 @@ internal sealed class LoreCrafter(
     public async Task<GeneratedLore> Invoke(
         GenerationContext context,
         LoreRequest request,
+        SceneContext[] sceneContext,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
@@ -35,9 +36,9 @@ internal sealed class LoreCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.Context(context)}
+                             {PromptSections.Context(context, sceneContext)}
 
-                             {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
+                             {PromptSections.PreviousScene(sceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

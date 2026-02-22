@@ -306,6 +306,11 @@ internal sealed class CharacterSceneContext
     public required int SequenceNumber { get; set; }
 
     public required SceneTracker? SceneTracker { get; set; }
+
+    /// <summary>
+    ///     Context gathered after simulation for use in next invocation.
+    /// </summary>
+    public CharacterGatheredContext? GatheredContext { get; set; }
 }
 
 /// <summary>

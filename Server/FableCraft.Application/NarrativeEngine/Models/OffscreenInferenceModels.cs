@@ -33,6 +33,11 @@ internal sealed class OffscreenInferenceInput
     ///     World events that may have affected the character.
     /// </summary>
     public object? WorldEvents { get; init; }
+
+    /// <summary>
+    ///     World context gathered from the previous scene for grounding world knowledge.
+    /// </summary>
+    public GatheredContext? GatheredWorldContext { get; init; }
 }
 
 /// <summary>

@@ -54,6 +54,7 @@ public static class StartupExtensions
             .AddScoped<SimulationModeratorAgent>()
             .AddScoped<CharacterSimulationAgent>()
             .AddScoped<OffscreenInferenceAgent>()
+            .AddScoped<CharacterContextGatherer>()
             .AddScoped<IntentCheckAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();

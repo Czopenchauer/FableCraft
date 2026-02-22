@@ -32,5 +32,10 @@ public sealed class CharacterSceneRewrite : IEntity
     /// </summary>
     public required string Content { get; set; }
 
+    /// <summary>
+    ///     Context gathered after simulation for use in next invocation.
+    /// </summary>
+    public CharacterGatheredContext? GatheredContext { get; set; }
+
     public Guid Id { get; set; }
 }

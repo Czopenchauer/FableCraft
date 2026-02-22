@@ -28,6 +28,7 @@ internal sealed class PartialProfileCrafter(
     public async Task<GeneratedPartialProfile> Invoke(
         GenerationContext context,
         CharacterRequest request,
+        SceneContext[] sceneContext,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
@@ -39,7 +40,7 @@ internal sealed class PartialProfileCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
+                             {PromptSections.PreviousScene(sceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

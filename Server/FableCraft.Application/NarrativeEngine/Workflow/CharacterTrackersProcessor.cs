@@ -17,6 +17,7 @@ internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
+    CharacterContextGatherer characterContextGatherer,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
     ChroniclerAgent chroniclerAgent,
     LoreCrafter loreCrafter,
@@ -89,7 +90,12 @@ internal sealed class CharacterTrackersProcessor(
                         }
                     }
 
-                    var tracker = await characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
+                    var trackerTask = characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
+                    var contextGatheringTask = GatherAndStoreCharacterContext(context, characterContext, cancellationToken);
+
+                    await Task.WhenAll(trackerTask, contextGatheringTask);
+
+                    var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = tracker.IsDead;
 
@@ -171,12 +177,42 @@ internal sealed class CharacterTrackersProcessor(
         if (context.ChroniclerLore.Length == 0 && context.ChroniclerOutput.LoreRequests.Length != 0)
         {
             logger.Information("Chronicler requested {Count} lore entries", context.ChroniclerOutput.LoreRequests.Length);
+            var sceneContext = context.SceneContext ?? [];
             var loreResults = await Task.WhenAll(
                 context.ChroniclerOutput.LoreRequests.Select(req =>
-                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), cancellationToken)));
+                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), sceneContext, cancellationToken)));
 
             context.ChroniclerLore = loreResults;
             logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
+        }
+    }
+
+    /// <summary>
+    ///     Runs CharacterContextGatherer for a character and stores the result
+    ///     in their most recent scene rewrite for use in the next invocation.
+    /// </summary>
+    private async Task GatherAndStoreCharacterContext(
+        GenerationContext context,
+        CharacterContext characterContext,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var gatheredContext = await characterContextGatherer.Invoke(context, characterContext, cancellationToken);
+
+            var lastRewrite = characterContext.SceneRewrites
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefault();
+
+            lastRewrite!.GatheredContext = gatheredContext;
+            logger.Information(
+                "Stored gathered context for {CharacterName} in scene rewrite #{SequenceNumber}",
+                characterContext.Name,
+                lastRewrite.SequenceNumber);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
         }
     }
 }

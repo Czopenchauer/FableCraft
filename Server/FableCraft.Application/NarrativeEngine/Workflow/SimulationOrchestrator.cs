@@ -20,6 +20,7 @@ internal sealed class SimulationOrchestrator(
     SimulationModeratorAgent cohortModeratorAgent,
     OffscreenInferenceAgent offscreenInferenceAgent,
     CharacterTrackerAgent characterTrackerAgent,
+    CharacterContextGatherer characterContextGatherer,
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
     ItemCrafter itemCrafter,
@@ -85,6 +86,8 @@ internal sealed class SimulationOrchestrator(
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
 
+        var gatheredContext = GetPreviousGatheredContext(context);
+
         var simulationTasks = plan.Standalone!
             .Select(async standalone =>
             {
@@ -128,7 +131,8 @@ internal sealed class SimulationOrchestrator(
                     {
                         Character = character,
                         TimePeriod = context.NewTracker!.Scene,
-                        WorldEvents = previousState?.WorldMomentum
+                        WorldEvents = previousState?.WorldMomentum,
+                        GatheredWorldContext = gatheredContext
                     };
 
                     try
@@ -228,10 +232,11 @@ internal sealed class SimulationOrchestrator(
 
                 try
                 {
+                    var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
                     var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
-                    var creationTask = ProcessCreationRequests(context, result.CreationRequests, cancellationToken);
+                    var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, creationTask);
+                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken));
 
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
@@ -313,6 +318,8 @@ internal sealed class SimulationOrchestrator(
 
         var charactersInScene = context.NewTracker?.Scene?.CharactersPresent ?? [];
 
+        var gatheredContext = GetPreviousGatheredContext(context);
+
         var cohortTasks = plan.Cohorts!.Select(async cohort =>
         {
             // Filter out characters who were present in the scene
@@ -342,7 +349,7 @@ internal sealed class SimulationOrchestrator(
                 SimulationPeriod = context.NewTracker!.Scene!.Time!,
                 KnownInteractions = cohort.ExtensionData,
                 WorldEvents = previousState?.WorldMomentum,
-                SignificantCharacters = significantCharacters.Length > 0 ? significantCharacters : null
+                SignificantCharacters = significantCharacters.Length > 0 ? significantCharacters : null,
             };
 
             try
@@ -485,10 +492,11 @@ internal sealed class SimulationOrchestrator(
             }
         }
 
+        var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
         var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
-        var creationTask = ProcessCreationRequests(context, result.CreationRequests, cancellationToken);
+        var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
 
-        await Task.WhenAll(trackerTask, creationTask);
+        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken));
 
         var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
@@ -536,7 +544,7 @@ internal sealed class SimulationOrchestrator(
         }
     }
 
-    private async Task ProcessCreationRequests(GenerationContext context, CreationRequests? requests, CancellationToken cancellationToken)
+    private async Task ProcessCreationRequests(GenerationContext context, CreationRequests? requests, SceneContext[] sceneContext, CancellationToken cancellationToken)
     {
         if (requests == null)
         {
@@ -549,7 +557,7 @@ internal sealed class SimulationOrchestrator(
         {
             tasks.Add(Task.Run(async () =>
                 {
-                    var result = await locationCrafter.Invoke(context, loc, cancellationToken);
+                    var result = await locationCrafter.Invoke(context, loc, sceneContext, cancellationToken);
                     lock (context)
                     {
                         loc.Processed = true;
@@ -564,7 +572,7 @@ internal sealed class SimulationOrchestrator(
         {
             tasks.Add(Task.Run(async () =>
                 {
-                    var result = await itemCrafter.Invoke(context, item, cancellationToken);
+                    var result = await itemCrafter.Invoke(context, item, sceneContext, cancellationToken);
                     lock (context)
                     {
                         item.Processed = true;
@@ -578,7 +586,7 @@ internal sealed class SimulationOrchestrator(
         {
             tasks.Add(Task.Run(async () =>
                 {
-                    var result = await loreCrafter.Invoke(context, lore, cancellationToken);
+                    var result = await loreCrafter.Invoke(context, lore, sceneContext, cancellationToken);
                     lock (context)
                     {
                         lore.Processed = true;
@@ -592,6 +600,79 @@ internal sealed class SimulationOrchestrator(
         {
             await Task.WhenAll(tasks);
             logger.Information("Processed {Count} creation requests from simulation", tasks.Count);
+        }
+    }
+
+    /// <summary>
+    ///     Gets the gathered context from the previous scene.
+    ///     This provides world knowledge for simulation agents.
+    /// </summary>
+    private static GatheredContext? GetPreviousGatheredContext(GenerationContext context)
+    {
+        return context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
+    }
+
+    /// <summary>
+    ///     Builds SceneContext array from a character's SceneRewrites.
+    ///     Uses the character's scene content but borrows GatheredContext from global context
+    ///     to preserve world knowledge for crafters.
+    /// </summary>
+    private static SceneContext[] BuildCharacterSceneContext(GenerationContext context, CharacterContext characterContext)
+    {
+        // Get the GatheredContext from global context to preserve world knowledge
+        var globalGatheredContext = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
+
+        return characterContext.SceneRewrites
+            .Select(scene => new SceneContext
+            {
+                SequenceNumber = scene.SequenceNumber,
+                SceneContent = scene.Content,
+                PlayerChoice = string.Empty,
+                Metadata = new Metadata
+                {
+                    GatheredContext = globalGatheredContext,
+                    Tracker = scene.SceneTracker != null
+                        ? new Tracker { Scene = scene.SceneTracker }
+                        : null
+                }
+            })
+            .ToArray();
+    }
+
+    /// <summary>
+    ///     Runs CharacterContextGatherer for a character and stores the result
+    ///     in their most recent scene rewrite for use in the next simulation.
+    /// </summary>
+    private async Task GatherAndStoreCharacterContext(
+        GenerationContext context,
+        CharacterContext characterContext,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var gatheredContext = await characterContextGatherer.Invoke(context, characterContext, cancellationToken);
+
+            // Store in the character's last scene rewrite
+            var lastRewrite = characterContext.SceneRewrites
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefault();
+
+            if (lastRewrite != null)
+            {
+                lastRewrite.GatheredContext = gatheredContext;
+                logger.Information(
+                    "Stored gathered context for {CharacterName} in scene rewrite #{SequenceNumber}",
+                    characterContext.Name,
+                    lastRewrite.SequenceNumber);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
         }
     }
 }

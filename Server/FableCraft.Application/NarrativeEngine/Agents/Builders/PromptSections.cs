@@ -507,9 +507,12 @@ internal static class PromptSections
                 """;
     }
 
-    public static string Context(GenerationContext generationContext)
+    public static string Context(GenerationContext generationContext) =>
+        Context(generationContext, generationContext.SceneContext);
+
+    public static string Context(GenerationContext generationContext, SceneContext[] sceneContext)
     {
-        var context = generationContext.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.GatheredContext;
+        var context = sceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.GatheredContext;
         if (context == null)
         {
             return string.Empty;
@@ -593,6 +596,58 @@ internal static class PromptSections
                 **Recently Created Items**:
                 {itemContent}
                 </knowledge_graph_context>
+                """;
+    }
+
+    /// <summary>
+    ///     Formats world context for simulation agents using character's own gathered context.
+    ///     Falls back to scene-level gathered context if character has none.
+    /// </summary>
+    public static string SimulationWorldContextForCharacter(
+        CharacterContext character,
+        GenerationContext generationContext)
+    {
+        var characterContext = character.SceneRewrites
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.GatheredContext;
+
+        var worldContext = characterContext?.WorldContext.Length > 0
+            ? string.Join("\n", characterContext.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No world context available.";
+
+        var narrativeContext = characterContext?.NarrativeContext.Length > 0
+            ? string.Join("\n", characterContext.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
+            : "No narrative context available.";
+
+        var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var locationContent = generationContext.PreviouslyGeneratedLocations.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedLocations.Select(x => $"- {x.Content}"))
+            : "None";
+
+        var itemContent = generationContext.PreviouslyGeneratedItems.Length > 0
+            ? string.Join("\n", generationContext.PreviouslyGeneratedItems.Select(x => $"- {x.Content}"))
+            : "None";
+
+        return $"""
+                <world_knowledge>
+                **World Knowledge** (locations, lore, items, events):
+                {worldContext}
+
+                **Character Narrative History**:
+                {narrativeContext}
+
+                **Recently Created Lore**:
+                {loreContent}
+
+                **Recently Created Locations**:
+                {locationContent}
+
+                **Recently Created Items**:
+                {itemContent}
+                </world_knowledge>
                 """;
     }
 

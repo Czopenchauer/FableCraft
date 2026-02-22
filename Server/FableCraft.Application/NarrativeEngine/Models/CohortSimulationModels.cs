@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+using FableCraft.Infrastructure.Persistence.Entities.Adventure;
+
 using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace FableCraft.Application.NarrativeEngine.Models;

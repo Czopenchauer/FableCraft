@@ -24,6 +24,7 @@ internal sealed class ItemCrafter(
     public async Task<GeneratedItem> Invoke(
         GenerationContext context,
         ItemRequest request,
+        SceneContext[] sceneContext,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
@@ -33,9 +34,9 @@ internal sealed class ItemCrafter(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
-                             {PromptSections.Context(context)}
+                             {PromptSections.Context(context, sceneContext)}
 
-                             {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
+                             {PromptSections.PreviousScene(sceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

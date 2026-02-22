@@ -18,6 +18,10 @@ public class CharacterSceneRewriteConfiguration : IEntityTypeConfiguration<Chara
             x => JsonSerializer.Serialize(x, options),
             x => JsonSerializer.Deserialize<SceneTracker>(x, options)!);
 
+        builder.Property(x => x.GatheredContext).HasConversion<string?>(
+            x => x == null ? null : JsonSerializer.Serialize(x, options),
+            x => x == null ? null : JsonSerializer.Deserialize<CharacterGatheredContext>(x, options));
+
         builder.HasOne(x => x.Scene)
             .WithMany(x => x.CharacterSceneRewrites)
             .HasForeignKey(x => x.SceneId)

@@ -109,6 +109,20 @@ public sealed class GatheredContext
 }
 
 /// <summary>
+///     Context gathered for a character after simulation.
+///     Used as extra context for the next simulation invocation.
+/// </summary>
+public sealed class CharacterGatheredContext
+{
+    public GatheredContextItem[] WorldContext { get; set; } = [];
+
+    public GatheredContextItem[] NarrativeContext { get; set; } = [];
+
+    [JsonExtensionData]
+    public Dictionary<string, object>? AdditionalProperties { get; init; }
+}
+
+/// <summary>
 ///     A single item of gathered context from the knowledge graph.
 /// </summary>
 public sealed class GatheredContextItem

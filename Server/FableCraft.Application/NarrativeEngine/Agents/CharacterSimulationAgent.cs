@@ -113,6 +113,8 @@ internal sealed class CharacterSimulationAgent(
 
         prompt = prompt.Replace("{{significant_characters}}", FormatSignificantCharacters(cohortInput.SignificantCharacters));
 
+        prompt = prompt.Replace("{{world_context}}", PromptSections.SimulationWorldContextForCharacter(character, context));
+
         prompt = await ReplaceInjectableReference(prompt, "{{salience_scale}}", "Salience.md", context.PromptPath);
         prompt = await ReplaceInjectableReference(prompt, "{{physical_state_reference}}", "PhysicalStateReference.md", context.PromptPath);
         prompt = await ReplaceInjectableReference(prompt, "{{knowledge_boundaries}}", "KnowledgeBoundaries.md", context.PromptPath);

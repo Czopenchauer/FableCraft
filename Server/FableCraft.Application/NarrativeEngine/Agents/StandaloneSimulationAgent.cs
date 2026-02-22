@@ -131,6 +131,8 @@ internal sealed class StandaloneSimulationAgent(
                 {FormatRelationships(input.Character)}
                 </relationships>
 
+                {PromptSections.SimulationWorldContextForCharacter(input.Character, context)}
+
                 <world_events>
                 {FormatWorldEvents(input.WorldEvents)}
                 </world_events>

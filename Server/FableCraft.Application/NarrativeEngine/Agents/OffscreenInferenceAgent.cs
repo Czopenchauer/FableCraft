@@ -27,6 +27,7 @@ internal sealed class OffscreenInferenceAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     CharacterTrackerAgent characterTrackerAgent,
+    CharacterContextGatherer characterContextGatherer,
     IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
@@ -118,6 +119,10 @@ internal sealed class OffscreenInferenceAgent(
                                        Current time: {context.NewTracker!.Scene!.Time}
                                        """;
 
+                    var gatheredContext = context.SceneContext?
+                        .OrderByDescending(x => x.SequenceNumber)
+                        .FirstOrDefault()?.Metadata.GatheredContext;
+
                     var input = new OffscreenInferenceInput
                     {
                         Character = character,
@@ -126,7 +131,8 @@ internal sealed class OffscreenInferenceAgent(
                         CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
                         WorldEvents = context.SceneContext?
                             .OrderByDescending(x => x.SequenceNumber)
-                            .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum
+                            .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum,
+                        GatheredWorldContext = gatheredContext
                     };
 
                     try
@@ -214,7 +220,13 @@ internal sealed class OffscreenInferenceAgent(
 
                 try
                 {
-                    var tracker = await characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker!.Scene!, cancellationToken);
+                    // Run tracker and context gathering in parallel
+                    var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker!.Scene!, cancellationToken);
+                    var contextGatheringTask = GatherAndStoreCharacterContext(context, updatedCharacter, cancellationToken);
+
+                    await Task.WhenAll(trackerTask, contextGatheringTask);
+
+                    var tracker = await trackerTask;
                     updatedCharacter.CharacterTracker = tracker.Tracker;
                     updatedCharacter.IsDead = tracker.IsDead;
 
@@ -249,7 +261,7 @@ internal sealed class OffscreenInferenceAgent(
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(BuildContextPrompt(input));
+        chatHistory.AddUserMessage(BuildContextPrompt(input, context));
         chatHistory.AddUserMessage(BuildRequestPrompt(input));
 
         var callerContext = new CallerContext($"{nameof(OffscreenInferenceAgent)}:{input.Character.Name}",  context.AdventureId, context.NewSceneId);
@@ -279,7 +291,7 @@ internal sealed class OffscreenInferenceAgent(
             cancellationToken);
     }
 
-    private string BuildContextPrompt(OffscreenInferenceInput input)
+    private string BuildContextPrompt(OffscreenInferenceInput input, GenerationContext context)
     {
         var jsonOptions = PromptSections.GetJsonOptions(true);
 
@@ -295,6 +307,8 @@ internal sealed class OffscreenInferenceAgent(
                 <relationships>
                 {FormatRelationships(input.Character)}
                 </relationships>
+
+                {PromptSections.SimulationWorldContextForCharacter(input.Character, context)}
 
                 <world_events>
                 {FormatWorldEvents(input.WorldEvents)}
@@ -417,5 +431,33 @@ internal sealed class OffscreenInferenceAgent(
         }
 
         return sb.ToString();
+    }
+
+    private async Task GatherAndStoreCharacterContext(
+        GenerationContext context,
+        CharacterContext characterContext,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var gatheredContext = await characterContextGatherer.Invoke(context, characterContext, cancellationToken);
+
+            var lastRewrite = characterContext.SceneRewrites
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefault();
+
+            if (lastRewrite != null)
+            {
+                lastRewrite.GatheredContext = gatheredContext;
+                logger.Information(
+                    "Stored gathered context for {CharacterName} in scene rewrite #{SequenceNumber}",
+                    characterContext.Name,
+                    lastRewrite.SequenceNumber);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
+        }
     }
 }

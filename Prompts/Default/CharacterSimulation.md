@@ -48,6 +48,9 @@ The span of time being simulated.
 
 Events occurring in the world that may affect you.
 
+### World Knowledge
+{{world_context}}
+
 ### Significant Characters
 {{significant_characters}}
 

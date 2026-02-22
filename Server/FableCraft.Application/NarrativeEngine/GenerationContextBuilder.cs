@@ -123,7 +123,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     {
                         Content = x.Content,
                         SceneTracker = x.SceneTracker,
-                        SequenceNumber = x.SequenceNumber
+                        SequenceNumber = x.SequenceNumber,
+                        GatheredContext = x.GatheredContext
                     })
                     .ToList(),
                 Importance = existingCharContext.Single(ac => ac.CharacterId == cs.CharacterId)
@@ -383,7 +384,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     {
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        GatheredContext = y.GatheredContext
                     })
                     .ToList(),
                 Importance = x.Importance,
@@ -471,7 +473,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     {
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        GatheredContext = y.GatheredContext
                     })
                     .ToList(),
                 Importance = x.Importance,
@@ -514,7 +517,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     {
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
-                        SequenceNumber = y.SequenceNumber
+                        SequenceNumber = y.SequenceNumber,
+                        GatheredContext = y.GatheredContext
                     })
                     .ToList(),
                 Importance = x.Importance,

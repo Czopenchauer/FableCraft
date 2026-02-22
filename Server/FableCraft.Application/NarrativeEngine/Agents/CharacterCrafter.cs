@@ -34,6 +34,7 @@ internal sealed class CharacterCrafter : BaseAgent
     public async Task<CharacterContext> Invoke(
         GenerationContext context,
         CharacterRequest request,
+        SceneContext[] sceneContext,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
@@ -43,9 +44,9 @@ internal sealed class CharacterCrafter : BaseAgent
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
         var promptContext = $"""
-                             {PromptSections.Context(context)}
+                             {PromptSections.Context(context, sceneContext)}
 
-                             {PromptSections.LastScenes(context.SceneContext, 3)}
+                             {PromptSections.LastScenes(sceneContext, 3)}
                              """;
         chatHistory.AddUserMessage(promptContext);
         var creationRequestPrompt = $"""

@@ -24,6 +24,7 @@ internal sealed class LocationCrafter(
     public async Task<LocationGenerationResult> Invoke(
         GenerationContext context,
         LocationRequest request,
+        SceneContext[] sceneContext,
         CancellationToken cancellationToken)
     {
         var kernelBuilder = await GetKernelBuilder(context);
@@ -35,9 +36,9 @@ internal sealed class LocationCrafter(
         var contextPrompt = $"""
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.Context(context)}
+                             {PromptSections.Context(context, sceneContext)}
 
-                             {PromptSections.PreviousScene(context.SceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
+                             {PromptSections.PreviousScene(sceneContext.OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.SceneContent)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
