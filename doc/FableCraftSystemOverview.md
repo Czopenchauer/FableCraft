@@ -2,6 +2,35 @@
 
 FableCraft is a standalone interactive fiction engine that produces NPCs with genuine agency. Characters act rather than react. Antagonists scheme without waiting for player input. Love interests seek the protagonist. The world moves.
 
+---
+
+## Table of Contents
+
+1. [The Problem FableCraft Solves](#the-problem-fablecraft-solves)
+2. [Setup Phase](#setup-phase)
+3. [Core Gameplay Loop](#core-gameplay-loop)
+4. [Scene Generation Pipeline](#scene-generation-pipeline)
+   - [Step 1: Writer](#step-1-writer)
+   - [Step 2: Output](#step-2-output)
+5. [Background Processing](#background-processing)
+   - [Phase 1: SceneTracker](#phase-1-scenetracker-runs-first)
+   - [Phase 2: Parallel Processing](#phase-2-parallel-processing)
+     - [MainCharacterTracker](#maincharactertracker-mc-only)
+     - [CharacterReflection → CharacterTracker](#characterreflection--charactertracker-npcs-in-scene-sequential-chain)
+     - [Chronicler](#chronicler)
+     - [ContextGatherer](#contextgatherer)
+     - [Crafters](#crafters)
+6. [SceneGeneratedEvent Handler](#scenegeneratedevent-handler)
+7. [Character Tiers](#character-tiers)
+8. [Knowledge Architecture](#knowledge-architecture)
+9. [Data Flow Summary](#data-flow-summary)
+10. [Simulation](#simulation)
+    - [Simulation Pipeline](#simulation-pipeline)
+    - [OffscreenInference](#offscreeninference)
+11. [Key Design Decisions](#key-design-decisions)
+
+---
+
 ## The Problem FableCraft Solves
 
 Single-model interactive fiction systems have one model juggling everything. This leads to:
@@ -97,6 +126,33 @@ Each player input triggers one full cycle. The scene boundary is the player acti
 ### Step 1: Writer
 
 The Writer is the core of scene generation. It processes player actions, determines outcomes, emulates NPCs, and produces first-person narrative.
+
+#### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Player Action** | The player's chosen action or input |
+| **Main Character** | MC name, description, and identity |
+| **MC Tracker** | Current physical/mental state from MainCharacterTracker |
+| **Scene Tracker** | Current time, location, weather, characters present |
+| **Scene History** | Last 30 scenes with tracker state and content |
+| **Characters for Emulation** | Full profiles for arc-important and significant NPCs |
+| **Background Characters** | Partial profiles for recurring background NPCs |
+| **Chronicler Guidance** | Narrative direction (`writer_guidance` from Chronicler) |
+| **Pending Interactions** | NPCs who decided to seek MC (from Simulation) |
+| **World Context** | Retrieved context from ContextGatherer |
+| **Previous Character Observations** | What MC observed about NPCs in recent scenes |
+
+**First scene only:**
+- First Scene Guidance (adventure setup instructions)
+
+#### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `emulate_character_action` | Emulate full-profile NPC responses (mandatory for every beat) |
+| `search_world_knowledge` | Query world knowledge graph |
+| `search_main_character_narrative` | Query MC history |
 
 #### Action Processing
 
@@ -349,63 +405,394 @@ The agent produces:
 **Critical:** The tracker output is a complete snapshot, not a diff. This eliminates merge logic and drift from partial updates.
 
 #### CharacterReflection → CharacterTracker (NPCs in scene, sequential chain)
-Runs for each meaningful NPC present in the scene.
 
-**CharacterReflection** transforms the MC-POV scene into the character's subjective memory:
-- Scene rewrite (their perspective, their biases, their knowledge boundaries)
-- Memory index entry (summary, salience, emotional tone, tags)
-- Relationship updates
-- State changes
+Runs for each meaningful NPC present in the scene. CharacterReflection handles psychological processing; CharacterTracker handles physical state updates.
 
-**CharacterTracker** runs immediately after, updating the NPC's physical state. Separated due to complexity, but logically one flow.
+##### CharacterReflection
+
+The agent **IS** the character—not playing them, but being them. It transforms the MC-POV scene into the character's subjective experience.
+
+###### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Scene Content** | The narrative from MC's perspective |
+| **Character Identity** | Who this character fundamentally is |
+| **Character Tracker** | Current physical/mental state |
+| **Relationships on Scene** | How this character sees others present |
+| **Emulation Outputs** | Records of character's responses during scene (from Writer's emulation calls) |
+| **World Setting** | Context for the world they inhabit |
+
+###### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `search_world_knowledge` | Recall world facts the character would know |
+| `search_character_narrative` | Search character's own memories and past experiences |
+| `get_relationship` | Fetch relationship with someone not currently present |
+
+###### Core Concept: Knowledge Boundaries
+
+The character only knows what they could realistically know:
+
+**Has access to:**
+- Own mind—thoughts, feelings, memories, desires
+- Own body—physical sensations
+- What they directly witness
+- What others say (not whether it's true)
+- Public knowledge and their social context
+- Their history with others (as they understand it)
+
+**Can do:**
+- Assume, infer, speculate—filtered through their psychology
+- Misread situations based on their biases
+- Act on incomplete or wrong information
+- Be confident about things they're wrong about
+
+**Cannot do:**
+- Know others' internal thoughts
+- Know events they weren't present for
+- Know information no one shared with them
+- Be objective about their own blind spots
+
+###### Core Principles
+
+1. **Restraint is Accuracy** — Most scenes don't shift identity or relationships. The common case is no change.
+
+2. **Current-State Snapshots** — Every output field describes how things are NOW, not how they got here. No history, no change markers, no evolution narratives.
+
+3. **Core is Authoritative** — The character's fundamental identity (`core`) is the gravity well. Updates to other fields must still sound like the same person.
+
+4. **Salience is Personal** — Memory importance is about personal significance, not plot importance. A routine scene can be 9 if something cracked open. A dramatic scene can be 3 if it didn't land.
+
+5. **Self-Perception Lags Achievement** — Characters don't fully internalize wins in real-time. The gap between achievement and self-concept is where personality lives.
+
+6. **Insecurities are Durable** — One success quiets an insecurity temporarily; it doesn't resolve it. Only sustained evidence over many scenes can erode insecurities.
+
+###### Update Tests
+
+Before committing any identity or relationship change, apply two tests:
+
+| Test | Question |
+|------|----------|
+| **Next Week Test** | If someone asked about this next week, would my answer be different than before? |
+| **Three Scenes Test** | Would this change still feel true after three routine, uneventful scenes? |
+
+If either test says NO → don't update. Peak emotional states are not stable states.
+
+###### Output
+
+| Output | Description |
+|--------|-------------|
+| **scene_rewrite** | First-person prose from character's perspective—their voice, biases, blind spots |
+| **memory** | Summary (felt experience, not plot) + salience (1-10) |
+| **identity** | `null` or complete updated identity snapshot (if something actually shifted) |
+| **relationships** | `[]` or array of complete updated relationship snapshots |
+
+**On Death:** If character dies, scene_rewrite covers final moments, salience is automatically 10, and no identity/relationship updates occur. The character becomes inactive.
+
+##### CharacterTracker (NPC)
+
+Runs immediately after CharacterReflection. Updates the NPC's physical state using the same principles as MainCharacterTracker—observe narrative, record changes, maintain consistency. Separated due to complexity, but logically one flow with CharacterReflection.
 
 #### Chronicler
-Tracks narrative fabric and world momentum:
+
+The story's memory and conscience. Watches what happens and understands the *narrative implications*—not mechanical state, but artistic state. Serves two masters: the MC's story and the world's story.
+
+##### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Current Scene** | The narrative that just occurred |
+| **Time Context** | Current and previous in-world timestamps (to calculate elapsed time) |
+| **Previous Story State** | Chronicler's own output from previous scene |
+| **Simulation Events** | `world_events_emitted` from character simulations (if any) |
+| **World Setting** | Geography, factions, power systems, cultures |
+| **Story Bible** | Tone, themes, content calibration |
+
+##### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `search_world_knowledge` | Query world facts for advancing momentum items |
+| `search_main_character_narrative` | Track how MC's past actions connect to current events |
+
+##### What It Tracks
 
 **MC's Story:**
-- Dramatic questions ("Will she escape?")
-- Promises (Chekhov's guns, setups)
-- Active threads (plotlines in motion)
-- Stakes (what's at risk, deadlines)
-- Windows (time-limited opportunities)
+
+| Element | Description |
+|---------|-------------|
+| **Dramatic Questions** | Questions the story is asking ("Will she escape?") with tension level and resolution proximity |
+| **Promises** | Setups that need payoff (Chekhov's guns) with time waiting and payoff readiness |
+| **Active Threads** | Plotlines in motion with momentum (dormant/stable/building/climaxing/resolving) |
+| **Stakes** | What's at risk, with conditions for loss and deadlines |
+| **Windows** | Time-limited opportunities with closing timestamps |
 
 **World's Story:**
-- World momentum (events progressing independently of MC)
 
-**Outputs:**
-- `writer_guidance` — Narrative direction for next scene
-- `story_state` — Complete narrative fabric (persisted)
-- `world_events` — Events to emit to World KG
+| Element | Description |
+|---------|-------------|
+| **World Momentum** | Macro-level events independent of MC (faction conflicts, political movements, large-scale threats) with trajectory and timeline |
 
-#### Simulation Pipeline
-Runs when arc-important characters are stale (>6 in-world hours since last simulation) or likely to appear.
+##### What It Doesn't Track
 
-**Critical:** Simulation does NOT run for characters present in the current scene. Those characters are updated by CharacterReflection instead.
+Not everything is narratively significant:
+- Failed attempts with no consequence
+- Social interactions that went nowhere
+- MC actions the world didn't register
+- Mundane failures (MC looked foolish, nothing else happened)
+- One-off interactions with minor characters
 
-**All-or-Nothing Rule:** If any arc-important character simulates, ALL arc-important characters simulate (except those in scene). This prevents temporal paradoxes.
+**The Test:** If this went nowhere, would it feel like a broken promise or just... life?
 
-**Outputs:**
-- Character scenes and memories
-- State updates
-- `pending_mc_interactions` — NPCs who decided to seek the protagonist
-- `world_events_emitted` — Facts others could discover
+##### Core Principles
 
-#### OffscreenInference
-For significant characters likely to appear in the next scene. Lightweight simulation that produces brief memories so they know what they've been doing.
+1. **You Notice, You Don't Control** — Observe narrative implications; don't decide what happens. Writer makes creative decisions.
+
+2. **The World Moves** — Things happen without MC involvement. Factions scheme. Events unfold. Time doesn't wait.
+
+3. **Consequences Are Real** — When MC acts, ripples spread. Track what's coming. Flag when it arrives.
+
+4. **Nothing Is Forgotten** — Dropped threads feel like bad writing. Broken promises feel like betrayal. Remember what the story has set up.
+
+5. **Time Anchors Everything** — Use timestamps, not vague references. "Closes at dawn on 08-06-845" not "soon."
+
+6. **Most Things Don't Matter** — Most MC actions don't become threads. Most scenes don't raise dramatic questions. Track what's *narratively load-bearing*.
+
+7. **Lean Over Complete** — A story state with 3 threads and 2 stakes is better than one with 15 of each.
+
+##### World Events
+
+Events emitted are written from the **world's perspective**—what could be discovered, overheard, or reported:
+- Never identify MC by name unless publicly known
+- Include what witnesses saw (which may be partial or mistaken)
+- Preserve mystery—record what's known, not what's true
+
+##### Output
+
+```json
+{
+  "writer_guidance": {
+    "threads_to_weave": "Threads worth touching and how they might surface",
+    "manifesting_now": "Consequences happening NOW—Writer controls how, not whether",
+    "opportunities": "Time-limited opportunities with specific deadlines",
+    "tonal_direction": "Where the emotional arc is heading",
+    "promises_ready": "Setups ready for payoff",
+    "dont_forget": ["Unresolved elements that could slip"],
+    "world_momentum_notes": "How background events might manifest as foreground"
+  },
+
+  "story_state": {
+    "dramatic_questions": [
+      { "question": "...", "introduced": "timestamp", "tension_level": "low|medium|high|critical", "resolution_proximity": "distant|approaching|near|imminent" }
+    ],
+    "promises": [
+      { "setup": "...", "introduced": "timestamp", "time_since": "...", "payoff_readiness": "not_ready|building|ready|overdue" }
+    ],
+    "active_threads": [
+      { "name": "...", "status": "...", "momentum": "dormant|stable|building|climaxing|resolving", "last_touched": "timestamp" }
+    ],
+    "stakes": [
+      { "what": "...", "condition": "...", "deadline": "timestamp|null", "failure_consequence": "..." }
+    ],
+    "windows": [
+      { "opportunity": "...", "closes": "timestamp", "if_missed": "..." }
+    ],
+    "world_momentum": [
+      { "name": "...", "status": "...", "trajectory": "advancing|stalling|accelerating|resolving", "timeline": "hours|days|weeks|ongoing", "last_event": "...", "last_updated": "timestamp", "mc_awareness": "none|rumors|partial|full", "potential_intersections": ["..."] }
+    ]
+  },
+
+  "world_events": [
+    { "when": "timestamp", "where": "location", "event": "Prose description from world's perspective" }
+  ],
+
+  "lore_requests": []
+}
+```
+
+| Output | Description |
+|--------|-------------|
+| **writer_guidance** | Narrative direction for next scene (`manifesting_now` is mandatory; rest is suggestive) |
+| **story_state** | Complete narrative fabric—all tracked elements persisted |
+| **world_events** | Discoverable facts to emit to World KG (usually empty) |
+| **lore_requests** | Usually empty; only for recurring elements that need consistency |
 
 #### ContextGatherer
-Queries Knowledge Graphs for:
-- World context (lore, locations, factions)
-- Character memories (for NPCs likely in next scene)
-- Relationship data
-- Narrative history
+
+Strategic information retrieval specialist. Analyzes recent narrative and generates targeted queries to retrieve relevant world knowledge and story history for the next scene.
+
+##### Inputs
+
+| Input | Description |
+|-------|-------------|
+| **Recent Scene History** | Last 20 scenes of narrative content |
+| **Last Scene Narrative Direction** | Chronicler's writer_guidance output |
+| **Previous Query Results** | Results from last context gathering cycle |
+| **Newly Created Lore** | Lore generated by LoreCrafter (if any) |
+| **Background Character Registry** | All background NPCs with last known locations |
+| **Scene Location** | Current scene location from SceneTracker |
+
+##### Query Targets
+
+| Knowledge Base | Contains |
+|----------------|----------|
+| **World Knowledge** | Lore, locations, factions, NPCs, items, magical systems, cultural practices |
+| **Narrative History** | Story events, interactions, promises, debts, consequences, relationship development |
+
+**Note:** MC's current state (equipment, skills, conditions) comes from MainCharacterTracker—never query for it.
+
+##### Processing Phases
+
+1. **Phase 0: Previous Results Evaluation** — For each previous result: carry forward, re-query, or drop
+2. **Phase 0.5: New Lore Extraction** — Extract relevant facts from newly created lore (don't re-query)
+3. **Phase 1: Narrative Direction Analysis** — Extract objectives, world threads, pending consequences
+4. **Phase 2: Scene Pattern Recognition** — Recurring locations, characters, unresolved threads
+5. **Phase 3: Query Generation** — Generate queries within remaining budget
+
+##### Hard Limit: 40 Information Items
+
+Combined count of:
+- `carried_forward.world_context` items
+- `carried_forward.story_history` items
+- `world_queries` items
+- `narrative_queries` items
+
+**Must not exceed 40.** This forces prioritization.
+
+| Context Continuity | Typical Carry-Forward | Typical New Queries |
+|--------------------|----------------------|---------------------|
+| High (same location, same NPCs) | 20-25 items | 15-20 items |
+| Medium (same area, evolving situation) | 15-20 items | 15-20 items |
+| Low (new location, new characters) | 5-10 items | 25-35 items |
+| Initial (first run) | 0 items | up to 40 items |
+
+##### Co-Located Character Discovery
+
+Identifies characters at the same location as current scene:
+- Compares each tracked character's `last_location` against `scene_location`
+- Same place or more specific (inside) → co-located
+- Less specific (broader area) or different → not co-located
+- Discovered characters need their context fetched in the same pass
+
+##### Core Principles
+
+1. **Carry Forward First** — Always evaluate previous results before generating new queries
+2. **Never Query for New Lore** — If it was created last scene, extract it directly
+3. **Budget Ruthlessly** — Drop medium-priority old content for critical new needs
+4. **Serve the Next Scene** — Queries should provide actionable context for the Writer
+5. **Prioritize Authenticity** — What does the Writer need to keep the narrative coherent?
+
+##### Output
+
+```json
+{
+  "analysis_summary": {
+    "current_situation": "Brief description of where story stands",
+    "key_elements_in_play": ["Element 1", "Element 2"],
+    "primary_focus_areas": ["Focus 1", "Focus 2"],
+    "context_continuity": "high|medium|low|initial"
+  },
+  "carried_forward": {
+    "world_context": [{ "topic": "...", "content": "..." }],
+    "story_history": [{ "topic": "...", "content": "..." }]
+  },
+  "world_queries": [
+    { "query": "...", "priority": "critical|high|medium", "rationale": "..." }
+  ],
+  "narrative_queries": [
+    { "query": "...", "priority": "critical|high|medium", "rationale": "..." }
+  ],
+  "dropped_context": [{ "topic": "...", "reason": "..." }],
+  "co_located_characters": [{ "name": "...", "reason": "..." }]
+}
+```
 
 #### Crafters
-Generate full profiles when the Writer requests them via `creation_requests`:
-- **CharacterCrafter** — Full character profiles for new important/significant NPCs
-- **LocationCrafter** — Location details with sensory information, territorial control, navigation
-- **ItemCrafter** — Item properties, history, mechanical effects
-- **LoreCrafter** — World lore with temporal context, reliability, faction perspectives
+
+Generate full profiles when the Writer requests them via `creation_requests`. All Crafters share common principles and produce content that integrates into the Knowledge Graph.
+
+##### Common Principles
+
+1. **Query Before Creating** — Always batch-query the Knowledge Graph for existing facts, naming conventions, and related entities
+2. **Ground in World** — Output must cohere with established geography, factions, power systems, and tone
+3. **Story Bible Calibration** — Check tone, themes, and content calibration before generating
+4. **Serve Narrative Purpose** — Every creation should enable story, not just fill a template
+5. **Never Contradict KG** — Existing facts take precedence; resolve conflicts creatively
+6. **Specificity Over Vagueness** — Names, numbers, dates. Vague content is useless content.
+
+##### Inputs (Common to All)
+
+| Input | Description |
+|-------|-------------|
+| **Creation Request** | What's needed, importance level, constraints, narrative purpose |
+| **World Setting** | Baseline facts, power systems, geography, governance |
+| **Story Bible** | Tone, themes, content calibration |
+| **Knowledge Graph** | Existing facts to query and respect |
+
+##### Tools (Common to All)
+
+| Tool | Purpose |
+|------|---------|
+| `search_world_knowledge` | Query existing lore, locations, factions, characters |
+| `search_main_character_narrative` | Check if entity has appeared in story |
+
+##### Crafter Types
+
+| Crafter | Creates | Output |
+|---------|---------|--------|
+| **CharacterCrafter** | Full profiles for arc-important/significant NPCs | Identity (psychology, voice, sexuality, motivations), Tracker (physical state), Relationships, World Description |
+| **PartialProfileCrafter** | Lightweight profiles for background NPCs | Identity, appearance, personality, voice (critical), knowledge boundaries. ~250-350 words total. |
+| **LocationCrafter** | Places from room to region scale | Physical structure, atmosphere (layered sensory), inhabitants, temporal history, faction perspectives, narrative hooks |
+| **ItemCrafter** | Objects from mundane to unique | Physical description, power level, effects (with costs/limitations), temporal context, relationships, secrets |
+| **LoreCrafter** | Canonical world facts | Economy, laws, history, culture, metaphysics, geography, factions, creatures. Always anchored to existing facts. |
+
+##### CharacterCrafter: Key Quality Criteria
+
+- `core` must be sufficient to play the character alone
+- `self_perception` must diverge from reality in some way
+- `voice` must sound like ONE specific person, not a category
+- Characters exist independently of MC—attractions and goals don't revolve around the protagonist
+- Power level follows role and context, not narrative convenience
+
+##### LocationCrafter: Scale and Depth
+
+| Scale | Example | Description Depth |
+|-------|---------|-------------------|
+| Room | Prison cell, throne room | 1-2 paragraphs |
+| Building | Tavern, temple, mansion | 2-3 paragraphs |
+| Compound | Noble estate, military fort | 3-4 paragraphs |
+| District | Market quarter, slums | 4-5 paragraphs |
+| Settlement | Village, city | 5-7 paragraphs |
+| Region | Forest, mountain range | 7+ paragraphs |
+
+Importance modifier adjusts depth: Landmark (+2), Significant (+1), Standard (0), Minor (-1).
+
+##### LoreCrafter: Category Consistency Rules
+
+| Category | Key Rules |
+|----------|-----------|
+| **Economic** | Prices proportional to wages; anchor to labor time; scarcity logic |
+| **Legal** | Punishment scales; enforcement plausible; authority matches governance |
+| **Historical** | Timeline consistent; cause precedes effect; living witnesses age-plausible |
+| **Cultural** | Practices fit environment; origins plausible; variations exist |
+| **Metaphysical** | Power has cost; effects match tier; no exploits |
+| **Geographic** | Distances cohere; climate matches terrain; travel times realistic |
+
+##### Temporal Evolution
+
+Lore evolves over time. LoreCrafter uses `temporal_scope` and `supersedes` to track changes:
+
+```json
+{
+  "name": "Ironside Warehouse (Rebuilt)",
+  "temporal_scope": "849-present",
+  "supersedes": ["Ironside Warehouse Fire — site rebuilt, new ownership"]
+}
+```
+
+The Knowledge Graph maintains all versions; queries return appropriate facts based on temporal context.
 
 ---
 
@@ -528,6 +915,36 @@ flowchart TD
 
     Commit --> NextInput[Next Player Input]
 ```
+
+---
+
+## Simulation
+
+Simulation runs off-screen characters forward in time. While the player reads and decides, NPCs not in the current scene continue their lives.
+
+### Simulation Pipeline
+
+Runs when arc-important characters are stale (>6 in-world hours since last simulation) or likely to appear.
+
+**Critical:** Simulation does NOT run for characters present in the current scene. Those characters are updated by CharacterReflection instead.
+
+**All-or-Nothing Rule:** If any arc-important character simulates, ALL arc-important characters simulate (except those in scene). This prevents temporal paradoxes where one character is "caught up" but another isn't.
+
+**Outputs:**
+- Character scenes and memories (what they experienced)
+- State updates (physical/mental changes)
+- `pending_mc_interactions` — NPCs who decided to seek the protagonist
+- `world_events_emitted` — Facts others could discover
+
+### OffscreenInference
+
+For significant characters likely to appear in the next scene. Lightweight simulation that produces brief memories so they know what they've been doing since last seen.
+
+Unlike full Simulation:
+- Doesn't generate full scenes
+- Produces minimal memories ("I've been working at the docks all morning")
+- Runs only for characters about to appear
+- Much faster execution
 
 ---
 
