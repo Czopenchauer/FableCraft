@@ -69,14 +69,13 @@ internal sealed class CharacterContextGatherer(
             kernel,
             cancellationToken);
 
-        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
+        var callerContext = new CallerContext($"{GetType().Name}:{character.Name}", context.AdventureId, context.NewSceneId);
         try
         {
             var ragSearchClient = await ragClientFactory.CreateSearchClientForAdventure(context.AdventureId, cancellationToken);
             var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);
             var narrativeContext = new List<ContextItem>(output.CarriedForward.NarrativeContext);
 
-            // Execute world queries
             if (output.WorldQueries.Length > 0)
             {
                 var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
@@ -100,7 +99,6 @@ internal sealed class CharacterContextGatherer(
                 }
             }
 
-            // Execute narrative queries against character's dataset
             if (output.NarrativeQueries.Length > 0)
             {
                 var narrativeQueries = output.NarrativeQueries.Select(q => q.Query).ToArray();
@@ -159,7 +157,6 @@ internal sealed class CharacterContextGatherer(
 
     private static string GetPreviousContextSummary(CharacterContext character)
     {
-        // Get the most recent scene rewrite that has gathered context
         var previousContext = character.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.GatheredContext;

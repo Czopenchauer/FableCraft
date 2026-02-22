@@ -21,6 +21,7 @@ internal sealed class SimulationOrchestrator(
     OffscreenInferenceAgent offscreenInferenceAgent,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
+    WorldInfoExtractorAgent worldInfoExtractorAgent,
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
     ItemCrafter itemCrafter,
@@ -235,8 +236,9 @@ internal sealed class SimulationOrchestrator(
                     var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
                     var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
                     var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
+                    var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken));
+                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask);
 
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
@@ -495,8 +497,9 @@ internal sealed class SimulationOrchestrator(
         var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
         var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
         var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
+        var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
 
-        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken));
+        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask);
 
         var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
@@ -674,5 +677,47 @@ internal sealed class SimulationOrchestrator(
         {
             logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
         }
+    }
+
+    private async Task ExtractWorldInfoFromSimulation(
+        GenerationContext context,
+        List<SimulationScene> scenes,
+        string characterName,
+        CancellationToken cancellationToken)
+    {
+        if (scenes.Count == 0)
+            return;
+
+        foreach (var scene in scenes)
+        {
+            if (string.IsNullOrEmpty(scene.Narrative) || scene.SceneTracker == null)
+                continue;
+
+            try
+            {
+                var alreadyHandled = BuildAlreadyHandledContent(context);
+                var result = await worldInfoExtractorAgent.Invoke(context, scene.Narrative, scene.SceneTracker, alreadyHandled, cancellationToken);
+                logger.Debug("Extracted {ActivityCount} activities and {FactCount} world facts from {Character} simulation",
+                    result.Activity.Count, result.WorldFacts.Count, characterName);
+            }
+            catch (Exception ex)
+            {
+                logger.Warning(ex, "Failed to extract world info from {Character} simulation scene, continuing without it", characterName);
+            }
+        }
+    }
+
+    private static AlreadyHandledContent BuildAlreadyHandledContent(GenerationContext context)
+    {
+        var creationRequests = context.NewScene?.CreationRequests;
+        return new AlreadyHandledContent
+        {
+            Characters = creationRequests?.Characters,
+            Locations = creationRequests?.Locations,
+            Items = creationRequests?.Items,
+            Lore = creationRequests?.Lore,
+            WorldEvents = context.NewWorldEvents,
+            BackgroundCharacters = context.NewBackgroundCharacters
+        };
     }
 }

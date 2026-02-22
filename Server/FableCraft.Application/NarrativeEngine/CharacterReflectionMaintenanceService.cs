@@ -106,6 +106,7 @@ public sealed class CharacterReflectionMaintenanceService(
 
         var characterReflectionAgent = serviceProvider.GetRequiredService<CharacterReflectionAgent>();
         var characterTrackerAgent = serviceProvider.GetRequiredService<CharacterTrackerAgent>();
+        var characterContextGatherer = serviceProvider.GetRequiredService<CharacterContextGatherer>();
 
         var reflectionResult = await characterReflectionAgent.Invoke(
             generationContext, characterContextBeforeScene, sceneTracker, cancellationToken);
@@ -115,6 +116,25 @@ public sealed class CharacterReflectionMaintenanceService(
 
         reflectionResult.CharacterTracker = tracker;
         reflectionResult.IsDead = isDead;
+
+        try
+        {
+            var gatheredContext = await characterContextGatherer.Invoke(
+                generationContext, reflectionResult, cancellationToken);
+
+            var lastRewrite = reflectionResult.SceneRewrites
+                .OrderByDescending(x => x.SequenceNumber)
+                .FirstOrDefault();
+
+            if (lastRewrite != null)
+            {
+                lastRewrite.GatheredContext = gatheredContext;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", character.Name);
+        }
 
         await SaveReflectionResultsAsync(dbContext, character, lastScene, reflectionResult, cancellationToken);
 
@@ -279,7 +299,8 @@ public sealed class CharacterReflectionMaintenanceService(
                 Scene = scene,
                 Content = sr.Content,
                 SequenceNumber = sr.SequenceNumber,
-                SceneTracker = sr.SceneTracker!
+                SceneTracker = sr.SceneTracker!,
+                GatheredContext = sr.GatheredContext
             });
             dbContext.CharacterSceneRewrites.AddRange(newRewrites);
 
@@ -398,7 +419,6 @@ public sealed class CharacterReflectionMaintenanceService(
             var gatheredContext = await characterContextGatherer.Invoke(
                 generationContext, characterContext, cancellationToken);
 
-            // Save to the latest scene rewrite
             var latestRewrite = sceneRewrites.First();
             latestRewrite.GatheredContext = gatheredContext;
 

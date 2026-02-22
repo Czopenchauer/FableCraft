@@ -28,6 +28,7 @@ internal sealed class OffscreenInferenceAgent(
     KernelBuilderFactory kernelBuilderFactory,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
+    WorldInfoExtractorAgent worldInfoExtractorAgent,
     IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
@@ -220,11 +221,11 @@ internal sealed class OffscreenInferenceAgent(
 
                 try
                 {
-                    // Run tracker and context gathering in parallel
                     var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker!.Scene!, cancellationToken);
                     var contextGatheringTask = GatherAndStoreCharacterContext(context, updatedCharacter, cancellationToken);
+                    var worldInfoTask = ExtractWorldInfoFromSceneRewrites(context, updatedCharacter.SceneRewrites, character.Name, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, contextGatheringTask);
+                    await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask);
 
                     var tracker = await trackerTask;
                     updatedCharacter.CharacterTracker = tracker.Tracker;
@@ -459,5 +460,47 @@ internal sealed class OffscreenInferenceAgent(
         {
             logger.Warning(ex, "Failed to gather context for character {CharacterName}, continuing without it", characterContext.Name);
         }
+    }
+
+    private async Task ExtractWorldInfoFromSceneRewrites(
+        GenerationContext context,
+        List<CharacterSceneContext> sceneRewrites,
+        string characterName,
+        CancellationToken cancellationToken)
+    {
+        if (sceneRewrites.Count == 0)
+            return;
+
+        foreach (var scene in sceneRewrites)
+        {
+            if (string.IsNullOrEmpty(scene.Content) || scene.SceneTracker == null)
+                continue;
+
+            try
+            {
+                var alreadyHandled = BuildAlreadyHandledContent(context);
+                var result = await worldInfoExtractorAgent.Invoke(context, scene.Content, scene.SceneTracker, alreadyHandled, cancellationToken);
+                logger.Debug("Extracted {ActivityCount} activities and {FactCount} world facts from {Character} offscreen inference",
+                    result.Activity.Count, result.WorldFacts.Count, characterName);
+            }
+            catch (Exception ex)
+            {
+                logger.Warning(ex, "Failed to extract world info from {Character} offscreen scene, continuing without it", characterName);
+            }
+        }
+    }
+
+    private static AlreadyHandledContent BuildAlreadyHandledContent(GenerationContext context)
+    {
+        var creationRequests = context.NewScene?.CreationRequests;
+        return new AlreadyHandledContent
+        {
+            Characters = creationRequests?.Characters,
+            Locations = creationRequests?.Locations,
+            Items = creationRequests?.Items,
+            Lore = creationRequests?.Lore,
+            WorldEvents = context.NewWorldEvents,
+            BackgroundCharacters = context.NewBackgroundCharacters
+        };
     }
 }
