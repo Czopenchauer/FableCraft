@@ -79,6 +79,14 @@
       >
         Rewrites ({{ character.sceneRewrites.length }}/{{ character.totalSceneRewritesCount }})
       </button>
+      <button
+        *ngIf="hasGatheredContext"
+        (click)="setActiveTab('context')"
+        [class.active]="activeTab === 'context'"
+        class="character-tab-btn"
+      >
+        Context
+      </button>
     </div>
 
     <!-- Description Tab Content -->
@@ -223,6 +231,34 @@
         </button>
       </div>
       <p *ngIf="character.sceneRewrites.length === 0" class="empty-state-text">No scene rewrites available.</p>
+    </div>
+
+    <!-- Context Tab Content -->
+    <div *ngIf="activeTab === 'context'" class="tab-content">
+      <div *ngIf="latestGatheredContext" class="context-sections">
+        <!-- World Context -->
+        <div *ngIf="latestGatheredContext.worldContext.length > 0" class="context-section">
+          <h4 class="context-section-title">World Context</h4>
+          <div class="context-items">
+            <div *ngFor="let item of latestGatheredContext.worldContext" class="context-item-card">
+              <div class="context-item-topic">{{ item.topic }}</div>
+              <div class="context-item-content">{{ item.content }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Narrative Context -->
+        <div *ngIf="latestGatheredContext.narrativeContext.length > 0" class="context-section">
+          <h4 class="context-section-title">Narrative Context</h4>
+          <div class="context-items">
+            <div *ngFor="let item of latestGatheredContext.narrativeContext" class="context-item-card">
+              <div class="context-item-topic">{{ item.topic }}</div>
+              <div class="context-item-content">{{ item.content }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p *ngIf="!latestGatheredContext" class="empty-state-text">No gathered context available.</p>
     </div>
   </section>
 </div>

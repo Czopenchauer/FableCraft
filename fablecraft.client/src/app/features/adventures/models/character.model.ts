@@ -67,6 +67,17 @@ export interface CharacterSceneRewrite {
   content: string;
   sequenceNumber: number;
   sceneTracker: SceneTracker;
+  gatheredContext: CharacterGatheredContext | null;
+}
+
+export interface CharacterGatheredContext {
+  worldContext: GatheredContextItem[];
+  narrativeContext: GatheredContextItem[];
+}
+
+export interface GatheredContextItem {
+  topic: string;
+  content: string;
 }
 
 export interface SceneTracker {

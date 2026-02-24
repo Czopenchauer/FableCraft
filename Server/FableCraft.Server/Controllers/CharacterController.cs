@@ -263,7 +263,8 @@ public class CharacterController(IRagClientFactory ragClientFactory, MainCharact
                 r.Id,
                 r.Content,
                 r.SequenceNumber,
-                r.SceneTracker
+                r.SceneTracker,
+                r.GatheredContext
             )).ToList(),
             totalMemoriesCount,
             totalSceneRewritesCount);
@@ -326,7 +327,8 @@ public class CharacterController(IRagClientFactory ragClientFactory, MainCharact
                 r.Id,
                 r.Content,
                 r.SequenceNumber,
-                r.SceneTracker))
+                r.SceneTracker,
+                r.GatheredContext))
             .ToListAsync(cancellationToken);
 
         return Ok(new PaginatedResponse<CharacterSceneRewriteDto>(rewrites, totalCount, offset));

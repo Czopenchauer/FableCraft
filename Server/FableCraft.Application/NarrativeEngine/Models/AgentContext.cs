@@ -174,6 +174,20 @@ internal sealed class GenerationContext
     public bool SkipContextGatherer { get; set; }
 
     /// <summary>
+    ///     When true, WorldInfoExtractorAgent should skip execution.
+    ///     Set during regeneration when WorldInfoExtractor was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipWorldInfoExtractor { get; set; }
+
+    /// <summary>
+    ///     When true, CharacterContextGatherer should run for all characters even if already processed.
+    ///     Set during regeneration when ContextGatherer is selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool ForceCharacterContextGathering { get; set; }
+
+    /// <summary>
     ///     World info extractions accumulated from main narrative and character reflections.
     /// </summary>
     public WorldInfoExtractionOutput? WorldInfoExtractions { get; set; }

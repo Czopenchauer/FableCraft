@@ -3,6 +3,7 @@ import {CharacterService} from '../../services/character.service';
 import {ToastService} from '../../../../core/services/toast.service';
 import {
   CharacterDetail,
+  CharacterGatheredContext,
   CharacterImportance,
   CharacterMemory,
   CharacterRelationship
@@ -16,7 +17,7 @@ interface EditModalState {
   itemId?: string;
 }
 
-type CharacterTab = 'description' | 'state' | 'tracker' | 'relationships' | 'memories' | 'rewrites';
+type CharacterTab = 'description' | 'state' | 'tracker' | 'relationships' | 'memories' | 'rewrites' | 'context';
 
 @Component({
   selector: 'app-character-detail',
@@ -72,6 +73,19 @@ export class CharacterDetailComponent {
 
   get hasMoreRewrites(): boolean {
     return this.character.sceneRewrites.length < this.character.totalSceneRewritesCount;
+  }
+
+  get latestGatheredContext(): CharacterGatheredContext | null {
+    if (!this.character.sceneRewrites || this.character.sceneRewrites.length === 0) {
+      return null;
+    }
+    // Scene rewrites are already ordered by sequenceNumber desc, so first one is latest
+    return this.character.sceneRewrites[0].gatheredContext;
+  }
+
+  get hasGatheredContext(): boolean {
+    const ctx = this.latestGatheredContext;
+    return ctx !== null && (ctx.worldContext.length > 0 || ctx.narrativeContext.length > 0);
   }
 
   // Importance handling

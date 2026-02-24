@@ -32,7 +32,9 @@ internal sealed class CharacterTrackersProcessor(
                                      + "Ensure SceneTrackerProcessor runs before this processor.");
 
         var chroniclerTask = ProcessChronicler(context, storyTrackerResult, cancellationToken);
-        var mainNarrativeExtractionTask = ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken);
+        var mainNarrativeExtractionTask = context.SkipWorldInfoExtractor
+            ? Task.CompletedTask
+            : ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken);
 
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
@@ -64,7 +66,21 @@ internal sealed class CharacterTrackersProcessor(
                     // Skip if this character was already processed in a previous attempt
                     if (alreadyProcessedCharacters.Contains(character.Name))
                     {
-                        logger.Information("Character {Character} already processed. Skipping tracking", character.Name);
+                        if (context.ForceCharacterContextGathering && context.CharacterUpdates is not null)
+                        {
+                            var existingCharacterContext = context.CharacterUpdates
+                                .FirstOrDefault(x => string.Equals(x.Name, character.Name, StringComparison.OrdinalIgnoreCase));
+                            if (existingCharacterContext != null)
+                            {
+                                logger.Information("Character {Character} already processed. Running context gathering only (forced)", character.Name);
+                                await GatherAndStoreCharacterContext(context, existingCharacterContext, cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            logger.Information("Character {Character} already processed. Skipping tracking", character.Name);
+                        }
+
                         return null;
                     }
 
@@ -94,7 +110,9 @@ internal sealed class CharacterTrackersProcessor(
 
                     var trackerTask = characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
                     var contextGatheringTask = GatherAndStoreCharacterContext(context, characterContext, cancellationToken);
-                    var worldInfoTask = ExtractWorldInfoFromReflection(context, characterContext, storyTrackerResult, cancellationToken);
+                    var worldInfoTask = context.SkipWorldInfoExtractor
+                        ? Task.CompletedTask
+                        : ExtractWorldInfoFromReflection(context, characterContext, storyTrackerResult, cancellationToken);
 
                     await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask);
 

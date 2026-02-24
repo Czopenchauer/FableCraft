@@ -288,7 +288,7 @@ internal sealed class OffscreenInferenceAgent(
             chatHistory,
             outputParser,
             promptExecutionSettings,
-            nameof(OffscreenInferenceAgent),
+            $"{nameof(OffscreenInferenceAgent)}:{input.Character.Name}",
             kernel,
             cancellationToken);
     }

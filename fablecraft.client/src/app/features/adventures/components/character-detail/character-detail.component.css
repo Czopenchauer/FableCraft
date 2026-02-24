@@ -578,6 +578,76 @@
   cursor: not-allowed;
 }
 
+/* Context Tab */
+.context-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.context-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.context-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+[data-theme="modern-dark"] .context-section-title {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .context-section-title {
+  color: var(--color-primary);
+}
+
+.context-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.context-item-card {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+[data-theme="modern-dark"] .context-item-card {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="medieval-fantasy"] .context-item-card {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.context-item-topic {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.context-item-content {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .detail-header {

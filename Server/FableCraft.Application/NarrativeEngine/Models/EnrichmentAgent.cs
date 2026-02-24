@@ -21,7 +21,8 @@ public enum EnrichmentAgent
     // Simulation and story tracking - skipped during regeneration unless explicitly selected
     Simulation,
     Chronicler,
-    ContextGatherer
+    ContextGatherer,
+    WorldInfoExtractor
 }
 
 internal enum LorebookCategory

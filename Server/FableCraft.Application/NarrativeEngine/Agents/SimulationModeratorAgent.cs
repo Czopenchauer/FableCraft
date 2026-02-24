@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -26,6 +27,7 @@ internal sealed class SimulationModeratorAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     CharacterSimulationAgent characterAgent,
+    IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.SimulationModeratorAgent;
@@ -62,6 +64,7 @@ internal sealed class SimulationModeratorAgent(
         var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
 
         var queryPlugin = new QueryCharacterPlugin(characterAgent, logger);
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await queryPlugin.SetupAsync(context, callerContext, input);
         kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(queryPlugin));
 

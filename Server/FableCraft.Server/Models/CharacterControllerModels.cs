@@ -48,7 +48,8 @@ public record CharacterSceneRewriteDto(
     Guid Id,
     string Content,
     int SequenceNumber,
-    SceneTracker SceneTracker);
+    SceneTracker SceneTracker,
+    CharacterGatheredContext? GatheredContext);
 
 public record PaginatedResponse<T>(
     List<T> Items,
