@@ -156,12 +156,13 @@ internal sealed class OffscreenInferenceAgent(
                             for (var idx = 0; idx < result.Scenes.Count; idx++)
                             {
                                 var scene = result.Scenes[idx];
+                                
                                 var sceneTracker = new SceneTracker
                                 {
                                     Time = scene.SceneTracker.DateTime,
                                     Location = scene.SceneTracker.Location,
                                     Weather = scene.SceneTracker.Weather ?? "Unknown",
-                                    CharactersPresent = scene.SceneTracker.CharactersPresent?.ToArray() ?? []
+                                    CharactersPresent = (scene.SceneTracker.CharactersPresent?.ToArray() ?? []).Append(character.Name).Distinct().ToArray()
                                 };
 
                                 memories.Add(new MemoryContext
@@ -480,8 +481,8 @@ internal sealed class OffscreenInferenceAgent(
             {
                 var alreadyHandled = BuildAlreadyHandledContent(context);
                 var result = await worldInfoExtractorAgent.Invoke(context, scene.Content, scene.SceneTracker, alreadyHandled, cancellationToken);
-                logger.Debug("Extracted {ActivityCount} activities and {FactCount} world facts from {Character} offscreen inference",
-                    result.Activity.Count, result.WorldFacts.Count, characterName);
+                logger.Debug("Extracted {ActivityCount} activities from {Character} offscreen inference",
+                    result.Activity.Count, characterName);
             }
             catch (Exception ex)
             {

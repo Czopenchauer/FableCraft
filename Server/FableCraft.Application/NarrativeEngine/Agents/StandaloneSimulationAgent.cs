@@ -64,13 +64,15 @@ internal sealed class StandaloneSimulationAgent(
 
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
-        return await agentKernel.SendRequestAsync(
+        var result = await agentKernel.SendRequestAsync(
             chatHistory,
             outputParser,
             promptExecutionSettings,
             $"{nameof(StandaloneSimulationAgent)}:{input.Character.Name}",
             builtKernel,
             cancellationToken);
+        result.Scenes.ForEach(x => x.SceneTracker.CharactersPresent = x.SceneTracker.CharactersPresent.Append(input.Character.Name).Distinct().ToArray());
+        return result;
     }
 
     private async Task<string> PopulateSystemPlaceholders(string prompt, StandaloneSimulationInput input, GenerationContext context)

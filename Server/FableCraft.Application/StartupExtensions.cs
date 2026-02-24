@@ -28,6 +28,7 @@ public static class StartupExtensions
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
             .AddScoped<CharacterReflectionMaintenanceService>()
+            .AddScoped<WorldInfoExtractionMaintenanceService>()
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()

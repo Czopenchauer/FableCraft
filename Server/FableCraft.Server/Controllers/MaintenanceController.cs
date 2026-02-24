@@ -14,7 +14,8 @@ public sealed class MaintenanceController(
     IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
     ContentGenerationService contentGenerationService,
-    CharacterReflectionMaintenanceService characterReflectionMaintenanceService) : ControllerBase
+    CharacterReflectionMaintenanceService characterReflectionMaintenanceService,
+    WorldInfoExtractionMaintenanceService worldInfoExtractionService) : ControllerBase
 {
     [HttpPost("resend-scene-generated-messages/{adventureId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -130,6 +131,51 @@ public sealed class MaintenanceController(
         if (!result.Success && result.Message == "Adventure not found")
         {
             return NotFound(result.Message);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    ///     Extracts world info (activities and world facts) for ALL scenes in an adventure.
+    ///     Processes all scenes in parallel and links all entries to the last scene.
+    /// </summary>
+    [HttpPost("extract-world-info/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ExtractWorldInfo(
+        Guid adventureId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await worldInfoExtractionService.ExtractAllWorldInfoForAdventureAsync(
+            adventureId, cancellationToken);
+
+        if (result is null)
+        {
+            return NotFound("Adventure not found");
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    ///     Commits Activity lorebooks to the World Knowledge Graph.
+    ///     Activities are extracted after scene commit, so they need to be committed separately.
+    ///     This operation is idempotent - already committed activities will be skipped.
+    /// </summary>
+    [HttpPost("commit-activities-to-kg/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CommitActivitiesToKnowledgeGraph(
+        Guid adventureId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await worldInfoExtractionService.CommitActivitiesToKnowledgeGraphAsync(
+            adventureId, cancellationToken);
+
+        if (result is null)
+        {
+            return NotFound("Adventure not found");
         }
 
         return Ok(result);

@@ -232,8 +232,8 @@ internal sealed class CharacterTrackersProcessor(
         {
             var alreadyHandled = BuildAlreadyHandledContent(context);
             var result = await worldInfoExtractorAgent.Invoke(context, narrativeText, sceneTracker, alreadyHandled, cancellationToken);
-            logger.Information("Extracted {ActivityCount} activities and {FactCount} world facts from main narrative",
-                result.Activity.Count, result.WorldFacts.Count);
+            logger.Information("Extracted {ActivityCount} activities from main narrative",
+                result.Activity.Count);
         }
         catch (Exception ex)
         {
@@ -258,8 +258,8 @@ internal sealed class CharacterTrackersProcessor(
         {
             var alreadyHandled = BuildAlreadyHandledContent(context);
             var result = await worldInfoExtractorAgent.Invoke(context, lastRewrite.Content, sceneTracker, alreadyHandled, cancellationToken);
-            logger.Debug("Extracted {ActivityCount} activities and {FactCount} world facts from {Character} reflection",
-                result.Activity.Count, result.WorldFacts.Count, characterContext.Name);
+            logger.Information("Extracted {ActivityCount} activities from {Character} reflection",
+                result.Activity.Count, characterContext.Name);
         }
         catch (Exception ex)
         {

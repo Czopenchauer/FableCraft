@@ -14,6 +14,7 @@ internal sealed class SceneTrackerProcessor(SceneTrackerAgent sceneTracker) : IP
     {
         var result = context.NewTracker?.Scene ?? await sceneTracker.Invoke(context, cancellationToken);
         context.NewTracker ??= new Tracker();
+        result.CharactersPresent = result.CharactersPresent.Append(context.MainCharacter.Name).Distinct().ToArray();
         context.NewTracker.Scene = result;
     }
 }

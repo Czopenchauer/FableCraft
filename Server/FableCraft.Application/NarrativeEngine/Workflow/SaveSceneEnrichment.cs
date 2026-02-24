@@ -78,11 +78,11 @@ internal sealed class SaveSceneEnrichment(
             var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
                                      {
                                          AdventureId = context.AdventureId,
-                                         Title = $"Event at {x.Where}",
-                                         Description = $"[{x.When}] {x.Where}",
+                                         Title = $"Event at {x.When}: {x.Where}",
+                                         Description = $"[{x.When}] {x.Where}\n\n{x.Event}",
                                          Category = nameof(LorebookCategory.WorldEvent),
                                          Content = $"""
-                                                    {x.When}: {x.Where}\n\n{x.Event}
+                                                    {x.Event}
                                                     """,
                                          ContentType = ContentType.txt
                                      }).ToList()
@@ -106,26 +106,14 @@ internal sealed class SaveSceneEnrichment(
                 .Select(x => new LorebookEntry
                 {
                     AdventureId = context.AdventureId,
-                    Title = $"Activity at {x.Location}",
-                    Description = $"[{x.Time}] {string.Join(", ", x.Who)}",
+                    Title = $"Activity at {x.Time}: {x.Location}",
+                    Description = $"{x.ToJsonString()}",
                     Category = nameof(LorebookCategory.Activity),
                     Content = x.ToJsonString(),
                     ContentType = ContentType.json
                 }).ToList();
 
-            var extractedWorldFactEntries = (context.WorldInfoExtractions?.WorldFacts ?? [])
-                .Select(x => new LorebookEntry
-                {
-                    AdventureId = context.AdventureId,
-                    Title = x.Name,
-                    Description = "Extracted world fact",
-                    Category = nameof(LorebookCategory.ExtractedWorldFact),
-                    Content = x.Content,
-                    ContentType = ContentType.txt
-                }).ToList();
-
             loreEntities.AddRange(activityEntries);
-            loreEntities.AddRange(extractedWorldFactEntries);
         }
 
         var chroniclerLore = context.ChroniclerLore?.Select(x => new LorebookEntry

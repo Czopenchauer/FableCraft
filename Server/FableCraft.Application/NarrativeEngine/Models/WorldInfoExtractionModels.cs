@@ -8,9 +8,6 @@ internal sealed class WorldInfoExtractionOutput
 {
     [JsonPropertyName("activity")]
     public List<ActivityExtraction> Activity { get; set; } = [];
-
-    [JsonPropertyName("world_facts")]
-    public List<WorldFactExtraction> WorldFacts { get; set; } = [];
 }
 
 internal sealed class ActivityExtraction
@@ -32,15 +29,6 @@ internal sealed class ActivityExtraction
 
     [JsonPropertyName("information_exchanged")]
     public string? InformationExchanged { get; init; }
-}
-
-internal sealed class WorldFactExtraction
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = null!;
-
-    [JsonPropertyName("content")]
-    public string Content { get; init; } = null!;
 }
 
 internal sealed class AlreadyHandledContent

@@ -131,6 +131,7 @@ internal sealed class SimulationModeratorAgent(
                 }
 
                 var result = await QueryCharacterReflectionAsync(member, session, kernelBuilder, cancellationToken);
+                result.Scenes.ForEach(x => x.SceneTracker.CharactersPresent = x.SceneTracker.CharactersPresent.Append(member.Name).Distinct().ToArray());
                 state.CollectedReflections[member.Name] = result;
                 logger.Information(
                     "Character {Name} reflection collected: {SceneCount} scenes",
