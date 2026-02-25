@@ -699,6 +699,12 @@ internal sealed class SimulationOrchestrator(
                 var result = await worldInfoExtractorAgent.Invoke(context, scene.Narrative, scene.SceneTracker, alreadyHandled, cancellationToken);
                 logger.Information("Extracted {ActivityCount} activities from {Character} simulation",
                     result.Activity.Count, characterName);
+
+                lock (context)
+                {
+                    context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                    context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                }
             }
             catch (Exception ex)
             {

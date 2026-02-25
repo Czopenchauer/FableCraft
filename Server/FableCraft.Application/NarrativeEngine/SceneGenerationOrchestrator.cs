@@ -318,6 +318,7 @@ internal sealed class SceneGenerationOrchestrator(
         var parallelProcessors = new[]
         {
             processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
+            processors.First(p => p is ContextGatherer)
         };
 
         stopwatch.Restart();
@@ -328,7 +329,6 @@ internal sealed class SceneGenerationOrchestrator(
                 try
                 {
                     await Task.WhenAll(parallelProcessors.Select(p => p.Invoke(context, linkedCts.Token)));
-                    await processors.First(p => p is ContextGatherer).Invoke(context, linkedCts.Token);
                     await processors.First(x => x is SaveSceneEnrichment).Invoke(context, linkedCts.Token);
                     logger.Information("[Enrichment] Parallel processing took {ElapsedMilliseconds} ms",
                         stopwatch.ElapsedMilliseconds);

@@ -483,6 +483,12 @@ internal sealed class OffscreenInferenceAgent(
                 var result = await worldInfoExtractorAgent.Invoke(context, scene.Content, scene.SceneTracker, alreadyHandled, cancellationToken);
                 logger.Debug("Extracted {ActivityCount} activities from {Character} offscreen inference",
                     result.Activity.Count, characterName);
+
+                lock (context)
+                {
+                    context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                    context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                }
             }
             catch (Exception ex)
             {

@@ -252,6 +252,12 @@ internal sealed class CharacterTrackersProcessor(
             var result = await worldInfoExtractorAgent.Invoke(context, narrativeText, sceneTracker, alreadyHandled, cancellationToken);
             logger.Information("Extracted {ActivityCount} activities from main narrative",
                 result.Activity.Count);
+
+            lock (context)
+            {
+                context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+            }
         }
         catch (Exception ex)
         {
@@ -278,6 +284,12 @@ internal sealed class CharacterTrackersProcessor(
             var result = await worldInfoExtractorAgent.Invoke(context, lastRewrite.Content, sceneTracker, alreadyHandled, cancellationToken);
             logger.Information("Extracted {ActivityCount} activities from {Character} reflection",
                 result.Activity.Count, characterContext.Name);
+
+            lock (context)
+            {
+                context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+            }
         }
         catch (Exception ex)
         {
