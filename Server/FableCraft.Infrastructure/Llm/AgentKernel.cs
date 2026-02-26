@@ -10,7 +10,12 @@ using FableCraft.Infrastructure.Queue;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.Google;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.Services;
+
+using OllamaSharp.Models.Chat;
+
+using OpenAI.Chat;
 
 using Polly;
 using Polly.Retry;
@@ -361,62 +366,39 @@ internal sealed class AgentKernel : IAgentKernel
                 reasoningBuilder.ToString());
         }
 
-        TokenUsage? usage = null;
-        if (lastChunk?.Metadata != null)
-        {
-            _logger.Information("Chunk inner content: {ChunkMetadata}", lastChunk.InnerContent.ToJsonString());
-            _logger.Information("Chunk metadata: {ChunkMetadata}", lastChunk.Metadata.ToJsonString());
-            if (lastChunk.Metadata.TryGetValue("Usage", out var usageObj) && usageObj != null)
-            {
-                usage = ExtractUsageFromObject(usageObj);
-            }
-
-            if (usage?.CachedTokens == null && lastChunk.Metadata.TryGetValue("CachedContentTokenCount", out var cachedObj))
-            {
-                var cachedTokens = cachedObj as int? ?? (cachedObj is long l ? (int?)l : null);
-                if (cachedTokens != null)
-                {
-                    usage = usage != null
-                        ? usage with { CachedTokens = cachedTokens }
-                        : new TokenUsage(null, null, null, cachedTokens);
-                }
-            }
-        }
+        var usage = ExtractTokenUsage(lastChunk);
 
         return (responseBuilder.ToString(), usage);
     }
 
-    private TokenUsage? ExtractUsageFromObject(object usageObj)
+    private TokenUsage? ExtractTokenUsage(StreamingChatMessageContent? lastChunk)
     {
-        try
+        return lastChunk switch
         {
-            var type = usageObj.GetType();
-            var inputTokens = type.GetProperty("InputTokenCount")?.GetValue(usageObj) as int?
-                              ?? type.GetProperty("PromptTokens")?.GetValue(usageObj) as int?
-                              ?? type.GetProperty("PromptTokenCount")?.GetValue(usageObj) as int?;
+            GeminiStreamingChatMessageContent { Metadata: { } geminiMetadata } =>
+                new TokenUsage(
+                    geminiMetadata.PromptTokenCount,
+                    geminiMetadata.CandidatesTokenCount,
+                    geminiMetadata.TotalTokenCount,
+                    geminiMetadata.CachedContentTokenCount),
 
-            var outputTokens = type.GetProperty("OutputTokenCount")?.GetValue(usageObj) as int?
-                               ?? type.GetProperty("CompletionTokens")?.GetValue(usageObj) as int?
-                               ?? type.GetProperty("CandidatesTokenCount")?.GetValue(usageObj) as int?;
+            OpenAIStreamingChatMessageContent { Metadata: { } metadata }
+                when metadata.TryGetValue("Usage", out var usageObj) && usageObj is ChatTokenUsage openAiUsage =>
+                new TokenUsage(
+                    openAiUsage.InputTokenCount,
+                    openAiUsage.OutputTokenCount,
+                    openAiUsage.TotalTokenCount,
+                    openAiUsage.InputTokenDetails?.CachedTokenCount),
 
-            var totalTokens = type.GetProperty("TotalTokenCount")?.GetValue(usageObj) as int?
-                              ?? type.GetProperty("TotalTokens")?.GetValue(usageObj) as int?;
+            { InnerContent: ChatDoneResponseStream ollama } =>
+                new TokenUsage(
+                    ollama.PromptEvalCount,
+                    ollama.EvalCount,
+                    ollama.PromptEvalCount + ollama.EvalCount,
+                    CachedTokens: null),
 
-            int? cachedTokens = null;
-            var inputDetails = type.GetProperty("InputTokenDetails")?.GetValue(usageObj);
-            if (inputDetails != null)
-            {
-                cachedTokens = inputDetails.GetType().GetProperty("CachedTokenCount")?.GetValue(inputDetails) as int?;
-            }
-            cachedTokens ??= type.GetProperty("CachedContentTokenCount")?.GetValue(usageObj) as int?;
-
-            return new TokenUsage(inputTokens, outputTokens, totalTokens, cachedTokens);
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning(ex, "Failed to extract usage from object of type {Type}", usageObj.GetType().Name);
-            return null;
-        }
+            _ => null
+        };
     }
 
     private static ChatHistory CloneChatHistory(ChatHistory original)
