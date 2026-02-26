@@ -19,14 +19,17 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
     private const int SceneContextCount = 30;
     private readonly IAgentKernel _agentKernel;
     private readonly IPluginFactory _pluginFactory;
+    private readonly DispatchService _dispatchService;
 
     public WriterAgent(IAgentKernel agentKernel,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         KernelBuilderFactory kernelBuilderFactory,
-        IPluginFactory pluginFactory) : base(dbContextFactory, kernelBuilderFactory)
+        IPluginFactory pluginFactory,
+        DispatchService dispatchService) : base(dbContextFactory, kernelBuilderFactory)
     {
         _agentKernel = agentKernel;
         _pluginFactory = pluginFactory;
+        _dispatchService = dispatchService;
     }
 
     public async Task Invoke(
@@ -104,10 +107,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         }
         else
         {
+            var incomingDispatches = await GetIncomingDispatchesAsync(context, _dispatchService, cancellationToken);
             requestPrompt = $"""
                              {PromptSections.ChroniclerGuidance(context.SceneContext)}
 
-                             {GetPendingMcInteractions(context)}
+                             {incomingDispatches}
 
                              {PromptSections.PlayerAction(context.PlayerAction)}
 
@@ -154,6 +158,54 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             new AgentKernelOptions { MaxParsingRetries = 1 });
 
         context.NewScene = newScene;
+
+        // Queue MC dispatches for persistence
+        if (newScene.Dispatches is { Count: > 0 })
+        {
+            foreach (var dispatch in newScene.Dispatches)
+            {
+                context.NewDispatches.Add(new DispatchToSave
+                {
+                    AdventureId = context.AdventureId,
+                    FromCharacter = context.MainCharacter.Name,
+                    ToCharacter = dispatch.To,
+                    Method = dispatch.Method,
+                    SentAt = dispatch.SentAt,
+                    EstimatedTransit = dispatch.EstimatedTransit,
+                    SenderContext = dispatch.SenderContext,
+                    WhatArrives = dispatch.WhatArrives
+                });
+            }
+        }
+
+        // Queue MC dispatch resolutions for persistence
+        if (newScene.DispatchesResolved is { Count: > 0 })
+        {
+            foreach (var resolution in newScene.DispatchesResolved)
+            {
+                if (Guid.TryParse(resolution.DispatchId, out var dispatchId))
+                {
+                    context.DispatchResolutions.Add(new DispatchResolutionToSave
+                    {
+                        DispatchId = dispatchId,
+                        Resolution = resolution.Resolution,
+                        ResolvedAt = resolution.Time,
+                        Discoverable = resolution.Discoverable,
+                        Location = context.NewTracker?.Scene?.Location
+                    });
+
+                    if (resolution.Discoverable)
+                    {
+                        context.NewWorldEvents.Add(new WorldEvent
+                        {
+                            When = resolution.Time,
+                            Where = context.NewTracker?.Scene?.Location ?? "Unknown",
+                            Event = resolution.Resolution
+                        });
+                    }
+                }
+            }
+        }
     }
 
     protected override AgentName GetAgentName() => AgentName.WriterAgent;
@@ -179,47 +231,74 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                 importanceFlags = ResponseParser.TryExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
             }
 
+            List<OutgoingDispatch>? dispatches = null;
+            List<DispatchResolution>? dispatchesResolved = null;
+
+            if (response.Contains("dispatch"))
+            {
+                var dispatchBlock = ResponseParser.TryExtractJson<DispatchOutput?>(response, "dispatch");
+                if (dispatchBlock != null)
+                {
+                    dispatches = dispatchBlock.Dispatches;
+                    dispatchesResolved = dispatchBlock.DispatchesResolved;
+                }
+                else
+                {
+                    dispatches = ResponseParser.TryExtractJson<List<OutgoingDispatch>?>(response, "dispatches");
+                    dispatchesResolved = ResponseParser.TryExtractJson<List<DispatchResolution>?>(response, "dispatches_resolved");
+                }
+            }
+
             return new GeneratedScene
             {
                 Scene = scene,
                 Choices = choices,
                 CreationRequests = creationRequests,
-                ImportanceFlags = importanceFlags
+                ImportanceFlags = importanceFlags,
+                Dispatches = dispatches,
+                DispatchesResolved = dispatchesResolved
             };
         };
     }
 
     /// <summary>
-    ///     Builds a prompt section for pending MC interactions from characters who want to seek the MC.
-    ///     Characters with high/immediate urgency should be woven into the upcoming scene.
+    ///     Builds a prompt section for incoming dispatches that have arrived for the MC.
     /// </summary>
-    private static string GetPendingMcInteractions(GenerationContext context)
+    private async Task<string> GetIncomingDispatchesAsync(
+        GenerationContext context,
+        DispatchService dispatchService,
+        CancellationToken ct)
     {
-        var pendingInteractions = context.Characters
-            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
-            .Select(c => new
-            {
-                Character = c.Name,
-                Data = c.SimulationMetadata!.PendingMcInteraction!.ExtensionData!
-            })
-            .ToList();
+        var dispatches = await dispatchService.GetDeliverableForRecipientAsync(
+            context.AdventureId,
+            context.MainCharacter.Name,
+            ct);
 
-        if (pendingInteractions.Count == 0)
+        if (dispatches.Count == 0)
         {
             return string.Empty;
         }
 
-        var formatted = string.Join("\n\n",
-            pendingInteractions.Select(p => $"""
-                                             **{p.Character}**)
-                                             {p.Data}
-                                             """.Trim()));
+        var incoming = dispatches.Select(d => new Models.IncomingDispatch
+        {
+            Id = d.Id.ToString(),
+            From = d.FromCharacter,
+            Method = d.Method,
+            SentAt = d.SentAt,
+            EstimatedTransit = d.EstimatedTransit,
+            WhatArrives = d.WhatArrives
+        }).ToList();
+
+        var json = System.Text.Json.JsonSerializer.Serialize(incoming, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
 
         return $"""
-                <pending_mc_interactions>
-                The following characters have decided to seek out the MC. Consider weaving them into the scene based on urgency:
-                {formatted}
-                </pending_mc_interactions>
+                <incoming_dispatches>
+                Messages that have arrived for the MC:
+                {json}
+                </incoming_dispatches>
                 """;
     }
 }

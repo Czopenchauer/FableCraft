@@ -135,6 +135,18 @@ internal sealed class GenerationContext
     public List<CharacterEventToSave> NewCharacterEvents { get; set; } = [];
 
     /// <summary>
+    ///     New dispatches to persist in SaveEnrichmentStep.
+    ///     Collected by SimulationOrchestrator when characters send dispatches.
+    /// </summary>
+    public List<DispatchToSave> NewDispatches { get; set; } = [];
+
+    /// <summary>
+    ///     Dispatch resolutions to apply in SaveEnrichmentStep.
+    ///     Collected by SimulationOrchestrator when characters resolve incoming dispatches.
+    /// </summary>
+    public List<DispatchResolutionToSave> DispatchResolutions { get; set; } = [];
+
+    /// <summary>
     ///     Character emulation outputs captured during scene generation.
     ///     Used by CharacterReflectionAgent to understand the character's internal experience.
     /// </summary>
@@ -252,6 +264,47 @@ internal sealed class CharacterEventToSave
     public required string Event { get; init; }
 
     public required string SourceRead { get; init; }
+}
+
+/// <summary>
+///     Data for a Dispatch to be saved.
+/// </summary>
+internal sealed class DispatchToSave
+{
+    public required Guid AdventureId { get; init; }
+
+    public required string FromCharacter { get; init; }
+
+    public required string ToCharacter { get; init; }
+
+    public required string Method { get; init; }
+
+    public required string SentAt { get; init; }
+
+    public required string EstimatedTransit { get; init; }
+
+    public string? SenderContext { get; init; }
+
+    public required string WhatArrives { get; init; }
+}
+
+/// <summary>
+///     Data for a Dispatch resolution to be applied.
+/// </summary>
+internal sealed class DispatchResolutionToSave
+{
+    public required Guid DispatchId { get; init; }
+
+    public required string Resolution { get; init; }
+
+    public required string ResolvedAt { get; init; }
+
+    public required bool Discoverable { get; init; }
+
+    /// <summary>
+    ///     Location for world event if discoverable.
+    /// </summary>
+    public string? Location { get; init; }
 }
 
 /// <summary>

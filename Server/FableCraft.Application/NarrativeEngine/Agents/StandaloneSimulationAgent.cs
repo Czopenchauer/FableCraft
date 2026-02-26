@@ -150,6 +150,10 @@ internal sealed class StandaloneSimulationAgent(
                 <last_scenes>
                 {BuildSceneHistoryContent(input.Character)}
                 </last_scenes>
+
+                {FormatIncomingDispatches(input.IncomingDispatches)}
+
+                {FormatPendingCharacterEvents(input.PendingCharacterEvents)}
                 """;
     }
 
@@ -235,6 +239,49 @@ internal sealed class StandaloneSimulationAgent(
             sb.AppendLine();
         }
 
+        return sb.ToString();
+    }
+
+    private static string FormatIncomingDispatches(List<Models.IncomingDispatch>? dispatches)
+    {
+        if (dispatches == null || dispatches.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var json = System.Text.Json.JsonSerializer.Serialize(dispatches, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        return $"""
+                <incoming_dispatches>
+                Messages that have arrived for you. Check timing before resolving (sent_at + estimated_transit must have elapsed).
+                {json}
+                </incoming_dispatches>
+                """;
+    }
+
+    private static string FormatPendingCharacterEvents(List<Models.CharacterEventDto>? events)
+    {
+        if (events == null || events.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("<pending_character_events>");
+        sb.AppendLine("Events that have affected you since your last simulation:");
+        sb.AppendLine();
+
+        foreach (var evt in events)
+        {
+            sb.AppendLine($"- **{evt.Time}** from {evt.SourceCharacter}: {evt.Event}");
+            sb.AppendLine($"  _(Their read: {evt.SourceRead})_");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("</pending_character_events>");
         return sb.ToString();
     }
 }

@@ -180,6 +180,10 @@ internal sealed class SaveSceneEnrichment(
 
             await SaveNewCharacterEvents(context, dbContext);
 
+            await SaveNewDispatches(context, dbContext);
+
+            await ApplyDispatchResolutions(context, dbContext, cancellationToken);
+
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         });
@@ -605,6 +609,83 @@ internal sealed class SaveSceneEnrichment(
 
     private static bool IsValidTransition(ImportanceChangeRequest request) =>
         request.From == "arc_important" && request.To == "significant" || request.From == "significant" && request.To == "arc_important";
+
+    private static async Task SaveNewDispatches(GenerationContext context, ApplicationDbContext dbContext)
+    {
+        List<DispatchToSave> dispatchesToSave;
+        lock (context)
+        {
+            if (context.NewDispatches.Count == 0)
+            {
+                return;
+            }
+
+            dispatchesToSave = context.NewDispatches.ToList();
+        }
+
+        if (dispatchesToSave.Count == 0)
+        {
+            return;
+        }
+
+        var entities = dispatchesToSave.Select(d => new Dispatch
+        {
+            Id = Guid.NewGuid(),
+            AdventureId = d.AdventureId,
+            FromCharacter = d.FromCharacter,
+            ToCharacter = d.ToCharacter,
+            Method = d.Method,
+            SentAt = d.SentAt,
+            EstimatedTransit = d.EstimatedTransit,
+            SenderContext = d.SenderContext,
+            WhatArrives = d.WhatArrives,
+            Status = DispatchStatus.Pending,
+            CreatedUtc = DateTime.UtcNow
+        });
+
+        await dbContext.Dispatches.AddRangeAsync(entities);
+    }
+
+    private static async Task ApplyDispatchResolutions(
+        GenerationContext context,
+        ApplicationDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        List<DispatchResolutionToSave> resolutions;
+        lock (context)
+        {
+            if (context.DispatchResolutions.Count == 0)
+            {
+                return;
+            }
+
+            resolutions = context.DispatchResolutions.ToList();
+        }
+
+        if (resolutions.Count == 0)
+        {
+            return;
+        }
+
+        var dispatchIds = resolutions.Select(r => r.DispatchId).ToList();
+        var dispatches = await dbContext.Dispatches
+            .Where(d => dispatchIds.Contains(d.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var resolution in resolutions)
+        {
+            var dispatch = dispatches.FirstOrDefault(d => d.Id == resolution.DispatchId);
+            if (dispatch == null)
+            {
+                continue;
+            }
+
+            dispatch.Status = DispatchStatus.Resolved;
+            dispatch.Resolution = resolution.Resolution;
+            dispatch.ResolvedAt = resolution.ResolvedAt;
+            dispatch.Discoverable = resolution.Discoverable;
+        }
+    }
 
     /// <summary>
     ///     Links pre-scene custom characters (those with null IntroductionScene) to the first scene.

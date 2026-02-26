@@ -314,23 +314,43 @@ These events are processed by another system to update NPC profiles. Your role i
 
 ---
 
-## Pending MC Interaction
+## Dispatches
 
-If you decide to seek out the protagonist:
+To communicate with someone not present, emit a dispatch:
 
 ```json
 {
-  "intent": "What you want—confront, ask for help, share information, warn them",
-  "driver": "Why—what goal, emotion, or event is pushing this",
-  "urgency": "low | medium | high | immediate",
-  "approach": "How you'd find them—direct, cautious, send message, ambush",
-  "emotional_state": "How you're feeling about this",
-  "what_i_want": "The outcome you're hoping for",
-  "what_i_know": "Relevant information you have going in"
+  "to": "Recipient name",
+  "method": "Street kid runner, paid two copper",
+  "sent_at": "15:00 05-06-845",
+  "estimated_transit": "Under an hour on foot",
+  "sender_context": "Why I'm sending this (private)",
+  "what_arrives": "A grubby kid bangs on the door..."
 }
 ```
 
-Use `null` if you have no reason to seek them out.
+`sender_context` is your private reasoning—stripped before delivery.
+`what_arrives` is a scene beat the recipient experiences.
+
+### Resolving Incoming Dispatches
+
+If `incoming_dispatches` contains messages for you:
+
+```json
+{
+  "dispatch_id": "dispatch_0a3f",
+  "time": "16:00 05-06-845",
+  "discoverable": true,
+  "resolution": "What happens—a discoverable fact"
+}
+```
+
+`discoverable: true` → World KG (anyone can learn)
+`discoverable: false` → sender's + recipient's Character KGs only
+
+If timing hasn't elapsed (`sent_at` + `estimated_transit` > current time), ignore it.
+
+{{dispatch}}
 
 ---
 
@@ -501,9 +521,11 @@ Wrap output in `<solo_simulation>` tags.
   "relationships": [],
   
   "character_events": [],
-  
-  "pending_mc_interaction": null,
-  
+
+  "dispatches": [],
+
+  "dispatches_resolved": [],
+
   "world_events_emitted": []
 }
 ```
@@ -630,7 +652,8 @@ Output **complete** relationship objects for each relationship that changed. Onl
   "identity": null,
   "relationships": [],
   "character_events": [],
-  "pending_mc_interaction": null,
+  "dispatches": [],
+  "dispatches_resolved": [],
   "world_events_emitted": []
 }
 ```

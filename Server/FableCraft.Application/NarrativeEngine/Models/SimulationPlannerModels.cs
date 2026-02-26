@@ -64,18 +64,6 @@ internal sealed class CharacterRosterEntry
 }
 
 /// <summary>
-///     Entry for a character's pending MC interaction.
-/// </summary>
-internal sealed class PendingMcInteractionEntry
-{
-    [JsonPropertyName("character")]
-    public required string Character { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
-}
-
-/// <summary>
 ///     Output from the SimulationPlanner agent.
 /// </summary>
 internal sealed class SimulationPlannerOutput
@@ -111,10 +99,10 @@ internal sealed class SimulationPlannerOutput
     public List<SkippedCharacter>? Skip { get; init; }
 
     /// <summary>
-    ///     Significant characters not in a cohort that need OffscreenInference.
+    ///     Significant characters not in a cohort that need simulation before the next scene.
     /// </summary>
     [JsonPropertyName("inference")]
-    public List<SignificantForInference>? Inference { get; init; }
+    public List<SignificantForSimulation>? SignificantForSimulation { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
@@ -184,9 +172,9 @@ internal sealed class SkippedCharacter
 }
 
 /// <summary>
-///     A significant character that needs OffscreenInference before next scene.
+///     A significant character that needs simulation before the next scene.
 /// </summary>
-internal sealed class SignificantForInference
+internal sealed class SignificantForSimulation
 {
     /// <summary>
     ///     Character name.

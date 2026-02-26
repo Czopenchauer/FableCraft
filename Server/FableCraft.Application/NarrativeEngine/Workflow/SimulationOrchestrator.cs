@@ -18,10 +18,10 @@ internal sealed class SimulationOrchestrator(
     SimulationPlannerAgent plannerAgent,
     StandaloneSimulationAgent standaloneAgent,
     SimulationModeratorAgent cohortModeratorAgent,
-    OffscreenInferenceAgent offscreenInferenceAgent,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
+    DispatchService dispatchService,
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
     ItemCrafter itemCrafter,
@@ -68,9 +68,23 @@ internal sealed class SimulationOrchestrator(
             string.Join(", ", string.Join("+", plan.Standalone?.Select(c => c.Character) ?? [])),
             string.Join(", ", string.Join("+", plan.Skip?.Select(c => c.Character) ?? [])));
 
-        await Task.WhenAll(RunStandaloneSimulations(context, plan, cancellationToken),
-            RunCohortSimulations(context, plan, cancellationToken),
-            offscreenInferenceAgent.Invoke(context, plan, cancellationToken));
+        var allStandalone = (plan.Standalone ?? []).ToList();
+        if (plan.SignificantForSimulation is { Count: > 0 })
+        {
+            foreach (var sig in plan.SignificantForSimulation)
+            {
+                if (!allStandalone.Any(s => s.Character == sig.Character))
+                {
+                    allStandalone.Add(new StandaloneSimulation { Character = sig.Character });
+                }
+            }
+        }
+
+        plan.Standalone = allStandalone;
+
+        await Task.WhenAll(
+            RunStandaloneSimulations(context, plan, cancellationToken),
+            RunCohortSimulations(context, plan, cancellationToken));
     }
 
     private async Task RunStandaloneSimulations(
@@ -119,7 +133,8 @@ internal sealed class SimulationOrchestrator(
                         Scenes = [],
                         RelationshipUpdates = [],
                         ProfileUpdates = characterContext.CharacterState,
-                        PendingMcInteraction = characterContext.SimulationMetadata?.PendingMcInteraction,
+                        Dispatches = null,
+                        DispatchesResolved = null,
                         WorldEventsEmitted = null,
                         CharacterEvents = null
                     };
@@ -128,12 +143,28 @@ internal sealed class SimulationOrchestrator(
                 {
                     logger.Information("Running standalone simulation for {CharacterName}...", character.Name);
 
+                    var incomingDispatches = await dispatchService.GetDeliverableForRecipientAsync(
+                        context.AdventureId,
+                        character.Name,
+                        cancellationToken);
+
+                    var incomingDispatchDtos = incomingDispatches.Select(d => new IncomingDispatch
+                    {
+                        Id = d.Id.ToString(),
+                        From = d.FromCharacter,
+                        Method = d.Method,
+                        SentAt = d.SentAt,
+                        EstimatedTransit = d.EstimatedTransit,
+                        WhatArrives = d.WhatArrives
+                    }).ToList();
+
                     var input = new StandaloneSimulationInput
                     {
                         Character = character,
                         TimePeriod = context.NewTracker!.Scene,
                         WorldEvents = previousState?.WorldMomentum,
-                        GatheredWorldContext = gatheredContext
+                        GatheredWorldContext = gatheredContext,
+                        IncomingDispatches = incomingDispatchDtos.Count > 0 ? incomingDispatchDtos : null
                     };
 
                     try
@@ -208,13 +239,60 @@ internal sealed class SimulationOrchestrator(
                             SimulationMetadata = new SimulationMetadata
                             {
                                 LastSimulated = input.TimePeriod!.Time,
-                                PendingMcInteraction = result.PendingMcInteraction
                             },
                             IsDead = false
                         };
 
                         lock (context)
                         {
+                            // Queue dispatches for persistence in SaveEnrichmentStep
+                            if (result.Dispatches is { Count: > 0 })
+                            {
+                                foreach (var dispatch in result.Dispatches)
+                                {
+                                    context.NewDispatches.Add(new DispatchToSave
+                                    {
+                                        AdventureId = context.AdventureId,
+                                        FromCharacter = character.Name,
+                                        ToCharacter = dispatch.To,
+                                        Method = dispatch.Method,
+                                        SentAt = dispatch.SentAt,
+                                        EstimatedTransit = dispatch.EstimatedTransit,
+                                        SenderContext = dispatch.SenderContext,
+                                        WhatArrives = dispatch.WhatArrives
+                                    });
+                                }
+                            }
+
+                            // Queue dispatch resolutions for persistence in SaveEnrichmentStep
+                            if (result.DispatchesResolved is { Count: > 0 })
+                            {
+                                foreach (var resolution in result.DispatchesResolved)
+                                {
+                                    if (Guid.TryParse(resolution.DispatchId, out var dispatchId))
+                                    {
+                                        context.DispatchResolutions.Add(new DispatchResolutionToSave
+                                        {
+                                            DispatchId = dispatchId,
+                                            Resolution = resolution.Resolution,
+                                            ResolvedAt = resolution.Time,
+                                            Discoverable = resolution.Discoverable,
+                                            Location = character.CharacterTracker?.Location
+                                        });
+
+                                        if (resolution.Discoverable)
+                                        {
+                                            context.NewWorldEvents.Add(new WorldEvent
+                                            {
+                                                When = resolution.Time,
+                                                Where = character.CharacterTracker?.Location ?? "Unknown",
+                                                Event = resolution.Resolution
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+
                             context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
                             {
                                 CharacterId = character.CharacterId,
@@ -477,10 +555,58 @@ internal sealed class SimulationOrchestrator(
                 SimulationMetadata = new SimulationMetadata
                 {
                     LastSimulated = cohortSimulationResult.Result.SimulationPeriod.To,
-                    PendingMcInteraction = result.PendingMcInteraction
                 },
                 IsDead = false
             };
+
+            lock (context)
+            {
+                if (result.Dispatches is { Count: > 0 })
+                {
+                    foreach (var dispatch in result.Dispatches)
+                    {
+                        context.NewDispatches.Add(new DispatchToSave
+                        {
+                            AdventureId = context.AdventureId,
+                            FromCharacter = character.Name,
+                            ToCharacter = dispatch.To,
+                            Method = dispatch.Method,
+                            SentAt = dispatch.SentAt,
+                            EstimatedTransit = dispatch.EstimatedTransit,
+                            SenderContext = dispatch.SenderContext,
+                            WhatArrives = dispatch.WhatArrives
+                        });
+                    }
+                }
+
+                if (result.DispatchesResolved is { Count: > 0 })
+                {
+                    foreach (var resolution in result.DispatchesResolved)
+                    {
+                        if (Guid.TryParse(resolution.DispatchId, out var dispatchId))
+                        {
+                            context.DispatchResolutions.Add(new DispatchResolutionToSave
+                            {
+                                DispatchId = dispatchId,
+                                Resolution = resolution.Resolution,
+                                ResolvedAt = resolution.Time,
+                                Discoverable = resolution.Discoverable,
+                                Location = character.CharacterTracker?.Location
+                            });
+
+                            if (resolution.Discoverable)
+                            {
+                                context.NewWorldEvents.Add(new WorldEvent
+                                {
+                                    When = resolution.Time,
+                                    Where = character.CharacterTracker?.Location ?? "Unknown",
+                                    Event = resolution.Resolution
+                                });
+                            }
+                        }
+                    }
+                }
+            }
 
             lock (context)
             {

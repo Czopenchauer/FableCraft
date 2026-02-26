@@ -70,18 +70,15 @@ internal sealed class ContainerConfig
 
 internal sealed class ContainerManager
 {
-    private readonly DockerClientBuilder _clientBuilder;
     private readonly ILogger _logger;
     private readonly HttpClient _healthClient;
     private readonly IOptions<DockerSettings> _settings;
 
     public ContainerManager(
-        DockerClientBuilder clientBuilder,
         ILogger logger,
         HttpClient httpClient,
         IOptions<DockerSettings> settings)
     {
-        _clientBuilder = clientBuilder;
         _logger = logger;
         _healthClient = httpClient;
         _settings = settings;
@@ -89,7 +86,8 @@ internal sealed class ContainerManager
     
     private DockerClient BuildClient()
     {
-        return _clientBuilder.WithEndpoint(new Uri(_settings.Value.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
+        var clientBuilder = new DockerClientBuilder();
+        return clientBuilder.WithEndpoint(new Uri(_settings.Value.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
     }
 
     public async Task StartAsync(ContainerConfig config, CancellationToken cancellationToken = default)

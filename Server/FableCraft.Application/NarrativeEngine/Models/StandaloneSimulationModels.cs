@@ -28,6 +28,17 @@ internal sealed class StandaloneSimulationInput
     ///     World context gathered from the previous scene for grounding world knowledge.
     /// </summary>
     public GatheredContext? GatheredWorldContext { get; init; }
+
+    /// <summary>
+    ///     Incoming dispatches for this character to process.
+    /// </summary>
+    public List<IncomingDispatch>? IncomingDispatches { get; init; }
+
+    /// <summary>
+    ///     Pending character events that affected this character (from other simulations).
+    ///     Used when simulating significant characters who received events.
+    /// </summary>
+    public List<CharacterEventDto>? PendingCharacterEvents { get; init; }
 }
 
 /// <summary>
@@ -54,10 +65,16 @@ internal sealed class StandaloneSimulationOutput
     public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
-    ///     If the character decides to seek out the protagonist.
+    ///     Dispatches sent by this character to communicate with others not present.
     /// </summary>
-    [JsonPropertyName("pending_mc_interaction")]
-    public PendingMcInteraction? PendingMcInteraction { get; init; }
+    [JsonPropertyName("dispatches")]
+    public List<OutgoingDispatch>? Dispatches { get; init; }
+
+    /// <summary>
+    ///     Resolutions of dispatches this character received and processed.
+    /// </summary>
+    [JsonPropertyName("dispatches_resolved")]
+    public List<DispatchResolution>? DispatchesResolved { get; init; }
 
     /// <summary>
     ///     World events caused by this character's actions that others could discover.

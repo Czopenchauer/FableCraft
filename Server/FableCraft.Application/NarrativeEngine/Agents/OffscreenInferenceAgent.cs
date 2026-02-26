@@ -12,6 +12,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 ///     Coordinates standalone simulation for characters marked for inference.
 ///     Delegates actual simulation to StandaloneSimulationAgent for full simulation output.
 /// </summary>
+[Obsolete("OffscreenInference has been replaced by routing significant characters to StandaloneSimulationAgent via SimulationOrchestrator")]
 internal sealed class OffscreenInferenceAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     StandaloneSimulationAgent standaloneAgent,
@@ -30,7 +31,7 @@ internal sealed class OffscreenInferenceAgent(
     {
         logger.Information("OffscreenInferenceProcessor: Starting...");
 
-        var significantForInference = plan.Inference;
+        var significantForInference = plan.SignificantForSimulation;
         if (significantForInference is not { Count: > 0 })
         {
             logger.Information("OffscreenInferenceProcessor: No significant characters need inference");
@@ -107,7 +108,8 @@ internal sealed class OffscreenInferenceAgent(
                         Scenes = [],
                         RelationshipUpdates = [],
                         ProfileUpdates = updatedCharacter.CharacterState,
-                        PendingMcInteraction = updatedCharacter.SimulationMetadata?.PendingMcInteraction,
+                        Dispatches = null,
+                        DispatchesResolved = null,
                         WorldEventsEmitted = null,
                         CharacterEvents = null
                     };
@@ -198,7 +200,6 @@ internal sealed class OffscreenInferenceAgent(
                             SimulationMetadata = new SimulationMetadata
                             {
                                 LastSimulated = input.TimePeriod!.Time,
-                                PendingMcInteraction = result.PendingMcInteraction
                             },
                             IsDead = false
                         };

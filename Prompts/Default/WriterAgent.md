@@ -103,16 +103,30 @@ Three tiers:
 
 **No Profile** — New background characters. Use GEARS framework. Request creation if they become important.
 
-### Pending Interactions
+### Incoming Dispatches
 
-NPCs who have decided to seek the {{CHARACTER_NAME}}. Each includes intent, driver, urgency, approach, emotional state, what they want, what they know.
+Messages that have arrived for the {{CHARACTER_NAME}}. Each includes delivery method and content.
 
-| Urgency | Handling |
-|---------|----------|
-| immediate | Interrupt current scene. They arrive NOW. |
-| high | Weave into scene transition or opening. |
-| medium | Find appropriate moment in next few scenes. |
-| low | Background thread. Address when natural. |
+| Method | Integration |
+|--------|-------------|
+| Physical messenger | Interrupt or weave into scene |
+| Bird/fast courier | Background arrival, {{CHARACTER_NAME}} notices |
+| Magical sending | Immediate, private |
+
+Resolve dispatches the {{CHARACTER_NAME}} acknowledges:
+
+```json
+{
+  "dispatches_resolved": [
+    {
+      "dispatch_id": "dispatch_0a3f",
+      "time": "Current in-world time",
+      "discoverable": true,
+      "resolution": "{{CHARACTER_NAME}} reads the letter, face darkening"
+    }
+  ]
+}
+```
 
 ### Narrative Context
 

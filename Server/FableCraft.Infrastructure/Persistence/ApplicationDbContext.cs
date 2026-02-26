@@ -56,6 +56,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<CharacterEvent> CharacterEvents { get; set; }
 
+    public DbSet<Dispatch> Dispatches { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -61,4 +61,6 @@ internal static class PlaceholderNames
     public const string IdentitySchema = "{{identity_schema}}";
 
     public const string RelationshipSchema = "{{relationship_schema}}";
+
+    public const string Dispatch = "{{dispatch}}";
 }

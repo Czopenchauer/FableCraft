@@ -37,21 +37,6 @@ public class SimulationMetadata
     /// </summary>
     [JsonPropertyName("last_simulated")]
     public required string? LastSimulated { get; set; }
-
-    /// <summary>
-    ///     If the character has decided to seek out the MC.
-    /// </summary>
-    [JsonPropertyName("pending_mc_interaction")]
-    public required PendingMcInteraction? PendingMcInteraction { get; set; }
-}
-
-/// <summary>
-///     Information about a character's intent to seek out the MC.
-/// </summary>
-public class PendingMcInteraction
-{
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
 public class CharacterStats

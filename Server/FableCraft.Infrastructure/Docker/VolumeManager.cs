@@ -12,22 +12,20 @@ namespace FableCraft.Infrastructure.Docker;
 internal sealed class VolumeManager
 {
     private readonly DockerSettings _settings;
-    private readonly DockerClientBuilder _clientBuilder;
     private readonly ILogger _logger;
 
     public VolumeManager(
-        DockerClientBuilder clientBuilder,
         IOptions<DockerSettings> settings,
         ILogger logger)
     {
         _settings = settings.Value;
-        _clientBuilder = clientBuilder;
         _logger = logger;
     }
 
     private DockerClient BuildClient()
     {
-        return _clientBuilder.WithEndpoint(new Uri(_settings.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
+        var clientBuilder = new DockerClientBuilder();
+        return clientBuilder.WithEndpoint(new Uri(_settings.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
     }
 
     public async Task CreateAsync(string volumeName, CancellationToken ct = default)

@@ -210,17 +210,14 @@ internal static class PromptSections
 
     public static string CharacterForEmulation(GenerationContext context)
     {
-        var pendingInteractions = context.Characters
-            .Where(c => c.SimulationMetadata?.PendingMcInteraction?.ExtensionData != null)
-            .Select(c => c.Name)
-            .ToList();
+        var candidateCharacters = new List<string>();
         var charactersOnScene = context.LatestTracker()?.Scene!.CharactersPresent;
-        pendingInteractions.AddRange(charactersOnScene ?? Enumerable.Empty<string>());
+        candidateCharacters.AddRange(charactersOnScene ?? Enumerable.Empty<string>());
 
         var coLocatedCharacters = GetCoLocatedCharactersFromContext(context);
-        pendingInteractions.AddRange(coLocatedCharacters);
+        candidateCharacters.AddRange(coLocatedCharacters);
 
-        var characters = context.Characters.Where(x => pendingInteractions.Contains(x.Name)).ToList();
+        var characters = context.Characters.Where(x => candidateCharacters.Contains(x.Name)).ToList();
         if (characters.Count == 0)
         {
             return string.Empty;
