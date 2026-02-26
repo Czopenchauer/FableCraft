@@ -11,25 +11,30 @@ namespace FableCraft.Infrastructure.Docker;
 
 internal sealed class VolumeManager
 {
-    private readonly DockerClient _client;
     private readonly DockerSettings _settings;
+    private readonly DockerClientBuilder _clientBuilder;
     private readonly ILogger _logger;
 
     public VolumeManager(
-        DockerClient client,
+        DockerClientBuilder clientBuilder,
         IOptions<DockerSettings> settings,
         ILogger logger)
     {
-        _client = client;
         _settings = settings.Value;
+        _clientBuilder = clientBuilder;
         _logger = logger;
+    }
+
+    private DockerClient BuildClient()
+    {
+        return _clientBuilder.WithEndpoint(new Uri(_settings.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
     }
 
     public async Task CreateAsync(string volumeName, CancellationToken ct = default)
     {
         _logger.Information("Creating Docker volume {VolumeName}", volumeName);
 
-        await _client.Volumes.CreateAsync(new VolumesCreateParameters
+        await BuildClient().Volumes.CreateAsync(new VolumesCreateParameters
             {
                 Name = volumeName,
                 Labels = new Dictionary<string, string>
@@ -58,7 +63,7 @@ internal sealed class VolumeManager
 
         try
         {
-            var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
+            var createResponse = await BuildClient().Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = _settings.UtilityImage,
                     Name = containerName,
@@ -77,9 +82,9 @@ internal sealed class VolumeManager
 
             _logger.Debug("Created copy container {ContainerId}", createResponse.ID);
 
-            await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
+            await BuildClient().Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
 
-            var waitResponse = await _client.Containers.WaitContainerAsync(createResponse.ID, ct);
+            var waitResponse = await BuildClient().Containers.WaitContainerAsync(createResponse.ID, ct);
 
             if (waitResponse.StatusCode != 0)
             {
@@ -110,7 +115,7 @@ internal sealed class VolumeManager
         {
             try
             {
-                await _client.Containers.RemoveContainerAsync(containerName,
+                await BuildClient().Containers.RemoveContainerAsync(containerName,
                     new ContainerRemoveParameters { Force = true },
                     ct);
             }
@@ -127,7 +132,7 @@ internal sealed class VolumeManager
 
         try
         {
-            await _client.Volumes.RemoveAsync(volumeName, force, ct);
+            await BuildClient().Volumes.RemoveAsync(volumeName, force, ct);
             _logger.Information("Deleted Docker volume {VolumeName}", volumeName);
         }
         catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -140,7 +145,7 @@ internal sealed class VolumeManager
     {
         try
         {
-            await _client.Volumes.InspectAsync(volumeName, ct);
+            await BuildClient().Volumes.InspectAsync(volumeName, ct);
             return true;
         }
         catch (DockerApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -161,7 +166,7 @@ internal sealed class VolumeManager
 
         try
         {
-            var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
+            var createResponse = await BuildClient().Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = _settings.UtilityImage,
                     Name = containerName,
@@ -178,9 +183,9 @@ internal sealed class VolumeManager
                 },
                 ct);
 
-            await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
+            await BuildClient().Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
 
-            var waitResponse = await _client.Containers.WaitContainerAsync(createResponse.ID, ct);
+            var waitResponse = await BuildClient().Containers.WaitContainerAsync(createResponse.ID, ct);
 
             if (waitResponse.StatusCode != 0)
             {
@@ -201,7 +206,7 @@ internal sealed class VolumeManager
         {
             try
             {
-                await _client.Containers.RemoveContainerAsync(containerName,
+                await BuildClient().Containers.RemoveContainerAsync(containerName,
                     new ContainerRemoveParameters { Force = true },
                     ct);
             }
@@ -239,7 +244,7 @@ internal sealed class VolumeManager
                 ? $"rm -rf /data/* && tar -xvf /import/{tarFileName} -C /data"
                 : $"tar -xvf /import/{tarFileName} -C /data";
 
-            var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
+            var createResponse = await BuildClient().Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = _settings.UtilityImage,
                     Name = containerName,
@@ -256,9 +261,9 @@ internal sealed class VolumeManager
                 },
                 ct);
 
-            await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
+            await BuildClient().Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), ct);
 
-            var waitResponse = await _client.Containers.WaitContainerAsync(createResponse.ID, ct);
+            var waitResponse = await BuildClient().Containers.WaitContainerAsync(createResponse.ID, ct);
 
             if (waitResponse.StatusCode != 0)
             {
@@ -272,7 +277,7 @@ internal sealed class VolumeManager
         {
             try
             {
-                await _client.Containers.RemoveContainerAsync(containerName,
+                await BuildClient().Containers.RemoveContainerAsync(containerName,
                     new ContainerRemoveParameters { Force = true },
                     ct);
             }

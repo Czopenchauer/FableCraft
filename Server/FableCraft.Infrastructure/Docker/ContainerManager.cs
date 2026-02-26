@@ -4,6 +4,10 @@ using System.Net;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 
+using FableCraft.Infrastructure.Docker.Configuration;
+
+using Microsoft.Extensions.Options;
+
 using Serilog;
 
 namespace FableCraft.Infrastructure.Docker;
@@ -66,18 +70,26 @@ internal sealed class ContainerConfig
 
 internal sealed class ContainerManager
 {
-    private readonly DockerClient _client;
+    private readonly DockerClientBuilder _clientBuilder;
     private readonly ILogger _logger;
     private readonly HttpClient _healthClient;
+    private readonly IOptions<DockerSettings> _settings;
 
     public ContainerManager(
-        DockerClient client,
+        DockerClientBuilder clientBuilder,
         ILogger logger,
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IOptions<DockerSettings> settings)
     {
-        _client = client;
+        _clientBuilder = clientBuilder;
         _logger = logger;
         _healthClient = httpClient;
+        _settings = settings;
+    }
+    
+    private DockerClient BuildClient()
+    {
+        return _clientBuilder.WithEndpoint(new Uri(_settings.Value.SocketPath)).WithTimeout(TimeSpan.FromSeconds(10)).Build();
     }
 
     public async Task StartAsync(ContainerConfig config, CancellationToken cancellationToken = default)
@@ -94,7 +106,7 @@ internal sealed class ContainerManager
                 return;
             }
 
-            await _client.Containers.StartContainerAsync(status.Id, new ContainerStartParameters(), cancellationToken);
+            await BuildClient().Containers.StartContainerAsync(status.Id, new ContainerStartParameters(), cancellationToken);
             await WaitForHealthyAsync(config.Name, config.HealthEndpoint, cancellationToken: cancellationToken);
             return;
         }
@@ -136,12 +148,12 @@ internal sealed class ContainerManager
             }
         };
 
-        var createResponse = await _client.Containers.CreateContainerAsync(createParams, cancellationToken);
+        var createResponse = await BuildClient().Containers.CreateContainerAsync(createParams, cancellationToken);
         _logger.Information("Created container {ContainerId}", createResponse.ID);
 
         try
         {
-            await _client.Networks.ConnectNetworkAsync(config.NetworkName,
+            await BuildClient().Networks.ConnectNetworkAsync(config.NetworkName!,
                 new NetworkConnectParameters { Container = createResponse.ID },
                 cancellationToken);
         }
@@ -150,7 +162,7 @@ internal sealed class ContainerManager
             _logger.Information("Container already connected to network {NetworkName}", config.NetworkName);
         }
 
-        await _client.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), cancellationToken);
+        await BuildClient().Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters(), cancellationToken);
         await WaitForHealthyAsync(config.Name, config.HealthEndpoint, cancellationToken: cancellationToken);
         _logger.Information("Started container {ContainerName} ({ContainerId})",
             config.Name,
@@ -164,7 +176,7 @@ internal sealed class ContainerManager
         try
         {
             var timeoutSeconds = (uint)(waitTimeout?.TotalSeconds ?? 10);
-            await _client.Containers.StopContainerAsync(containerName,
+            await BuildClient().Containers.StopContainerAsync(containerName,
                 new ContainerStopParameters { WaitBeforeKillSeconds = timeoutSeconds },
                 cancellationToken);
 
@@ -186,7 +198,7 @@ internal sealed class ContainerManager
 
         try
         {
-            await _client.Containers.RemoveContainerAsync(containerName,
+            await BuildClient().Containers.RemoveContainerAsync(containerName,
                 new ContainerRemoveParameters
                 {
                     Force = force,
@@ -220,7 +232,7 @@ internal sealed class ContainerManager
     {
         try
         {
-            var response = await _client.Containers.InspectContainerAsync(containerName, cancellationToken);
+            var response = await BuildClient().Containers.InspectContainerAsync(containerName, cancellationToken);
 
             return new ContainerStatus(
                 response.ID,
@@ -255,9 +267,9 @@ internal sealed class ContainerManager
                 Follow = true
             };
 
-            using var logStream = await _client.Containers.GetContainerLogsAsync(containerName, logsParams, cancellationToken);
+            using var logStream = await BuildClient().Containers.GetContainerLogsAsync(containerName, logsParams, cancellationToken);
             await using var fileStream = new FileStream(logFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await logStream.CopyOutputToAsync(null, fileStream, fileStream, cancellationToken);
+            await logStream.CopyOutputToAsync(null!, fileStream, fileStream, cancellationToken);
         }
         catch (OperationCanceledException)
         {

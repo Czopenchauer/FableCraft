@@ -87,12 +87,6 @@ public static class StartupExtensions
 
             services.Configure<DockerSettings>(configuration.GetSection(DockerSettings.SectionName));
             services.Configure<GraphServiceSettings>(configuration.GetSection(GraphServiceSettings.SectionName));
-
-            services.AddSingleton<DockerClient>(sp =>
-            {
-                var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DockerSettings>>().Value;
-                return new DockerClientConfiguration(new Uri(settings.SocketPath), defaultTimeout: TimeSpan.FromSeconds(30)).CreateClient();
-            });
             services.AddHostedService<AdventureLoader>();
 
             services.AddSingleton<VolumeManager>();
