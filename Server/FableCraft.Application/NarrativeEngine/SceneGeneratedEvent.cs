@@ -1,3 +1,6 @@
+using System.Text.Json;
+
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
@@ -96,10 +99,17 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             var characters = await _dbContext.Characters
                 .Where(x => x.AdventureId == message.AdventureId)
                 .ToListAsync(cancellationToken);
+
+            // Get adventure character names for filtering private activities
+            var adventureCharacterNames = await GetAdventureCharacterNamesAsync(message.AdventureId, cancellationToken);
+
             var creationRequests = new List<ChunkCreationRequest>();
             foreach (var scene in scenesToCommit)
             {
-                var lorebookRequests = scene.Lorebooks.Select(x =>
+                // Filter out private activities (witnessed only by adventure characters)
+                var lorebooksToCommit = FilterPrivateActivities(scene.Lorebooks, adventureCharacterNames);
+
+                var lorebookRequests = lorebooksToCommit.Select(x =>
                     new ChunkCreationRequest(x.Id,
                         $"""
                          {x.Title}
@@ -191,6 +201,85 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
             _logger.Error(e, "Error while committing scenes for adventure {AdventureId}", message.AdventureId);
             throw;
         }
+    }
+
+    /// <summary>
+    ///     Gets the names of all adventure characters (main character + arc_important + significant).
+    /// </summary>
+    private async Task<HashSet<string>> GetAdventureCharacterNamesAsync(
+        Guid adventureId,
+        CancellationToken cancellationToken)
+    {
+        var adventure = await _dbContext.Adventures
+            .Include(a => a.MainCharacter)
+            .Include(a => a.Characters)
+            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+
+        if (adventure is null)
+        {
+            return [];
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            adventure.MainCharacter.Name
+        };
+
+        foreach (var character in adventure.Characters)
+        {
+            if (character.Importance == CharacterImportance.ArcImportance
+                || character.Importance == CharacterImportance.Significant)
+            {
+                names.Add(character.Name);
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>
+    ///     Filters out Activity lorebooks that were only witnessed by adventure characters.
+    /// </summary>
+    private static List<LorebookEntry> FilterPrivateActivities(
+        List<LorebookEntry> lorebooks,
+        HashSet<string> adventureCharacterNames)
+    {
+        var result = new List<LorebookEntry>();
+
+        foreach (var lorebook in lorebooks)
+        {
+            if (lorebook.Category != nameof(LorebookCategory.Activity))
+            {
+                result.Add(lorebook);
+                continue;
+            }
+
+            try
+            {
+                var activity = JsonSerializer.Deserialize<ActivityExtraction>(lorebook.Content);
+                if (activity is null)
+                {
+                    result.Add(lorebook);
+                    continue;
+                }
+
+                var witnesses = activity.Witnesses ?? [];
+                var hasExternalWitness = witnesses.Any(
+                    witness => !adventureCharacterNames.Contains(witness));
+
+                if (hasExternalWitness || witnesses.Length == 0)
+                {
+                    result.Add(lorebook);
+                }
+                // else: private activity, skip it
+            }
+            catch
+            {
+                result.Add(lorebook);
+            }
+        }
+
+        return result;
     }
 
     private class ChunkComparer : IEqualityComparer<Chunk>

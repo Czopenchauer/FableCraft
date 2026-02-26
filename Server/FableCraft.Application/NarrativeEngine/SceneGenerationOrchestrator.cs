@@ -328,7 +328,7 @@ internal sealed class SceneGenerationOrchestrator(
             {
                 try
                 {
-                    await Task.WhenAll(parallelProcessors.Select(p => p.Invoke(context, linkedCts.Token)));
+                    await Task.WhenAll(parallelProcessors.Select(p => p.Invoke(context, linkedCts.Token)).ToArray());
                     await processors.First(x => x is SaveSceneEnrichment).Invoke(context, linkedCts.Token);
                     logger.Information("[Enrichment] Parallel processing took {ElapsedMilliseconds} ms",
                         stopwatch.ElapsedMilliseconds);

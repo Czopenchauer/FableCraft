@@ -31,14 +31,14 @@ internal sealed class CharacterTrackersProcessor(
                                      "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. "
                                      + "Ensure SceneTrackerProcessor runs before this processor.");
 
-        var chroniclerTask = ProcessChronicler(context, storyTrackerResult, cancellationToken);
+        var chroniclerTask = Task.Run(() => ProcessChronicler(context, storyTrackerResult, cancellationToken), cancellationToken);
         var mainNarrativeExtractionTask = context.SkipWorldInfoExtractor
             ? Task.CompletedTask
-            : ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken);
+            : Task.Run(() => ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken), cancellationToken);
 
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
-            : ProcessMainChar(context, storyTrackerResult, cancellationToken);
+            : Task.Run(() => ProcessMainChar(context, storyTrackerResult, cancellationToken), cancellationToken);
 
         HashSet<string> alreadyProcessedCharacters;
         lock (context)

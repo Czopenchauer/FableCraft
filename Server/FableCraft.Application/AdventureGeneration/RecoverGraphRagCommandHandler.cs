@@ -1,3 +1,6 @@
+using System.Text.Json;
+
+using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Docker;
@@ -139,9 +142,26 @@ internal class RecoverGraphRagCommandHandler(
             var sceneChunkRequests = new List<ChunkCreationRequest>();
             var characters = adventure.Characters;
 
+            // Build adventure character names for filtering private activities
+            var adventureCharacterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                adventure.MainCharacter.Name
+            };
+            foreach (var character in characters)
+            {
+                if (character.Importance == CharacterImportance.ArcImportance
+                    || character.Importance == CharacterImportance.Significant)
+                {
+                    adventureCharacterNames.Add(character.Name);
+                }
+            }
+
             foreach (var scene in scenesToCommit)
             {
-                var sceneLorebookRequests = scene.Lorebooks.Select(x =>
+                // Filter out private activities (witnessed only by adventure characters)
+                var lorebooksToCommit = FilterPrivateActivities(scene.Lorebooks, adventureCharacterNames);
+
+                var sceneLorebookRequests = lorebooksToCommit.Select(x =>
                     new ChunkCreationRequest(x.Id,
                         $"""
                          {x.Title}
@@ -275,5 +295,50 @@ internal class RecoverGraphRagCommandHandler(
             logger.Error(ex, "Failed to recover GraphRAG for adventure {AdventureId}", adventureId);
             throw;
         }
+    }
+
+    /// <summary>
+    ///     Filters out Activity lorebooks that were only witnessed by adventure characters.
+    /// </summary>
+    private static List<LorebookEntry> FilterPrivateActivities(
+        List<LorebookEntry> lorebooks,
+        HashSet<string> adventureCharacterNames)
+    {
+        var result = new List<LorebookEntry>();
+
+        foreach (var lorebook in lorebooks)
+        {
+            if (lorebook.Category != nameof(LorebookCategory.Activity))
+            {
+                result.Add(lorebook);
+                continue;
+            }
+
+            try
+            {
+                var activity = JsonSerializer.Deserialize<ActivityExtraction>(lorebook.Content);
+                if (activity is null)
+                {
+                    result.Add(lorebook);
+                    continue;
+                }
+
+                var witnesses = activity.Witnesses ?? [];
+                var hasExternalWitness = witnesses.Any(
+                    witness => !adventureCharacterNames.Contains(witness));
+
+                if (hasExternalWitness || witnesses.Length == 0)
+                {
+                    result.Add(lorebook);
+                }
+                // else: private activity, skip it
+            }
+            catch
+            {
+                result.Add(lorebook);
+            }
+        }
+
+        return result;
     }
 }

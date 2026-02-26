@@ -245,7 +245,6 @@ internal sealed class SimulationOrchestrator(
 
                         lock (context)
                         {
-                            // Queue dispatches for persistence in SaveEnrichmentStep
                             if (result.Dispatches is { Count: > 0 })
                             {
                                 foreach (var dispatch in result.Dispatches)
@@ -264,7 +263,6 @@ internal sealed class SimulationOrchestrator(
                                 }
                             }
 
-                            // Queue dispatch resolutions for persistence in SaveEnrichmentStep
                             if (result.DispatchesResolved is { Count: > 0 })
                             {
                                 foreach (var resolution in result.DispatchesResolved)

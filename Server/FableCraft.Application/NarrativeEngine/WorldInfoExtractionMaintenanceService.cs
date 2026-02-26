@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure;
@@ -281,6 +283,20 @@ public sealed class WorldInfoExtractionMaintenanceService(
 
             var alreadyCommittedCount = activityLorebooks.Count - uncommittedActivities.Count;
 
+            // Filter out activities only witnessed by adventure characters (main character + arc_important + significant)
+            // These are private activities that shouldn't be exposed to the world knowledge graph
+            var adventureCharacterNames = await GetAdventureCharacterNamesAsync(dbContext, adventureId, cancellationToken);
+            var (publicActivities, privateActivityCount) = FilterPrivateActivities(uncommittedActivities, adventureCharacterNames);
+            uncommittedActivities = publicActivities;
+
+            if (privateActivityCount > 0)
+            {
+                logger.Information(
+                    "Filtered out {Count} private activities (witnessed only by adventure characters) for adventure {AdventureId}",
+                    privateActivityCount,
+                    adventureId);
+            }
+
             if (uncommittedActivities.Count == 0)
             {
                 logger.Information(
@@ -293,6 +309,7 @@ public sealed class WorldInfoExtractionMaintenanceService(
                     TotalActivitiesFound = activityLorebooks.Count,
                     AlreadyCommitted = alreadyCommittedCount,
                     NewlyCommitted = 0,
+                    PrivateActivitiesFiltered = privateActivityCount,
                     Success = true
                 };
             }
@@ -347,6 +364,7 @@ public sealed class WorldInfoExtractionMaintenanceService(
                 TotalActivitiesFound = activityLorebooks.Count,
                 AlreadyCommitted = alreadyCommittedCount,
                 NewlyCommitted = uncommittedActivities.Count,
+                PrivateActivitiesFiltered = privateActivityCount,
                 Success = true
             };
         }
@@ -363,6 +381,90 @@ public sealed class WorldInfoExtractionMaintenanceService(
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <summary>
+    ///     Gets the names of all adventure characters (main character + arc_important + significant).
+    ///     These are the characters that the player controls or has direct interaction with.
+    /// </summary>
+    private static async Task<HashSet<string>> GetAdventureCharacterNamesAsync(
+        ApplicationDbContext dbContext,
+        Guid adventureId,
+        CancellationToken cancellationToken)
+    {
+        var adventure = await dbContext.Adventures
+            .Include(a => a.MainCharacter)
+            .Include(a => a.Characters)
+            .FirstOrDefaultAsync(a => a.Id == adventureId, cancellationToken);
+
+        if (adventure is null)
+        {
+            return [];
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            adventure.MainCharacter.Name
+        };
+
+        foreach (var character in adventure.Characters)
+        {
+            if (character.Importance == CharacterImportance.ArcImportance
+                || character.Importance == CharacterImportance.Significant)
+            {
+                names.Add(character.Name);
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>
+    ///     Filters out activities that were only witnessed by adventure characters.
+    ///     These are private activities that shouldn't be exposed to the world knowledge graph.
+    /// </summary>
+    private (List<LorebookEntry> PublicActivities, int PrivateCount) FilterPrivateActivities(
+        List<LorebookEntry> activities,
+        HashSet<string> adventureCharacterNames)
+    {
+        var publicActivities = new List<LorebookEntry>();
+        var privateCount = 0;
+
+        foreach (var lorebook in activities)
+        {
+            try
+            {
+                var activity = JsonSerializer.Deserialize<ActivityExtraction>(lorebook.Content);
+                if (activity is null)
+                {
+                    // If we can't parse it, include it to be safe
+                    publicActivities.Add(lorebook);
+                    continue;
+                }
+
+                // Check if this activity was witnessed by anyone outside the adventure party
+                var witnesses = activity.Witnesses ?? [];
+                var hasExternalWitness = witnesses.Any(
+                    witness => !adventureCharacterNames.Contains(witness));
+
+                if (hasExternalWitness || witnesses.Length == 0)
+                {
+                    // Activity has external witnesses or no specific witnesses (public event)
+                    publicActivities.Add(lorebook);
+                }
+                else
+                {
+                    // All witnesses are adventure characters - this is a private activity
+                    privateCount++;
+                }
+            }
+            catch
+            {
+                publicActivities.Add(lorebook);
+            }
+        }
+
+        return (publicActivities, privateCount);
     }
 
     private class ChunkComparer : IEqualityComparer<Chunk>

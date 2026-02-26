@@ -48,6 +48,11 @@ public sealed class ActivityCommitResult
 
     public required int NewlyCommitted { get; init; }
 
+    /// <summary>
+    ///     Number of activities filtered out because they were only witnessed by adventure characters.
+    /// </summary>
+    public int PrivateActivitiesFiltered { get; init; }
+
     public required bool Success { get; init; }
 
     public string? ErrorMessage { get; init; }
