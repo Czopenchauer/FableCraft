@@ -688,28 +688,52 @@ internal sealed class SimulationOrchestrator(
         if (scenes.Count == 0)
             return;
 
-        foreach (var scene in scenes)
-        {
-            if (string.IsNullOrEmpty(scene.Narrative) || scene.SceneTracker == null)
-                continue;
-
-            try
+        var tasks = scenes
+            .Select((scene, index) => (scene, index, sourceKey: $"simulation:{characterName}:{index}"))
+            .Where(x =>
             {
-                var alreadyHandled = BuildAlreadyHandledContent(context);
-                var result = await worldInfoExtractorAgent.Invoke(context, scene.Narrative, scene.SceneTracker, alreadyHandled, cancellationToken);
-                logger.Information("Extracted {ActivityCount} activities from {Character} simulation",
-                    result.Activity.Count, characterName);
-
                 lock (context)
                 {
-                    context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
-                    context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                    if (context.ProcessedWorldInfoSources.Contains(x.sourceKey))
+                    {
+                        logger.Information("Skipping world info extraction from {Character} simulation scene {Index} (already processed)",
+                            characterName, x.index);
+                        return false;
+                    }
                 }
-            }
-            catch (Exception ex)
+
+                return !string.IsNullOrEmpty(x.scene.Narrative) && x.scene.SceneTracker != null;
+            })
+            .Select(x => ExtractWorldInfoFromSingleSimulationScene(context, x.scene, x.sourceKey, characterName, cancellationToken))
+            .ToArray();
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task ExtractWorldInfoFromSingleSimulationScene(
+        GenerationContext context,
+        SimulationScene scene,
+        string sourceKey,
+        string characterName,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var alreadyHandled = BuildAlreadyHandledContent(context);
+            var result = await worldInfoExtractorAgent.Invoke(context, scene.Narrative, scene.SceneTracker!, alreadyHandled, cancellationToken);
+            logger.Information("Extracted {ActivityCount} activities from {Character} simulation",
+                result.Activity.Count, characterName);
+
+            lock (context)
             {
-                logger.Warning(ex, "Failed to extract world info from {Character} simulation scene, continuing without it", characterName);
+                context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                context.ProcessedWorldInfoSources.Add(sourceKey);
             }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to extract world info from {Character} simulation scene, continuing without it", characterName);
         }
     }
 

@@ -242,6 +242,17 @@ internal sealed class CharacterTrackersProcessor(
         SceneTracker sceneTracker,
         CancellationToken cancellationToken)
     {
+        const string sourceKey = "main";
+
+        lock (context)
+        {
+            if (context.ProcessedWorldInfoSources.Contains(sourceKey))
+            {
+                logger.Information("Skipping world info extraction from main narrative (already processed)");
+                return;
+            }
+        }
+
         var narrativeText = context.NewScene?.Scene;
         if (string.IsNullOrEmpty(narrativeText))
             return;
@@ -257,6 +268,7 @@ internal sealed class CharacterTrackersProcessor(
             {
                 context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
                 context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                context.ProcessedWorldInfoSources.Add(sourceKey);
             }
         }
         catch (Exception ex)
@@ -271,6 +283,17 @@ internal sealed class CharacterTrackersProcessor(
         SceneTracker sceneTracker,
         CancellationToken cancellationToken)
     {
+        var sourceKey = $"reflection:{characterContext.Name}";
+
+        lock (context)
+        {
+            if (context.ProcessedWorldInfoSources.Contains(sourceKey))
+            {
+                logger.Information("Skipping world info extraction from {Character} reflection (already processed)", characterContext.Name);
+                return;
+            }
+        }
+
         var lastRewrite = characterContext.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault();
@@ -289,6 +312,7 @@ internal sealed class CharacterTrackersProcessor(
             {
                 context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
                 context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                context.ProcessedWorldInfoSources.Add(sourceKey);
             }
         }
         catch (Exception ex)

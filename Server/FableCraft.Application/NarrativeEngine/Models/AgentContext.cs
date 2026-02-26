@@ -192,6 +192,14 @@ internal sealed class GenerationContext
     /// </summary>
     public WorldInfoExtractionOutput? WorldInfoExtractions { get; set; }
 
+    /// <summary>
+    ///     Tracks which sources have already been processed for world info extraction.
+    ///     Used to prevent duplicate extractions on retry.
+    ///     Keys: "main" for main narrative, "reflection:{characterName}" for reflections,
+    ///     "simulation:{characterName}:{sceneIndex}" for simulation scenes.
+    /// </summary>
+    public HashSet<string> ProcessedWorldInfoSources { get; set; } = [];
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,

@@ -487,6 +487,10 @@ internal sealed class SceneGenerationOrchestrator(
                 case nameof(EnrichmentAgent.CharacterTracker):
                     context.CharacterUpdates = [];
                     break;
+                case nameof(EnrichmentAgent.WorldInfoExtractor):
+                    context.WorldInfoExtractions = null;
+                    context.ProcessedWorldInfoSources = [];
+                    break;
             }
         }
     }
