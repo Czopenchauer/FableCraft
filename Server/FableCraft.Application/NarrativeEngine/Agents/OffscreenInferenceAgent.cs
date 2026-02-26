@@ -1,39 +1,28 @@
-using System.Text;
-
-using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
-using FableCraft.Application.NarrativeEngine.Plugins;
-using FableCraft.Application.NarrativeEngine.Plugins.Impl;
-using FableCraft.Infrastructure.Clients;
-using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-///     Performs lightweight inference about a significant character's current state.
-///     This is NOT full simulation - it answers: "Given who this person is and what's happened,
-///     where are they now and what state are they in?"
+///     Coordinates standalone simulation for characters marked for inference.
+///     Delegates actual simulation to StandaloneSimulationAgent for full simulation output.
 /// </summary>
 internal sealed class OffscreenInferenceAgent(
-    IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    KernelBuilderFactory kernelBuilderFactory,
+    StandaloneSimulationAgent standaloneAgent,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
-    IPluginFactory pluginFactory,
-    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    LoreCrafter loreCrafter,
+    LocationCrafter locationCrafter,
+    ItemCrafter itemCrafter,
+    ILogger logger)
 {
-    protected override AgentName GetAgentName() => AgentName.OffscreenInferenceAgent;
-
     public async Task Invoke(
         GenerationContext context,
         SimulationPlannerOutput plan,
@@ -55,10 +44,10 @@ internal sealed class OffscreenInferenceAgent(
             return;
         }
 
-        logger.Information("Running OffscreenInference for {Count} significant characters",
+        logger.Information("Running standalone simulation for {Count} inference characters",
             significantForInference.Count);
 
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var characterNames = significantForInference.Select(s => s.Character).ToList();
 
@@ -71,6 +60,14 @@ internal sealed class OffscreenInferenceAgent(
                 g => g.Key,
                 g => g.ToList(),
                 cancellationToken);
+
+        var previousState = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.ChroniclerState;
+
+        var gatheredContext = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
 
         var tasks = significantForInference
             .Select(async significantEntry =>
@@ -86,7 +83,7 @@ internal sealed class OffscreenInferenceAgent(
 
                 if (currentSceneTracker.CharactersPresent.Contains(character.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    logger.Warning("Skipping offscreen inference for {CharacterName} as they are already present on scene", character.Name);
+                    logger.Warning("Skipping offscreen simulation for {CharacterName} as they are already present on scene", character.Name);
                     return;
                 }
 
@@ -98,107 +95,111 @@ internal sealed class OffscreenInferenceAgent(
 
                 var events = eventsByCharacter.GetValueOrDefault(character.Name, []);
                 CharacterContext updatedCharacter;
+                StandaloneSimulationOutput result;
 
                 if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
                     && cached.Source == ReflectionSource.OffscreenInference)
                 {
-                    logger.Information("Using cached offscreen inference for {CharacterName}", character.Name);
+                    logger.Information("Using cached offscreen simulation for {CharacterName}", character.Name);
                     updatedCharacter = cached.Result;
+                    result = new StandaloneSimulationOutput
+                    {
+                        Scenes = [],
+                        RelationshipUpdates = [],
+                        ProfileUpdates = updatedCharacter.CharacterState,
+                        PendingMcInteraction = updatedCharacter.SimulationMetadata?.PendingMcInteraction,
+                        WorldEventsEmitted = null,
+                        CharacterEvents = null
+                    };
                 }
                 else
                 {
-                    var eventDtos = events.Select(e => new CharacterEventDto
-                    {
-                        Time = e.Time,
-                        Event = e.Event,
-                        SourceCharacter = e.SourceCharacterName,
-                        SourceRead = e.SourceRead
-                    }).ToList();
-
-                    var timeElapsed = $"""
-                                       Last action time: {character.SceneRewrites.MaxBy(z => z.SequenceNumber)?.SceneTracker!.Time}
-                                       Current time: {context.NewTracker!.Scene!.Time}
-                                       """;
-
-                    var gatheredContext = context.SceneContext?
-                        .OrderByDescending(x => x.SequenceNumber)
-                        .FirstOrDefault()?.Metadata.GatheredContext;
-
-                    var input = new OffscreenInferenceInput
+                    var input = new StandaloneSimulationInput
                     {
                         Character = character,
-                        EventsLog = eventDtos,
-                        TimeElapsed = timeElapsed,
-                        CurrentDateTime = currentSceneTracker.Time ?? "Unknown",
-                        WorldEvents = context.SceneContext?
-                            .OrderByDescending(x => x.SequenceNumber)
-                            .FirstOrDefault()?.Metadata.ChroniclerState?.WorldMomentum,
+                        TimePeriod = context.NewTracker!.Scene,
+                        WorldEvents = previousState?.WorldMomentum,
                         GatheredWorldContext = gatheredContext
                     };
 
                     try
                     {
-                        logger.Information("Running OffscreenInference for {CharacterName} (events: {EventCount})",
+                        logger.Information("Running standalone simulation for inference character {CharacterName}",
+                            character.Name);
+
+                        result = await standaloneAgent.Invoke(context, input, cancellationToken);
+
+                        logger.Information(
+                            "Standalone simulation complete for {CharacterName}: {SceneCount} scenes, {RelUpdates} relationship updates",
                             character.Name,
-                            eventDtos.Count);
+                            result.Scenes.Count,
+                            result.RelationshipUpdates?.Count ?? 0);
 
-                        var result = await Simulate(context, input, cancellationToken);
-
-                        var memories = new List<MemoryContext>();
-                        var sceneRewrites = new List<CharacterSceneContext>();
-
-                        if (result.Scenes is { Count: > 0 })
+                        var characterRelationships = new List<CharacterRelationshipContext>();
+                        foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
                         {
-                            var baseSequenceNumber = character.SceneRewrites.Count > 0
-                                ? character.SceneRewrites.Max(s => s.SequenceNumber)
-                                : 0;
-
-                            for (var idx = 0; idx < result.Scenes.Count; idx++)
+                            if (relationshipUpdate.ExtensionData?.Count == 0)
                             {
-                                var scene = result.Scenes[idx];
-                                
-                                var sceneTracker = new SceneTracker
-                                {
-                                    Time = scene.SceneTracker.DateTime,
-                                    Location = scene.SceneTracker.Location,
-                                    Weather = scene.SceneTracker.Weather ?? "Unknown",
-                                    CharactersPresent = (scene.SceneTracker.CharactersPresent?.ToArray() ?? []).Append(character.Name).Distinct().ToArray()
-                                };
-
-                                memories.Add(new MemoryContext
-                                {
-                                    MemoryContent = scene.Memory.Summary,
-                                    SceneTracker = sceneTracker,
-                                    Salience = scene.Memory.Salience,
-                                    Data = scene.Memory.ExtensionData
-                                });
-
-                                sceneRewrites.Add(new CharacterSceneContext
-                                {
-                                    Content = scene.Narrative,
-                                    SequenceNumber = baseSequenceNumber + idx + 1,
-                                    SceneTracker = sceneTracker
-                                });
+                                logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
                             }
 
-                            logger.Information("Created {MemoryCount} memories and {SceneCount} scene rewrites for {CharacterName}",
-                                memories.Count,
-                                sceneRewrites.Count,
-                                character.Name);
+                            var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
+                            if (relationship == null)
+                            {
+                                characterRelationships.Add(new CharacterRelationshipContext
+                                {
+                                    TargetCharacterName = relationshipUpdate.Name,
+                                    Data = relationshipUpdate.ExtensionData!,
+                                    UpdateTime = input.TimePeriod!.Time,
+                                    SequenceNumber = 0,
+                                    Dynamic = relationshipUpdate.Dynamic
+                                });
+                            }
+                            else if (relationshipUpdate.ExtensionData?.Count > 0)
+                            {
+                                var newRelationship = new CharacterRelationshipContext
+                                {
+                                    TargetCharacterName = relationship.TargetCharacterName,
+                                    Data = relationshipUpdate.ExtensionData!,
+                                    UpdateTime = input.TimePeriod!.Time,
+                                    SequenceNumber = relationship.SequenceNumber + 1,
+                                    Dynamic = relationshipUpdate.Dynamic
+                                };
+                                characterRelationships.Add(newRelationship);
+                            }
                         }
 
                         updatedCharacter = new CharacterContext
                         {
                             CharacterId = character.CharacterId,
+                            CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                            CharacterTracker = character.CharacterTracker,
                             Name = character.Name,
                             Description = character.Description,
+                            CharacterMemories = result.Scenes.Select(x => new MemoryContext
+                                {
+                                    Salience = x.Memory.Salience,
+                                    Data = x.Memory.ExtensionData!,
+                                    MemoryContent = x.Memory.Summary,
+                                    SceneTracker = x.SceneTracker
+                                })
+                                .ToList(),
+                            Relationships = characterRelationships,
+                            SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
+                                {
+                                    Content = x.Narrative,
+                                    SequenceNumber = (character.SceneRewrites.Count > 0
+                                        ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                                        : 0) + idx + 1,
+                                    SceneTracker = x.SceneTracker
+                                })
+                                .ToList(),
                             Importance = character.Importance,
-                            CharacterState = result.ProfileUpdates ?? character.CharacterState,
-                            CharacterTracker = result.TrackerUpdates ?? character.CharacterTracker,
-                            CharacterMemories = memories,
-                            Relationships = [],
-                            SceneRewrites = sceneRewrites,
-                            SimulationMetadata = character.SimulationMetadata,
+                            SimulationMetadata = new SimulationMetadata
+                            {
+                                LastSimulated = input.TimePeriod!.Time,
+                                PendingMcInteraction = result.PendingMcInteraction
+                            },
                             IsDead = false
                         };
 
@@ -215,18 +216,19 @@ internal sealed class OffscreenInferenceAgent(
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "OffscreenInference failed for {CharacterName}", character.Name);
+                        logger.Error(ex, "Standalone simulation failed for inference character {CharacterName}", character.Name);
                         throw;
                     }
                 }
 
                 try
                 {
+                    var characterSceneContext = BuildCharacterSceneContext(context, updatedCharacter);
                     var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, updatedCharacter, context.NewTracker!.Scene!, cancellationToken);
-                    var contextGatheringTask = GatherAndStoreCharacterContext(context, updatedCharacter, cancellationToken);
-                    var worldInfoTask = ExtractWorldInfoFromSceneRewrites(context, updatedCharacter.SceneRewrites, character.Name, cancellationToken);
+                    var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
+                    var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask);
+                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, updatedCharacter, cancellationToken), worldInfoTask);
 
                     var tracker = await trackerTask;
                     updatedCharacter.CharacterTracker = tracker.Tracker;
@@ -241,11 +243,40 @@ internal sealed class OffscreenInferenceAgent(
                         {
                             context.CharacterEventsToConsume.Add(evt.Id);
                         }
+
+                        if (result.WorldEventsEmitted is { Count: > 0 })
+                        {
+                            foreach (var worldEvent in result.WorldEventsEmitted)
+                            {
+                                context.NewWorldEvents.Add(new WorldEvent
+                                {
+                                    When = worldEvent.When,
+                                    Where = worldEvent.Where,
+                                    Event = worldEvent.Event
+                                });
+                            }
+                        }
+
+                        if (result.CharacterEvents is { Count: > 0 })
+                        {
+                            foreach (var ce in result.CharacterEvents)
+                            {
+                                context.NewCharacterEvents.Add(new CharacterEventToSave
+                                {
+                                    AdventureId = context.AdventureId,
+                                    TargetCharacterName = ce.Character,
+                                    SourceCharacterName = character.Name,
+                                    Time = ce.Time,
+                                    Event = ce.Event,
+                                    SourceRead = ce.MyRead
+                                });
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "OffscreenInference tracker failed for {CharacterName}", character.Name);
+                    logger.Error(ex, "Post-simulation processing failed for {CharacterName}", character.Name);
                     throw;
                 }
             })
@@ -254,185 +285,89 @@ internal sealed class OffscreenInferenceAgent(
         await Task.WhenAll(tasks);
     }
 
-    private async Task<OffscreenInferenceOutput> Simulate(GenerationContext context, OffscreenInferenceInput input, CancellationToken cancellationToken)
+    private async Task ProcessCreationRequests(
+        GenerationContext context,
+        CreationRequests? requests,
+        SceneContext[] sceneContext,
+        CancellationToken cancellationToken)
     {
-        var kernelBuilder = await GetKernelBuilder(context);
-
-        var systemPrompt = await GetPromptAsync(context);
-        systemPrompt = PopulatePlaceholders(systemPrompt, input);
-
-        var chatHistory = new ChatHistory();
-        chatHistory.AddSystemMessage(systemPrompt);
-        chatHistory.AddUserMessage(BuildContextPrompt(input, context));
-        chatHistory.AddUserMessage(BuildRequestPrompt(input));
-
-        var callerContext = new CallerContext($"{nameof(OffscreenInferenceAgent)}:{input.Character.Name}",  context.AdventureId, context.NewSceneId);
-        
-        var kernelB =  kernelBuilder.Create();
-        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernelB, context, callerContext);
-        await pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(
-            kernelB,
-            context,
-            callerContext,
-            input.Character.CharacterId);
-        var kernel = kernelB.Build();
-
-        var outputParser = ResponseParser.CreateJsonParser<OffscreenInferenceOutput>(
-            "offscreen_inference",
-            true);
-
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
-
-        logger.Information("OffscreenInferenceAgent for {prompt: {prompt}", chatHistory.ToJsonString());
-        return await agentKernel.SendRequestAsync(
-            chatHistory,
-            outputParser,
-            promptExecutionSettings,
-            $"{nameof(OffscreenInferenceAgent)}:{input.Character.Name}",
-            kernel,
-            cancellationToken);
-    }
-
-    private string BuildContextPrompt(OffscreenInferenceInput input, GenerationContext context)
-    {
-        var jsonOptions = PromptSections.GetJsonOptions(true);
-
-        return $"""
-                <identity>
-                {input.Character.CharacterState.ToJsonString(jsonOptions)}
-                </identity>
-
-                <physical_state>
-                {input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}"}
-                </physical_state>
-
-                <relationships>
-                {FormatRelationships(input.Character)}
-                </relationships>
-
-                {PromptSections.SimulationWorldContextForCharacter(input.Character, context)}
-
-                <world_events>
-                {FormatWorldEvents(input.WorldEvents)}
-                </world_events>
-
-                <last_scenes>
-                {BuildSceneHistoryContent(input.Character)}
-                </last_scenes>
-                """;
-    }
-
-    private static string BuildRequestPrompt(OffscreenInferenceInput input) =>
-        $"""
-         Live through the period: {input.TimeElapsed}
-
-         What do you do? What happens? How are you affected?
-         """;
-
-    private static string FormatRelationships(CharacterContext character)
-    {
-        if (character.Relationships.Count == 0)
+        if (requests == null)
         {
-            return "No established relationships.";
+            return;
         }
 
-        var sb = new StringBuilder();
-        foreach (var rel in character.Relationships)
+        var tasks = new List<Task>();
+
+        foreach (var loc in requests.Locations.Where(l => !l.Processed))
         {
-            sb.AppendLine($"### {rel.TargetCharacterName}");
-            sb.AppendLine($"**Dynamic:** {rel.Dynamic}");
-            if (rel.Data.Count > 0)
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await locationCrafter.Invoke(context, loc, sceneContext, cancellationToken);
+                    lock (context)
+                    {
+                        loc.Processed = true;
+                        context.NewLocations = [.. (context.NewLocations ?? []), result];
+                    }
+                },
+                cancellationToken));
+        }
+
+        foreach (var item in requests.Items.Where(i => !i.Processed))
+        {
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await itemCrafter.Invoke(context, item, sceneContext, cancellationToken);
+                    lock (context)
+                    {
+                        item.Processed = true;
+                        context.NewItems = [.. (context.NewItems ?? []), result];
+                    }
+                },
+                cancellationToken));
+        }
+
+        foreach (var lore in requests.Lore.Where(l => !l.Processed))
+        {
+            tasks.Add(Task.Run(async () =>
+                {
+                    var result = await loreCrafter.Invoke(context, lore, sceneContext, cancellationToken);
+                    lock (context)
+                    {
+                        lore.Processed = true;
+                        context.NewLore.Add(result);
+                    }
+                },
+                cancellationToken));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+            logger.Information("Processed {Count} creation requests from inference simulation", tasks.Count);
+        }
+    }
+
+    private static SceneContext[] BuildCharacterSceneContext(GenerationContext context, CharacterContext characterContext)
+    {
+        var globalGatheredContext = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.GatheredContext;
+
+        return characterContext.SceneRewrites
+            .Select(scene => new SceneContext
             {
-                sb.AppendLine($"**Details:** {rel.Data.ToJsonString(PromptSections.GetJsonOptions(true))}");
-            }
-
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
-    }
-
-    private static string FormatWorldEvents(object? worldEvents)
-    {
-        if (worldEvents == null)
-        {
-            return "No significant world momentum.";
-        }
-
-        return worldEvents.ToJsonString();
-    }
-
-    private static string BuildSceneHistoryContent(CharacterContext character)
-    {
-        if (character.SceneRewrites.Count == 0)
-        {
-            return "*No previous scenes recorded.*";
-        }
-
-        var sb = new StringBuilder();
-        sb.AppendLine("These are scenes from your perspective (your memories of recent events). This simulation continues from where you left off.");
-        sb.AppendLine();
-
-        var recentScenes = character.SceneRewrites
-            .OrderByDescending(s => s.SequenceNumber)
-            .Take(10)
-            .OrderBy(s => s.SequenceNumber)
-            .ToList();
-
-        foreach (var scene in recentScenes)
-        {
-            sb.AppendLine("---");
-            sb.AppendLine($"**Scene {scene.SequenceNumber}**");
-            if (scene.SceneTracker != null)
-            {
-                sb.AppendLine($"Time: {scene.SceneTracker.Time}");
-                sb.AppendLine($"Location: {scene.SceneTracker.Location}");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine(scene.Content);
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
-    }
-
-    private string PopulatePlaceholders(string prompt, OffscreenInferenceInput input)
-    {
-        var jsonOptions = PromptSections.GetJsonOptions(true);
-
-        prompt = prompt.Replace(PlaceholderNames.CharacterName, input.Character.Name);
-
-        prompt = prompt.Replace("{{core_profile}}", input.Character.CharacterState.ToJsonString(jsonOptions));
-
-        prompt = prompt.Replace("{{last_state}}", input.Character.CharacterTracker?.ToJsonString(jsonOptions) ?? "{}");
-
-        prompt = prompt.Replace("{{time_elapsed}}", input.TimeElapsed);
-
-        prompt = prompt.Replace("{{world_events}}", FormatWorldEvents(input.WorldEvents));
-
-        prompt = prompt.Replace("{{events_log}}", FormatEventsLog(input.EventsLog));
-
-        return prompt;
-    }
-
-    private static string FormatEventsLog(List<CharacterEventDto> events)
-    {
-        if (events.Count == 0)
-        {
-            return "No events recorded affecting this character.";
-        }
-
-        var sb = new StringBuilder();
-        foreach (var evt in events.OrderBy(e => e.Time))
-        {
-            sb.AppendLine($"**{evt.Time}** (from {evt.SourceCharacter}):");
-            sb.AppendLine($"- Event: {evt.Event}");
-            sb.AppendLine($"- Their read: {evt.SourceRead}");
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
+                SequenceNumber = scene.SequenceNumber,
+                SceneContent = scene.Content,
+                PlayerChoice = string.Empty,
+                Metadata = new Metadata
+                {
+                    GatheredContext = globalGatheredContext,
+                    Tracker = scene.SceneTracker != null
+                        ? new Tracker { Scene = scene.SceneTracker }
+                        : null
+                }
+            })
+            .ToArray();
     }
 
     private async Task GatherAndStoreCharacterContext(
@@ -463,37 +398,61 @@ internal sealed class OffscreenInferenceAgent(
         }
     }
 
-    private async Task ExtractWorldInfoFromSceneRewrites(
+    private async Task ExtractWorldInfoFromSimulation(
         GenerationContext context,
-        List<CharacterSceneContext> sceneRewrites,
+        List<SimulationScene> scenes,
         string characterName,
         CancellationToken cancellationToken)
     {
-        if (sceneRewrites.Count == 0)
+        if (scenes.Count == 0)
             return;
 
-        foreach (var scene in sceneRewrites)
-        {
-            if (string.IsNullOrEmpty(scene.Content) || scene.SceneTracker == null)
-                continue;
-
-            try
+        var tasks = scenes
+            .Select((scene, index) => (scene, index, sourceKey: $"inference-simulation:{characterName}:{index}"))
+            .Where(x =>
             {
-                var alreadyHandled = BuildAlreadyHandledContent(context);
-                var result = await worldInfoExtractorAgent.Invoke(context, scene.Content, scene.SceneTracker, alreadyHandled, cancellationToken);
-                logger.Debug("Extracted {ActivityCount} activities from {Character} offscreen inference",
-                    result.Activity.Count, characterName);
-
                 lock (context)
                 {
-                    context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
-                    context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                    if (context.ProcessedWorldInfoSources.Contains(x.sourceKey))
+                    {
+                        logger.Information("Skipping world info extraction from {Character} inference simulation scene {Index} (already processed)",
+                            characterName, x.index);
+                        return false;
+                    }
                 }
-            }
-            catch (Exception ex)
+
+                return !string.IsNullOrEmpty(x.scene.Narrative) && x.scene.SceneTracker != null;
+            })
+            .Select(x => ExtractWorldInfoFromSingleScene(context, x.scene, x.sourceKey, characterName, cancellationToken))
+            .ToArray();
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task ExtractWorldInfoFromSingleScene(
+        GenerationContext context,
+        SimulationScene scene,
+        string sourceKey,
+        string characterName,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var alreadyHandled = BuildAlreadyHandledContent(context);
+            var result = await worldInfoExtractorAgent.Invoke(context, scene.Narrative, scene.SceneTracker!, alreadyHandled, cancellationToken);
+            logger.Information("Extracted {ActivityCount} activities from {Character} inference simulation",
+                result.Activity.Count, characterName);
+
+            lock (context)
             {
-                logger.Warning(ex, "Failed to extract world info from {Character} offscreen scene, continuing without it", characterName);
+                context.WorldInfoExtractions ??= new WorldInfoExtractionOutput();
+                context.WorldInfoExtractions.Activity.AddRange(result.Activity);
+                context.ProcessedWorldInfoSources.Add(sourceKey);
             }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to extract world info from {Character} inference simulation scene, continuing without it", characterName);
         }
     }
 
