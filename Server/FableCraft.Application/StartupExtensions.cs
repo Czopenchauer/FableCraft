@@ -59,6 +59,7 @@ public static class StartupExtensions
             .AddScoped<DispatchService>()
             .AddScoped<IntentCheckAgent>()
             .AddScoped<WorldInfoExtractorAgent>()
+            .AddScoped<EmulationOrchestratorAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 
@@ -74,6 +75,7 @@ public static class StartupExtensions
         services.AddTransient<CharacterEmulationPlugin>();
         services.AddTransient<IntentCheckPlugin>();
         services.AddTransient<CharacterSimulationToolsPlugin>();
+        services.AddTransient<OrchestrateEmulationPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();

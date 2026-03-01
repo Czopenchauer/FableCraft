@@ -26,5 +26,6 @@ public enum AgentName
     IntentCheckAgent,
     CharacterSimulation,
     SimulationModeratorAgent,
-    WorldInfoExtractorAgent
+    WorldInfoExtractorAgent,
+    EmulationOrchestratorAgent
 }

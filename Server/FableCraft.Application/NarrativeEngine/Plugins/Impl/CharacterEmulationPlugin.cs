@@ -55,7 +55,7 @@ internal sealed class CharacterEmulationPlugin : PluginBase
                     Context.CharacterEmulationOutputs[characterName] = outputs;
                 }
 
-                outputs.Add(new CharacterEmulationOutput(characterName, situation, query, result.FullResponse, outputs.Count + 1));
+                outputs.Add(new CharacterEmulationOutput(characterName, situation, query, result.FullResponse, result.Observable, outputs.Count + 1));
             }
         }
 

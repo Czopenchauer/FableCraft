@@ -18,6 +18,7 @@ internal sealed record CharacterEmulationOutput(
     string Stimulus,
     string Query,
     string Response,
+    string Observables,
     int SequenceNumber);
 
 internal sealed class GenerationContext
