@@ -13,7 +13,8 @@ internal class ContentGenerator(
     PartialProfileCrafter partialProfileCrafter,
     ItemCrafter itemCrafter,
     ILogger logger,
-    CharacterReflectionAgent characterReflectionAgent
+    ExperientialNarratorAgent experientialNarratorAgent,
+    ClinicalAssessorAgent clinicalAssessorAgent
 ) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -64,15 +65,32 @@ internal class ContentGenerator(
                         }
                     }
 
-                    if (character.CharacterMemories.Count > 0 && character.SceneRewrites.Count > 0)
+                    if (character.SceneRewrites.Count > 0)
                     {
-                        logger.Information("Character {CharacterName} already has memories and scene rewrites, skipping reflection", character.Name);
+                        logger.Information("Character {CharacterName} already has scene rewrites, skipping reflection", character.Name);
                         return character;
                     }
 
-                    var reflection = await characterReflectionAgent.Invoke(context, character, context.NewTracker!.Scene!, cancellationToken);
-                    character.SceneRewrites = reflection.SceneRewrites;
-                    character.CharacterMemories = reflection.CharacterMemories;
+                    var sceneTracker = context.NewTracker!.Scene!;
+                    var experientialOutput = await experientialNarratorAgent.Invoke(context, character, sceneTracker, cancellationToken);
+
+                    var assessorOutput = await clinicalAssessorAgent.Invoke(context, character, experientialOutput.SceneRewrite, sceneTracker, cancellationToken);
+
+                    if (assessorOutput.Identity != null)
+                    {
+                        character.CharacterState = assessorOutput.Identity;
+                    }
+
+                    character.SceneRewrites =
+                    [
+                        new CharacterSceneContext
+                        {
+                            Content = experientialOutput.SceneRewrite,
+                            SceneTracker = sceneTracker,
+                            SequenceNumber = 0
+                        }
+                    ];
+                    character.IsDead = experientialOutput.IsDead;
 
                     return character;
                 }).ToArray());

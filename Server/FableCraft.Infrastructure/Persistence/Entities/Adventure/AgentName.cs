@@ -17,6 +17,7 @@ public enum AgentName
     InitMainCharacterTrackerAgent,
     CharacterReflectionAgent,
     ExperientialNarratorAgent,
+    ClinicalAssessorAgent,
     ResolutionAgent,
     ChroniclerAgent,
     SimulationPlannerAgent,

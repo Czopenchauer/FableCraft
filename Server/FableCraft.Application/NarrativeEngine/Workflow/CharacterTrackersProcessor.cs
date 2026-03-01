@@ -16,7 +16,7 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
     ExperientialNarratorAgent experientialNarratorAgent,
-    CharacterReflectionAgent characterReflectionAgent,
+    ClinicalAssessorAgent clinicalAssessorAgent,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
@@ -204,15 +204,47 @@ internal sealed class CharacterTrackersProcessor(
                         IsDead = false
                     };
 
+                    var trackerTask = characterTrackerAgent.Invoke(context, character, sceneRewrite, storyTrackerResult, cancellationToken);
+
                     if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cachedReflection)
                         && cachedReflection.Source == ReflectionSource.CharacterReflection)
                     {
-                        logger.Information("Using cached reflection for {Character}", character.Name);
+                        logger.Information("Using cached clinical assessment for {Character}", character.Name);
                         characterContext = cachedReflection.Result;
                     }
                     else
                     {
-                        characterContext = await characterReflectionAgent.Invoke(context, characterWithSceneRewrite, storyTrackerResult, cancellationToken);
+                        var assessorOutput = await clinicalAssessorAgent.Invoke(context, character, sceneRewrite, storyTrackerResult, cancellationToken);
+
+                        var characterRelationships = assessorOutput.Relationships.Select(relOutput =>
+                        {
+                            var existingRel = characterWithSceneRewrite.Relationships
+                                .SingleOrDefault(x => string.Equals(x.TargetCharacterName, relOutput.Toward, StringComparison.OrdinalIgnoreCase));
+
+                            return new CharacterRelationshipContext
+                            {
+                                TargetCharacterName = relOutput.Toward,
+                                Data = relOutput.Data ?? new Dictionary<string, object>(),
+                                UpdateTime = storyTrackerResult.Time,
+                                SequenceNumber = existingRel?.SequenceNumber + 1 ?? 0,
+                                Dynamic = relOutput.Dynamic ?? existingRel?.Dynamic ?? string.Empty
+                            };
+                        }).ToList();
+
+                        characterContext = new CharacterContext
+                        {
+                            CharacterId = characterWithSceneRewrite.CharacterId,
+                            CharacterState = assessorOutput.Identity ?? characterWithSceneRewrite.CharacterState,
+                            CharacterTracker = characterWithSceneRewrite.CharacterTracker,
+                            Name = characterWithSceneRewrite.Name,
+                            Description = characterWithSceneRewrite.Description,
+                            CharacterMemories = [],
+                            Relationships = characterRelationships,
+                            SceneRewrites = characterWithSceneRewrite.SceneRewrites,
+                            Importance = characterWithSceneRewrite.Importance,
+                            SimulationMetadata = null,
+                            IsDead = false
+                        };
 
                         lock (context)
                         {
@@ -226,7 +258,6 @@ internal sealed class CharacterTrackersProcessor(
                         }
                     }
 
-                    var trackerTask = characterTrackerAgent.Invoke(context, character, characterContext, storyTrackerResult, cancellationToken);
                     var contextGatheringTask = GatherAndStoreCharacterContext(context, characterContext, cancellationToken);
                     var worldInfoTask = context.SkipWorldInfoExtractor
                         ? Task.CompletedTask

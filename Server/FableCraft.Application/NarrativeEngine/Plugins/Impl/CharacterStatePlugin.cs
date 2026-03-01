@@ -32,14 +32,20 @@ internal sealed class CharacterStatePlugin : PluginBase
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
         _logger.Information("Getting state for {CharacterName}", targetCharacterName);
 
-        var characterContext = Characters.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0);
+        if (Context!.MainCharacter.Name == targetCharacterName)
+        {
+            return Context.LatestTracker()?.MainCharacter?.MainCharacter.ToJsonString() ?? string.Empty;
+        }
 
-        if (characterContext?.CharacterTracker == null)
+        var characterContext =
+            Characters.SingleOrDefault(x => string.Compare(x.Name, targetCharacterName, StringComparison.InvariantCultureIgnoreCase) == 0)?.CharacterTracker;
+
+        if (characterContext == null)
         {
             return $"No state found for '{targetCharacterName}'. Available characters: {string.Join(", ", Characters.Select(c => c.Name))}";
         }
 
         _logger.Information("Returning state for {CharacterName}", targetCharacterName);
-        return characterContext.CharacterTracker.ToJsonString();
+        return characterContext.ToJsonString();
     }
 }

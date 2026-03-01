@@ -55,7 +55,7 @@ internal sealed class CharacterTrackerAgent(
     public async Task<(CharacterTracker Tracker, bool IsDead)> Invoke(
         GenerationContext generationContext,
         CharacterContext context,
-        CharacterContext newCharacter,
+        string newScene,
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
@@ -71,7 +71,7 @@ internal sealed class CharacterTrackerAgent(
                              {PromptSections.CharacterStateContext(context)}
 
                              New scene content:
-                             {newCharacter.SceneRewrites.First().Content}
+                             {newScene}
 
                              Update the character_tracker based on the new scene.
                              """;

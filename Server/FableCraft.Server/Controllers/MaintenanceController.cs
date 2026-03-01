@@ -14,7 +14,6 @@ public sealed class MaintenanceController(
     IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
     ContentGenerationService contentGenerationService,
-    CharacterReflectionMaintenanceService characterReflectionMaintenanceService,
     WorldInfoExtractionMaintenanceService worldInfoExtractionService) : ControllerBase
 {
     [HttpPost("resend-scene-generated-messages/{adventureId:guid}")]
@@ -47,29 +46,6 @@ public sealed class MaintenanceController(
         if (result is null)
         {
             return NotFound("No scenes found for this adventure or scene has no narrative metadata");
-        }
-
-        return Ok(result);
-    }
-
-    /// <summary>
-    ///     Runs character reflection and tracking for the last scene where the character was present.
-    ///     Skips if the character already has a CharacterSceneRewrite for that scene.
-    /// </summary>
-    [HttpPost("reflect-character/{adventureId:guid}/{characterId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ReflectCharacter(
-        Guid adventureId,
-        Guid characterId,
-        CancellationToken cancellationToken)
-    {
-        var result = await characterReflectionMaintenanceService.ProcessCharacterReflectionAsync(
-            adventureId, characterId, cancellationToken);
-
-        if (result is null)
-        {
-            return NotFound("Character not found");
         }
 
         return Ok(result);
@@ -112,28 +88,6 @@ public sealed class MaintenanceController(
         }, cancellationToken);
 
         return Accepted();
-    }
-
-    /// <summary>
-    ///     Gathers context for all characters in an adventure.
-    ///     This is a maintenance operation to backfill GatheredContext for existing characters.
-    /// </summary>
-    [HttpPost("gather-character-context/{adventureId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GatherCharacterContext(
-        Guid adventureId,
-        CancellationToken cancellationToken)
-    {
-        var result = await characterReflectionMaintenanceService.GatherContextForAllCharactersAsync(
-            adventureId, cancellationToken);
-
-        if (!result.Success && result.Message == "Adventure not found")
-        {
-            return NotFound(result.Message);
-        }
-
-        return Ok(result);
     }
 
     /// <summary>
