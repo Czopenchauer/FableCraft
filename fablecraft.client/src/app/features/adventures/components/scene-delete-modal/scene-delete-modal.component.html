@@ -1,0 +1,49 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <div class="icon" [ngClass]="{
+          'warning-icon': iconType === 'warning',
+          'error-icon': iconType === 'error',
+          'loading-icon': iconType === 'loading'
+        }">
+          <span *ngIf="iconType === 'warning'">&#9888;</span>
+          <span *ngIf="iconType === 'error'">&#10006;</span>
+          <span *ngIf="iconType === 'loading'" class="spinner-large"></span>
+        </div>
+        <h2>{{ title }}</h2>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <p class="confirmation-text">{{ message }}</p>
+        <p *ngIf="warningText && state !== 'deleting'" class="warning-text">
+          {{ warningText }}
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer" *ngIf="state !== 'deleting'">
+        <button
+          *ngIf="showCancelButton"
+          (click)="onCancel()"
+          [disabled]="isDeleting"
+          class="btn btn-secondary">
+          Cancel
+        </button>
+        <button
+          (click)="onPrimaryAction()"
+          [disabled]="isDeleting"
+          [ngClass]="{
+            'btn-danger': state === 'confirm' || state === 'force-confirm',
+            'btn-primary': state === 'retry',
+            'btn-secondary': state === 'error'
+          }"
+          class="btn">
+          {{ primaryButtonText }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
