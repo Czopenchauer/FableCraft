@@ -353,14 +353,24 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IVisualization
                     var remainingTime = delay - elapsed + TimeSpan.FromSeconds(5);
                     _logger.Information("Rescheduling eviction for {ContainerName} in {remainingTime}", key.ToString(), remainingTime);
 
-                    if (_evictionTask.TryGetValue(key, out (CancellationTokenSource token, Task task) value))
-                    {
-                        await value.token.CancelAsync();
-                        value.token.Dispose();
+                    var newToken = new CancellationTokenSource();
+                    var newTask = Task.Run(() => Eviction(key, remainingTime, newToken.Token), newToken.Token);
+                    var newEntry = (newToken, newTask);
 
-                        var newToken = new CancellationTokenSource();
-                        _evictionTask.TryRemove(key, out _);
-                        _evictionTask.TryAdd(key, (newToken, Task.Run(() => Eviction(key, remainingTime, newToken.Token), newToken.Token)));
+                    while (true)
+                    {
+                        var current = _evictionTask.GetOrAdd(key, newEntry);
+                        if (ReferenceEquals(current.Item1, newToken))
+                        {
+                            break;
+                        }
+
+                        if (_evictionTask.TryUpdate(key, newEntry, current))
+                        {
+                            await current.Item1.CancelAsync();
+                            current.Item1.Dispose();
+                            break;
+                        }
                     }
                 }
             }
