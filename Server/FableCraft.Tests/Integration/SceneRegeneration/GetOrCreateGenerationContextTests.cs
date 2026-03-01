@@ -182,7 +182,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
         var character = TestData.CreateCharacter(adventure.Id, scene1, "Elena");
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena"));
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena"));
-        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene1.Id, "Important memory"));
         character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene1.Id, 1, "Hero", "Neutral"));
         character.CharacterRelationships.Add(TestData.CreateCharacterRelationship(character.Id, scene2.Id, 2, "Hero", "Friendly"));
         adventure.Characters.Add(character);
@@ -194,8 +193,6 @@ public class GetOrCreateGenerationContextTests(PostgresContainerFixture fixture)
             adventure.Id, "New action", CancellationToken.None);
 
         var elena = context.Characters.Single();
-        await Assert.That(elena.CharacterMemories).Count().IsEqualTo(1);
-        await Assert.That(elena.CharacterMemories.Single().MemoryContent).IsEqualTo("Important memory");
         await Assert.That(elena.Relationships).Count().IsEqualTo(1);
         await Assert.That(elena.Relationships.Single().Dynamic).IsEqualTo("Friendly");
     }

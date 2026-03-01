@@ -353,24 +353,11 @@ internal sealed class CharacterContext
 
     public required CharacterTracker? CharacterTracker { get; set; }
 
-    public required List<MemoryContext> CharacterMemories { get; set; } = new();
-
     public required List<CharacterRelationshipContext> Relationships { get; set; } = new();
 
     public required List<CharacterSceneContext> SceneRewrites { get; set; } = new();
 
     public required SimulationMetadata? SimulationMetadata { get; set; }
-}
-
-internal sealed class MemoryContext
-{
-    public required string MemoryContent { get; set; } = null!;
-
-    public required SceneTracker SceneTracker { get; set; }
-
-    public required double Salience { get; set; }
-
-    public required IDictionary<string, object>? Data { get; set; } = null!;
 }
 
 internal sealed class CharacterRelationshipContext

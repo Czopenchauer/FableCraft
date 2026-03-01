@@ -220,14 +220,6 @@ public sealed class ContentGenerationService(
                 CharacterTracker = x.CharacterStates.Single()
                     .Tracker,
                 CharacterId = x.Id,
-                CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                    {
-                        MemoryContent = y.Summary,
-                        Salience = y.Salience,
-                        Data = y.Data,
-                        SceneTracker = y.SceneTracker
-                    })
-                    .ToList(),
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
                     .Select(g => g.OrderByDescending(r => r.SequenceNumber)

@@ -181,18 +181,6 @@ internal sealed class CharacterReflectionAgent(
             }
         }
 
-        var memory = new List<MemoryContext>();
-        if (output.Memory is not null)
-        {
-            memory.Add(new MemoryContext
-            {
-                Salience = output.Memory!.Salience,
-                Data = output.Memory.ExtensionData!,
-                MemoryContent = output.Memory.Summary,
-                SceneTracker = sceneTrackerResult
-            });
-        }
-
         // Preserve the scene_rewrite from Pass 1 (ExperientialNarratorAgent)
         // The latest SceneRewrite in context was added by the processor before calling this agent
         var latestSceneRewrite = context.SceneRewrites
@@ -206,7 +194,6 @@ internal sealed class CharacterReflectionAgent(
             CharacterTracker = context.CharacterTracker,
             Name = context.Name,
             Description = context.Description,
-            CharacterMemories = memory,
             Relationships = characterRelationships,
             SceneRewrites = latestSceneRewrite != null
                 ?

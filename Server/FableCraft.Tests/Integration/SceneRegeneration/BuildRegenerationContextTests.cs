@@ -118,11 +118,6 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         character.CharacterStates.Add(state2);
         scene2.CharacterStates.Add(state2);
 
-        // Memory created in scene2 - should be in CharacterUpdates
-        var scene2Memory = TestData.CreateCharacterMemory(character.Id, scene2.Id, "Memory created in scene 2");
-        character.CharacterMemories.Add(scene2Memory);
-        scene2.CharacterMemories.Add(scene2Memory);
-
         adventure.Characters.Add(character);
 
         db.Adventures.Add(adventure);
@@ -133,8 +128,7 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         var context = await builder.BuildRegenerationContextAsync(adventure.Id, currentScene, CancellationToken.None);
 
         var elenaUpdate = context.CharacterUpdates.Single();
-        await Assert.That(elenaUpdate.CharacterMemories).Count().IsEqualTo(1);
-        await Assert.That(elenaUpdate.CharacterMemories.Single().MemoryContent).IsEqualTo("Memory created in scene 2");
+        await Assert.That(elenaUpdate.Name).IsEqualTo("Elena");
     }
 
     [Test]
@@ -265,9 +259,6 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         character.CharacterStates.Add(state2);
         scene2.CharacterStates.Add(state2);
 
-        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene1.Id, "Memory from scene 1"));
-        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene2.Id, "Memory from current scene - excluded"));
-
         adventure.Characters.Add(character);
 
         db.Adventures.Add(adventure);
@@ -278,8 +269,7 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         var context = await builder.BuildRegenerationContextAsync(adventure.Id, currentScene, CancellationToken.None);
 
         var elena = context.Characters.Single();
-        await Assert.That(elena.CharacterMemories).Count().IsEqualTo(1);
-        await Assert.That(elena.CharacterMemories.Single().MemoryContent).IsEqualTo("Memory from scene 1");
+        await Assert.That(elena.Name).IsEqualTo("Elena");
     }
 
     [Test]
@@ -372,7 +362,6 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         var newChar = TestData.CreateCharacter(adventure.Id, scene1, "Marcus", isNew: true, description: "A mysterious stranger");
         var state = TestData.CreateCharacterState(newChar.Id, scene1, 0, "Marcus initial state");
         newChar.CharacterStates.Add(state);
-        newChar.CharacterMemories.Add(TestData.CreateCharacterMemory(newChar.Id, scene1.Id, "First memory"));
         newChar.CharacterRelationships.Add(TestData.CreateCharacterRelationship(newChar.Id, scene1.Id, 1, "Hero", "Curious about"));
         newChar.CharacterSceneRewrites.Add(TestData.CreateCharacterSceneRewrite(newChar.Id, scene1.Id, 1, "Marcus sees the hero"));
         scene1.CharacterStates.Add(state);
@@ -391,8 +380,6 @@ public class BuildRegenerationContextTests(PostgresContainerFixture fixture)
         await Assert.That(marcus.Name).IsEqualTo("Marcus");
         await Assert.That(marcus.Description).IsEqualTo("A mysterious stranger");
         await Assert.That(marcus.CharacterState.Name).IsEqualTo("Marcus initial state");
-        await Assert.That(marcus.CharacterMemories).Count().IsEqualTo(1);
-        await Assert.That(marcus.CharacterMemories.Single().MemoryContent).IsEqualTo("First memory");
         await Assert.That(marcus.Relationships).Count().IsEqualTo(1);
         await Assert.That(marcus.Relationships.Single().Dynamic).IsEqualTo("Curious about");
         await Assert.That(marcus.SceneRewrites).Count().IsEqualTo(1);

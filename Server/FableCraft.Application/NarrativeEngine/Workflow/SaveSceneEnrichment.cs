@@ -338,15 +338,6 @@ internal sealed class SaveSceneEnrichment(
                     character.CharacterSceneRewrites.Remove(rewrite);
                 }
 
-                var memories = update.CharacterMemories.Select(x => new CharacterMemory
-                {
-                    SceneTracker = x.SceneTracker,
-                    Scene = scene,
-                    Summary = x.MemoryContent,
-                    Data = x.Data,
-                    Salience = x.Salience
-                });
-
                 var relationships = update.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
@@ -365,7 +356,6 @@ internal sealed class SaveSceneEnrichment(
                     GatheredContext = x.GatheredContext,
                     StorySummary = x.StorySummary
                 });
-                character.CharacterMemories.AddRange(memories);
                 character.CharacterRelationships.AddRange(relationships);
                 character.CharacterSceneRewrites.AddRange(sceneRewrites);
                 dbContext.Characters.Update(character);
@@ -386,15 +376,6 @@ internal sealed class SaveSceneEnrichment(
 
             foreach (var contextNewCharacter in newCharacters)
             {
-                var memories = contextNewCharacter.CharacterMemories.Select(x => new CharacterMemory
-                {
-                    SceneTracker = x.SceneTracker,
-                    Scene = scene,
-                    Summary = x.MemoryContent,
-                    Data = x.Data,
-                    Salience = x.Salience
-                }).ToList();
-
                 var relationships = contextNewCharacter.Relationships.Select(x => new CharacterRelationship
                 {
                     TargetCharacterName = x.TargetCharacterName,
@@ -452,7 +433,6 @@ internal sealed class SaveSceneEnrichment(
                         existingChar.CharacterSceneRewrites.Remove(rewrite);
                     }
 
-                    existingChar.CharacterMemories.AddRange(memories);
                     existingChar.CharacterRelationships.AddRange(relationships);
                     existingChar.CharacterSceneRewrites.AddRange(sceneRewrites);
                 }
@@ -475,7 +455,6 @@ internal sealed class SaveSceneEnrichment(
                             }
                         ],
                         Version = 0,
-                        CharacterMemories = memories,
                         CharacterRelationships = relationships,
                         CharacterSceneRewrites = sceneRewrites,
                         Importance = contextNewCharacter.Importance,

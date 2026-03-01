@@ -101,7 +101,6 @@ public class BuildEnrichmentContextTests(PostgresContainerFixture fixture)
         var character = TestData.CreateCharacter(adventure.Id, scene1, "Elena", description: "A skilled archer");
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene1, 1, "Elena - after scene 1"));
         character.CharacterStates.Add(TestData.CreateCharacterState(character.Id, scene2, 2, "Elena - after scene 2"));
-        character.CharacterMemories.Add(TestData.CreateCharacterMemory(character.Id, scene1.Id, "Saw a dragon"));
         adventure.Characters.Add(character);
 
         db.Adventures.Add(adventure);
@@ -116,8 +115,6 @@ public class BuildEnrichmentContextTests(PostgresContainerFixture fixture)
         await Assert.That(elena.Description).IsEqualTo("A skilled archer");
         // Should have the latest state (from scene 2)
         await Assert.That(elena.CharacterState.Name).IsEqualTo("Elena - after scene 2");
-        // Should include memories
-        await Assert.That(elena.CharacterMemories).Count().IsEqualTo(1);
     }
 
     [Test]

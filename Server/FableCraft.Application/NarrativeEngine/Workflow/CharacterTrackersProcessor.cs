@@ -113,7 +113,6 @@ internal sealed class CharacterTrackersProcessor(
                             CharacterTracker = character.CharacterTracker,
                             Name = character.Name,
                             Description = character.Description,
-                            CharacterMemories = [],
                             Relationships = [],
                             SceneRewrites =
                             [
@@ -159,7 +158,6 @@ internal sealed class CharacterTrackersProcessor(
                             CharacterTracker = character.CharacterTracker,
                             Name = character.Name,
                             Description = character.Description,
-                            CharacterMemories = [],
                             Relationships = [],
                             SceneRewrites =
                             [
@@ -186,7 +184,6 @@ internal sealed class CharacterTrackersProcessor(
                         CharacterTracker = character.CharacterTracker,
                         Name = character.Name,
                         Description = character.Description,
-                        CharacterMemories = character.CharacterMemories,
                         Relationships = character.Relationships,
                         SceneRewrites = character.SceneRewrites.Concat(
                         [
@@ -239,7 +236,6 @@ internal sealed class CharacterTrackersProcessor(
                             CharacterTracker = characterWithSceneRewrite.CharacterTracker,
                             Name = characterWithSceneRewrite.Name,
                             Description = characterWithSceneRewrite.Description,
-                            CharacterMemories = [],
                             Relationships = characterRelationships,
                             SceneRewrites = characterWithSceneRewrite.SceneRewrites,
                             Importance = characterWithSceneRewrite.Importance,

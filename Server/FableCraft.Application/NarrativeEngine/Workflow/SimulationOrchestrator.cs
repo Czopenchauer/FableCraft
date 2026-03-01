@@ -218,14 +218,6 @@ internal sealed class SimulationOrchestrator(
                             CharacterTracker = character.CharacterTracker,
                             Name = character.Name,
                             Description = character.Description,
-                            CharacterMemories = result.Scenes.Select(x => new MemoryContext
-                                {
-                                    Salience = x.Memory.Salience,
-                                    Data = x.Memory.ExtensionData!,
-                                    MemoryContent = x.Memory.Summary,
-                                    SceneTracker = x.SceneTracker
-                                })
-                                .ToList(),
                             Relationships = characterRelationships,
                             SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                                 {
@@ -534,14 +526,6 @@ internal sealed class SimulationOrchestrator(
                 CharacterTracker = character.CharacterTracker,
                 Name = character.Name,
                 Description = character.Description,
-                CharacterMemories = result.Scenes.Select(x => new MemoryContext
-                    {
-                        Salience = x.Memory.Salience,
-                        Data = x.Memory.ExtensionData!,
-                        MemoryContent = x.Memory.Summary,
-                        SceneTracker = x.SceneTracker
-                    })
-                    .ToList(),
                 Relationships = characterRelationships,
                 SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                     {

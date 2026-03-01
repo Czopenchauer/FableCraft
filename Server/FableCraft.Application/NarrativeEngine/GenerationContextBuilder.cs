@@ -50,7 +50,6 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .AsSplitQuery()
             .Where(x => x.AdventureId == adventureId && x.SequenceNumber < scene.SequenceNumber)
             .Include(x => x.CharacterActions)
-            .Include(x => x.CharacterMemories)
             .Include(x => x.CharacterRelationships)
             .Include(x => x.CharacterSceneRewrites)
             .OrderByDescending(x => x.SequenceNumber)
@@ -99,15 +98,6 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                     .Description,
                 CharacterState = cs.CharacterStats,
                 CharacterTracker = cs.Tracker,
-                CharacterMemories = scene.CharacterMemories.Where(x => x.CharacterId == cs.CharacterId)
-                    .Select(x => new MemoryContext
-                    {
-                        MemoryContent = x.Summary,
-                        Salience = x.Salience,
-                        Data = x.Data,
-                        SceneTracker = x.SceneTracker
-                    })
-                    .ToList(),
                 Relationships = scene.CharacterRelationships.Where(x => x.CharacterId == cs.CharacterId)
                     .Select(x => new CharacterRelationshipContext
                     {
@@ -359,14 +349,6 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 CharacterTracker = x.CharacterStates.Single()
                     .Tracker,
                 CharacterId = x.Id,
-                CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                    {
-                        MemoryContent = y.Summary,
-                        Salience = y.Salience,
-                        Data = y.Data,
-                        SceneTracker = y.SceneTracker
-                    })
-                    .ToList(),
                 // Group by target and take latest relationship per target character
                 Relationships = x.CharacterRelationships
                     .GroupBy(r => r.TargetCharacterName)
@@ -447,14 +429,6 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 CharacterTracker = x.CharacterStates.Single()
                     .Tracker,
                 CharacterId = x.Id,
-                CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                    {
-                        MemoryContent = y.Summary,
-                        Salience = y.Salience,
-                        Data = y.Data,
-                        SceneTracker = y.SceneTracker
-                    })
-                    .ToList(),
                 // Group by target and take latest relationship per target (excluding the scene being regenerated, but including pre-scene relationships)
                 Relationships = x.CharacterRelationships
                     .Where(r => r.SceneId == null || r.SceneId != sceneId)
@@ -498,14 +472,6 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 CharacterTracker = x.CharacterStates.Single()
                     .Tracker,
                 CharacterId = x.Id,
-                CharacterMemories = x.CharacterMemories.Select(y => new MemoryContext
-                    {
-                        MemoryContent = y.Summary,
-                        Salience = y.Salience,
-                        Data = y.Data,
-                        SceneTracker = y.SceneTracker
-                    })
-                    .ToList(),
                 Relationships = x.CharacterRelationships
                     .Select(y => new CharacterRelationshipContext
                     {

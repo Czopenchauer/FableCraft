@@ -91,8 +91,6 @@ internal sealed class CharacterAgent : BaseAgent
 
         var latestScene = _generationContext.SceneContext.MaxBy(x => x.SequenceNumber);
 
-        var memoriesSection = BuildMemoriesSection(context);
-
         var relationshipsSection = BuildRelationshipsSection(context);
         foreach (string previousScene in previousScenes)
         {
@@ -113,8 +111,6 @@ internal sealed class CharacterAgent : BaseAgent
 
                              {BuildMainCharacterSection(_generationContext, context)}
 
-                             {memoriesSection}
-
                              {_generationContext.PreviouslyGeneratedLore}
 
                              <character_description>
@@ -134,26 +130,6 @@ internal sealed class CharacterAgent : BaseAgent
                              {PromptSections.CharacterStorySummary(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
-    }
-
-    private async Task<string> BuildMemoriesSection(CharacterContext context)
-    {
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        var memories = await dbContext.CharacterMemories.Where(x => x.CharacterId == context.CharacterId).ToArrayAsync();
-        if (memories.Length == 0)
-        {
-            return string.Empty;
-        }
-
-        var memoriesText = string.Join("\n",
-            memories.OrderBy(x => x.SceneTracker.Time).Select(m => $"- [Time: {m.SceneTracker.Time}, Location: {m.SceneTracker.Location}] {m.Summary} [{m.Data.ToJsonString()}]"));
-
-        return $"""
-                <character_memories>
-                These are the {context.Name}'s memories from past scenes:
-                {memoriesText}
-                </character_memories>
-                """;
     }
 
     private string BuildRelationshipsSection(CharacterContext context)

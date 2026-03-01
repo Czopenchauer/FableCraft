@@ -36,7 +36,7 @@ internal sealed class IntentCheckAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
         chatHistory.AddUserMessage($"""
-                                    {BuildMemoriesSection(input.Character)}
+                                    {PromptSections.CharacterStorySummary(input.Character)}
 
                                     {PromptSections.RecentScenesForCharacter(input.Character, 20)}
                                     """
@@ -93,24 +93,6 @@ internal sealed class IntentCheckAgent(
         }
 
         return sb.ToString();
-    }
-
-    private string BuildMemoriesSection(CharacterContext context)
-    {
-        if (context.CharacterMemories.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var memoriesText = string.Join("\n",
-            context.CharacterMemories.Select(m => $"- [Time: {m.SceneTracker.Time}, Location: {m.SceneTracker.Location}] {m.MemoryContent} [{m.Data.ToJsonString()}]"));
-
-        return $"""
-                <character_memories>
-                These are the {context.Name}'s memories from past scenes (ordered by recency):
-                {memoriesText}
-                </character_memories>
-                """;
     }
 
     private static string FormatArcImportantList(string[] characters)
