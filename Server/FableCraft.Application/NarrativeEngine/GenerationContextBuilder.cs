@@ -124,7 +124,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         Content = x.Content,
                         SceneTracker = x.SceneTracker,
                         SequenceNumber = x.SequenceNumber,
-                        GatheredContext = x.GatheredContext
+                        GatheredContext = x.GatheredContext,
+                        StorySummary = x.StorySummary
                     })
                     .ToList(),
                 Importance = existingCharContext.Single(ac => ac.CharacterId == cs.CharacterId)
@@ -385,7 +386,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber,
-                        GatheredContext = y.GatheredContext
+                        GatheredContext = y.GatheredContext,
+                        StorySummary = y.StorySummary
                     })
                     .ToList(),
                 Importance = x.Importance,
@@ -474,7 +476,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber,
-                        GatheredContext = y.GatheredContext
+                        GatheredContext = y.GatheredContext,
+                        StorySummary = y.StorySummary
                     })
                     .ToList(),
                 Importance = x.Importance,
@@ -518,7 +521,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                         Content = y.Content,
                         SceneTracker = y.SceneTracker,
                         SequenceNumber = y.SequenceNumber,
-                        GatheredContext = y.GatheredContext
+                        GatheredContext = y.GatheredContext,
+                        StorySummary = y.StorySummary
                     })
                     .ToList(),
                 Importance = x.Importance,

@@ -86,6 +86,11 @@ public sealed class Metadata
     ///     Writer guidance from the Chronicler for the next scene (stored as JSON string).
     /// </summary>
     public string? WriterGuidance { get; set; }
+
+    /// <summary>
+    ///     Rolling story summary for the Main Character up to this scene.
+    /// </summary>
+    public string? McStorySummary { get; set; }
 }
 
 /// <summary>

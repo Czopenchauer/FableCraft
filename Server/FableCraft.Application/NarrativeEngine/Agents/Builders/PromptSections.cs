@@ -833,4 +833,50 @@ internal static class PromptSections
                 </character_emulation_outputs>
                 """;
     }
+
+    /// <summary>
+    ///     Gets the rolling story summary for a character from their scene rewrites.
+    ///     This is the compressed history of everything that happened before the recent window.
+    /// </summary>
+    public static string CharacterStorySummary(CharacterContext characterContext)
+    {
+        var storySummary = characterContext.SceneRewrites
+            .Where(s => !string.IsNullOrEmpty(s.StorySummary))
+            .OrderByDescending(s => s.SequenceNumber)
+            .FirstOrDefault()?.StorySummary;
+
+        if (string.IsNullOrEmpty(storySummary))
+        {
+            return string.Empty;
+        }
+
+        return $"""
+                <story_summary>
+                {storySummary}
+                </story_summary>
+                """;
+    }
+
+    /// <summary>
+    ///     Gets the rolling story summary for the MC from scene metadata.
+    ///     This is the compressed history of everything that happened before the recent window.
+    /// </summary>
+    public static string McStorySummary(GenerationContext context)
+    {
+        var storySummary = context.SceneContext
+            .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))
+            .OrderByDescending(s => s.SequenceNumber)
+            .FirstOrDefault()?.Metadata.McStorySummary;
+
+        if (string.IsNullOrEmpty(storySummary))
+        {
+            return string.Empty;
+        }
+
+        return $"""
+                <mc_story_summary>
+                {storySummary}
+                </mc_story_summary>
+                """;
+    }
 }

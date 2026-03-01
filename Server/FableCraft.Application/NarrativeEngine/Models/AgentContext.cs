@@ -213,6 +213,11 @@ internal sealed class GenerationContext
     /// </summary>
     public HashSet<string> ProcessedWorldInfoSources { get; set; } = [];
 
+    /// <summary>
+    ///     Updated MC story summary to persist in scene metadata.
+    /// </summary>
+    public string? NewMcStorySummary { get; set; }
+
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
         TrackerStructure trackerStructure,
@@ -393,6 +398,11 @@ internal sealed class CharacterSceneContext
     ///     Context gathered after simulation for use in next invocation.
     /// </summary>
     public CharacterGatheredContext? GatheredContext { get; set; }
+
+    /// <summary>
+    ///     Rolling story summary for this character up to this scene.
+    /// </summary>
+    public string? StorySummary { get; set; }
 }
 
 /// <summary>

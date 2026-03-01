@@ -21,6 +21,7 @@ internal sealed class SimulationOrchestrator(
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
+    StorySummaryAgent storySummaryAgent,
     DispatchService dispatchService,
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
@@ -314,7 +315,9 @@ internal sealed class SimulationOrchestrator(
                     var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
                     var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask);
+                    var storySummaryTask = ProcessStorySummaryIfNeeded(context, characterContext, cancellationToken);
+
+                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
 
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
@@ -622,8 +625,9 @@ internal sealed class SimulationOrchestrator(
         var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
         var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
         var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
+        var storySummaryTask = ProcessStorySummaryIfNeeded(context, characterContext, cancellationToken);
 
-        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask);
+        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
 
         var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
@@ -873,5 +877,63 @@ internal sealed class SimulationOrchestrator(
             WorldEvents = context.NewWorldEvents,
             BackgroundCharacters = context.NewBackgroundCharacters
         };
+    }
+
+    private const int StorySummaryWindowSize = 25;
+
+    /// <summary>
+    ///     Process story summary for character when a scene falls off the 25-scene window.
+    /// </summary>
+    private async Task ProcessStorySummaryIfNeeded(
+        GenerationContext context,
+        CharacterContext characterContext,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var currentSceneNumber = context.SceneContext.Length;
+            if (currentSceneNumber < StorySummaryWindowSize)
+            {
+                return; // Nothing falls off the window yet
+            }
+
+            var agedOutSceneNumber = currentSceneNumber - StorySummaryWindowSize;
+            var agedOutRewrite = characterContext.SceneRewrites
+                .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
+
+            if (agedOutRewrite == null)
+            {
+                return; // No rewrite found for that scene
+            }
+
+            // Get previous summary from latest rewrite that has one
+            var previousSummary = characterContext.SceneRewrites
+                .Where(s => !string.IsNullOrEmpty(s.StorySummary))
+                .OrderByDescending(s => s.SequenceNumber)
+                .FirstOrDefault()?.StorySummary ?? string.Empty;
+
+            var result = await storySummaryAgent.InvokeForCharacter(
+                context,
+                characterContext,
+                agedOutRewrite.Content,
+                agedOutSceneNumber,
+                previousSummary,
+                cancellationToken);
+
+            // Store on the latest scene rewrite
+            var latestRewrite = characterContext.SceneRewrites
+                .OrderByDescending(s => s.SequenceNumber)
+                .First();
+            latestRewrite.StorySummary = result.StorySummary;
+
+            logger.Information(
+                "Updated story summary for {CharacterName} (aged out scene #{SceneNumber})",
+                characterContext.Name,
+                agedOutSceneNumber);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to process story summary for {CharacterName}, continuing without it", characterContext.Name);
+        }
     }
 }

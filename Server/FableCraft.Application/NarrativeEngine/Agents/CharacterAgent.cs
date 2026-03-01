@@ -110,7 +110,7 @@ internal sealed class CharacterAgent : BaseAgent
 
         var contextPrompt = $"""
                              {PromptSections.WorldContext(_generationContext)}
-                             
+
                              {BuildMainCharacterSection(_generationContext, context)}
 
                              {memoriesSection}
@@ -130,6 +130,8 @@ internal sealed class CharacterAgent : BaseAgent
                              <character_state>
                              {context.CharacterState.ToJsonString()}
                              </character_state>
+
+                             {PromptSections.CharacterStorySummary(context)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
     }

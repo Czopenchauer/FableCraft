@@ -23,6 +23,7 @@ internal sealed class CharacterTrackersProcessor(
     ChroniclerAgent chroniclerAgent,
     LoreCrafter loreCrafter,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
+    StorySummaryAgent storySummaryAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -262,8 +263,9 @@ internal sealed class CharacterTrackersProcessor(
                     var worldInfoTask = context.SkipWorldInfoExtractor
                         ? Task.CompletedTask
                         : ExtractWorldInfoFromReflection(context, characterContext, storyTrackerResult, cancellationToken);
+                    var storySummaryTask = ProcessStorySummaryIfNeeded(context, characterContext, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask);
+                    await Task.WhenAll(trackerTask, contextGatheringTask, worldInfoTask, storySummaryTask);
 
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
@@ -279,7 +281,9 @@ internal sealed class CharacterTrackersProcessor(
                 .ToArray();
         }
 
-        await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask);
+        var mcStorySummaryTask = ProcessMcStorySummaryIfNeeded(context, cancellationToken);
+
+        await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask, mcStorySummaryTask);
     }
 
     private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req) => JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
@@ -482,5 +486,112 @@ internal sealed class CharacterTrackersProcessor(
             WorldEvents = context.NewWorldEvents,
             BackgroundCharacters = context.NewBackgroundCharacters
         };
+    }
+
+    private const int StorySummaryWindowSize = 25;
+
+    /// <summary>
+    ///     Process story summary for NPC when a scene falls off the 25-scene window.
+    /// </summary>
+    private async Task ProcessStorySummaryIfNeeded(
+        GenerationContext context,
+        CharacterContext characterContext,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var currentSceneNumber = context.SceneContext.Length;
+            if (currentSceneNumber < StorySummaryWindowSize)
+            {
+                return; // Nothing falls off the window yet
+            }
+
+            var agedOutSceneNumber = currentSceneNumber - StorySummaryWindowSize;
+            var agedOutRewrite = characterContext.SceneRewrites
+                .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
+
+            if (agedOutRewrite == null)
+            {
+                return; // No rewrite found for that scene
+            }
+
+            // Get previous summary from latest rewrite that has one
+            var previousSummary = characterContext.SceneRewrites
+                .Where(s => !string.IsNullOrEmpty(s.StorySummary))
+                .OrderByDescending(s => s.SequenceNumber)
+                .FirstOrDefault()?.StorySummary ?? string.Empty;
+
+            var result = await storySummaryAgent.InvokeForCharacter(
+                context,
+                characterContext,
+                agedOutRewrite.Content,
+                agedOutSceneNumber,
+                previousSummary,
+                cancellationToken);
+
+            // Store on the latest scene rewrite
+            var latestRewrite = characterContext.SceneRewrites
+                .OrderByDescending(s => s.SequenceNumber)
+                .First();
+            latestRewrite.StorySummary = result.StorySummary;
+
+            logger.Information(
+                "Updated story summary for {CharacterName} (aged out scene #{SceneNumber})",
+                characterContext.Name,
+                agedOutSceneNumber);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to process story summary for {CharacterName}, continuing without it", characterContext.Name);
+        }
+    }
+
+    /// <summary>
+    ///     Process story summary for MC when a scene falls off the 25-scene window.
+    /// </summary>
+    private async Task ProcessMcStorySummaryIfNeeded(
+        GenerationContext context,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var currentSceneNumber = context.SceneContext.Length;
+            if (currentSceneNumber < StorySummaryWindowSize)
+            {
+                return; // Nothing falls off the window yet
+            }
+
+            var agedOutSceneNumber = currentSceneNumber - StorySummaryWindowSize;
+            var agedOutScene = context.SceneContext
+                .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
+
+            if (agedOutScene == null)
+            {
+                return; // No scene found for that sequence number
+            }
+
+            // Get previous MC summary from most recent scene that has one
+            var previousSummary = context.SceneContext
+                .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))
+                .OrderByDescending(s => s.SequenceNumber)
+                .FirstOrDefault()?.Metadata.McStorySummary ?? string.Empty;
+
+            var result = await storySummaryAgent.InvokeForMc(
+                context,
+                agedOutScene.SceneContent,
+                agedOutSceneNumber,
+                previousSummary,
+                cancellationToken);
+
+            context.NewMcStorySummary = result.StorySummary;
+
+            logger.Information(
+                "Updated MC story summary (aged out scene #{SceneNumber})",
+                agedOutSceneNumber);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Failed to process MC story summary, continuing without it");
+        }
     }
 }

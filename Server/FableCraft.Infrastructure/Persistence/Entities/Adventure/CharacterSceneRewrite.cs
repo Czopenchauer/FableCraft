@@ -37,5 +37,11 @@ public sealed class CharacterSceneRewrite : IEntity
     /// </summary>
     public CharacterGatheredContext? GatheredContext { get; set; }
 
+    /// <summary>
+    ///     Rolling story summary for this character up to this scene.
+    ///     Updated when scenes fall off the 25-scene window.
+    /// </summary>
+    public string? StorySummary { get; set; }
+
     public Guid Id { get; set; }
 }

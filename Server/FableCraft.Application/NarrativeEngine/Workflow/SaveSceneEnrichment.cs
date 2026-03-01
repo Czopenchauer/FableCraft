@@ -37,6 +37,11 @@ internal sealed class SaveSceneEnrichment(
             scene.Metadata.WriterGuidance = context.WriterGuidance.ToJsonString();
         }
 
+        if (context.NewMcStorySummary != null)
+        {
+            scene.Metadata.McStorySummary = context.NewMcStorySummary;
+        }
+
         if (context.ContextGathered != null)
         {
             scene.Metadata.GatheredContext = new GatheredContext
@@ -357,7 +362,8 @@ internal sealed class SaveSceneEnrichment(
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
                     SceneTracker = x.SceneTracker!,
-                    GatheredContext = x.GatheredContext
+                    GatheredContext = x.GatheredContext,
+                    StorySummary = x.StorySummary
                 });
                 character.CharacterMemories.AddRange(memories);
                 character.CharacterRelationships.AddRange(relationships);
@@ -404,7 +410,8 @@ internal sealed class SaveSceneEnrichment(
                     SequenceNumber = x.SequenceNumber,
                     Scene = scene,
                     SceneTracker = x.SceneTracker!,
-                    GatheredContext = x.GatheredContext
+                    GatheredContext = x.GatheredContext,
+                    StorySummary = x.StorySummary
                 }).ToList();
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)

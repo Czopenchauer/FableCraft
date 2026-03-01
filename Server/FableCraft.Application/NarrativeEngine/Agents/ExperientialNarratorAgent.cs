@@ -109,8 +109,7 @@ internal sealed class ExperientialNarratorAgent(
         var relationshipsOnScene = FormatRelationshipsOnScene(characterContext, charactersPresent, jsonOptions);
         prompt = prompt.Replace("{{relationships_on_scene}}", relationshipsOnScene);
 
-        // Story summary placeholder - empty for now until StorySummaryAgent is implemented
-        prompt = prompt.Replace("{{story_summary}}", string.Empty);
+        prompt = prompt.Replace("{{story_summary}}", PromptSections.CharacterStorySummary(characterContext));
 
         return prompt;
     }

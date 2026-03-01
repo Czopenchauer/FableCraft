@@ -18,14 +18,13 @@ public enum AgentName
     CharacterReflectionAgent,
     ExperientialNarratorAgent,
     ClinicalAssessorAgent,
-    ResolutionAgent,
     ChroniclerAgent,
     SimulationPlannerAgent,
     StandaloneSimulationAgent,
-    OffscreenInferenceAgent,
     IntentCheckAgent,
     CharacterSimulation,
     SimulationModeratorAgent,
     WorldInfoExtractorAgent,
-    EmulationOrchestratorAgent
+    EmulationOrchestratorAgent,
+    StorySummaryAgent
 }

@@ -61,6 +61,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              {PromptSections.CurrentSceneTracker(context)}
 
                              {PromptSections.PreviousCharacterObservations(context.SceneContext)}
+
+                             {PromptSections.McStorySummary(context)}
                              """;
         chatHistory.AddUserMessage($"""
                                     {PromptSections.CharacterForEmulation(context)}

@@ -35,7 +35,6 @@ public static class StartupExtensions
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
-            .AddScoped<IProcessor, ResolutionAgent>()
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()
@@ -60,6 +59,7 @@ public static class StartupExtensions
             .AddScoped<IntentCheckAgent>()
             .AddScoped<WorldInfoExtractorAgent>()
             .AddScoped<EmulationOrchestratorAgent>()
+            .AddScoped<StorySummaryAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 
