@@ -114,13 +114,40 @@ public class PlayController : ControllerBase
 
     [HttpDelete("scene")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeleteLastScene(Guid adventureId, CancellationToken cancellationToken)
+    [ProducesResponseType(424)]
+    public async Task<ActionResult> DeleteLastScene(
+        Guid adventureId,
+        [FromQuery] bool force = false,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            await _gameService.DeleteSceneAsync(adventureId, cancellationToken);
+            await _gameService.DeleteSceneAsync(adventureId, force, cancellationToken);
             return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("committed") || ex.Message.Contains("force"))
+        {
+            return BadRequest(new
+            {
+                error = "Cannot delete committed scene",
+                message = ex.Message,
+                hint = "Add ?force=true to the request"
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(424, new
+            {
+                error = "Knowledge graph deletion failed",
+                message = "Scene marked for deletion. Retry the request to complete.",
+                retryable = true
+            });
         }
         catch (AdventureNotFoundException)
         {

@@ -225,6 +225,7 @@ internal sealed class CharacterAgent : BaseAgent
         var kernel = _kernelBuilder.Create();
 
         var callerContext = new CallerContext($"{nameof(CharacterAgent)}:{characterName}", _generationContext.AdventureId, _generationContext.NewSceneId);
+        await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, _generationContext, callerContext);
         await _pluginFactory.AddCharacterPluginAsync<CharacterNarrativePlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
         await _pluginFactory.AddCharacterPluginAsync<CharacterRelationshipPlugin>(kernel, _generationContext, callerContext, characterContext.CharacterId);
 

@@ -850,4 +850,12 @@
     [scene]="currentScene"
     [isOpen]="showSceneEditModal">
   </app-scene-edit-modal>
+
+  <!-- Scene Delete Modal -->
+  <app-scene-delete-modal
+    [isOpen]="showSceneDeleteModal"
+    [state]="sceneDeleteModalState"
+    [errorMessage]="sceneDeleteErrorMessage"
+    (result)="onSceneDeleteResult($event)">
+  </app-scene-delete-modal>
 </div>

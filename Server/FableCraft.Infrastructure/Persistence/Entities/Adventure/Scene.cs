@@ -7,7 +7,8 @@ public enum CommitStatus
 {
     Uncommited,
     Lock,
-    Commited
+    Commited,
+    PendingDeletion
 }
 
 public enum EnrichmentStatus

@@ -128,9 +128,11 @@ export class AdventureService {
 
   /**
    * Delete the last scene from an adventure
+   * @param force If true, allows deleting committed scenes
    */
-  deleteLastScene(adventureId: string, sceneId: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}`);
+  deleteLastScene(adventureId: string, force: boolean = false): Observable<void> {
+    const params = force ? '?force=true' : '';
+    return this.http.delete<void>(`${environment.apiUrl}/api/Play/${adventureId}/scene${params}`);
   }
 
   /**

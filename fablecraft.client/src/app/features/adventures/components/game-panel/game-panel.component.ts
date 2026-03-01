@@ -7,6 +7,7 @@ import {CharacterService} from '../../services/character.service';
 import {RagChatMessage, RagChatService, RagDatasetType} from '../../services/rag-chat.service';
 import {GameScene, SceneEnrichmentResult, TrackerDto} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
+import {SceneDeleteModalState, SceneDeleteResult} from '../scene-delete-modal/scene-delete-modal.component';
 
 @Component({
   selector: 'app-game-panel',
@@ -36,6 +37,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   showAdventureStateModal = false;
   // Scene Edit modal state
   showSceneEditModal = false;
+  // Scene Delete modal state
+  showSceneDeleteModal = false;
+  sceneDeleteModalState: SceneDeleteModalState = 'confirm';
+  sceneDeleteErrorMessage = '';
   // Regenerate enrichment dropdown state
   showRegenerateDropdown = false;
   selectedAgents: Set<string> = new Set(['SceneTracker', 'MainCharacterTracker', 'CharacterTracker']);
@@ -665,31 +670,52 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Delete the last scene and go back
+   * Open the delete scene modal
    */
   onDeleteLastScene(): void {
     if (!this.adventureId || this.isLoading || !this.currentScene) return;
 
-    if (!confirm('Are you sure you want to delete the last scene? This action cannot be undone.')) {
+    this.sceneDeleteModalState = 'confirm';
+    this.sceneDeleteErrorMessage = '';
+    this.showSceneDeleteModal = true;
+  }
+
+  /**
+   * Handle delete modal result
+   */
+  onSceneDeleteResult(result: SceneDeleteResult): void {
+    if (result.action === 'cancel') {
+      this.showSceneDeleteModal = false;
       return;
     }
 
-    this.isLoading = true;
+    const force = result.action === 'force-delete';
+    const isRetry = result.action === 'retry';
 
-    this.adventureService.deleteLastScene(this.adventureId, this.currentScene.sceneId)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
-      )
+    this.sceneDeleteModalState = 'deleting';
+
+    this.adventureService.deleteLastScene(this.adventureId!, force || isRetry)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          // After deleting, we should reload or go back
-          // For now, let's navigate back to adventures list
+          this.showSceneDeleteModal = false;
           this.router.navigate(['/adventures']);
         },
         error: (err) => {
           console.error('Error deleting scene:', err);
-          this.toastService.error('Failed to delete the scene. Please try again.');
+
+          if (err.status === 400 && err.error?.hint?.includes('force=true')) {
+            this.sceneDeleteModalState = 'force-confirm';
+            return;
+          }
+
+          if (err.status === 424 && err.error?.retryable) {
+            this.sceneDeleteModalState = 'retry';
+            return;
+          }
+
+          this.sceneDeleteModalState = 'error';
+          this.sceneDeleteErrorMessage = err.error?.message || err.error?.error || 'An unexpected error occurred.';
         }
       });
   }

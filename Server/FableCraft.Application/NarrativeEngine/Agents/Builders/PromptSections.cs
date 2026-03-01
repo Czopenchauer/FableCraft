@@ -214,10 +214,11 @@ internal static class PromptSections
         var charactersOnScene = context.LatestTracker()?.Scene!.CharactersPresent;
         candidateCharacters.AddRange(charactersOnScene ?? Enumerable.Empty<string>());
 
+        context.Characters.Where(x => x.SceneRewrites.Count == 0).Select(x => x.Name).ToList().ForEach(candidateCharacters.Add);
         var coLocatedCharacters = GetCoLocatedCharactersFromContext(context);
         candidateCharacters.AddRange(coLocatedCharacters);
 
-        var characters = context.Characters.Where(x => candidateCharacters.Contains(x.Name)).ToList();
+        var characters = context.Characters.Where(x => candidateCharacters.Contains(x.Name)).Distinct().ToList();
         if (characters.Count == 0)
         {
             return string.Empty;
@@ -239,6 +240,7 @@ internal static class PromptSections
             ));
 
         return $"""
+
                 ## Profiled Characters for Emulation
 
                 The following characters have full profiles. You MUST call `emulate_character_action()` before writing ANY speech, action, or reaction from these characters. USE ONLY FOR CHARACTERS ON SCENE OR RESOLVING INTERACTIONS.

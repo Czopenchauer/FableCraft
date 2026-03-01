@@ -96,8 +96,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                 })
                 .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
             requestPrompt = $"""
-                             {PromptSections.ResolutionOutput(context.NewResolution)}
-
                              {PromptSections.ExtraLoreEntries(context.ExtraLoreEntries)}
 
                              {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}

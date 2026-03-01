@@ -38,6 +38,7 @@ import {JsonEditorModalComponent} from './features/adventures/components/json-ed
 import {SceneMetadataTabComponent} from './features/adventures/components/scene-metadata-tab/scene-metadata-tab.component';
 import {LlmLogsTabComponent} from './features/adventures/components/llm-logs-tab/llm-logs-tab.component';
 import {SceneEditModalComponent} from './features/adventures/components/scene-edit-modal/scene-edit-modal.component';
+import {SceneDeleteModalComponent} from './features/adventures/components/scene-delete-modal/scene-delete-modal.component';
 import {MarkdownPipe} from './shared/pipes/markdown.pipe';
 import {
   GraphRagSettingsManagerComponent
@@ -68,6 +69,7 @@ import {
     SceneMetadataTabComponent,
     LlmLogsTabComponent,
     SceneEditModalComponent,
+    SceneDeleteModalComponent,
     GraphRagSettingsManagerComponent
   ],
   imports: [

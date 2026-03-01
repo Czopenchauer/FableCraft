@@ -94,7 +94,7 @@ internal sealed class AgentKernel : IAgentKernel
     {
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>()
                                     ?? throw new InvalidOperationException("ChatCompletionService not found in kernel.");
-        var maxParsingRetries = options?.MaxParsingRetries ?? 4;
+        var maxParsingRetries = options?.MaxParsingRetries ?? 2;
         for (int attempt = 1; attempt <= maxParsingRetries; attempt++)
         {
             try

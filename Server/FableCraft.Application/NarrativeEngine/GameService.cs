@@ -1,4 +1,5 @@
 ﻿using FableCraft.Application.Exceptions;
+using FableCraft.Infrastructure;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -48,6 +49,8 @@ public interface IGameService
 
     Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
+    Task DeleteSceneAsync(Guid adventureId, bool forceDelete, CancellationToken cancellationToken);
+
     Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
 
     Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, CancellationToken cancellationToken);
@@ -77,16 +80,20 @@ internal class GameService : IGameService
     private readonly ILogger _logger;
     private readonly SceneGenerationOrchestrator _sceneGenerationOrchestrator;
     private readonly IRagClientFactory _clientFactory;
+    private readonly IRagChunkService _ragChunkService;
 
     public GameService(
         ApplicationDbContext dbContext,
         ILogger logger,
-        SceneGenerationOrchestrator sceneGenerationOrchestrator, IRagClientFactory clientFactory)
+        SceneGenerationOrchestrator sceneGenerationOrchestrator,
+        IRagClientFactory clientFactory,
+        IRagChunkService ragChunkService)
     {
         _dbContext = dbContext;
         _logger = logger;
         _sceneGenerationOrchestrator = sceneGenerationOrchestrator;
         _clientFactory = clientFactory;
+        _ragChunkService = ragChunkService;
     }
 
     public async Task<GameScene> GetCurrentSceneAsync(Guid adventureId, CancellationToken cancellationToken)
@@ -120,7 +127,7 @@ internal class GameService : IGameService
                 : null,
             NextScene = null,
             GenerationOutput = sceneGenerationOutput,
-            CanDelete = lastScene.CommitStatus == CommitStatus.Uncommited
+            CanDelete = true
         };
     }
 
@@ -145,6 +152,7 @@ internal class GameService : IGameService
             .Select(x => new { x.Id, x.SequenceNumber })
             .ToListAsync(cancellationToken);
         var sceneGenerationOutput = SceneGenerationOutput.CreateFromScene(scene);
+        var nextSceneId = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)?.Id;
         return new GameScene
         {
             CanRegenerate = scene.CommitStatus == CommitStatus.Uncommited,
@@ -152,10 +160,9 @@ internal class GameService : IGameService
             EnrichmentStatus = scene.EnrichmentStatus,
             PreviousScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber - 1)
                 ?.Id,
-            NextScene = neighborScenes.FirstOrDefault(x => x.SequenceNumber == scene.SequenceNumber + 1)
-                ?.Id,
+            NextScene = nextSceneId,
             GenerationOutput = sceneGenerationOutput,
-            CanDelete = scene.CommitStatus == CommitStatus.Uncommited,
+            CanDelete = nextSceneId == null,
         };
     }
 
@@ -239,10 +246,14 @@ internal class GameService : IGameService
         });
     }
 
-    public async Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken)
+    public Task DeleteSceneAsync(Guid adventureId, CancellationToken cancellationToken)
+        => DeleteSceneAsync(adventureId, forceDelete: false, cancellationToken);
+
+    public async Task DeleteSceneAsync(Guid adventureId, bool forceDelete, CancellationToken cancellationToken)
     {
         var scenes = await _dbContext.Scenes
             .Include(s => s.CharacterActions)
+            .Include(s => s.Lorebooks)
             .OrderByDescending(x => x.SequenceNumber)
             .Where(s => s.AdventureId == adventureId)
             .Take(2)
@@ -255,9 +266,13 @@ internal class GameService : IGameService
         }
 
         var lastScene = scenes.MaxBy(s => s.SequenceNumber)!;
-        if (lastScene.CommitStatus != CommitStatus.Uncommited)
+
+        if (lastScene.CommitStatus != CommitStatus.Uncommited
+            && lastScene.CommitStatus != CommitStatus.PendingDeletion
+            && !forceDelete)
         {
-            throw new InvalidOperationException("Can only delete the last uncommitted scene");
+            throw new InvalidOperationException(
+                "Cannot delete committed scene. Use force=true to override.");
         }
 
         _logger.Information("Deleting scene {SceneId} (sequence {SequenceNumber}) from adventure {AdventureId}",
@@ -265,15 +280,53 @@ internal class GameService : IGameService
             lastScene.SequenceNumber,
             adventureId);
 
+        var entityIdsToClean = new List<Guid> { lastScene.Id };
+        entityIdsToClean.AddRange(lastScene.Lorebooks.Select(l => l.Id));
+
+        var chunksToDelete = await _dbContext.Chunks
+            .Where(c => entityIdsToClean.Contains(c.EntityId))
+            .ToArrayAsync(cancellationToken);
+
         var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+
+        if (lastScene.CommitStatus != CommitStatus.PendingDeletion)
+        {
+            await executionStrategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                lastScene.CommitStatus = CommitStatus.PendingDeletion;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            });
+        }
+
+        if (chunksToDelete.Any())
+        {
+            var ragBuilder = await _clientFactory.CreateBuildClientForAdventure(adventureId, cancellationToken);
+            await _ragChunkService.DeleteNodes(ragBuilder, chunksToDelete, cancellationToken);
+        }
+
         await executionStrategy.ExecuteAsync(async () =>
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var previousScene = scenes.MinBy(s => s.SequenceNumber)!;
-            var lastSelectedAction = previousScene.CharacterActions.Single(x => x.Selected);
 
-            _dbContext.CharacterActions.Remove(lastSelectedAction);
+            if (chunksToDelete.Any())
+            {
+                _dbContext.Chunks.RemoveRange(chunksToDelete);
+            }
+
+            var previousScene = scenes.FirstOrDefault(s => s.SequenceNumber == lastScene.SequenceNumber - 1);
+            if (previousScene != null)
+            {
+                var selectedAction = previousScene.CharacterActions.SingleOrDefault(x => x.Selected);
+                if (selectedAction != null)
+                {
+                    _dbContext.CharacterActions.Remove(selectedAction);
+                }
+            }
+
             _dbContext.Scenes.Remove(lastScene);
+
             await _dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         });
@@ -307,6 +360,12 @@ internal class GameService : IGameService
         if (currentScene.EnrichmentStatus != EnrichmentStatus.Enriched)
         {
             throw new InvalidOperationException("Cannot submit action: adventure has no enrichment status");
+        }
+
+        if (currentScene.CommitStatus == CommitStatus.PendingDeletion)
+        {
+            throw new InvalidOperationException(
+                "Adventure has a scene pending deletion. Complete the deletion before continuing.");
         }
 
         try
