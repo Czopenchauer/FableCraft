@@ -47,6 +47,7 @@ public static class StartupExtensions
             .AddScoped<ItemCrafter>()
             .AddScoped<CharacterTrackerAgent>()
             .AddScoped<CharacterReflectionAgent>()
+            .AddScoped<ExperientialNarratorAgent>()
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>()
             .AddScoped<ChroniclerAgent>()

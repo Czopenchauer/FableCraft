@@ -16,6 +16,7 @@ public enum AgentName
     MainCharacterEmulatorAgent,
     InitMainCharacterTrackerAgent,
     CharacterReflectionAgent,
+    ExperientialNarratorAgent,
     ResolutionAgent,
     ChroniclerAgent,
     SimulationPlannerAgent,

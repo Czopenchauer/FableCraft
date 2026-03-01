@@ -15,6 +15,7 @@ namespace FableCraft.Application.NarrativeEngine.Workflow;
 /// </summary>
 internal sealed class CharacterTrackersProcessor(
     MainCharacterTrackerAgent mainCharacterTrackerAgent,
+    ExperientialNarratorAgent experientialNarratorAgent,
     CharacterReflectionAgent characterReflectionAgent,
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
@@ -86,15 +87,132 @@ internal sealed class CharacterTrackersProcessor(
 
                     CharacterContext characterContext;
 
-                    if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cached)
-                        && cached.Source == ReflectionSource.CharacterReflection)
+                    string sceneRewrite;
+                    bool isDead;
+
+                    if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cachedExperiential)
+                        && cachedExperiential.Source == ReflectionSource.ExperientialNarrator)
                     {
-                        logger.Information("Using cached reflection for {Character}", character.Name);
-                        characterContext = cached.Result;
+                        logger.Information("Using cached experiential narrator for {Character}", character.Name);
+                        sceneRewrite = cachedExperiential.Result.SceneRewrites
+                            .OrderByDescending(x => x.SequenceNumber)
+                            .First().Content;
+                        isDead = cachedExperiential.Result.IsDead;
                     }
                     else
                     {
-                        characterContext = await characterReflectionAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                        var experientialOutput = await experientialNarratorAgent.Invoke(context, character, storyTrackerResult, cancellationToken);
+                        sceneRewrite = experientialOutput.SceneRewrite;
+                        isDead = experientialOutput.IsDead;
+
+                        var experientialContext = new CharacterContext
+                        {
+                            CharacterId = character.CharacterId,
+                            CharacterState = character.CharacterState,
+                            CharacterTracker = character.CharacterTracker,
+                            Name = character.Name,
+                            Description = character.Description,
+                            CharacterMemories = [],
+                            Relationships = [],
+                            SceneRewrites =
+                            [
+                                new CharacterSceneContext
+                                {
+                                    Content = sceneRewrite,
+                                    SceneTracker = storyTrackerResult,
+                                    SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                         ?.SequenceNumber
+                                                     + 1
+                                                     ?? 0
+                                }
+                            ],
+                            Importance = character.Importance,
+                            SimulationMetadata = null,
+                            IsDead = isDead
+                        };
+
+                        lock (context)
+                        {
+                            context.PendingReflectionCache[character.CharacterId] = new CachedReflectionResult
+                            {
+                                CharacterId = character.CharacterId,
+                                CharacterName = character.Name,
+                                Source = ReflectionSource.ExperientialNarrator,
+                                Result = experientialContext
+                            };
+                        }
+                    }
+
+                    if (isDead)
+                    {
+                        logger.Information("Character {Character} died in scene, skipping reflection and tracker", character.Name);
+                        lock (context)
+                        {
+                            context.PendingReflectionCache.Remove(character.CharacterId);
+                        }
+
+                        return new CharacterContext
+                        {
+                            CharacterId = character.CharacterId,
+                            CharacterState = character.CharacterState,
+                            CharacterTracker = character.CharacterTracker,
+                            Name = character.Name,
+                            Description = character.Description,
+                            CharacterMemories = [],
+                            Relationships = [],
+                            SceneRewrites =
+                            [
+                                new CharacterSceneContext
+                                {
+                                    Content = sceneRewrite,
+                                    SceneTracker = storyTrackerResult,
+                                    SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                         ?.SequenceNumber
+                                                     + 1
+                                                     ?? 0
+                                }
+                            ],
+                            Importance = character.Importance,
+                            SimulationMetadata = null,
+                            IsDead = true
+                        };
+                    }
+
+                    var characterWithSceneRewrite = new CharacterContext
+                    {
+                        CharacterId = character.CharacterId,
+                        CharacterState = character.CharacterState,
+                        CharacterTracker = character.CharacterTracker,
+                        Name = character.Name,
+                        Description = character.Description,
+                        CharacterMemories = character.CharacterMemories,
+                        Relationships = character.Relationships,
+                        SceneRewrites = character.SceneRewrites.Concat(
+                        [
+                            new CharacterSceneContext
+                            {
+                                Content = sceneRewrite,
+                                SceneTracker = storyTrackerResult,
+                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                     ?.SequenceNumber
+                                                 + 1
+                                                 ?? 0
+                            }
+                        ]).ToList(),
+                        Importance = character.Importance,
+                        SimulationMetadata = character.SimulationMetadata,
+                        IsDead = false
+                    };
+
+                    if (context.PendingReflectionCache.TryGetValue(character.CharacterId, out var cachedReflection)
+                        && cachedReflection.Source == ReflectionSource.CharacterReflection)
+                    {
+                        logger.Information("Using cached reflection for {Character}", character.Name);
+                        characterContext = cachedReflection.Result;
+                    }
+                    else
+                    {
+                        characterContext = await characterReflectionAgent.Invoke(context, characterWithSceneRewrite, storyTrackerResult, cancellationToken);
 
                         lock (context)
                         {

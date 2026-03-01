@@ -325,6 +325,7 @@ internal sealed class CachedReflectionResult
 internal enum ReflectionSource
 {
     CharacterReflection,
+    ExperientialNarrator,
     StandaloneSimulation,
     CohortSimulation,
     OffscreenInference

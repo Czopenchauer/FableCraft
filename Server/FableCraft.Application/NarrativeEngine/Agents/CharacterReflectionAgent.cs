@@ -16,12 +16,13 @@ using Serilog;
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
-///     Character Reflection Agent - runs post-scene for each meaningful character present.
+///     Character Reflection Agent - Pass 2 of character reflection split.
+///     Receives scene_rewrite from ExperientialNarratorAgent (Pass 1) as "biased testimony".
 ///     Output:
-///     - scene_rewrite: Full character-POV prose -> stored in KG
 ///     - memory: Summary, salience, entities, emotional_tone -> stored in DB
 ///     - relationship_updates: Per-character relationship state -> stored in DB
 ///     - psychology, motivations, in_development -> stored in CharacterStats
+///     Note: scene_rewrite is preserved from Pass 1 input, not produced by this agent.
 /// </summary>
 internal sealed class CharacterReflectionAgent(
     IAgentKernel agentKernel,
@@ -70,9 +71,14 @@ internal sealed class CharacterReflectionAgent(
                                     <character>
                                     """);
         chatHistory.AddUserMessage(relationship);
+        // Get the scene_rewrite from Pass 1 (ExperientialNarratorAgent)
+        var experientialSceneRewrite = context.SceneRewrites
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Content;
+
         var contextPrompt = $"""
                              {PromptSections.WorldContext(generationContext)}
-                             
+
                              {PromptSections.NewItems(generationContext.NewItems)}
 
                              {PromptSections.RecentScenesForCharacter(context)}
@@ -80,6 +86,25 @@ internal sealed class CharacterReflectionAgent(
                              {PromptSections.CharacterEmulationOutputs(generationContext, context.Name)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
+
+        // Add the scene_rewrite from Pass 1 as "biased testimony"
+        var biasedTestimonyPrompt = string.IsNullOrEmpty(experientialSceneRewrite)
+            ? string.Empty
+            : $"""
+               ## Character's Subjective Experience (Biased Testimony)
+
+               The following is {context.Name}'s first-person account of this scene, produced by their experiential processing.
+               Use this as the authoritative source for their subjective experience, perceptions, and internal state.
+
+               <biased_testimony>
+               {experientialSceneRewrite}
+               </biased_testimony>
+               """;
+
+        if (!string.IsNullOrEmpty(biasedTestimonyPrompt))
+        {
+            chatHistory.AddUserMessage(biasedTestimonyPrompt);
+        }
 
         var requestPrompt = $"""
                              {PromptSections.CharacterStateContext(context)}
@@ -168,6 +193,12 @@ internal sealed class CharacterReflectionAgent(
             });
         }
 
+        // Preserve the scene_rewrite from Pass 1 (ExperientialNarratorAgent)
+        // The latest SceneRewrite in context was added by the processor before calling this agent
+        var latestSceneRewrite = context.SceneRewrites
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault();
+
         return new CharacterContext
         {
             CharacterId = context.CharacterId,
@@ -177,18 +208,17 @@ internal sealed class CharacterReflectionAgent(
             Description = context.Description,
             CharacterMemories = memory,
             Relationships = characterRelationships,
-            SceneRewrites =
-            [
-                new CharacterSceneContext
-                {
-                    Content = output.SceneRewrite,
-                    SceneTracker = sceneTrackerResult,
-                    SequenceNumber = context.SceneRewrites.MaxBy(x => x.SequenceNumber)
-                                         ?.SequenceNumber
-                                     + 1
-                                     ?? 0
-                }
-            ],
+            SceneRewrites = latestSceneRewrite != null
+                ?
+                [
+                    new CharacterSceneContext
+                    {
+                        Content = latestSceneRewrite.Content,
+                        SceneTracker = sceneTrackerResult,
+                        SequenceNumber = latestSceneRewrite.SequenceNumber
+                    }
+                ]
+                : [],
             Importance = context.Importance,
             SimulationMetadata = null,
             IsDead = false
