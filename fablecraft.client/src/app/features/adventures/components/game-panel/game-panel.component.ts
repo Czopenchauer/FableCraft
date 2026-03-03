@@ -51,7 +51,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     {id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers'},
     {id: 'Simulation', label: 'Simulation', description: 'Off-screen character simulation (skipped by default)'},
     {id: 'Chronicler', label: 'Chronicler', description: 'Story tracking & world events (skipped by default)'},
-    {id: 'ContextGatherer', label: 'Context Gatherer', description: 'RAG queries & co-located characters (skipped by default)'}
+    {id: 'ContextGatherer', label: 'Context Gatherer', description: 'RAG queries (skipped by default)'},
+    {id: 'CoLocation', label: 'Co-Location', description: 'Characters at scene location (skipped by default)'}
   ];
   showEmulationBox = false;
   emulationInstruction = '';
