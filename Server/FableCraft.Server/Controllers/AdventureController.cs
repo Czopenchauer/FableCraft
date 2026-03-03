@@ -71,7 +71,8 @@ public class AdventureController : ControllerBase
 
         if (errors.Count > 0)
         {
-            _logger.Error("There were {ErrorsCount} validation errors: {StringsMap}", errors.Count, string.Join("\n", string.Join("\n", errors.Values)));
+            var errorMessages = errors.SelectMany(e => e.Value.Select(v => $"{e.Key}: {v}"));
+            _logger.Error("There were {ErrorsCount} validation errors: {Errors}", errors.Count, string.Join("; ", errorMessages));
             return BadRequest(Results.ValidationProblem(errors));
         }
 

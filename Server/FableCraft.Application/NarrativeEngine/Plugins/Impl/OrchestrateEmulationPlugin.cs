@@ -34,7 +34,7 @@ internal sealed class OrchestrateEmulationPlugin : PluginBase
         ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
 
-        _logger.Information("Orchestrating beat");
+        _logger.Information("Orchestrating beat: {Input}", input);
 
         try
         {

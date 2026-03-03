@@ -126,7 +126,7 @@ internal sealed class EmulationOrchestratorAgent : BaseAgent
             sb.AppendLine($"Situation given: {output.Stimulus}");
             sb.AppendLine($"Query given: {output.Query}");
             sb.AppendLine();
-            sb.AppendLine(output.Observables);
+            sb.AppendLine(output.Response);
             sb.AppendLine();
         }
 

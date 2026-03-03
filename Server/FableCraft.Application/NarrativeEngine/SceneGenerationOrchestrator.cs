@@ -318,7 +318,7 @@ internal sealed class SceneGenerationOrchestrator(
         var parallelProcessors = new[]
         {
             processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
-            processors.First(p => p is ContextGatherer)
+            processors.First(p => p is ContextGatherer), processors.First(p => p is CoLocationAgent)
         };
 
         stopwatch.Restart();
@@ -393,6 +393,7 @@ internal sealed class SceneGenerationOrchestrator(
         context.SkipChronicler = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
         context.SkipContextGatherer = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
         context.SkipWorldInfoExtractor = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.WorldInfoExtractor));
+        context.SkipCoLocation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.CoLocation));
         context.ForceCharacterContextGathering = agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
 
         var stopwatch = Stopwatch.StartNew();
@@ -411,7 +412,7 @@ internal sealed class SceneGenerationOrchestrator(
         var parallelProcessors = new[]
         {
             processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
-            processors.First(p => p is ContextGatherer)
+            processors.First(p => p is ContextGatherer), processors.First(p => p is CoLocationAgent)
         };
 
         stopwatch.Restart();
@@ -490,6 +491,9 @@ internal sealed class SceneGenerationOrchestrator(
                 case nameof(EnrichmentAgent.WorldInfoExtractor):
                     context.WorldInfoExtractions = null;
                     context.ProcessedWorldInfoSources = [];
+                    break;
+                case nameof(EnrichmentAgent.CoLocation):
+                    context.CoLocationOutput = null;
                     break;
             }
         }

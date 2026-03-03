@@ -64,7 +64,6 @@ internal static class PromptSections
             .OrderByDescending(x => x.SequenceNumber)
             .Take(count);
 
-        // {x.PlayerChoice}
         var formatted = string.Join("\n",
             scenes
                 .OrderBy(x => x.SequenceNumber)
@@ -140,11 +139,14 @@ internal static class PromptSections
     public static string MainCharacter(GenerationContext context)
     {
         var tracker = context.LatestTracker()?.MainCharacter?.MainCharacter;
+
+        var wornBuild = tracker?.AdditionalProperties.TryGetValue("Worn", out var worn) != null ? $"Worn: {worn.ToJsonString()}" : string.Empty;
         return $"""
                 <main_character>
                 Name: {context.MainCharacter.Name}
                 Appearance: {tracker?.Appearance}
                 GeneralBuild: {tracker?.GeneralBuild}
+                {wornBuild}
                 {context.LatestTracker()?.MainCharacter?.MainCharacterDescription ?? context.MainCharacter.Description}
                 </main_character>
                 """;
@@ -173,15 +175,21 @@ internal static class PromptSections
     public static string ExistingCharacters(IEnumerable<CharacterContext> characters)
     {
         var formatted = string.Join("\n\n",
-            characters.Select(c => $"""
-                                    <character>
-                                    Name: {c.Name}
-                                    Location: {c.CharacterTracker?.Location}
-                                    Appearance: {c.CharacterTracker?.Appearance}
-                                    GeneralBuild: {c.CharacterTracker?.GeneralBuild}
-                                    {c.Description}
-                                    </character>
-                                    """));
+            characters.Select(c =>
+            {
+                var wornBuild = c.CharacterTracker?.AdditionalProperties.TryGetValue("Worn", out var worn) != null ? $"Worn: {worn.ToJsonString()}" : string.Empty;
+
+                return $"""
+                     <character>
+                     Name: {c.Name}
+                     Location: {c.CharacterTracker?.Location}
+                     Appearance: {c.CharacterTracker?.Appearance}
+                     GeneralBuild: {c.CharacterTracker?.GeneralBuild}
+                     {wornBuild}
+                     {c.Description}
+                     </character>
+                     """;
+            }));
 
         return $"""
                 List of existing characters in the story:
@@ -278,11 +286,18 @@ internal static class PromptSections
     }
 
     /// <summary>
-    ///     Retrieves co-located character names from the previous scene's gathered context.
-    ///     These are characters the ContextGatherer determined to be at the same location as the scene.
+    ///     Retrieves co-located character names from CoLocationAgent output or previous scene's gathered context.
+    ///     Prefers CoLocationOutput if available (current scene), falls back to previous scene's gathered context.
     /// </summary>
     private static IEnumerable<string> GetCoLocatedCharactersFromContext(GenerationContext context)
     {
+        // First check if we have fresh CoLocationOutput from the current scene
+        if (context.CoLocationOutput?.CoLocatedCharacters is { Length: > 0 })
+        {
+            return context.CoLocationOutput.CoLocatedCharacters.Select(c => c.Name);
+        }
+
+        // Fall back to previous scene's gathered context
         var gatheredContext = context.SceneContext
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.GatheredContext;

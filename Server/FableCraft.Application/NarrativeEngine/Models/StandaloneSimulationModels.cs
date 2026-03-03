@@ -47,22 +47,17 @@ internal sealed class StandaloneSimulationInput
 internal sealed class StandaloneSimulationOutput
 {
     /// <summary>
+    ///     Whether the character died during the simulation period.
+    ///     When true, this is the character's final simulation.
+    /// </summary>
+    [JsonPropertyName("is_dead")]
+    public bool IsDead { get; init; }
+
+    /// <summary>
     ///     Scenes generated during the simulation period.
     /// </summary>
     [JsonPropertyName("scenes")]
     public required List<SimulationScene> Scenes { get; init; }
-
-    /// <summary>
-    ///     Updates to relationships based on simulation events.
-    /// </summary>
-    [JsonPropertyName("relationships")]
-    public List<SimulationRelationshipUpdate> RelationshipUpdates { get; init; } = [];
-
-    /// <summary>
-    ///     Complete character profile/state after updates (replaces previous state).
-    /// </summary>
-    [JsonPropertyName("identity")]
-    public CharacterStats? ProfileUpdates { get; init; }
 
     /// <summary>
     ///     Dispatches sent by this character to communicate with others not present.
@@ -94,9 +89,6 @@ internal sealed class StandaloneSimulationOutput
     /// </summary>
     [JsonPropertyName("creation_requests")]
     public CreationRequests? CreationRequests { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
 /// <summary>
@@ -115,42 +107,6 @@ internal sealed class SimulationScene
     /// </summary>
     [JsonPropertyName("narrative")]
     public required string Narrative { get; init; }
-
-    /// <summary>
-    ///     Memory metadata for indexing.
-    /// </summary>
-    [JsonPropertyName("memory")]
-    public required SimulationMemory Memory { get; init; }
-}
-
-/// <summary>
-///     Memory metadata from a simulation scene.
-/// </summary>
-internal sealed class SimulationMemory
-{
-    [JsonPropertyName("summary")]
-    public required string Summary { get; init; }
-
-    [JsonPropertyName("salience")]
-    public required double Salience { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
-}
-
-/// <summary>
-///     Relationship update from simulation.
-/// </summary>
-internal sealed class SimulationRelationshipUpdate
-{
-    [JsonPropertyName("name")]
-    public required string Name { get; init; }
-
-    [JsonPropertyName("dynamic")]
-    public required string Dynamic { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object>? ExtensionData { get; set; }
 }
 
 /// <summary>

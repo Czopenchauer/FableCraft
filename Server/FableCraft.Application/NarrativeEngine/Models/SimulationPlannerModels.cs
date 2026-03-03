@@ -28,6 +28,11 @@ internal sealed class SimulationPlannerInput
     ///     Writer guidance from Chronicler - where the story is heading.
     /// </summary>
     public WriterGuidance? NarrativeDirection { get; init; }
+
+    /// <summary>
+    ///     Pending dispatches grouped by recipient character name.
+    /// </summary>
+    public Dictionary<string, List<IncomingDispatch>>? PendingDispatches { get; init; }
 }
 
 /// <summary>

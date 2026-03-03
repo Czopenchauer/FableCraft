@@ -35,6 +35,7 @@ public static class StartupExtensions
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
+            .AddScoped<IProcessor, CoLocationAgent>()
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()

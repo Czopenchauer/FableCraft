@@ -101,7 +101,7 @@ internal sealed class CharacterTrackerAgent(
 
                              {PromptSections.PreviouslyCreatedContent(generationContext)}
 
-                             {PromptSections.RecentScenesForCharacter(context)}
+                             {PromptSections.RecentScenesForCharacter(context, count: 5)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

@@ -22,7 +22,8 @@ public enum EnrichmentAgent
     Simulation,
     Chronicler,
     ContextGatherer,
-    WorldInfoExtractor
+    WorldInfoExtractor,
+    CoLocation
 }
 
 internal enum LorebookCategory

@@ -42,27 +42,35 @@ internal sealed class SaveSceneEnrichment(
             scene.Metadata.McStorySummary = context.NewMcStorySummary;
         }
 
-        if (context.ContextGathered != null)
+        if (context.ContextGathered != null || context.CoLocationOutput != null)
         {
-            scene.Metadata.GatheredContext = new GatheredContext
-            {
-                WorldContext = context.ContextGathered.WorldContext.Select(x => new GatheredContextItem
-                {
-                    Topic = x.Topic,
-                    Content = x.Content
-                }).ToArray(),
-                NarrativeContext = context.ContextGathered.NarrativeContext.Select(x => new GatheredContextItem
-                {
-                    Topic = x.Topic,
-                    Content = x.Content
-                }).ToArray(),
-                BackgroundRoster = context.ContextGathered.BackgroundRoster,
-                CoLocatedCharacters = context.ContextGathered.CoLocatedCharacters.Select(x => new GatheredCoLocatedCharacter
+            var coLocatedCharacters = context.CoLocationOutput?.CoLocatedCharacters is { Length: > 0 }
+                ? context.CoLocationOutput.CoLocatedCharacters.Select(x => new GatheredCoLocatedCharacter
                 {
                     Name = x.Name,
                     Reason = x.Reason
-                }).ToArray(),
-                AdditionalProperties = context.ContextGathered.AdditionalData
+                }).ToArray()
+                : context.ContextGathered?.CoLocatedCharacters.Select(x => new GatheredCoLocatedCharacter
+                {
+                    Name = x.Name,
+                    Reason = x.Reason
+                }).ToArray() ?? [];
+
+            scene.Metadata.GatheredContext = new GatheredContext
+            {
+                WorldContext = context.ContextGathered?.WorldContext.Select(x => new GatheredContextItem
+                {
+                    Topic = x.Topic,
+                    Content = x.Content
+                }).ToArray() ?? [],
+                NarrativeContext = context.ContextGathered?.NarrativeContext.Select(x => new GatheredContextItem
+                {
+                    Topic = x.Topic,
+                    Content = x.Content
+                }).ToArray() ?? [],
+                BackgroundRoster = context.ContextGathered?.BackgroundRoster ?? [],
+                CoLocatedCharacters = coLocatedCharacters,
+                AdditionalProperties = context.ContextGathered?.AdditionalData ?? new Dictionary<string, object>()
             };
         }
 
@@ -347,15 +355,22 @@ internal sealed class SaveSceneEnrichment(
                     UpdateTime = x.UpdateTime,
                     Dynamic = x.Dynamic
                 });
-                var sceneRewrites = update.SceneRewrites.Select(x => new CharacterSceneRewrite
-                {
-                    Content = x.Content,
-                    SequenceNumber = x.SequenceNumber,
-                    Scene = scene,
-                    SceneTracker = x.SceneTracker!,
-                    GatheredContext = x.GatheredContext,
-                    StorySummary = x.StorySummary
-                });
+
+                var existingMaxSeq = await dbContext.CharacterSceneRewrites
+                    .Where(r => r.CharacterId == character.Id && r.SceneId != scene.Id)
+                    .MaxAsync(r => (int?)r.SequenceNumber, cancellationToken) ?? -1;
+
+                var sceneRewrites = update.SceneRewrites
+                    .Where(x => x.SequenceNumber > existingMaxSeq)
+                    .Select(x => new CharacterSceneRewrite
+                    {
+                        Content = x.Content,
+                        SequenceNumber = x.SequenceNumber,
+                        Scene = scene,
+                        SceneTracker = x.SceneTracker!,
+                        GatheredContext = x.GatheredContext,
+                        StorySummary = x.StorySummary
+                    });
                 character.CharacterRelationships.AddRange(relationships);
                 character.CharacterSceneRewrites.AddRange(sceneRewrites);
                 dbContext.Characters.Update(character);
@@ -384,15 +399,6 @@ internal sealed class SaveSceneEnrichment(
                     Scene = scene,
                     UpdateTime = x.UpdateTime,
                     Dynamic = x.Dynamic
-                }).ToList();
-                var sceneRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
-                {
-                    Content = x.Content,
-                    SequenceNumber = x.SequenceNumber,
-                    Scene = scene,
-                    SceneTracker = x.SceneTracker!,
-                    GatheredContext = x.GatheredContext,
-                    StorySummary = x.StorySummary
                 }).ToList();
                 var existingChar = characters.SingleOrDefault(x => x.Name == contextNewCharacter.Name);
                 if (existingChar != null)
@@ -433,11 +439,37 @@ internal sealed class SaveSceneEnrichment(
                         existingChar.CharacterSceneRewrites.Remove(rewrite);
                     }
 
+                    var existingCharMaxSeq = await dbContext.CharacterSceneRewrites
+                        .Where(r => r.CharacterId == existingChar.Id && r.SceneId != scene.Id)
+                        .MaxAsync(r => (int?)r.SequenceNumber, cancellationToken) ?? -1;
+
+                    var filteredRewrites = contextNewCharacter.SceneRewrites
+                        .Where(x => x.SequenceNumber > existingCharMaxSeq)
+                        .Select(x => new CharacterSceneRewrite
+                        {
+                            Content = x.Content,
+                            SequenceNumber = x.SequenceNumber,
+                            Scene = scene,
+                            SceneTracker = x.SceneTracker!,
+                            GatheredContext = x.GatheredContext,
+                            StorySummary = x.StorySummary
+                        }).ToList();
+
                     existingChar.CharacterRelationships.AddRange(relationships);
-                    existingChar.CharacterSceneRewrites.AddRange(sceneRewrites);
+                    existingChar.CharacterSceneRewrites.AddRange(filteredRewrites);
                 }
                 else
                 {
+                    var newCharRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
+                    {
+                        Content = x.Content,
+                        SequenceNumber = x.SequenceNumber,
+                        Scene = scene,
+                        SceneTracker = x.SceneTracker!,
+                        GatheredContext = x.GatheredContext,
+                        StorySummary = x.StorySummary
+                    }).ToList();
+
                     var newChar = new Character
                     {
                         AdventureId = context.AdventureId,
@@ -456,7 +488,7 @@ internal sealed class SaveSceneEnrichment(
                         ],
                         Version = 0,
                         CharacterRelationships = relationships,
-                        CharacterSceneRewrites = sceneRewrites,
+                        CharacterSceneRewrites = newCharRewrites,
                         Importance = contextNewCharacter.Importance,
                         IntroductionScene = scene.Id,
                         Scene = scene,

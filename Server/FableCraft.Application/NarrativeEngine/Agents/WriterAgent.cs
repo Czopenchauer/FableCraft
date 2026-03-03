@@ -60,8 +60,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              {PromptSections.CurrentSceneTracker(context)}
 
-                             {PromptSections.PreviousCharacterObservations(context.SceneContext)}
-
                              {PromptSections.McStorySummary(context)}
                              """;
         chatHistory.AddUserMessage($"""
@@ -109,8 +107,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         {
             var incomingDispatches = await GetIncomingDispatchesAsync(context, _dispatchService, cancellationToken);
             requestPrompt = $"""
-                             {PromptSections.ChroniclerGuidance(context.SceneContext)}
-
                              {incomingDispatches}
 
                              {PromptSections.PlayerAction(context.PlayerAction)}
@@ -143,7 +139,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
-        await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
+        await _pluginFactory.AddPluginAsync<OrchestrateEmulationPlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();

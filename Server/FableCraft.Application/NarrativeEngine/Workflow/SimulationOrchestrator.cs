@@ -19,6 +19,7 @@ internal sealed class SimulationOrchestrator(
     StandaloneSimulationAgent standaloneAgent,
     SimulationModeratorAgent cohortModeratorAgent,
     CharacterTrackerAgent characterTrackerAgent,
+    ClinicalAssessorAgent clinicalAssessorAgent,
     CharacterContextGatherer characterContextGatherer,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
@@ -131,13 +132,7 @@ internal sealed class SimulationOrchestrator(
                     characterContext = cached.Result;
                     result = new StandaloneSimulationOutput
                     {
-                        Scenes = [],
-                        RelationshipUpdates = [],
-                        ProfileUpdates = characterContext.CharacterState,
-                        Dispatches = null,
-                        DispatchesResolved = null,
-                        WorldEventsEmitted = null,
-                        CharacterEvents = null
+                        Scenes = []
                     };
                 }
                 else
@@ -172,68 +167,35 @@ internal sealed class SimulationOrchestrator(
                     {
                         result = await standaloneAgent.Invoke(context, input, cancellationToken);
                         logger.Information(
-                            "Standalone simulation complete for {CharacterName}: {SceneCount} scenes, {RelUpdates} relationship updates",
+                            "Standalone simulation complete for {CharacterName}: {SceneCount} scenes",
                             character.Name,
-                            result.Scenes.Count,
-                            result.RelationshipUpdates?.Count ?? 0);
+                            result.Scenes.Count);
 
-                        var characterRelationships = new List<CharacterRelationshipContext>();
-                        foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
-                        {
-                            if (relationshipUpdate.ExtensionData?.Count == 0)
+                        var sceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                             {
-                                logger.Warning("Character {CharacterName} has no relationships update!", character.Name);
-                            }
-
-                            var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
-                            if (relationship == null)
-                            {
-                                characterRelationships.Add(new CharacterRelationshipContext
-                                {
-                                    TargetCharacterName = relationshipUpdate.Name,
-                                    Data = relationshipUpdate.ExtensionData!,
-                                    UpdateTime = input.TimePeriod!.Time,
-                                    SequenceNumber = 0,
-                                    Dynamic = relationshipUpdate.Dynamic
-                                });
-                            }
-                            else if (relationshipUpdate.ExtensionData?.Count > 0)
-                            {
-                                var newRelationship = new CharacterRelationshipContext
-                                {
-                                    TargetCharacterName = relationship.TargetCharacterName,
-                                    Data = relationshipUpdate.ExtensionData!,
-                                    UpdateTime = input.TimePeriod!.Time,
-                                    SequenceNumber = relationship.SequenceNumber + 1,
-                                    Dynamic = relationshipUpdate.Dynamic
-                                };
-                                characterRelationships.Add(newRelationship);
-                            }
-                        }
+                                Content = x.Narrative,
+                                SequenceNumber = (character.SceneRewrites.Count > 0
+                                    ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                                    : 0) + idx + 1,
+                                SceneTracker = x.SceneTracker
+                            })
+                            .ToList();
 
                         characterContext = new CharacterContext
                         {
                             CharacterId = character.CharacterId,
-                            CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                            CharacterState = character.CharacterState,
                             CharacterTracker = character.CharacterTracker,
                             Name = character.Name,
                             Description = character.Description,
-                            Relationships = characterRelationships,
-                            SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
-                                {
-                                    Content = x.Narrative,
-                                    SequenceNumber = (character.SceneRewrites.Count > 0
-                                        ? character.SceneRewrites.Max(s => s.SequenceNumber)
-                                        : 0) + idx + 1,
-                                    SceneTracker = x.SceneTracker
-                                })
-                                .ToList(),
+                            Relationships = [],
+                            SceneRewrites = sceneRewrites,
                             Importance = character.Importance,
                             SimulationMetadata = new SimulationMetadata
                             {
                                 LastSimulated = input.TimePeriod!.Time,
                             },
-                            IsDead = false
+                            IsDead = result.IsDead
                         };
 
                         lock (context)
@@ -303,17 +265,51 @@ internal sealed class SimulationOrchestrator(
                 try
                 {
                     var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
+
+                    var combinedSceneContent = string.Join("\n\n---\n\n", result.Scenes.Select(s => s.Narrative));
+                    var lastSceneTracker = result.Scenes.Last().SceneTracker;
+                    var assessorTask = clinicalAssessorAgent.Invoke(context, character, combinedSceneContent, lastSceneTracker, cancellationToken);
                     var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+
                     var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
                     var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
-
                     var storySummaryTask = ProcessStorySummaryIfNeeded(context, characterContext, cancellationToken);
 
-                    await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
+                    await Task.WhenAll(assessorTask, trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
 
+                    // Apply ClinicalAssessor results
+                    var assessorOutput = await assessorTask;
+                    logger.Information(
+                        "ClinicalAssessor for {CharacterName} after simulation: identity_updated={IdentityUpdated}, relationships_updated={RelationshipsCount}",
+                        character.Name,
+                        assessorOutput.Identity != null,
+                        assessorOutput.Relationships.Length);
+
+                    characterContext.CharacterState = assessorOutput.Identity ?? character.CharacterState;
+                    characterContext.Relationships = assessorOutput.Relationships.Select(relOutput =>
+                    {
+                        var existingRel = character.Relationships
+                            .SingleOrDefault(x => string.Equals(x.TargetCharacterName, relOutput.Toward, StringComparison.OrdinalIgnoreCase));
+
+                        return new CharacterRelationshipContext
+                        {
+                            TargetCharacterName = relOutput.Toward,
+                            Data = relOutput.Data ?? new Dictionary<string, object>(),
+                            UpdateTime = context.NewTracker!.Scene!.Time,
+                            SequenceNumber = existingRel?.SequenceNumber + 1 ?? 0,
+                            Dynamic = relOutput.Dynamic ?? existingRel?.Dynamic ?? string.Empty
+                        };
+                    }).ToList();
+
+                    // Apply CharacterTracker results
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
-                    characterContext.IsDead = tracker.IsDead;
+                    characterContext.IsDead = result.IsDead || tracker.IsDead;
+
+                    if (characterContext.IsDead)
+                    {
+                        logger.Information("Character {CharacterName} died during simulation", character.Name);
+                    }
 
                     lock (context)
                     {
@@ -484,64 +480,33 @@ internal sealed class SimulationOrchestrator(
         }
         else
         {
-            var characterRelationships = new List<CharacterRelationshipContext>();
-            foreach (var relationshipUpdate in result.RelationshipUpdates ?? [])
-            {
-                if (relationshipUpdate.ExtensionData?.Count == 0)
+            // Build scene rewrites from simulation output
+            var sceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
                 {
-                    logger.Warning("Character {CharacterName} has no relationship update data!", character.Name);
-                    continue;
-                }
+                    Content = x.Narrative,
+                    SequenceNumber = (character.SceneRewrites.Count > 0
+                        ? character.SceneRewrites.Max(s => s.SequenceNumber)
+                        : 0) + idx + 1,
+                    SceneTracker = x.SceneTracker
+                })
+                .ToList();
 
-                var relationship = character.Relationships.SingleOrDefault(x => x.TargetCharacterName == relationshipUpdate.Name);
-                if (relationship == null)
-                {
-                    characterRelationships.Add(new CharacterRelationshipContext
-                    {
-                        TargetCharacterName = relationshipUpdate.Name,
-                        Data = relationshipUpdate.ExtensionData!,
-                        UpdateTime = context.NewTracker!.Scene!.Time,
-                        SequenceNumber = 0,
-                        Dynamic = relationshipUpdate.Dynamic
-                    });
-                }
-                else if (relationshipUpdate.ExtensionData?.Count > 0)
-                {
-                    var newRelationship = new CharacterRelationshipContext
-                    {
-                        TargetCharacterName = relationship.TargetCharacterName,
-                        Data = relationshipUpdate.ExtensionData!,
-                        UpdateTime = context.NewTracker!.Scene!.Time,
-                        SequenceNumber = relationship.SequenceNumber + 1,
-                        Dynamic = relationshipUpdate.Dynamic
-                    };
-                    characterRelationships.Add(newRelationship);
-                }
-            }
-
+            // Build initial characterContext with scenes (identity/relationships updated after parallel tasks)
             characterContext = new CharacterContext
             {
                 CharacterId = character.CharacterId,
-                CharacterState = result.ProfileUpdates ?? character.CharacterState,
+                CharacterState = character.CharacterState,
                 CharacterTracker = character.CharacterTracker,
                 Name = character.Name,
                 Description = character.Description,
-                Relationships = characterRelationships,
-                SceneRewrites = result.Scenes.Select((x, idx) => new CharacterSceneContext
-                    {
-                        Content = x.Narrative,
-                        SequenceNumber = (character.SceneRewrites.Count > 0
-                            ? character.SceneRewrites.Max(s => s.SequenceNumber)
-                            : 0) + idx + 1,
-                        SceneTracker = x.SceneTracker
-                    })
-                    .ToList(),
+                Relationships = [],
+                SceneRewrites = sceneRewrites,
                 Importance = character.Importance,
                 SimulationMetadata = new SimulationMetadata
                 {
                     LastSimulated = cohortSimulationResult.Result.SimulationPeriod.To,
                 },
-                IsDead = false
+                IsDead = result.IsDead
             };
 
             lock (context)
@@ -606,16 +571,52 @@ internal sealed class SimulationOrchestrator(
         }
 
         var characterSceneContext = BuildCharacterSceneContext(context, characterContext);
+
+        // Run ClinicalAssessor and CharacterTracker in parallel
+        var combinedSceneContent = string.Join("\n\n---\n\n", result.Scenes.Select(s => s.Narrative));
+        var lastSceneTracker = result.Scenes.Last().SceneTracker;
+        var assessorTask = clinicalAssessorAgent.Invoke(context, character, combinedSceneContent, lastSceneTracker, cancellationToken);
         var trackerTask = characterTrackerAgent.InvokeAfterSimulation(context, character, characterContext, context.NewTracker!.Scene!, cancellationToken);
+
         var creationTask = ProcessCreationRequests(context, result.CreationRequests, characterSceneContext, cancellationToken);
         var worldInfoTask = ExtractWorldInfoFromSimulation(context, result.Scenes, character.Name, cancellationToken);
         var storySummaryTask = ProcessStorySummaryIfNeeded(context, characterContext, cancellationToken);
 
-        await Task.WhenAll(trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
+        await Task.WhenAll(assessorTask, trackerTask, creationTask, GatherAndStoreCharacterContext(context, characterContext, cancellationToken), worldInfoTask, storySummaryTask);
 
+        // Apply ClinicalAssessor results
+        var assessorOutput = await assessorTask;
+        logger.Information(
+            "ClinicalAssessor for {CharacterName} after cohort simulation: identity_updated={IdentityUpdated}, relationships_updated={RelationshipsCount}",
+            character.Name,
+            assessorOutput.Identity != null,
+            assessorOutput.Relationships.Length);
+
+        characterContext.CharacterState = assessorOutput.Identity ?? character.CharacterState;
+        characterContext.Relationships = assessorOutput.Relationships.Select(relOutput =>
+        {
+            var existingRel = character.Relationships
+                .SingleOrDefault(x => string.Equals(x.TargetCharacterName, relOutput.Toward, StringComparison.OrdinalIgnoreCase));
+
+            return new CharacterRelationshipContext
+            {
+                TargetCharacterName = relOutput.Toward,
+                Data = relOutput.Data ?? new Dictionary<string, object>(),
+                UpdateTime = context.NewTracker!.Scene!.Time,
+                SequenceNumber = existingRel?.SequenceNumber + 1 ?? 0,
+                Dynamic = relOutput.Dynamic ?? existingRel?.Dynamic ?? string.Empty
+            };
+        }).ToList();
+
+        // Apply CharacterTracker results
         var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
-        characterContext.IsDead = tracker.IsDead;
+        characterContext.IsDead = result.IsDead || tracker.IsDead;
+
+        if (characterContext.IsDead)
+        {
+            logger.Information("Character {CharacterName} died during cohort simulation", character.Name);
+        }
 
         lock (context)
         {

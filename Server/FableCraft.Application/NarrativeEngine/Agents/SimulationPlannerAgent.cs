@@ -27,6 +27,7 @@ internal sealed class SimulationPlannerAgent(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
     IPluginFactory pluginFactory,
+    DispatchService dispatchService,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.SimulationPlannerAgent;
@@ -48,8 +49,8 @@ internal sealed class SimulationPlannerAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        var input = BuildInput(context, sceneTracker);
-        var contextPrompt = BuildContextPrompt(input);
+        var input = await BuildInputAsync(context, sceneTracker, cancellationToken);
+        var contextPrompt = BuildContextPrompt(input, context);
         chatHistory.AddUserMessage(contextPrompt);
 
         var kernelBuilderSk = kernelBuilder.Create();
@@ -92,18 +93,25 @@ internal sealed class SimulationPlannerAgent(
         return plan;
     }
 
-    private SimulationPlannerInput BuildInput(GenerationContext context, SceneTracker sceneTracker)
+    private async Task<SimulationPlannerInput> BuildInputAsync(
+        GenerationContext context,
+        SceneTracker sceneTracker,
+        CancellationToken ct)
     {
         var roster = BuildCharacterRoster(context);
         var previousState = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
+
+        var pendingDispatches = await GetPendingDispatchesAsync(context, roster, ct);
+
         return new SimulationPlannerInput
         {
             SceneTracker = sceneTracker,
             CharacterRoster = roster,
             WorldEvents = previousState?.WorldMomentum,
-            NarrativeDirection = context.WriterGuidance
+            NarrativeDirection = context.WriterGuidance,
+            PendingDispatches = pendingDispatches
         };
     }
 
@@ -143,7 +151,38 @@ internal sealed class SimulationPlannerAgent(
         return string.Join(";", notes);
     }
 
-    private string BuildContextPrompt(SimulationPlannerInput input)
+    private async Task<Dictionary<string, List<IncomingDispatch>>?> GetPendingDispatchesAsync(
+        GenerationContext context,
+        List<CharacterRosterEntry> roster,
+        CancellationToken ct)
+    {
+        var result = new Dictionary<string, List<IncomingDispatch>>();
+
+        foreach (var character in roster)
+        {
+            var dispatches = await dispatchService.GetDeliverableForRecipientAsync(
+                context.AdventureId,
+                character.Name,
+                ct);
+
+            if (dispatches.Count > 0)
+            {
+                result[character.Name] = dispatches.Select(d => new IncomingDispatch
+                {
+                    Id = d.Id.ToString(),
+                    From = d.FromCharacter,
+                    Method = d.Method,
+                    SentAt = d.SentAt,
+                    EstimatedTransit = d.EstimatedTransit,
+                    WhatArrives = d.WhatArrives
+                }).ToList();
+            }
+        }
+
+        return result.Count > 0 ? result : null;
+    }
+
+    private string BuildContextPrompt(SimulationPlannerInput input, GenerationContext context)
     {
         var sections = new List<string>
         {
@@ -174,6 +213,19 @@ internal sealed class SimulationPlannerAgent(
                           </world_events>
                           """);
         }
+
+        if (input.PendingDispatches is { Count: > 0 })
+        {
+            sections.Add($"""
+                          ### Pending Dispatches
+                          Characters with unresolved incoming dispatches - prioritize simulation for these characters:
+                          <pending_dispatches>
+                          {FormatPendingDispatches(input.PendingDispatches)}
+                          </pending_dispatches>
+                          """);
+        }
+
+        sections.Add(PromptSections.LastScenes(context.SceneContext, 15));
 
         if (input.NarrativeDirection != null)
         {
@@ -219,6 +271,21 @@ internal sealed class SimulationPlannerAgent(
     }
 
     private static string FormatWorldEvents(object events) => string.Join("\n", events.ToJsonString());
+
+    private static string FormatPendingDispatches(Dictionary<string, List<IncomingDispatch>> dispatches)
+    {
+        var lines = new List<string>();
+        foreach (var (characterName, characterDispatches) in dispatches)
+        {
+            lines.Add($"**{characterName}** ({characterDispatches.Count} pending):");
+            foreach (var dispatch in characterDispatches)
+            {
+                lines.Add($"  - From: {dispatch.From}, Sent: {dispatch.SentAt}, Transit: {dispatch.EstimatedTransit}");
+            }
+        }
+
+        return string.Join("\n", lines);
+    }
 
     /// <summary>
     ///     Validates that cohorts are independent groups with no character overlaps.

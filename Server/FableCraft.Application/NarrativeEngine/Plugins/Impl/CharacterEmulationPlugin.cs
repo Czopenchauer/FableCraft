@@ -40,6 +40,11 @@ internal sealed class CharacterEmulationPlugin : PluginBase
         string query
     )
     {
+        if (!Context!.LatestTracker()!.Scene!.CharactersPresent.Contains(characterName))
+        {
+            return "Character doesn't exist in current scene and cannot be emulated!";
+        }
+
         ProcessExecutionContext.SceneId.Value = CallerContext!.SceneId;
         ProcessExecutionContext.AdventureId.Value = CallerContext.AdventureId;
 

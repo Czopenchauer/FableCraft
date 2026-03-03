@@ -194,6 +194,13 @@ internal sealed class GenerationContext
     public bool SkipWorldInfoExtractor { get; set; }
 
     /// <summary>
+    ///     When true, CoLocationAgent should skip execution.
+    ///     Set during regeneration when CoLocation was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipCoLocation { get; set; }
+
+    /// <summary>
     ///     When true, CharacterContextGatherer should run for all characters even if already processed.
     ///     Set during regeneration when ContextGatherer is selected for regeneration.
     /// </summary>
@@ -217,6 +224,12 @@ internal sealed class GenerationContext
     ///     Updated MC story summary to persist in scene metadata.
     /// </summary>
     public string? NewMcStorySummary { get; set; }
+
+    /// <summary>
+    ///     Co-location output from CoLocationAgent.
+    ///     Determines which characters from the registry are at the scene location.
+    /// </summary>
+    public CoLocationOutput? CoLocationOutput { get; set; }
 
     public void SetupRequiredFields(
         SceneContext[] sceneContext,
