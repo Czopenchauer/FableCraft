@@ -28,6 +28,7 @@ public static class StartupExtensions
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
             .AddScoped<WorldInfoExtractionMaintenanceService>()
+            .AddScoped<CoLocationMaintenanceService>()
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
@@ -36,6 +37,7 @@ public static class StartupExtensions
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
             .AddScoped<IProcessor, CoLocationAgent>()
+            .AddScoped<CoLocationAgent>()
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()

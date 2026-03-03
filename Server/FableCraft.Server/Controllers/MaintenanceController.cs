@@ -14,7 +14,8 @@ public sealed class MaintenanceController(
     IMessageDispatcher messageDispatcher,
     ApplicationDbContext dbContext,
     ContentGenerationService contentGenerationService,
-    WorldInfoExtractionMaintenanceService worldInfoExtractionService) : ControllerBase
+    WorldInfoExtractionMaintenanceService worldInfoExtractionService,
+    CoLocationMaintenanceService coLocationMaintenanceService) : ControllerBase
 {
     [HttpPost("resend-scene-generated-messages/{adventureId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -130,6 +131,28 @@ public sealed class MaintenanceController(
         if (result is null)
         {
             return NotFound("Adventure not found");
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    ///     Populates co-location data for the current (last) scene of an adventure.
+    ///     Runs the CoLocationAgent to determine which characters are at the scene location.
+    /// </summary>
+    [HttpPost("populate-colocation/{adventureId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PopulateCoLocation(
+        Guid adventureId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await coLocationMaintenanceService.PopulateCoLocationForCurrentSceneAsync(
+            adventureId, cancellationToken);
+
+        if (result is null)
+        {
+            return NotFound("No scenes found for this adventure");
         }
 
         return Ok(result);

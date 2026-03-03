@@ -43,7 +43,7 @@ internal sealed class EmulationOrchestratorAgent : BaseAgent
         string beatInput,
         CancellationToken cancellationToken)
     {
-        _logger.Information("Starting beat orchestration");
+        _logger.Information("Starting beat orchestration: {beat}", beatInput);
 
         var previousCounts = SnapshotEmulationCounts(context);
 
@@ -65,14 +65,7 @@ internal sealed class EmulationOrchestratorAgent : BaseAgent
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
-
-        var fullInput = $"""
-                         PLAYER ACTION (verbatim):
-                         {context.PlayerAction}
-
-                         {beatInput}
-                         """;
-        chatHistory.AddUserMessage(fullInput);
+        chatHistory.AddUserMessage(beatInput);
 
         await _agentKernel.SendRequestAsync(
             chatHistory,

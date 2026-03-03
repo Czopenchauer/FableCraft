@@ -291,13 +291,11 @@ internal static class PromptSections
     /// </summary>
     private static IEnumerable<string> GetCoLocatedCharactersFromContext(GenerationContext context)
     {
-        // First check if we have fresh CoLocationOutput from the current scene
         if (context.CoLocationOutput?.CoLocatedCharacters is { Length: > 0 })
         {
             return context.CoLocationOutput.CoLocatedCharacters.Select(c => c.Name);
         }
 
-        // Fall back to previous scene's gathered context
         var gatheredContext = context.SceneContext
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.GatheredContext;
