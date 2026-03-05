@@ -484,8 +484,6 @@ internal sealed class CharacterTrackersProcessor(
         };
     }
 
-    private const int StorySummaryWindowSize = 25;
-
     /// <summary>
     ///     Process story summary for NPC when a scene falls off the 25-scene window.
     /// </summary>
@@ -497,12 +495,12 @@ internal sealed class CharacterTrackersProcessor(
         try
         {
             var currentSceneNumber = context.SceneContext.Length;
-            if (currentSceneNumber < StorySummaryWindowSize)
+            if (currentSceneNumber < CharacterAgent.SceneContext)
             {
                 return; // Nothing falls off the window yet
             }
 
-            var agedOutSceneNumber = currentSceneNumber - StorySummaryWindowSize;
+            var agedOutSceneNumber = currentSceneNumber - CharacterAgent.SceneContext;
             var agedOutRewrite = characterContext.SceneRewrites
                 .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
 
@@ -552,12 +550,12 @@ internal sealed class CharacterTrackersProcessor(
         try
         {
             var currentSceneNumber = context.SceneContext.Length;
-            if (currentSceneNumber < StorySummaryWindowSize)
+            if (currentSceneNumber < WriterAgent.SceneContextCount)
             {
                 return; // Nothing falls off the window yet
             }
 
-            var agedOutSceneNumber = currentSceneNumber - StorySummaryWindowSize;
+            var agedOutSceneNumber = currentSceneNumber - WriterAgent.SceneContextCount;
             var agedOutScene = context.SceneContext
                 .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
 

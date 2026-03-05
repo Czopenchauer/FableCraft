@@ -149,7 +149,7 @@ internal sealed class CharacterContextGatherer(
         catch (Exception ex)
         {
             logger.Error(ex, "Error gathering character context for {CharacterName}", character.Name);
-            return new CharacterGatheredContext();
+            throw;
         }
     }
 

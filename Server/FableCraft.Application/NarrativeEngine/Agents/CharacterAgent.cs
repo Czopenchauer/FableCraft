@@ -31,6 +31,7 @@ internal sealed class CharacterAgent : BaseAgent
     private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
+    public const int SceneContext = 30;
 
     public CharacterAgent(IAgentKernel agentKernel,
         ILogger logger,
@@ -72,7 +73,7 @@ internal sealed class CharacterAgent : BaseAgent
         var previousScenes = context.SceneRewrites
             .OrderByDescending(x => x.SequenceNumber)
             .Skip(1)
-            .Take(30)
+            .Take(SceneContext)
             .OrderBy(x => x.SequenceNumber)
             .Select(s => $"""
                           ----

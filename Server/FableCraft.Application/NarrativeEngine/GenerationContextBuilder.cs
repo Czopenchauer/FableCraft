@@ -335,7 +335,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .Include(x => x.CharacterStates.OrderByDescending(cs => cs.SequenceNumber).Take(1))
             .Include(x => x.CharacterMemories)
             .Include(x => x.CharacterRelationships)
-            .Include(x => x.CharacterSceneRewrites.OrderByDescending(c => c.SequenceNumber).Take(20))
+            .Include(x => x.CharacterSceneRewrites.OrderByDescending(c => c.SequenceNumber).Take(30))
             .ToListAsync(ct);
 
         return existingCharacters
