@@ -17,7 +17,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 /// <summary>
 ///     Story Summary Agent - maintains rolling, compressed, character-specific summaries
-///     of everything that happened before the 25-scene recent window.
+///     of everything that happened before the recent scene window.
 ///     Runs for both NPCs (using scene rewrites) and MC (using scene narratives).
 /// </summary>
 internal sealed class StorySummaryAgent(

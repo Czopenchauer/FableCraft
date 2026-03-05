@@ -484,9 +484,6 @@ internal sealed class CharacterTrackersProcessor(
         };
     }
 
-    /// <summary>
-    ///     Process story summary for NPC when a scene falls off the 25-scene window.
-    /// </summary>
     private async Task ProcessStorySummaryIfNeeded(
         GenerationContext context,
         CharacterContext characterContext,
@@ -494,22 +491,24 @@ internal sealed class CharacterTrackersProcessor(
     {
         try
         {
-            var currentSceneNumber = context.SceneContext.Length;
-            if (currentSceneNumber < CharacterAgent.SceneContext)
-            {
-                return; // Nothing falls off the window yet
-            }
+            var orderedRewrites = characterContext.SceneRewrites
+                .OrderBy(s => s.SequenceNumber)
+                .ToList();
 
-            var agedOutSceneNumber = currentSceneNumber - CharacterAgent.SceneContext;
-            var agedOutRewrite = characterContext.SceneRewrites
-                .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
+            if (orderedRewrites.Count == 0)
+                return;
+
+            var totalRewrites = orderedRewrites.Last().SequenceNumber + 1;
+
+            if (totalRewrites <= CharacterAgent.SceneContext)
+                return;
+
+            var agedOutSequenceNumber = totalRewrites - CharacterAgent.SceneContext - 1;
+            var agedOutRewrite = orderedRewrites.FirstOrDefault(r => r.SequenceNumber == agedOutSequenceNumber);
 
             if (agedOutRewrite == null)
-            {
-                return; // No rewrite found for that scene
-            }
+                return;
 
-            // Get previous summary from latest rewrite that has one
             var previousSummary = characterContext.SceneRewrites
                 .Where(s => !string.IsNullOrEmpty(s.StorySummary))
                 .OrderByDescending(s => s.SequenceNumber)
@@ -519,20 +518,16 @@ internal sealed class CharacterTrackersProcessor(
                 context,
                 characterContext,
                 agedOutRewrite.Content,
-                agedOutSceneNumber,
+                agedOutSequenceNumber,
                 previousSummary,
                 cancellationToken);
 
-            // Store on the latest scene rewrite
-            var latestRewrite = characterContext.SceneRewrites
-                .OrderByDescending(s => s.SequenceNumber)
-                .First();
-            latestRewrite.StorySummary = result.StorySummary;
+            orderedRewrites.Last().StorySummary = result.StorySummary;
 
             logger.Information(
                 "Updated story summary for {CharacterName} (aged out scene #{SceneNumber})",
                 characterContext.Name,
-                agedOutSceneNumber);
+                agedOutSequenceNumber);
         }
         catch (Exception ex)
         {
@@ -540,31 +535,27 @@ internal sealed class CharacterTrackersProcessor(
         }
     }
 
-    /// <summary>
-    ///     Process story summary for MC when a scene falls off the 25-scene window.
-    /// </summary>
     private async Task ProcessMcStorySummaryIfNeeded(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
         try
         {
-            var currentSceneNumber = context.SceneContext.Length;
-            if (currentSceneNumber < WriterAgent.SceneContextCount)
-            {
-                return; // Nothing falls off the window yet
-            }
+            if (context.SceneContext.Length == 0)
+                return;
 
-            var agedOutSceneNumber = currentSceneNumber - WriterAgent.SceneContextCount;
+            var newSceneNumber = context.SceneContext.Max(s => s.SequenceNumber) + 1;
+
+            if (newSceneNumber < WriterAgent.SceneContextCount)
+                return;
+
+            var agedOutSequenceNumber = newSceneNumber - WriterAgent.SceneContextCount;
             var agedOutScene = context.SceneContext
-                .FirstOrDefault(s => s.SequenceNumber == agedOutSceneNumber);
+                .FirstOrDefault(s => s.SequenceNumber == agedOutSequenceNumber);
 
             if (agedOutScene == null)
-            {
-                return; // No scene found for that sequence number
-            }
+                return;
 
-            // Get previous MC summary from most recent scene that has one
             var previousSummary = context.SceneContext
                 .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))
                 .OrderByDescending(s => s.SequenceNumber)
@@ -573,7 +564,7 @@ internal sealed class CharacterTrackersProcessor(
             var result = await storySummaryAgent.InvokeForMc(
                 context,
                 agedOutScene.SceneContent,
-                agedOutSceneNumber,
+                agedOutSequenceNumber,
                 previousSummary,
                 cancellationToken);
 
@@ -581,7 +572,7 @@ internal sealed class CharacterTrackersProcessor(
 
             logger.Information(
                 "Updated MC story summary (aged out scene #{SceneNumber})",
-                agedOutSceneNumber);
+                agedOutSequenceNumber);
         }
         catch (Exception ex)
         {
