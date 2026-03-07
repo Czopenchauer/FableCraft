@@ -19,7 +19,6 @@ internal sealed class IntentCheckPlugin : PluginBase
 {
     private readonly IntentCheckAgent _intentCheckAgent;
     private string[] _arcImportantCharacters = [];
-    private string? _worldEvents;
 
     public IntentCheckPlugin(IntentCheckAgent intentCheckAgent)
     {
@@ -35,11 +34,6 @@ internal sealed class IntentCheckPlugin : PluginBase
             .Select(c => c.Name)
             .ToArray();
 
-        var previousState = context.SceneContext?
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.ChroniclerState;
-
-        _worldEvents = previousState?.WorldMomentum?.ToJsonString();
         return Task.CompletedTask;
     }
 
@@ -68,7 +62,6 @@ internal sealed class IntentCheckPlugin : PluginBase
         {
             Character = character,
             ArcImportantCharacters = _arcImportantCharacters,
-            WorldEvents = _worldEvents,
             PreviousIntentions = previousIntentions
         };
 

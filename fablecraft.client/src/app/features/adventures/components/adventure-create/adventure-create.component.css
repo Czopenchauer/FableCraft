@@ -475,10 +475,40 @@
   height: 14px;
 }
 
-.add-lore-btn,
 .add-character-btn {
   width: 100%;
   justify-content: center;
+}
+
+/* Lore Import Section */
+.hidden-file-input {
+  display: none;
+}
+
+.lore-actions-row {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.lore-actions-row .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.import-message {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+.import-message.success {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
 }
 
 /* Custom Characters Section */
@@ -635,5 +665,9 @@
 
   .agents-grid {
     grid-template-columns: 1fr;
+  }
+
+  .lore-actions-row {
+    flex-direction: column;
   }
 }

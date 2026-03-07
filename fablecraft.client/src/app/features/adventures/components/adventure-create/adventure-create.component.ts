@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {AdventureService} from '../../services/adventure.service';
@@ -20,10 +20,13 @@ import {GraphRagSettingsSummaryDto} from '../../../settings/models/graph-rag-set
   styleUrl: './adventure-create.component.css'
 })
 export class AdventureCreateComponent implements OnInit, OnDestroy {
+  @ViewChild('loreFileInput') loreFileInput!: ElementRef<HTMLInputElement>;
+
   adventureForm!: FormGroup;
   isLoading = false;
   isSubmitting = false;
   errorMessage = '';
+  importMessage = '';
 
   // Dropdown data
   llmPresets: LlmPresetResponseDto[] = [];
@@ -203,6 +206,64 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
 
   removeExtraLoreEntry(index: number): void {
     this.extraLoreArray.removeAt(index);
+  }
+
+  triggerLoreImport(): void {
+    this.loreFileInput.nativeElement.click();
+  }
+
+  onLoreFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const content = reader.result as string;
+        const entries = JSON.parse(content);
+
+        if (!Array.isArray(entries)) {
+          this.importMessage = 'Invalid format: Expected an array of lore entries';
+          return;
+        }
+
+        let importedCount = 0;
+        for (const entry of entries) {
+          if (this.isValidLoreEntry(entry)) {
+            const loreGroup = this.fb.group({
+              title: [entry.title, Validators.required],
+              content: [entry.content, Validators.required],
+              category: [entry.category || 'Lore', Validators.required]
+            });
+            this.extraLoreArray.push(loreGroup);
+            importedCount++;
+          }
+        }
+
+        this.importMessage = `Successfully imported ${importedCount} lore entries`;
+        setTimeout(() => this.importMessage = '', 3000);
+      } catch (e) {
+        this.importMessage = 'Failed to parse JSON file. Please ensure it is valid JSON.';
+      }
+    };
+
+    reader.onerror = () => {
+      this.importMessage = 'Failed to read file';
+    };
+
+    reader.readAsText(file);
+    // Reset input so same file can be re-selected
+    input.value = '';
+  }
+
+  private isValidLoreEntry(entry: any): boolean {
+    return entry &&
+      typeof entry.title === 'string' && entry.title.trim() !== '' &&
+      typeof entry.content === 'string' && entry.content.trim() !== '';
   }
 
   // Custom Characters management

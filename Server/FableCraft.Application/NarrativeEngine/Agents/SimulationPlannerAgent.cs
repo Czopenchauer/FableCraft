@@ -109,7 +109,7 @@ internal sealed class SimulationPlannerAgent(
         {
             SceneTracker = sceneTracker,
             CharacterRoster = roster,
-            WorldEvents = previousState?.WorldMomentum,
+            WorldEvents = null,
             NarrativeDirection = context.WriterGuidance,
             PendingDispatches = pendingDispatches
         };

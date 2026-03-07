@@ -1,8 +1,5 @@
-using System.Text.Json;
-
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
-using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Serilog;
@@ -21,7 +18,6 @@ internal sealed class CharacterTrackersProcessor(
     CharacterContextGatherer characterContextGatherer,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
     ChroniclerAgent chroniclerAgent,
-    LoreCrafter loreCrafter,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
     ILogger logger) : IProcessor
@@ -282,8 +278,6 @@ internal sealed class CharacterTrackersProcessor(
         await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask, mcStorySummaryTask);
     }
 
-    private static LoreRequest ConvertToLoreRequest(ChroniclerLoreRequest req) => JsonSerializer.Deserialize<LoreRequest>(req.ToJsonString())!;
-
     private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
     {
         foreach (var task in tasks)
@@ -333,27 +327,7 @@ internal sealed class CharacterTrackersProcessor(
         {
             var chroniclerOutput = await chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken);
             context.ChroniclerOutput = chroniclerOutput;
-
-            logger.Information("Chronicler produced {Count} world events", chroniclerOutput.WorldEvents);
-            lock (context)
-            {
-                foreach (var chroniclerOutputWorldEvent in chroniclerOutput.WorldEvents)
-                {
-                    context.NewWorldEvents.Add(chroniclerOutputWorldEvent);
-                }
-            }
-        }
-
-        if (context.ChroniclerLore.Length == 0 && context.ChroniclerOutput.LoreRequests.Length != 0)
-        {
-            logger.Information("Chronicler requested {Count} lore entries", context.ChroniclerOutput.LoreRequests.Length);
-            var sceneContext = context.SceneContext ?? [];
-            var loreResults = await Task.WhenAll(
-                context.ChroniclerOutput.LoreRequests.Select(req =>
-                    loreCrafter.Invoke(context, ConvertToLoreRequest(req), sceneContext, cancellationToken)));
-
-            context.ChroniclerLore = loreResults;
-            logger.Information("Created {Count} lore entries from chronicler requests", loreResults.Length);
+            logger.Information("Chronicler completed");
         }
     }
 

@@ -14,12 +14,6 @@ internal sealed class ChroniclerOutput
 
     [JsonPropertyName("story_state")]
     public ChroniclerStoryState StoryState { get; init; } = null!;
-
-    [JsonPropertyName("world_events")]
-    public WorldEvent[] WorldEvents { get; init; } = [];
-
-    [JsonPropertyName("lore_requests")]
-    public ChroniclerLoreRequest[] LoreRequests { get; init; } = [];
 }
 
 /// <summary>
@@ -46,11 +40,3 @@ internal sealed class WorldEvent
     public string Event { get; init; } = null!;
 }
 
-/// <summary>
-///     A request from the Chronicler to create lore when world momentum implies missing knowledge.
-/// </summary>
-internal sealed class ChroniclerLoreRequest
-{
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalData { get; init; } = new();
-}

@@ -254,6 +254,7 @@ internal class GameService : IGameService
         var scenes = await _dbContext.Scenes
             .Include(s => s.CharacterActions)
             .Include(s => s.Lorebooks)
+            .Include(s => s.CharacterSceneRewrites)
             .OrderByDescending(x => x.SequenceNumber)
             .Where(s => s.AdventureId == adventureId)
             .Take(2)
@@ -282,6 +283,7 @@ internal class GameService : IGameService
 
         var entityIdsToClean = new List<Guid> { lastScene.Id };
         entityIdsToClean.AddRange(lastScene.Lorebooks.Select(l => l.Id));
+        entityIdsToClean.AddRange(lastScene.CharacterSceneRewrites.Select(r => r.Id));
 
         var chunksToDelete = await _dbContext.Chunks
             .Where(c => entityIdsToClean.Contains(c.EntityId))

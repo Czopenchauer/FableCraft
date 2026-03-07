@@ -44,11 +44,11 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         context.CharacterEmulationOutputs.Clear();
         foreach (GatheredCoLocatedCharacter gatheredContextCoLocatedCharacter in context.SceneContext
                      .OrderByDescending(x => x.SequenceNumber)
-                     .FirstOrDefault()?.Metadata!.GatheredContext!.CoLocatedCharacters!)
+                     .FirstOrDefault()?.Metadata?.GatheredContext?.CoLocatedCharacters ?? [])
         {
             context.LatestTracker()!.Scene!.CharactersPresent = context.LatestTracker()!.Scene!.CharactersPresent.Append(gatheredContextCoLocatedCharacter.Name).ToArray();
         }
-        context.LatestTracker()!.Scene!.CharactersPresent = context.LatestTracker()!.Scene!.CharactersPresent.Distinct().ToArray();
+        context.LatestTracker()?.Scene?.CharactersPresent = context.LatestTracker()?.Scene?.CharactersPresent.Distinct().ToArray() ?? [];
         
         var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
@@ -114,6 +114,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         {
             var incomingDispatches = await GetIncomingDispatchesAsync(context, _dispatchService, cancellationToken);
             requestPrompt = $"""
+                             {PromptSections.ChroniclerGuidance(context.SceneContext)}
+                             
                              {incomingDispatches}
 
                              {PromptSections.PlayerAction(context.PlayerAction)}

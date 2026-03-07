@@ -267,16 +267,42 @@
           </div>
         </div>
 
-        <button
-          (click)="addExtraLoreEntry()"
-          class="btn btn-secondary add-lore-btn"
-          type="button"
-        >
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-          </svg>
-          Add Lore Entry
-        </button>
+        <!-- Hidden file input for import -->
+        <input
+          #loreFileInput
+          (change)="onLoreFileSelected($event)"
+          accept=".json"
+          class="hidden-file-input"
+          type="file"
+        />
+
+        <div class="lore-actions-row">
+          <button
+            (click)="addExtraLoreEntry()"
+            class="btn btn-secondary"
+            type="button"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            Add Lore Entry
+          </button>
+
+          <button
+            (click)="triggerLoreImport()"
+            class="btn btn-secondary"
+            type="button"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            Import from JSON
+          </button>
+        </div>
+
+        <div *ngIf="importMessage" class="import-message" [class.success]="importMessage.includes('Successfully')">
+          {{ importMessage }}
+        </div>
       </div>
 
       <!-- Custom Characters Section -->

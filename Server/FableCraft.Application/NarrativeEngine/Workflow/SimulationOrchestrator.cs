@@ -158,7 +158,7 @@ internal sealed class SimulationOrchestrator(
                     {
                         Character = character,
                         TimePeriod = context.NewTracker!.Scene,
-                        WorldEvents = previousState?.WorldMomentum,
+                        WorldEvents = null,
                         GatheredWorldContext = gatheredContext,
                         IncomingDispatches = incomingDispatchDtos.Count > 0 ? incomingDispatchDtos : null
                     };
@@ -417,7 +417,7 @@ internal sealed class SimulationOrchestrator(
                 CohortMembers = context.Characters.Where(x => validCharacters.Contains(x.Name)).ToArray(),
                 SimulationPeriod = context.NewTracker!.Scene!.Time!,
                 KnownInteractions = cohort.ExtensionData,
-                WorldEvents = previousState?.WorldMomentum,
+                WorldEvents = null,
                 SignificantCharacters = significantCharacters.Length > 0 ? significantCharacters : null,
             };
 

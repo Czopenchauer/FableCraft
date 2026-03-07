@@ -8,9 +8,6 @@ namespace FableCraft.Infrastructure.Persistence.Entities.Adventure;
 /// </summary>
 public sealed class ChroniclerStoryState
 {
-    [JsonPropertyName("world_momentum")]
-    public object? WorldMomentum { get; set; }
-
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalData { get; init; } = new();
 }
