@@ -146,7 +146,7 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error creating adventure:', error);
-          this.errorMessage = error.error?.message || 'Failed to create adventure. Please try again.';
+          this.errorMessage = this.extractErrorMessage(error);
           this.isSubmitting = false;
         }
       });
@@ -409,5 +409,32 @@ export class AdventureCreateComponent implements OnInit, OnDestroy {
         this.markFormGroupTouched(control);
       }
     });
+  }
+
+  private extractErrorMessage(error: any): string {
+    // Handle ASP.NET ValidationProblem response format
+    if (error.error?.errors) {
+      const errorMessages: string[] = [];
+      for (const [field, messages] of Object.entries(error.error.errors)) {
+        if (Array.isArray(messages)) {
+          errorMessages.push(`${field}: ${messages.join(', ')}`);
+        }
+      }
+      if (errorMessages.length > 0) {
+        return errorMessages.join('; ');
+      }
+    }
+
+    // Handle standard error message
+    if (error.error?.message) {
+      return error.error.message;
+    }
+
+    // Handle title from ProblemDetails
+    if (error.error?.title) {
+      return error.error.title;
+    }
+
+    return 'Failed to create adventure. Please try again.';
   }
 }

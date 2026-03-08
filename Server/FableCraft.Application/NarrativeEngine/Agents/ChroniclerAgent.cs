@@ -46,7 +46,7 @@ internal sealed class ChroniclerAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        var contextPrompt = BuildContextPrompt(context, sceneTracker, isFirstScene);
+        var contextPrompt = await BuildContextPrompt(context, sceneTracker, isFirstScene, cancellationToken);
         chatHistory.AddUserMessage(contextPrompt);
 
         var requestPrompt = await BuildRequestPrompt(context, isFirstScene, cancellationToken);
@@ -70,7 +70,7 @@ internal sealed class ChroniclerAgent(
             cancellationToken);
     }
 
-    private string BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene)
+    private async Task<string> BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene, CancellationToken cancellationToken)
     {
         var previousChroniclerState = GetPreviousChroniclerState(context);
         var loreRequested = context.NewScene!.CreationRequests?.Lore != null
@@ -81,13 +81,24 @@ internal sealed class ChroniclerAgent(
                </lore_requested>
                """
             : string.Empty;
+        
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var instruction = await dbContext.Adventures
+            .Select(x => new
+            {
+                x.Id,
+                x.FirstSceneGuidance
+            })
+            .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
+        var init = context.SceneContext.Length == 1 ? PromptSections.InitialInstruction(instruction.FirstSceneGuidance) : string.Empty;
 
         return $"""
                 {PromptSections.Context(context)}
                 
                 {PromptSections.MainCharacter(context)}
 
-                {PromptSections.ExistingCharacters(context.Characters)}
+                {context.LatestTracker()?.MainCharacter?.MainCharacter.ToJsonString() ?? string.Empty}
 
                 {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext!, MaxScene) : "")}
 
@@ -96,6 +107,8 @@ internal sealed class ChroniclerAgent(
                 {loreRequested}
 
                 {previousChroniclerState}
+                
+                {init}
                 """;
     }
 

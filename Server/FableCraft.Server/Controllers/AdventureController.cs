@@ -54,7 +54,11 @@ public class AdventureController : ControllerBase
 
         if (!validationResult.IsValid)
         {
-            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+            return ValidationProblem(ModelState);
         }
 
         var errors = new Dictionary<string, string[]>();
@@ -73,7 +77,14 @@ public class AdventureController : ControllerBase
         {
             var errorMessages = errors.SelectMany(e => e.Value.Select(v => $"{e.Key}: {v}"));
             _logger.Error("There were {ErrorsCount} validation errors: {Errors}", errors.Count, string.Join("; ", errorMessages));
-            return BadRequest(Results.ValidationProblem(errors));
+            foreach (var error in errors)
+            {
+                foreach (var message in error.Value)
+                {
+                    ModelState.AddModelError(error.Key, message);
+                }
+            }
+            return ValidationProblem(ModelState);
         }
 
         var result = await _adventureCreationService.CreateAdventureAsync(adventure, cancellationToken);

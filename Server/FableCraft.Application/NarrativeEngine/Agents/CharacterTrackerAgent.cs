@@ -24,6 +24,8 @@ internal sealed class CharacterTrackerAgent(
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
+    private const int TrackerCount = 1;
+
     public async Task<(CharacterTracker Tracker, bool IsDead)> InvokeAfterSimulation(
         GenerationContext generationContext,
         CharacterContext context,
@@ -35,7 +37,7 @@ internal sealed class CharacterTrackerAgent(
         var previousTrackers = await dbContext.CharacterStates
             .Where(z => z.CharacterId == context.CharacterId)
             .OrderByDescending(z => z.SequenceNumber)
-            .Take(4)
+            .Take(TrackerCount)
             .ToArrayAsync(cancellationToken);
 
         var requestPrompt = $"""
@@ -62,7 +64,8 @@ internal sealed class CharacterTrackerAgent(
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var previousTrackers = await dbContext.CharacterStates
             .Where(z => z.CharacterId == context.CharacterId)
-            .OrderByDescending(z => z.SequenceNumber).Take(3)
+            .OrderByDescending(z => z.SequenceNumber)
+            .Take(TrackerCount)
             .ToArrayAsync(cancellationToken);
         var requestPrompt = $"""
                              Previous trackers:

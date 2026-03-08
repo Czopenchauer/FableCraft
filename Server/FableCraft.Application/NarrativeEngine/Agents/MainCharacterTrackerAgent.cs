@@ -66,7 +66,7 @@ internal sealed class MainCharacterTrackerAgent(
                              Previous trackers:
                              {string.Join("\n", context.SceneContext!
                                  .OrderByDescending(x => x.SequenceNumber)
-                                 .Take(3)
+                                 .Take(1)
                                  .OrderBy(x => x.SequenceNumber)
                                  .Select(x => x.Metadata!.Tracker!.MainCharacter!.MainCharacter.ToJsonString()))}
 
