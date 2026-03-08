@@ -700,7 +700,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.showSceneDeleteModal = false;
-          this.router.navigate(['/adventures']);
+          this.loadCurrentScene();
+          this.toastService.success('Scene deleted successfully.');
         },
         error: (err) => {
           console.error('Error deleting scene:', err);
