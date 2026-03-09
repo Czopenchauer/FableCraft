@@ -4,16 +4,70 @@
       <!-- Header -->
       <div class="modal-header">
         <h2>Lore Management</h2>
-        <button
-          (click)="onClose()"
-          class="close-button"
-          title="Close"
-        >
-          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
-            <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
-                  [attr.stroke-width]="2"></path>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <!-- Edit Mode Toggle -->
+          <button
+            (click)="toggleEditMode()"
+            [class.active]="isEditMode"
+            class="edit-mode-button"
+            title="Toggle Edit Mode"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            {{ isEditMode ? 'Done' : 'Edit' }}
+          </button>
+
+          <!-- Import JSON Button (visible in edit mode) -->
+          <button
+            (click)="triggerLoreImport()"
+            *ngIf="isEditMode"
+            [disabled]="isSaving"
+            class="import-button"
+            title="Import from JSON"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            Import
+          </button>
+          <input
+            #loreFileInput
+            (change)="onLoreFileSelected($event)"
+            accept=".json"
+            hidden
+            type="file">
+
+          <!-- Add Entry Button (visible in edit mode) -->
+          <button
+            (click)="startAddingEntry()"
+            *ngIf="isEditMode && !isAddingEntry"
+            [disabled]="isSaving"
+            class="add-entry-button"
+            title="Add New Entry"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            Add Entry
+          </button>
+
+          <button
+            (click)="onClose()"
+            class="close-button"
+            title="Close"
+          >
+            <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+              <path [attr.d]="'M6 18L18 6M6 6l12 12'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                    [attr.stroke-width]="2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Import Message -->
+      <div *ngIf="importMessage" class="import-message" [class.error]="importMessage.includes('Failed') || importMessage.includes('Invalid')">
+        {{ importMessage }}
       </div>
 
       <!-- Loading State -->
@@ -67,6 +121,7 @@
                 [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="1.5"></path>
             </svg>
             <p>No lore entries found for this adventure.</p>
+            <p *ngIf="isEditMode" class="empty-hint">Click "Add Entry" to create one.</p>
           </div>
 
           <!-- Category groups -->
@@ -84,10 +139,40 @@
                 (click)="selectEntry(entry)"
                 *ngFor="let entry of group.entries"
                 [class.selected]="selectedEntry?.id === entry.id"
+                [class.delete-pending]="deleteConfirmEntryId === entry.id"
                 class="entry-item"
               >
                 <span class="entry-title">{{ getDisplayTitle(entry) }}</span>
                 <span *ngIf="entry.contentType === 'json'" class="entry-badge json-badge">JSON</span>
+
+                <!-- Edit mode actions -->
+                <div *ngIf="isEditMode && deleteConfirmEntryId !== entry.id" class="entry-actions">
+                  <button
+                    (click)="startEditingEntry(entry, $event)"
+                    class="entry-action-btn edit-btn"
+                    title="Edit"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    </svg>
+                  </button>
+                  <button
+                    (click)="confirmDelete(entry, $event)"
+                    class="entry-action-btn delete-btn"
+                    title="Delete"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Delete confirmation -->
+                <div *ngIf="deleteConfirmEntryId === entry.id" class="delete-confirm">
+                  <span>Delete?</span>
+                  <button (click)="deleteEntry()" [disabled]="isSaving" class="confirm-yes">Yes</button>
+                  <button (click)="cancelDelete()" class="confirm-no">No</button>
+                </div>
               </div>
             </div>
           </div>
@@ -95,8 +180,156 @@
 
         <!-- Right Column: Entry Details -->
         <div class="lore-detail">
+          <!-- Add Entry Form -->
+          <div *ngIf="isAddingEntry" class="entry-form">
+            <h3 class="detail-title">Add New Lore Entry</h3>
+
+            <div class="form-group">
+              <label for="formTitle">Title *</label>
+              <input
+                [(ngModel)]="formTitle"
+                id="formTitle"
+                placeholder="Entry title"
+                type="text"
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="formCategory">Category</label>
+                <select [(ngModel)]="formCategory" id="formCategory">
+                  <option *ngFor="let cat of availableCategories" [value]="cat">{{ cat }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="formPriority">Priority</label>
+                <input
+                  [(ngModel)]="formPriority"
+                  id="formPriority"
+                  min="0"
+                  type="number"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="formContentType">Content Type</label>
+                <select [(ngModel)]="formContentType" id="formContentType">
+                  <option value="txt">Text</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="formDescription">Description (optional)</label>
+              <input
+                [(ngModel)]="formDescription"
+                id="formDescription"
+                placeholder="Brief description"
+                type="text"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="formContent">Content *</label>
+              <textarea
+                [(ngModel)]="formContent"
+                id="formContent"
+                placeholder="Lore content..."
+                rows="10"
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button (click)="cancelAdding()" class="cancel-btn" type="button">Cancel</button>
+              <button
+                (click)="saveNewEntry()"
+                [disabled]="!isFormValid || isSaving"
+                class="save-btn"
+                type="button"
+              >
+                {{ isSaving ? 'Saving...' : 'Save Entry' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit Entry Form -->
+          <div *ngIf="isEditingEntry && selectedEntry" class="entry-form">
+            <h3 class="detail-title">Edit Lore Entry</h3>
+
+            <div class="form-group">
+              <label for="editFormTitle">Title *</label>
+              <input
+                [(ngModel)]="formTitle"
+                id="editFormTitle"
+                placeholder="Entry title"
+                type="text"
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editFormCategory">Category</label>
+                <select [(ngModel)]="formCategory" id="editFormCategory">
+                  <option *ngFor="let cat of availableCategories" [value]="cat">{{ cat }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="editFormPriority">Priority</label>
+                <input
+                  [(ngModel)]="formPriority"
+                  id="editFormPriority"
+                  min="0"
+                  type="number"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="editFormContentType">Content Type</label>
+                <select [(ngModel)]="formContentType" id="editFormContentType">
+                  <option value="txt">Text</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editFormDescription">Description (optional)</label>
+              <input
+                [(ngModel)]="formDescription"
+                id="editFormDescription"
+                placeholder="Brief description"
+                type="text"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="editFormContent">Content *</label>
+              <textarea
+                [(ngModel)]="formContent"
+                id="editFormContent"
+                placeholder="Lore content..."
+                rows="10"
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button (click)="cancelEditing()" class="cancel-btn" type="button">Cancel</button>
+              <button
+                (click)="saveEditedEntry()"
+                [disabled]="!isFormValid || isSaving"
+                class="save-btn"
+                type="button"
+              >
+                {{ isSaving ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          </div>
+
           <!-- Empty state when no entry selected -->
-          <div *ngIf="!selectedEntry && !isWorldSettingsSelected" class="no-selection">
+          <div *ngIf="!selectedEntry && !isWorldSettingsSelected && !isAddingEntry" class="no-selection">
             <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="no-selection-icon" viewBox="0 0 24 24">
               <path
                 [attr.d]="'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'"
@@ -119,9 +352,22 @@
             <div [innerHTML]="worldSettings | markdown" class="world-settings-content markdown-content"></div>
           </div>
 
-          <!-- Entry details -->
-          <div *ngIf="selectedEntry" class="entry-detail">
-            <h3 class="detail-title">{{ getDisplayTitle(selectedEntry) }}</h3>
+          <!-- Entry details (read-only view) -->
+          <div *ngIf="selectedEntry && !isEditingEntry" class="entry-detail">
+            <div class="detail-header">
+              <h3 class="detail-title">{{ getDisplayTitle(selectedEntry) }}</h3>
+              <button
+                (click)="startEditingEntry(selectedEntry)"
+                *ngIf="isEditMode"
+                class="header-edit-btn"
+                title="Edit this entry"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+                Edit
+              </button>
+            </div>
 
             <div class="entry-meta">
               <span class="meta-item">

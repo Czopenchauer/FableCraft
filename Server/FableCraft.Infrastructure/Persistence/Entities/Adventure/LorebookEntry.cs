@@ -13,20 +13,20 @@ public class LorebookEntry : IEntity
 
     public Adventure Adventure { get; init; } = null!;
 
-    public string? Title { get; init; } = null!;
+    public string? Title { get; set; } = null!;
 
     [Required]
-    public string Description { get; init; } = null!;
+    public string Description { get; set; } = null!;
 
-    public int Priority { get; init; }
-
-    [Required]
-    public string Content { get; init; } = null!;
+    public int Priority { get; set; }
 
     [Required]
-    public string Category { get; init; } = null!;
+    public string Content { get; set; } = null!;
 
-    public ContentType ContentType { get; init; }
+    [Required]
+    public string Category { get; set; } = null!;
+
+    public ContentType ContentType { get; set; }
 
     [Key]
     public Guid Id { get; set; }

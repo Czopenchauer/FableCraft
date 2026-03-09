@@ -20,3 +20,25 @@ export interface LorebookCategoryGroup {
   entries: LorebookEntryResponseDto[];
   isExpanded: boolean;
 }
+
+export interface CreateLorebookEntryDto {
+  title: string;
+  content: string;
+  category: string;
+  description?: string;
+  priority?: number;
+  contentType?: 'json' | 'txt';
+}
+
+export interface UpdateLorebookEntryDto {
+  title: string;
+  content: string;
+  category: string;
+  description?: string;
+  priority: number;
+  contentType: 'json' | 'txt';
+}
+
+export interface BulkCreateLorebookEntriesDto {
+  entries: CreateLorebookEntryDto[];
+}
