@@ -43,13 +43,15 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         context.CharacterEmulationOutputs.Clear();
         foreach (GatheredCoLocatedCharacter gatheredContextCoLocatedCharacter in context.SceneContext
-                     .OrderByDescending(x => x.SequenceNumber)
-                     .FirstOrDefault()?.Metadata?.GatheredContext?.CoLocatedCharacters ?? [])
+                                                                                     .OrderByDescending(x => x.SequenceNumber)
+                                                                                     .FirstOrDefault()?.Metadata?.GatheredContext?.CoLocatedCharacters
+                                                                                 ?? [])
         {
             context.LatestTracker()!.Scene!.CharactersPresent = context.LatestTracker()!.Scene!.CharactersPresent.Append(gatheredContextCoLocatedCharacter.Name).ToArray();
         }
+
         context.LatestTracker()?.Scene?.CharactersPresent = context.LatestTracker()?.Scene?.CharactersPresent.Distinct().ToArray() ?? [];
-        
+
         var kernelBuilder = await GetKernelBuilder(context);
         var systemPrompt = await GetPromptAsync(context);
         systemPrompt = systemPrompt.Replace(PlaceholderNames.CharacterName, context.MainCharacter.Name);
@@ -91,6 +93,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         }
 
         string requestPrompt;
+        bool requireSimulation = context.Characters.Select(x => x.Name).Intersect(context.LatestTracker()?.Scene?.CharactersPresent ?? []).Any();
         if (!hasSceneContext)
         {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -113,9 +116,19 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         else
         {
             var incomingDispatches = await GetIncomingDispatchesAsync(context, _dispatchService, cancellationToken);
+            var extraInstruction = requireSimulation
+                ? """
+                  **Emulation:**
+                  - Call for EVERY full-profile character ON THE SCENE, EVERY beat
+                  - Multiple calls per scene is normal and expected
+                  - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
+                  - Speech is verbatim. Actions rendered through MC's perception.
+                  - If emulation contradicts your plan, emulation wins.
+                  """
+                : "Do not call emulate! Simulate them yourself using GEARS!";
             requestPrompt = $"""
                              {PromptSections.ChroniclerGuidance(context.SceneContext)}
-                             
+
                              {incomingDispatches}
 
                              {PromptSections.PlayerAction(context.PlayerAction)}
@@ -123,20 +136,15 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              ---
                              Ensure the output is wrapped in correct XML tags. Remember about the <scene> tag!
                              ## Quick Reference
-                             
-                             **Emulation:**
-                             - Call for EVERY full-profile character ON THE SCENE, EVERY beat
-                             - Multiple calls per scene is normal and expected
-                             - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
-                             - Speech is verbatim. Actions rendered through MC's perception.
-                             - If emulation contradicts your plan, emulation wins.
-                             
+
+                             {extraInstruction}
+
                              **MC Agency:**
                              - MC does ONLY what player input specified—nothing more
                              - No invented dialogue, decisions, or "helpful" additional actions
                              - Wishful thinking ("I convince," "knowing this will earn trust") = inner monologue, not world effect
                              - No mechanism = MC acts, world doesn't bend
-                             
+
                              **Never invent. Always ask.**
                              Generate a detailed scene based on the above resolution and context.
                              """;
@@ -148,7 +156,12 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
-        await _pluginFactory.AddPluginAsync<OrchestrateEmulationPlugin>(kernel, context, callerContext);
+
+        if (requireSimulation)
+        {
+            await _pluginFactory.AddPluginAsync<OrchestrateEmulationPlugin>(kernel, context, callerContext);
+        }
+
         var kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();
@@ -294,10 +307,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             WhatArrives = d.WhatArrives
         }).ToList();
 
-        var json = System.Text.Json.JsonSerializer.Serialize(incoming, new System.Text.Json.JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        var json = System.Text.Json.JsonSerializer.Serialize(incoming, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
         return $"""
                 <incoming_dispatches>
