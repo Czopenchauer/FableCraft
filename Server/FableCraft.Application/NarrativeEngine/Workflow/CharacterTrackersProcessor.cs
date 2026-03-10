@@ -521,14 +521,18 @@ internal sealed class CharacterTrackersProcessor(
             var newSceneNumber = context.SceneContext.Max(s => s.SequenceNumber) + 1;
 
             if (newSceneNumber < WriterAgent.SceneContextCount)
+            {
                 return;
+            }
 
             var agedOutSequenceNumber = newSceneNumber - WriterAgent.SceneContextCount;
             var agedOutScene = context.SceneContext
                 .FirstOrDefault(s => s.SequenceNumber == agedOutSequenceNumber);
 
             if (agedOutScene == null)
+            {
                 return;
+            }
 
             var previousSummary = context.SceneContext
                 .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))

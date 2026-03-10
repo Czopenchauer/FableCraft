@@ -31,7 +31,7 @@ internal sealed class CharacterAgent : BaseAgent
     private Dictionary<string, (CharacterContext, ChatHistory)> _chatHistory = new();
     private GenerationContext _generationContext = null!;
     private IKernelBuilder _kernelBuilder = null!;
-    public const int SceneContext = 30;
+    public const int SceneContext = 10;
 
     public CharacterAgent(IAgentKernel agentKernel,
         ILogger logger,

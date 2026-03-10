@@ -42,7 +42,9 @@ internal sealed class ExperientialNarratorAgent(
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        var recentScenesContext = PromptSections.RecentScenesForCharacter(context, count: 20);
+        chatHistory.AddUserMessage(PromptSections.CharacterStorySummary(context));
+
+        var recentScenesContext = PromptSections.RecentScenesForCharacter(context, count: CharacterAgent.SceneContext);
         if (!string.IsNullOrEmpty(recentScenesContext))
         {
             chatHistory.AddUserMessage(recentScenesContext);

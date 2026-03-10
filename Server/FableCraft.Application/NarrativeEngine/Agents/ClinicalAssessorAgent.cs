@@ -120,7 +120,9 @@ internal sealed class ClinicalAssessorAgent(
                               {(string.IsNullOrEmpty(relationshipsText) ? "No established relationships with characters present." : relationshipsText)}
                               </relationships_on_scene>
 
-                              {PromptSections.CharacterEmulationOutputs(generationContext, context.Name)}
+                              {PromptSections.CharacterStorySummary(context)}
+
+                              {PromptSections.RecentScenesForCharacter(context, count: CharacterAgent.SceneContext)}
                               """;
 
         return contextMessage;

@@ -16,7 +16,7 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class WriterAgent : BaseAgent, IProcessor
 {
-    public const int SceneContextCount = 30;
+    public const int SceneContextCount = 10;
     private readonly IAgentKernel _agentKernel;
     private readonly IPluginFactory _pluginFactory;
     private readonly DispatchService _dispatchService;
@@ -145,6 +145,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              - Wishful thinking ("I convince," "knowing this will earn trust") = inner monologue, not world effect
                              - No mechanism = MC acts, world doesn't bend
 
+                             You are prohibited of making gamer, analytical, strategic bullshit. MC is a human being - write them as such.
+
                              **Never invent. Always ask.**
                              Generate a detailed scene based on the above resolution and context.
                              """;
@@ -177,7 +179,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         context.NewScene = newScene;
 
-        // Queue MC dispatches for persistence
         if (newScene.Dispatches is { Count: > 0 })
         {
             foreach (var dispatch in newScene.Dispatches)
@@ -196,7 +197,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             }
         }
 
-        // Queue MC dispatch resolutions for persistence
         if (newScene.DispatchesResolved is { Count: > 0 })
         {
             foreach (var resolution in newScene.DispatchesResolved)
