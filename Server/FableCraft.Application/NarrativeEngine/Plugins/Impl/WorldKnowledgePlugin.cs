@@ -33,8 +33,6 @@ internal class WorldKnowledgePlugin : PluginBase
     public async Task<string> SearchWorldKnowledgeAsync(
         [Description("List of queries for world information to retrieve (locations, lore, items, events, etc.)")]
         string[] query,
-        [Description("Level of details to include in the response (e.g., brief, detailed, comprehensive)")]
-        string levelOfDetails,
         [Description("Time when to look. Provide the time if you want to ask for specific period - for example when asking about current state, provide the current time. For history - provide the historical data. If time is not needed provide empty string or null.")]
         string? time)
     {
@@ -57,9 +55,9 @@ internal class WorldKnowledgePlugin : PluginBase
         {
             if (!string.IsNullOrEmpty(time))
             {
-                return $"{x}, level of details: {levelOfDetails}. Current time: {time} - use it to retrieve fresh knowledge where possible.";
+                return $"{x}. Current time: {time} - use it to retrieve fresh knowledge where possible. Prepare comprehensive and deep response.";
             }
-            return $"{x}, level of details: {levelOfDetails}";
+            return $"{x}. Prepare comprehensive and deep response.";
         }).ToArray();
         var ragSearch = await _ragClientFactory.CreateSearchClientForAdventure(CallerContext.AdventureId, CancellationToken.None);
         var results = await ragSearch.SearchAsync(CallerContext!, datasets, queryCombined);
