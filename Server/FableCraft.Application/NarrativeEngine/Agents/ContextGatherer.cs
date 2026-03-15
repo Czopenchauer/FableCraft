@@ -1,5 +1,7 @@
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
+using FableCraft.Application.NarrativeEngine.Plugins;
+using FableCraft.Application.NarrativeEngine.Plugins.Impl;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.Llm;
@@ -12,14 +14,12 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 using Serilog;
 
-using SearchResult = FableCraft.Infrastructure.Clients.SearchResult;
-
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class ContextGatherer(
     IAgentKernel agentKernel,
     ILogger logger,
-    IRagClientFactory ragClientFactory,
+    IPluginFactory pluginFactory,
     KernelBuilderFactory kernelBuilderFactory,
     IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory), IProcessor
 {
@@ -50,117 +50,59 @@ internal sealed class ContextGatherer(
         var previousContext = GetPreviousContextSummary(context);
         var sceneLocation = context.NewTracker?.Scene?.Location ?? context.LatestTracker()?.Scene?.Location;
         var contextPrompt = $"""
-                             {PromptSections.MainCharacter(context)}
-
-                             {(context.Characters.Count > 0 ? PromptSections.ExistingCharacters(context.Characters) : "")}
-
-                             {PromptSections.CurrentSceneTracker(context)}
-
                              {LoreGenerated(context)}
 
                              {previousContext}
 
-                             {CharacterRoster(context)}
-
                              {CharacterLocationsForDiscovery(context, sceneLocation)}
 
-                             {(context.SceneContext.Length > 0 ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
+                             {PromptSections.McStorySummary(context)}
 
+                             {(context.SceneContext.Length > 0 ? PromptSections.RecentScenes(context.SceneContext, SceneContextCount) : "")}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var requestPrompt = $"""
+                             {PromptSections.SceneTracker(context, context.NewTracker!.Scene!)}
                              The latest scene that was just generated:
                              <latest_scene>
                              {context.NewScene?.Scene}
                              </latest_scene>
                              """;
-        chatHistory.AddUserMessage(contextPrompt);
-
-        var requestPrompt = $"""
-                             {PromptSections.PreviousSceneGatheredContext(context)}
-
-                             {PromptSections.CurrentScene(context)}
-                             """;
 
         chatHistory.AddUserMessage(requestPrompt);
 
-        var outputParser = ResponseParser.CreateJsonParser<ContextGathererOutput>("output");
-        var kernel = kernelBuilder.Create().Build();
-
-        var output = await agentKernel.SendRequestAsync(
-            chatHistory,
-            outputParser,
-            kernelBuilder.GetDefaultPromptExecutionSettings(),
-            nameof(ContextGatherer),
-            kernel,
-            cancellationToken);
-
         var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
+        var skKernelBuilder = kernelBuilder.Create();
+
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(skKernelBuilder, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(skKernelBuilder, context, callerContext);
+
+        var kernel = skKernelBuilder.Build();
+        var outputParser = ResponseParser.CreateTextParser("context");
+
         try
         {
-            var ragSearchClient = await ragClientFactory.CreateSearchClientForAdventure(context.AdventureId, cancellationToken);
-            var worldContext = new List<ContextItem>(output.CarriedForward.WorldContext);
-            var narrativeContext = new List<ContextItem>(output.CarriedForward.NarrativeContext);
-
-            var worldQueryTasks = Task.FromResult(Array.Empty<SearchResult>());
-            if (output.WorldQueries.Length > 0)
-            {
-                var worldQueries = output.WorldQueries.Select(q => q.Query).ToArray();
-                worldQueryTasks = ragSearchClient.SearchAsync(
-                    callerContext,
-                    [RagClientExtensions.GetWorldDatasetName()],
-                    worldQueries,
-                    cancellationToken: cancellationToken);
-            }
-
-            if (output.NarrativeQueries.Length > 0)
-            {
-                var narrativeQueries = output.NarrativeQueries.Select(q => q.Query).ToArray();
-                var narrativeResults = await ragSearchClient.SearchAsync(
-                    callerContext,
-                    [RagClientExtensions.GetMainCharacterDatasetName()],
-                    narrativeQueries,
-                    cancellationToken: cancellationToken);
-
-                foreach (var result in narrativeResults)
-                {
-                    var content = string.Join("\n", result.Response.Results.Select(r => r.Text));
-                    if (!string.IsNullOrWhiteSpace(content))
-                    {
-                        narrativeContext.Add(new ContextItem
-                        {
-                            Topic = result.Query,
-                            Content = content
-                        });
-                    }
-                }
-            }
-
-            var worldResults = await worldQueryTasks;
-            foreach (var result in worldResults)
-            {
-                var content = string.Join("\n", result.Response.Results.Select(r => r.Text));
-                if (!string.IsNullOrWhiteSpace(content))
-                {
-                    worldContext.Add(new ContextItem
-                    {
-                        Topic = result.Query,
-                        Content = content
-                    });
-                }
-            }
+            var contextText = await agentKernel.SendRequestAsync(
+                chatHistory,
+                outputParser,
+                kernelBuilder.GetDefaultPromptExecutionSettings(),
+                nameof(ContextGatherer),
+                kernel,
+                cancellationToken);
 
             context.ContextGathered = new ContextBase
             {
-                WorldContext = worldContext.ToArray(),
-                NarrativeContext = narrativeContext.ToArray(),
-                AdditionalData = output.AdditionalData,
-                BackgroundRoster = output.BackgroundRoster,
-                CoLocatedCharacters = output.CoLocatedCharacters
+                Context = contextText,
+                AdditionalData = new Dictionary<string, object>(),
+                BackgroundRoster = [],
+                CoLocatedCharacters = []
             };
 
             logger.Information(
-                "Context gathered for adventure {AdventureId}: {WorldCount} world items, {NarrativeCount} narrative items",
+                "Context gathered for adventure {AdventureId}: {ContextLength} chars",
                 context.AdventureId,
-                worldContext.Count,
-                narrativeContext.Count);
+                contextText.Length);
         }
         catch (Exception ex)
         {
@@ -174,7 +116,8 @@ internal sealed class ContextGatherer(
     {
         if (context.BackgroundCharacters.Count > 0)
         {
-            var characters = context.BackgroundCharacters.Select(z => $"Name: {z.Name}, Identity: {z.Identity}, Last Location: {z.LastLocation}, Last SeenTime: {z.LastSeenTime}");
+            var characters = context.BackgroundCharacters.Select(z =>
+                $"Name: {z.Name}, Identity: {z.Identity}, Last Location: {z.LastLocation}, Last SeenTime: {z.LastSeenTime}");
             return $"""
                     ### Background Character Registry
                     {string.Join("\n- ", characters)}
@@ -247,22 +190,15 @@ internal sealed class ContextGatherer(
     {
         var lastScene = context.SceneContext.MaxBy(x => x.SequenceNumber);
         var previousContext = lastScene?.Metadata.GatheredContext;
-        if (previousContext == null)
+        if (previousContext == null || string.IsNullOrEmpty(previousContext.Context))
         {
             return string.Empty;
         }
 
-        var worldTopics = previousContext.WorldContext.Select(c => $"- {c.Topic}: {c.Content}").ToArray();
-        var narrativeTopics = previousContext.NarrativeContext.Select(c => $"- {c.Topic}: {c.Content}").ToArray();
-
         return $"""
                 <previous_context_gathered>
                 Context from previous scene generation (consider carrying forward relevant items):
-                World context:
-                {(worldTopics.Length > 0 ? string.Join("\n", worldTopics) : "None")}
-
-                Narrative context:
-                {(narrativeTopics.Length > 0 ? string.Join("\n", narrativeTopics) : "None")}
+                {previousContext.Context}
 
                 Additional data:
                 {context.ContextGathered?.AdditionalData}

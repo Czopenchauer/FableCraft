@@ -98,9 +98,7 @@ public sealed class Metadata
 /// </summary>
 public sealed class GatheredContext
 {
-    public GatheredContextItem[] WorldContext { get; set; } = [];
-
-    public GatheredContextItem[] NarrativeContext { get; set; } = [];
+    public string Context { get; set; } = string.Empty;
 
     public string[] BackgroundRoster { get; set; } = [];
 
@@ -120,9 +118,7 @@ public sealed class GatheredContext
 /// </summary>
 public sealed class CharacterGatheredContext
 {
-    public GatheredContextItem[] WorldContext { get; set; } = [];
-
-    public GatheredContextItem[] NarrativeContext { get; set; } = [];
+    public string Context { get; set; } = string.Empty;
 
     [JsonExtensionData]
     public Dictionary<string, object>? AdditionalProperties { get; init; }

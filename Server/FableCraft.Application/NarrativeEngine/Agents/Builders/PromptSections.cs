@@ -530,13 +530,9 @@ internal static class PromptSections
             return string.Empty;
         }
 
-        var worldContext = context.WorldContext.Length > 0
-            ? string.Join("\n", context.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No world context available.";
-
-        var narrativeContext = context.NarrativeContext.Length > 0
-            ? string.Join("\n", context.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No narrative context available.";
+        var gatheredContext = !string.IsNullOrEmpty(context.Context)
+            ? context.Context
+            : string.Empty;
 
         var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
             ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
@@ -552,11 +548,7 @@ internal static class PromptSections
 
         return $"""
                 <knowledge_graph_context>
-                **World Knowledge** (locations, lore, items, events):
-                {worldContext}
-
-                **Narrative Knowledge** (main character memories, goals, relationships):
-                {narrativeContext}
+                {gatheredContext}
 
                 **Recently Created Lore**:
                 {loreContent}
@@ -578,9 +570,9 @@ internal static class PromptSections
             return string.Empty;
         }
 
-        var worldContext = context.WorldContext.Length > 0
-            ? string.Join("\n", context.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No world context available.";
+        var gatheredContext = !string.IsNullOrEmpty(context.Context)
+            ? context.Context
+            : string.Empty;
 
         var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
             ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
@@ -596,8 +588,7 @@ internal static class PromptSections
 
         return $"""
                 <knowledge_graph_context>
-                **World Knowledge** (locations, lore, items, events):
-                {worldContext}
+                {gatheredContext}
 
                 **Recently Created Lore**:
                 {loreContent}
@@ -623,13 +614,9 @@ internal static class PromptSections
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.GatheredContext;
 
-        var worldContext = characterContext?.WorldContext.Length > 0
-            ? string.Join("\n", characterContext.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No world context available.";
+        var worldContext = characterContext?.Context
+            ?? string.Empty;
 
-        var narrativeContext = characterContext?.NarrativeContext.Length > 0
-            ? string.Join("\n", characterContext.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No narrative context available.";
 
         var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
             ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))
@@ -645,11 +632,7 @@ internal static class PromptSections
 
         return $"""
                 <world_knowledge>
-                **World Knowledge** (locations, lore, items, events):
                 {worldContext}
-
-                **Character Narrative History**:
-                {narrativeContext}
 
                 **Recently Created Lore**:
                 {loreContent}
@@ -678,21 +661,13 @@ internal static class PromptSections
             return string.Empty;
         }
 
-        var worldContext = gatheredContext.WorldContext.Length > 0
-            ? string.Join("\n", gatheredContext.WorldContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No world context available.";
-
-        var narrativeContext = gatheredContext.NarrativeContext.Length > 0
-            ? string.Join("\n", gatheredContext.NarrativeContext.Select(c => $"- **{c.Topic}**: {c.Content}"))
-            : "No narrative context available.";
+        var context = !string.IsNullOrEmpty(gatheredContext.Context)
+            ? gatheredContext.Context
+            : "No context available.";
 
         return $"""
                 <previous_gathered_context>
-                **World Knowledge**:
-                {worldContext}
-
-                **Narrative Knowledge**:
-                {narrativeContext}
+                {context}
 
                 **Additional Data**:
                 {gatheredContext.AdditionalProperties.ToJsonString()}

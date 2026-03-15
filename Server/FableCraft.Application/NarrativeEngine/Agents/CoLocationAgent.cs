@@ -38,6 +38,11 @@ internal sealed class CoLocationAgent(
             return;
         }
 
+        if (!context.Characters.Any())
+        {
+            return;
+        }
+        
         var sceneLocation = context.NewTracker?.Scene?.Location ?? context.LatestTracker()?.Scene?.Location;
         var sceneTime = context.NewTracker?.Scene?.Time ?? context.LatestTracker()?.Scene?.Time;
 

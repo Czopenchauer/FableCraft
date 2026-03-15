@@ -58,16 +58,7 @@ internal sealed class SaveSceneEnrichment(
 
             scene.Metadata.GatheredContext = new GatheredContext
             {
-                WorldContext = context.ContextGathered?.WorldContext.Select(x => new GatheredContextItem
-                {
-                    Topic = x.Topic,
-                    Content = x.Content
-                }).ToArray() ?? [],
-                NarrativeContext = context.ContextGathered?.NarrativeContext.Select(x => new GatheredContextItem
-                {
-                    Topic = x.Topic,
-                    Content = x.Content
-                }).ToArray() ?? [],
+                Context = context.ContextGathered?.Context ?? string.Empty,
                 BackgroundRoster = context.ContextGathered?.BackgroundRoster ?? [],
                 CoLocatedCharacters = coLocatedCharacters,
                 AdditionalProperties = context.ContextGathered?.AdditionalData ?? new Dictionary<string, object>()

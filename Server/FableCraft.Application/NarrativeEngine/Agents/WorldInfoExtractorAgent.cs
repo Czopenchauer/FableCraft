@@ -28,6 +28,10 @@ internal sealed class WorldInfoExtractorAgent(
         AlreadyHandledContent alreadyHandledContent,
         CancellationToken cancellationToken)
     {
+        if (sceneTracker.CharactersPresent.Length == 1)
+        {
+            return new WorldInfoExtractionOutput();
+        }
         var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
