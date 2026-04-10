@@ -568,6 +568,54 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.ToTable("Scenes");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.SceneImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<long>("GenerationDurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsSelected")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("NegativePrompt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SceneId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SceneId", "IsSelected");
+
+                    b.HasIndex("SceneId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("SceneImages");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.TrackerDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1144,6 +1192,17 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Navigation("Adventure");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Adventure.SceneImage", b =>
+                {
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Adventure.Scene", "Scene")
+                        .WithMany("Images")
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Scene");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Lorebook", b =>
                 {
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Worldbook", "Worldbook")
@@ -1212,6 +1271,8 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Navigation("CharacterSceneRewrites");
 
                     b.Navigation("CharacterStates");
+
+                    b.Navigation("Images");
 
                     b.Navigation("Lorebooks");
                 });

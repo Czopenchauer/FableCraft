@@ -64,6 +64,37 @@ app.MapDefaultEndpoints();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Serve scene images
+var sceneImagesPath = app.Configuration["ComfyUI:ImageStoragePath"] ?? "./scene-images";
+var sceneImagesHostPath = app.Configuration["ComfyUI:ImageStorageHostPath"];
+var effectiveSceneImagesPath = string.IsNullOrEmpty(sceneImagesHostPath) ? sceneImagesPath : sceneImagesHostPath;
+if (!Path.IsPathRooted(effectiveSceneImagesPath))
+{
+    effectiveSceneImagesPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, effectiveSceneImagesPath));
+}
+if (Directory.Exists(effectiveSceneImagesPath))
+{
+    var sceneImageLogger = app.Services.GetRequiredService<Serilog.ILogger>();
+    sceneImageLogger.Information("Serving scene images from: {Path}", effectiveSceneImagesPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(effectiveSceneImagesPath),
+        RequestPath = "/scene-images"
+    });
+}
+else
+{
+    // Create directory if it doesn't exist
+    Directory.CreateDirectory(effectiveSceneImagesPath);
+    var sceneImageLogger = app.Services.GetRequiredService<Serilog.ILogger>();
+    sceneImageLogger.Information("Created scene images directory: {Path}", effectiveSceneImagesPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(effectiveSceneImagesPath),
+        RequestPath = "/scene-images"
+    });
+}
+
 // Serve visualization files if path is configured
 var visualizationPath = app.Configuration["VisualizationPath"];
 if (!string.IsNullOrEmpty(visualizationPath))

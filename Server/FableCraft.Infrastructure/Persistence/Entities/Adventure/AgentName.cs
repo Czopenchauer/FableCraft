@@ -27,5 +27,6 @@ public enum AgentName
     WorldInfoExtractorAgent,
     EmulationOrchestratorAgent,
     StorySummaryAgent,
-    CoLocationAgent
+    CoLocationAgent,
+    ImagePromptAgent
 }

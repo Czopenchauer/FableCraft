@@ -25,6 +25,7 @@ public static class StartupExtensions
         services.AddHostedService<UnlockChunks>();
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddScoped<IGameService, GameService>();
+        services.AddScoped<ISceneImageService, SceneImageService>();
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
             .AddScoped<WorldInfoExtractionMaintenanceService>()
@@ -63,6 +64,7 @@ public static class StartupExtensions
             .AddScoped<WorldInfoExtractorAgent>()
             .AddScoped<EmulationOrchestratorAgent>()
             .AddScoped<StorySummaryAgent>()
+            .AddScoped<ImagePromptAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 

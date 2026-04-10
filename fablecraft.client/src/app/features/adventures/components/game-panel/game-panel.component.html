@@ -541,6 +541,13 @@
             </div>
           </div>
 
+          <!-- Scene Image -->
+          <app-scene-image
+            [adventureId]="adventureId"
+            [sceneId]="currentScene.sceneId"
+            [isCurrentScene]="isCurrentScene()"
+          ></app-scene-image>
+
           <!-- Submitted Action (what led to this scene) -->
           <div *ngIf="currentScene.selectedChoice" class="submitted-action-container">
             <h2 class="submitted-action-title">Your action:</h2>

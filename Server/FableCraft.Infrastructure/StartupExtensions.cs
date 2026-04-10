@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using Docker.DotNet;
 
 using FableCraft.Infrastructure.Clients;
+using FableCraft.Infrastructure.ComfyUI;
 using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Docker.Configuration;
 using FableCraft.Infrastructure.Llm;
@@ -98,6 +99,19 @@ public static class StartupExtensions
                     options.Retry.BackoffType = Polly.DelayBackoffType.Linear;
                     options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
                     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
+                });
+
+            // ComfyUI image generation services
+            services.Configure<ComfyUISettings>(configuration.GetSection(ComfyUISettings.SectionName));
+            services.AddSingleton<SceneImageStorage>();
+            services.AddHttpClient<ComfyUIClient>()
+                .AddStandardResilienceHandler(options =>
+                {
+                    // Image generation can take a while
+                    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(5);
+                    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
+                    options.Retry.MaxRetryAttempts = 3;
+                    options.Retry.Delay = TimeSpan.FromSeconds(2);
                 });
 
             return services;

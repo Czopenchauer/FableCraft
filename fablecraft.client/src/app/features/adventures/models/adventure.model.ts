@@ -331,3 +331,20 @@ export interface WindowDto {
   closes: string;
   if_missed: string;
 }
+
+// Scene Image Generation
+export type ImageGenerationStatus = 'Pending' | 'Generating' | 'Completed' | 'Failed';
+
+export interface SceneImage {
+  id: string;
+  sceneId: string;
+  version: number;
+  isSelected: boolean;
+  imageUrl: string | null;
+  prompt: string;
+  negativePrompt: string | null;
+  status: ImageGenerationStatus;
+  errorMessage: string | null;
+  createdAt: string;
+  generationDurationMs: number;
+}

@@ -39,6 +39,7 @@ import {SceneMetadataTabComponent} from './features/adventures/components/scene-
 import {LlmLogsTabComponent} from './features/adventures/components/llm-logs-tab/llm-logs-tab.component';
 import {SceneEditModalComponent} from './features/adventures/components/scene-edit-modal/scene-edit-modal.component';
 import {SceneDeleteModalComponent} from './features/adventures/components/scene-delete-modal/scene-delete-modal.component';
+import {SceneImageComponent} from './features/adventures/components/scene-image/scene-image.component';
 import {MarkdownPipe} from './shared/pipes/markdown.pipe';
 import {
   GraphRagSettingsManagerComponent
@@ -70,6 +71,7 @@ import {
     LlmLogsTabComponent,
     SceneEditModalComponent,
     SceneDeleteModalComponent,
+    SceneImageComponent,
     GraphRagSettingsManagerComponent
   ],
   imports: [

@@ -58,6 +58,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Dispatch> Dispatches { get; set; }
 
+    public DbSet<SceneImage> SceneImages { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

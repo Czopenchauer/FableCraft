@@ -53,6 +53,8 @@ public class Scene : IEntity
 
     public List<LorebookEntry> Lorebooks { get; set; } = new();
 
+    public List<SceneImage> Images { get; set; } = new();
+
     [Key]
     public Guid Id { get; set; }
 }
