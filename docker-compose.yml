@@ -45,6 +45,13 @@ services:
       - GraphService__DataStoreHostPath=${FABLECRAFT_PROJECT_PATH}/data-store
       - GraphService__VisualizationHostPath=${FABLECRAFT_PROJECT_PATH}/visualization
       - GraphService__ExportsHostPath=${FABLECRAFT_PROJECT_PATH}/exports
+      - ComfyUI__Enabled=true
+      - ComfyUI__BaseUrl=http://host.docker.internal:8008
+      - ComfyUI__ImageStoragePath=/app/scene-images
+      - ComfyUI__ImageStorageHostPath=${FABLECRAFT_PROJECT_PATH}/scene-images
+      - ComfyUI__WorkflowPath=/app/comfyui-workflows/scene-generation.json
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data-store:/app/data-store
@@ -52,6 +59,7 @@ services:
       - ./Prompts:/app/prompts-root
       - ./visualization:/app/visualization
       - ./exports:/app/exports
+      - ./scene-images:/app/scene-images
     depends_on:
       fablecraftdb:
         condition: service_healthy

@@ -112,6 +112,8 @@ public static class StartupExtensions
                     options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
                     options.Retry.MaxRetryAttempts = 3;
                     options.Retry.Delay = TimeSpan.FromSeconds(2);
+                    // SamplingDuration must be at least double the AttemptTimeout
+                    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
                 });
 
             return services;

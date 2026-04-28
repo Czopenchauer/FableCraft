@@ -80,13 +80,13 @@ public static class TrackerDefinitionFactory
                     Name = "Time",
                     Type = FieldType.String,
                     Prompt =
-                        "Adjust time in small increments for natural progression unless explicit directives indicate larger changes. Format: ISO 8601 (YYYY-MM-DDTHH:MM:SS).",
-                    DefaultValue = "2024-10-16T09:15:30",
+                        "Adjust time in small increments for natural progression unless explicit directives indicate larger changes. Format: 'dd/MM/yyyy HH:mm:ss (Time of Day)' using a 24-hour clock. The leading 'dd/MM/yyyy HH:mm:ss' portion must be parsable as DateTimeOffset (e.g., DateTimeOffset.ParseExact). Time of Day labels: Dawn 05:00:00-06:59:59, Morning 07:00:00-11:59:59, Afternoon 12:00:00-16:59:59, Evening 17:00:00-20:59:59, Night 21:00:00-04:59:59.",
+                    DefaultValue = "16/10/2024 09:15:30 (Morning)",
                     ExampleValues =
                     [
-                        "2024-10-16T09:15:30",
-                        "2024-10-16T18:45:50",
-                        "2024-10-16T15:10:20"
+                        "16/10/2024 09:15:30 (Morning)",
+                        "16/10/2024 18:45:50 (Evening)",
+                        "16/10/2024 15:10:20 (Afternoon)"
                     ]
                 },
                 new FieldDefinition

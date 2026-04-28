@@ -90,7 +90,7 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
         error: (err) => {
           console.error('Failed to generate image', err);
           this.error = err.error?.error || 'Failed to generate image';
-          this.toastService.show('error', this.error || 'Unknown error');
+          this.toastService.error(this.error || 'Unknown error');
         }
       });
   }
@@ -105,10 +105,10 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
       this.images.unshift(image);
       this.selectedImage = image;
       this.imageGenerated.emit(image);
-      this.toastService.show('success', 'Image generated successfully');
+      this.toastService.success('Image generated successfully');
     } else if (image.status === 'Failed') {
       this.error = image.errorMessage || 'Generation failed';
-      this.toastService.show('error', this.error);
+      this.toastService.error(this.error);
     }
     // Reload to get the latest state
     this.loadImages();
@@ -127,7 +127,7 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
         },
         error: (err) => {
           console.error('Failed to select image', err);
-          this.toastService.show('error', 'Failed to select image');
+          this.toastService.error('Failed to select image');
         }
       });
   }
@@ -146,11 +146,11 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
           if (this.selectedImage?.id === image.id) {
             this.selectedImage = this.images.find(img => img.isSelected) || this.images[0] || null;
           }
-          this.toastService.show('success', 'Image deleted');
+          this.toastService.success('Image deleted');
         },
         error: (err) => {
           console.error('Failed to delete image', err);
-          this.toastService.show('error', 'Failed to delete image');
+          this.toastService.error('Failed to delete image');
         }
       });
   }

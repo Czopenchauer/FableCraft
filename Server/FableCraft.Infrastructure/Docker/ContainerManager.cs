@@ -141,7 +141,7 @@ internal sealed class ContainerManager
             {
                 Binds = config.Volumes.ToList(),
                 PortBindings = portBindings,
-                NetworkMode = config.NetworkName,
+                NetworkMode = config.NetworkName!,
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.UnlessStopped }
             }
         };
@@ -235,7 +235,7 @@ internal sealed class ContainerManager
             return new ContainerStatus(
                 response.ID,
                 response.Name.TrimStart('/'),
-                response.State.Status,
+                response.State!.Status,
                 response.State.Running,
                 DateTimeOffset.TryParse(response.State.StartedAt, out var started) ? started : null);
         }

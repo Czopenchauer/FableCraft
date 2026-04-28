@@ -13,13 +13,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class MainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IPluginFactory pluginFactory,
-    KernelBuilderFactory kernelBuilderFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    KernelBuilderFactory kernelBuilderFactory,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.MainCharacterTrackerAgent;
 
@@ -38,7 +41,7 @@ internal sealed class MainCharacterTrackerAgent(
 
         var contextPrompt = $"""
                              {PromptSections.Context(context)}
-                             
+
                              {PromptSections.SceneTracker(context, sceneTrackerResult)}
 
                              {PromptSections.NewItems(context.NewItems)}
@@ -51,34 +54,37 @@ internal sealed class MainCharacterTrackerAgent(
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 
-        string requestPrompt;
+        MainCharacterTracker resultTracker;
+
         if (isFirstScene)
         {
-            requestPrompt = $"""
+            // First scene: use full tracker output (no previous state to merge with)
+            resultTracker = await ProcessFirstScene(context, chatHistory, kernelBuilder, cancellationToken);
+        }
+        else
+        {
+            // Subsequent scenes: use delta output and merge with previous state
+            resultTracker = await ProcessDeltaUpdate(context, chatHistory, kernelBuilder, sceneTrackerResult, cancellationToken);
+        }
+
+        context.NewTracker!.MainCharacter = new MainCharacterState
+        {
+            MainCharacter = resultTracker,
+            MainCharacterDescription = null
+        };
+    }
+
+    private async Task<MainCharacterTracker> ProcessFirstScene(
+        GenerationContext context,
+        ChatHistory chatHistory,
+        FableCraft.Infrastructure.Llm.IKernelBuilder kernelBuilder,
+        CancellationToken cancellationToken)
+    {
+        var requestPrompt = $"""
                              {PromptSections.SceneContent(context.NewScene?.Scene)}
 
                              It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
                              """;
-        }
-        else
-        {
-            requestPrompt = $"""
-                             Previous trackers:
-                             {string.Join("\n", context.SceneContext!
-                                 .OrderByDescending(x => x.SequenceNumber)
-                                 .Take(1)
-                                 .OrderBy(x => x.SequenceNumber)
-                                 .Select(x => x.Metadata!.Tracker!.MainCharacter!.MainCharacter.ToJsonString()))}
-
-                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
-
-                             New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
-
-                             Update the main_character_tracker based on the new scene.
-                             """;
-        }
-
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<MainCharacterTracker>>("tracker");
@@ -96,11 +102,69 @@ internal sealed class MainCharacterTrackerAgent(
             nameof(MainCharacterTrackerAgent),
             kernelWithKg,
             cancellationToken);
-        context.NewTracker!.MainCharacter = new MainCharacterState
-        {
-            MainCharacter = tracker.Tracker,
-            MainCharacterDescription = null
-        };
+
+        return tracker.Tracker;
+    }
+
+    private async Task<MainCharacterTracker> ProcessDeltaUpdate(
+        GenerationContext context,
+        ChatHistory chatHistory,
+        FableCraft.Infrastructure.Llm.IKernelBuilder kernelBuilder,
+        SceneTracker sceneTrackerResult,
+        CancellationToken cancellationToken)
+    {
+        // Get the previous tracker state
+        var previousTracker = context.SceneContext!
+            .OrderByDescending(x => x.SequenceNumber)
+            .First()
+            .Metadata!.Tracker!.MainCharacter!.MainCharacter
+            ?? throw new InvalidOperationException("Previous main character tracker state is null");
+
+        var requestPrompt = $"""
+                             Previous tracker state:
+                             {previousTracker.ToJsonString()}
+
+                             {PromptSections.MainCharacterTracker(context.SceneContext!)}
+
+                             New scene content:
+                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+
+                             Update the main_character_tracker based on the new scene. Output ONLY the fields that changed in the updates object.
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
+
+        var outputParser = ResponseParser.CreateJsonParser<MainCharacterDeltaOutput>("tracker");
+        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var kernel = kernelBuilder.Create();
+        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
+        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
+        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
+        var kernelWithKg = kernel.Build();
+
+        var deltaOutput = await agentKernel.SendRequestAsync(
+            chatHistory,
+            outputParser,
+            promptExecutionSettings,
+            nameof(MainCharacterTrackerAgent),
+            kernelWithKg,
+            cancellationToken);
+
+        // Merge delta updates with previous state
+        var mergedTracker = TrackerMerger.Merge(previousTracker, deltaOutput.Updates);
+
+        logger.Information(
+            "MainCharacterTracker delta merge completed. Updates applied: {UpdateCount} fields",
+            CountUpdates(deltaOutput.Updates));
+
+        return mergedTracker;
+    }
+
+    private static int CountUpdates(JsonElement updates)
+    {
+        if (updates.ValueKind != JsonValueKind.Object)
+            return 0;
+
+        return updates.EnumerateObject().Count();
     }
 
     private async Task<string> BuildInstruction(GenerationContext context)
