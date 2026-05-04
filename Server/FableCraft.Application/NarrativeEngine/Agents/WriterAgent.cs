@@ -159,7 +159,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         if (requireSimulation)
         {
-            await _pluginFactory.AddPluginAsync<OrchestrateEmulationPlugin>(kernel, context, callerContext);
+            await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
         }
 
         var kernelWithKg = kernel.Build();

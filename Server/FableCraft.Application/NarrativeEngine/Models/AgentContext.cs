@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -222,8 +223,41 @@ internal sealed class GenerationContext
 
     /// <summary>
     ///     Updated MC story summary to persist in scene metadata.
+    ///     Non-null also signals that the MC StorySummaryAgent has already produced a value
+    ///     for this enrichment, so retries skip the agent.
     /// </summary>
     public string? NewMcStorySummary { get; set; }
+
+    /// <summary>
+    ///     Cached per-character story summaries produced by StorySummaryAgent during enrichment.
+    ///     Allows retries to reuse summaries for characters whose story summary already succeeded
+    ///     even if their enclosing character processing ultimately failed.
+    /// </summary>
+    public Dictionary<Guid, string> CharacterStorySummaries { get; set; } = new();
+
+    /// <summary>
+    ///     True once ProgressionAgent has finished for this enrichment (even if it produced no delta).
+    ///     Used to skip the agent on retries.
+    /// </summary>
+    public bool ProgressionAgentRan { get; set; }
+
+    /// <summary>
+    ///     Delta produced by ProgressionAgent that has not yet been merged into the main character tracker.
+    ///     Cleared once merged so the merge stays idempotent across retries.
+    /// </summary>
+    public JsonElement? ProgressionDelta { get; set; }
+
+    /// <summary>
+    ///     True once InventoryTrackerAgent has finished for this enrichment (even if it produced no delta).
+    ///     Used to skip the agent on retries.
+    /// </summary>
+    public bool InventoryAgentRan { get; set; }
+
+    /// <summary>
+    ///     Delta produced by InventoryTrackerAgent that has not yet been merged into the main character tracker.
+    ///     Cleared once merged so the merge stays idempotent across retries.
+    /// </summary>
+    public JsonElement? InventoryDelta { get; set; }
 
     /// <summary>
     ///     Co-location output from CoLocationAgent.

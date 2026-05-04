@@ -20,7 +20,6 @@ namespace FableCraft.Application.NarrativeEngine.Agents;
 internal sealed class MainCharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    IPluginFactory pluginFactory,
     KernelBuilderFactory kernelBuilderFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
@@ -88,11 +87,8 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<CharacterDeltaTrackerOutput<MainCharacterTracker>>("tracker");
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
-        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
-        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
         var tracker = await agentKernel.SendRequestAsync(
@@ -134,11 +130,8 @@ internal sealed class MainCharacterTrackerAgent(
         chatHistory.AddUserMessage(requestPrompt);
 
         var outputParser = ResponseParser.CreateJsonParser<MainCharacterDeltaOutput>("tracker");
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
         var kernel = kernelBuilder.Create();
-        var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
-        await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
-        await pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
         var kernelWithKg = kernel.Build();
 
         var deltaOutput = await agentKernel.SendRequestAsync(

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
@@ -20,6 +22,8 @@ internal sealed class CharacterTrackersProcessor(
     ChroniclerAgent chroniclerAgent,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
+    ProgressionAgent progressionAgent,
+    InventoryTrackerAgent inventoryTrackerAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -37,6 +41,9 @@ internal sealed class CharacterTrackersProcessor(
         var mainCharTrackerTask = context.NewTracker?.MainCharacter?.MainCharacter != null
             ? Task.FromResult(context.NewTracker.MainCharacter)
             : Task.Run(() => ProcessMainChar(context, storyTrackerResult, cancellationToken), cancellationToken);
+
+        var progressionTask = BuildProgressionTask(context, storyTrackerResult, cancellationToken);
+        var inventoryTask = BuildInventoryTask(context, storyTrackerResult, cancellationToken);
 
         HashSet<string> alreadyProcessedCharacters;
         lock (context)
@@ -275,7 +282,72 @@ internal sealed class CharacterTrackersProcessor(
 
         var mcStorySummaryTask = ProcessMcStorySummaryIfNeeded(context, cancellationToken);
 
-        await Task.WhenAll(mainCharTrackerTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask, mcStorySummaryTask);
+        await Task.WhenAll(mainCharTrackerTask, progressionTask, inventoryTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask, mcStorySummaryTask);
+
+        await ApplyMainCharacterDelta(context, progressionTask, "progression", c => c.ProgressionDelta = null);
+        await ApplyMainCharacterDelta(context, inventoryTask, "inventory", c => c.InventoryDelta = null);
+    }
+
+    private Task<JsonElement?> BuildProgressionTask(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
+    {
+        if (context.SceneContext.Length == 0)
+        {
+            return Task.FromResult<JsonElement?>(null);
+        }
+
+        if (context.ProgressionAgentRan)
+        {
+            logger.Information("ProgressionAgent: using cached result from previous enrichment attempt");
+            return Task.FromResult(context.ProgressionDelta);
+        }
+
+        return Task.Run(async () =>
+        {
+            var result = await progressionAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            context.ProgressionDelta = result;
+            context.ProgressionAgentRan = true;
+            return result;
+        }, cancellationToken);
+    }
+
+    private Task<JsonElement?> BuildInventoryTask(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
+    {
+        if (context.SceneContext.Length == 0)
+        {
+            return Task.FromResult<JsonElement?>(null);
+        }
+
+        if (context.InventoryAgentRan)
+        {
+            logger.Information("InventoryTrackerAgent: using cached result from previous enrichment attempt");
+            return Task.FromResult(context.InventoryDelta);
+        }
+
+        return Task.Run(async () =>
+        {
+            var result = await inventoryTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            context.InventoryDelta = result;
+            context.InventoryAgentRan = true;
+            return result;
+        }, cancellationToken);
+    }
+
+    private async Task ApplyMainCharacterDelta(GenerationContext context, Task<JsonElement?> deltaTask, string source, Action<GenerationContext> clearDelta)
+    {
+        var delta = await deltaTask;
+        if (delta is null)
+            return;
+
+        var mainCharTracker = context.NewTracker?.MainCharacter?.MainCharacter;
+        if (mainCharTracker is null)
+        {
+            logger.Warning("{Source} agent produced a delta but main character tracker is missing; skipping merge", source);
+            return;
+        }
+
+        context.NewTracker!.MainCharacter!.MainCharacter = TrackerMerger.Merge(mainCharTracker, delta.Value);
+        clearDelta(context);
+        logger.Information("Merged {Source} delta into main character tracker", source);
     }
 
     private async Task UnpackCharacterUpdates(GenerationContext context, Task<CharacterContext?>[] tasks)
@@ -483,6 +555,21 @@ internal sealed class CharacterTrackersProcessor(
             if (agedOutRewrite == null)
                 return;
 
+            string cachedSummary;
+            lock (context)
+            {
+                context.CharacterStorySummaries.TryGetValue(characterContext.CharacterId, out cachedSummary!);
+            }
+
+            if (cachedSummary != null)
+            {
+                orderedRewrites.Last().StorySummary = cachedSummary;
+                logger.Information(
+                    "StorySummary for {CharacterName}: using cached result from previous enrichment attempt",
+                    characterContext.Name);
+                return;
+            }
+
             var previousSummary = characterContext.SceneRewrites
                 .Where(s => !string.IsNullOrEmpty(s.StorySummary))
                 .OrderByDescending(s => s.SequenceNumber)
@@ -497,6 +584,10 @@ internal sealed class CharacterTrackersProcessor(
                 cancellationToken);
 
             orderedRewrites.Last().StorySummary = result.StorySummary;
+            lock (context)
+            {
+                context.CharacterStorySummaries[characterContext.CharacterId] = result.StorySummary;
+            }
 
             logger.Information(
                 "Updated story summary for {CharacterName} (aged out scene #{SceneNumber})",
@@ -515,6 +606,12 @@ internal sealed class CharacterTrackersProcessor(
     {
         try
         {
+            if (context.NewMcStorySummary != null)
+            {
+                logger.Information("MC StorySummary: using cached result from previous enrichment attempt");
+                return;
+            }
+
             if (context.SceneContext.Length == 0)
                 return;
 

@@ -63,4 +63,24 @@ internal static class PlaceholderNames
     public const string RelationshipSchema = "{{relationship_schema}}";
 
     public const string Dispatch = "{{dispatch}}";
+
+    /// <summary>
+    ///     Skills schema definition extracted from the main character tracker structure.
+    /// </summary>
+    public const string SkillsSchema = "{{skills_schema}}";
+
+    /// <summary>
+    ///     Abilities schema definition extracted from the main character tracker structure.
+    /// </summary>
+    public const string AbilitiesSchema = "{{abilities_schema}}";
+
+    /// <summary>
+    ///     Carried (non-worn inventory) schema definition extracted from the main character tracker structure.
+    /// </summary>
+    public const string CarriedSchema = "{{carried_schema}}";
+
+    /// <summary>
+    ///     Assets (currency, property, debts) schema definition extracted from the main character tracker structure.
+    /// </summary>
+    public const string AssetsSchema = "{{assets_schema}}";
 }

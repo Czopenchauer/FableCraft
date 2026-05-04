@@ -28,5 +28,7 @@ public enum AgentName
     EmulationOrchestratorAgent,
     StorySummaryAgent,
     CoLocationAgent,
-    ImagePromptAgent
+    ImagePromptAgent,
+    ProgressionAgent,
+    InventoryTrackerAgent
 }

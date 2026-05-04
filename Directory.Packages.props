@@ -26,25 +26,25 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.74.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.75.0-alpha" />
     <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.2" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
-    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.74.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Core" Version="1.74.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Orchestration" Version="1.74.0-preview" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess" Version="1.74.0-preview" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.74.0-alpha" />
-    <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.74.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.75.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Core" Version="1.75.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Orchestration" Version="1.75.0-preview" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess" Version="1.75.0-preview" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.75.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.75.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageVersion Include="SerilogTracing" Version="2.3.1" />
     <PackageVersion Include="System.IO.Hashing" Version="10.0.7" />
-    <PackageVersion Include="TUnit" Version="1.40.10" />
+    <PackageVersion Include="TUnit" Version="1.43.11" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageVersion Include="Polly" Version="8.6.6" />
     <PackageVersion Include="Polly.RateLimiting" Version="8.6.6" />

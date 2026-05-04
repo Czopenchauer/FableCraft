@@ -41,6 +41,8 @@ public static class StartupExtensions
             .AddScoped<CoLocationAgent>()
             .AddScoped<ContentGenerationService>()
             .AddScoped<MainCharacterTrackerAgent>()
+            .AddScoped<ProgressionAgent>()
+            .AddScoped<InventoryTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()
             .AddScoped<SceneTrackerAgent>()
             .AddScoped<CharacterCrafter>()
