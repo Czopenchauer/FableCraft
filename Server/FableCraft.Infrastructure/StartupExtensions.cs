@@ -7,14 +7,17 @@ using FableCraft.Infrastructure.Clients;
 using FableCraft.Infrastructure.ComfyUI;
 using FableCraft.Infrastructure.Docker;
 using FableCraft.Infrastructure.Docker.Configuration;
+using FableCraft.Infrastructure.Images;
 using FableCraft.Infrastructure.Llm;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Queue;
+using FableCraft.Infrastructure.SwarmUI;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
 
 namespace FableCraft.Infrastructure;
 
@@ -101,20 +104,27 @@ public static class StartupExtensions
                     options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
                 });
 
-            // ComfyUI image generation services
-            services.Configure<ComfyUISettings>(configuration.GetSection(ComfyUISettings.SectionName));
+            // Image generation services (provider selected via ImageGeneration:Provider)
+            var imageGenSection = configuration.GetSection(ImageGenerationOptions.SectionName);
+            services.Configure<ImageGenerationOptions>(imageGenSection);
             services.AddSingleton<SceneImageStorage>();
-            services.AddHttpClient<ComfyUIClient>()
-                .AddStandardResilienceHandler(options =>
-                {
-                    // Image generation can take a while
-                    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(5);
-                    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
-                    options.Retry.MaxRetryAttempts = 3;
-                    options.Retry.Delay = TimeSpan.FromSeconds(2);
-                    // SamplingDuration must be at least double the AttemptTimeout
-                    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
-                });
+
+            var provider = imageGenSection.GetValue<ImageGenerationProvider>("Provider");
+            if (provider == ImageGenerationProvider.SwarmUI)
+            {
+                services.AddOptions<SwarmUISettings>()
+                    .Bind(imageGenSection.GetSection("SwarmUI"))
+                    .ValidateOnStart();
+                services.AddSingleton<IValidateOptions<SwarmUISettings>, SwarmUISettingsValidator>();
+                services.AddHttpClient<IImageGenerationClient, SwarmUIClient>()
+                    .AddStandardResilienceHandler(ConfigureImageGenerationResilience);
+            }
+            else
+            {
+                services.Configure<ComfyUISettings>(imageGenSection.GetSection("ComfyUI"));
+                services.AddHttpClient<IImageGenerationClient, ComfyUIClient>()
+                    .AddStandardResilienceHandler(ConfigureImageGenerationResilience);
+            }
 
             return services;
         }
@@ -123,5 +133,15 @@ public static class StartupExtensions
             where TMessage : IMessage
             where THandler : class, IMessageHandler<TMessage> =>
             services.AddTransient<IMessageHandler<TMessage>, THandler>();
+    }
+
+    private static void ConfigureImageGenerationResilience(HttpStandardResilienceOptions options)
+    {
+        options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(5);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
+        options.Retry.MaxRetryAttempts = 3;
+        options.Retry.Delay = TimeSpan.FromSeconds(2);
+        // SamplingDuration must be at least double the AttemptTimeout
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
     }
 }

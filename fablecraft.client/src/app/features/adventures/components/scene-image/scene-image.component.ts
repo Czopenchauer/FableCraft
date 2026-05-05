@@ -4,6 +4,7 @@ import {finalize, takeUntil} from 'rxjs/operators';
 import {SceneImage} from '../../models/adventure.model';
 import {SceneImageService} from '../../services/scene-image.service';
 import {ToastService} from '../../../../core/services/toast.service';
+import {environment} from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-scene-image',
@@ -171,5 +172,11 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
     if (ms < 1000) return `${ms}ms`;
     const seconds = Math.round(ms / 1000);
     return `${seconds}s`;
+  }
+
+  imageSrc(image: SceneImage): string | null {
+    if (!image.imageUrl) return null;
+    if (/^https?:\/\//i.test(image.imageUrl)) return image.imageUrl;
+    return `${environment.apiUrl}${image.imageUrl}`;
   }
 }

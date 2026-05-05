@@ -45,11 +45,13 @@ services:
       - GraphService__DataStoreHostPath=${FABLECRAFT_PROJECT_PATH}/data-store
       - GraphService__VisualizationHostPath=${FABLECRAFT_PROJECT_PATH}/visualization
       - GraphService__ExportsHostPath=${FABLECRAFT_PROJECT_PATH}/exports
-      - ComfyUI__Enabled=true
-      - ComfyUI__BaseUrl=http://host.docker.internal:8008
-      - ComfyUI__ImageStoragePath=/app/scene-images
-      - ComfyUI__ImageStorageHostPath=${FABLECRAFT_PROJECT_PATH}/scene-images
-      - ComfyUI__WorkflowPath=/app/comfyui-workflows/scene-generation.json
+      # Storage path is the in-container target; the host path is supplied by the
+      # bind-mount below, not by config. Setting ImageStorageHostPath here would
+      # make GetEffectiveImageStoragePath return a host path that doesn't exist
+      # inside the container. Everything else (resolution, LoRA weights, sampler,
+      # etc.) lives in the bind-mounted appsettings.json under /app/config and
+      # hot-reloads on edit — see volumes below.
+      - ImageGeneration__ImageStoragePath=/app/scene-images
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -60,6 +62,8 @@ services:
       - ./visualization:/app/visualization
       - ./exports:/app/exports
       - ./scene-images:/app/scene-images
+      # Hot-reloadable runtime config: edits to this file are picked up live (IOptionsMonitor).
+      - ./Server/FableCraft.Server/appsettings.json:/app/config/appsettings.json
     depends_on:
       fablecraftdb:
         condition: service_healthy

@@ -13,7 +13,8 @@ const PROXY_CONFIG = [
   {
     context: [
       "/api",
-      "/visualization"
+      "/visualization",
+      "/scene-images"
     ],
     target,
     secure: false,

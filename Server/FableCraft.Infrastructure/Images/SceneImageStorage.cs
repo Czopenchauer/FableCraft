@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace FableCraft.Infrastructure.ComfyUI;
+namespace FableCraft.Infrastructure.Images;
 
 /// <summary>
 /// Handles storage and retrieval of generated scene images.
@@ -9,26 +9,17 @@ namespace FableCraft.Infrastructure.ComfyUI;
 /// </summary>
 public sealed class SceneImageStorage
 {
-    private readonly ComfyUISettings _settings;
+    private readonly ImageGenerationOptions _options;
     private readonly ILogger<SceneImageStorage> _logger;
 
     public SceneImageStorage(
-        IOptions<ComfyUISettings> settings,
+        IOptions<ImageGenerationOptions> options,
         ILogger<SceneImageStorage> logger)
     {
-        _settings = settings.Value;
+        _options = options.Value;
         _logger = logger;
     }
 
-    /// <summary>
-    /// Saves an image to storage.
-    /// </summary>
-    /// <param name="adventureId">The adventure ID.</param>
-    /// <param name="sceneId">The scene ID.</param>
-    /// <param name="version">The image version number.</param>
-    /// <param name="imageBytes">The image data.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The relative path where the image was saved.</returns>
     public async Task<string> SaveImageAsync(
         Guid adventureId,
         Guid sceneId,
@@ -52,12 +43,6 @@ public sealed class SceneImageStorage
         return relativePath;
     }
 
-    /// <summary>
-    /// Retrieves an image from storage.
-    /// </summary>
-    /// <param name="relativePath">The relative path of the image.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The image bytes, or null if not found.</returns>
     public async Task<byte[]?> GetImageAsync(string relativePath, CancellationToken cancellationToken)
     {
         var fullPath = GetFullPath(relativePath);
@@ -71,11 +56,6 @@ public sealed class SceneImageStorage
         return await File.ReadAllBytesAsync(fullPath, cancellationToken);
     }
 
-    /// <summary>
-    /// Deletes an image from storage.
-    /// </summary>
-    /// <param name="relativePath">The relative path of the image.</param>
-    /// <returns>True if the image was deleted, false if it didn't exist.</returns>
     public bool DeleteImage(string relativePath)
     {
         var fullPath = GetFullPath(relativePath);
@@ -88,18 +68,11 @@ public sealed class SceneImageStorage
         File.Delete(fullPath);
         _logger.LogInformation("Deleted scene image: {Path}", relativePath);
 
-        // Clean up empty directories
         CleanupEmptyDirectories(Path.GetDirectoryName(fullPath));
 
         return true;
     }
 
-    /// <summary>
-    /// Deletes all images for a scene.
-    /// </summary>
-    /// <param name="adventureId">The adventure ID.</param>
-    /// <param name="sceneId">The scene ID.</param>
-    /// <returns>The number of images deleted.</returns>
     public int DeleteAllImagesForScene(Guid adventureId, Guid sceneId)
     {
         var sceneDirectory = GetSceneDirectory(adventureId, sceneId);
@@ -117,18 +90,11 @@ public sealed class SceneImageStorage
 
         _logger.LogInformation("Deleted {Count} images for scene {SceneId}", files.Length, sceneId);
 
-        // Clean up empty directories
         CleanupEmptyDirectories(sceneDirectory);
 
         return files.Length;
     }
 
-    /// <summary>
-    /// Gets the next available version number for a scene.
-    /// </summary>
-    /// <param name="adventureId">The adventure ID.</param>
-    /// <param name="sceneId">The scene ID.</param>
-    /// <returns>The next version number (1-based).</returns>
     public int GetNextVersion(Guid adventureId, Guid sceneId)
     {
         var sceneDirectory = GetSceneDirectory(adventureId, sceneId);
@@ -152,21 +118,14 @@ public sealed class SceneImageStorage
         return maxVersion + 1;
     }
 
-    /// <summary>
-    /// Checks if an image exists at the given path.
-    /// </summary>
     public bool ImageExists(string relativePath)
     {
         var fullPath = GetFullPath(relativePath);
         return File.Exists(fullPath);
     }
 
-    /// <summary>
-    /// Gets the relative URL path for serving the image.
-    /// </summary>
     public static string GetImageUrl(string relativePath)
     {
-        // Convert backslashes to forward slashes for URLs
         return $"/scene-images/{relativePath.Replace('\\', '/')}";
     }
 
@@ -189,7 +148,7 @@ public sealed class SceneImageStorage
 
     private string GetEffectiveBasePath()
     {
-        var path = _settings.GetEffectiveImageStoragePath();
+        var path = _options.GetEffectiveImageStoragePath();
         if (!Path.IsPathRooted(path))
         {
             path = Path.GetFullPath(path);

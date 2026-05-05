@@ -1,5 +1,5 @@
 using FableCraft.Application.NarrativeEngine.Agents;
-using FableCraft.Infrastructure.ComfyUI;
+using FableCraft.Infrastructure.Images;
 using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
@@ -71,25 +71,25 @@ public interface ISceneImageService
 internal sealed class SceneImageService : ISceneImageService
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly ComfyUIClient _comfyUIClient;
+    private readonly IImageGenerationClient _imageClient;
     private readonly SceneImageStorage _imageStorage;
     private readonly ImagePromptAgent _imagePromptAgent;
-    private readonly ComfyUISettings _settings;
+    private readonly IOptionsMonitor<ImageGenerationOptions> _optionsMonitor;
     private readonly ILogger _logger;
 
     public SceneImageService(
         ApplicationDbContext dbContext,
-        ComfyUIClient comfyUIClient,
+        IImageGenerationClient imageClient,
         SceneImageStorage imageStorage,
         ImagePromptAgent imagePromptAgent,
-        IOptions<ComfyUISettings> settings,
+        IOptionsMonitor<ImageGenerationOptions> optionsMonitor,
         ILogger logger)
     {
         _dbContext = dbContext;
-        _comfyUIClient = comfyUIClient;
+        _imageClient = imageClient;
         _imageStorage = imageStorage;
         _imagePromptAgent = imagePromptAgent;
-        _settings = settings.Value;
+        _optionsMonitor = optionsMonitor;
         _logger = logger;
     }
 
@@ -111,7 +111,7 @@ internal sealed class SceneImageService : ISceneImageService
         Guid sceneId,
         CancellationToken cancellationToken)
     {
-        if (!_settings.Enabled)
+        if (!_optionsMonitor.CurrentValue.Enabled)
         {
             throw new InvalidOperationException("Image generation is not enabled");
         }
@@ -127,94 +127,69 @@ internal sealed class SceneImageService : ISceneImageService
             throw new InvalidOperationException($"Scene {sceneId} not found for adventure {adventureId}");
         }
 
-        // Get next version number
-        var nextVersion = _imageStorage.GetNextVersion(adventureId, sceneId);
+        // Generate prompts using the LLM (no DB write yet — failed generations should not persist).
+        var promptInput = new ImagePromptInput
+        {
+            AdventureId = adventureId,
+            SceneId = sceneId,
+            PromptPath = scene.Adventure!.PromptPath,
+            NarrativeText = scene.NarrativeText,
+            SceneTracker = scene.Metadata?.Tracker?.Scene,
+            MainCharacterName = scene.Adventure.MainCharacter?.Name,
+            MainCharacterAppearance = scene.Metadata?.Tracker?.MainCharacter?.MainCharacter
+        };
 
-        // Create initial image record with Pending status
+        ImagePromptOutput promptOutput;
+        ImageGenerationResult result;
+        try
+        {
+            promptOutput = await _imagePromptAgent.InvokeAsync(promptInput, cancellationToken);
+
+            result = await _imageClient.GenerateImageAsync(
+                promptOutput.PositivePrompt,
+                promptOutput.NegativePrompt,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to generate image for scene {SceneId}", sceneId);
+            throw;
+        }
+
+        // Persist only on success.
+        var nextVersion = _imageStorage.GetNextVersion(adventureId, sceneId);
+        var imagePath = await _imageStorage.SaveImageAsync(
+            adventureId,
+            sceneId,
+            nextVersion,
+            result.ImageBytes,
+            cancellationToken);
+
+        var hasOtherImages = await _dbContext.SceneImages
+            .AnyAsync(x => x.SceneId == sceneId, cancellationToken);
+
         var sceneImage = new SceneImage
         {
             Id = Guid.NewGuid(),
             SceneId = sceneId,
             Version = nextVersion,
-            IsSelected = false,
-            Status = ImageGenerationStatus.Pending,
-            Prompt = "", // Will be set after prompt generation
+            IsSelected = !hasOtherImages,
+            Status = ImageGenerationStatus.Completed,
+            Prompt = promptOutput.PositivePrompt,
+            NegativePrompt = promptOutput.NegativePrompt,
+            ImagePath = imagePath,
+            GenerationDurationMs = result.GenerationDurationMs,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
         _dbContext.SceneImages.Add(sceneImage);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        try
-        {
-            // Update status to Generating
-            sceneImage.Status = ImageGenerationStatus.Generating;
-            await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.Information(
+            "Generated image for scene {SceneId} version {Version} in {Duration}ms",
+            sceneId, nextVersion, result.GenerationDurationMs);
 
-            // Generate prompts using the LLM
-            var promptInput = new ImagePromptInput
-            {
-                AdventureId = adventureId,
-                SceneId = sceneId,
-                PromptPath = scene.Adventure!.PromptPath,
-                NarrativeText = scene.NarrativeText,
-                SceneTracker = scene.Metadata?.Tracker?.Scene,
-                MainCharacterName = scene.Adventure.MainCharacter?.Name,
-                MainCharacterAppearance = scene.Metadata?.Tracker?.MainCharacter?.MainCharacter?.Appearance
-            };
-
-            var promptOutput = await _imagePromptAgent.InvokeAsync(promptInput, cancellationToken);
-
-            sceneImage.Prompt = promptOutput.PositivePrompt;
-            sceneImage.NegativePrompt = promptOutput.NegativePrompt;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            // Generate image using ComfyUI
-            var result = await _comfyUIClient.GenerateImageAsync(
-                promptOutput.PositivePrompt,
-                promptOutput.NegativePrompt,
-                cancellationToken);
-
-            // Save image to storage
-            var imagePath = await _imageStorage.SaveImageAsync(
-                adventureId,
-                sceneId,
-                nextVersion,
-                result.ImageBytes,
-                cancellationToken);
-
-            // Update record with success
-            sceneImage.ImagePath = imagePath;
-            sceneImage.Status = ImageGenerationStatus.Completed;
-            sceneImage.GenerationDurationMs = result.GenerationDurationMs;
-
-            // If this is the first image, select it automatically
-            var hasOtherImages = await _dbContext.SceneImages
-                .AnyAsync(x => x.SceneId == sceneId && x.Id != sceneImage.Id, cancellationToken);
-
-            if (!hasOtherImages)
-            {
-                sceneImage.IsSelected = true;
-            }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            _logger.Information(
-                "Generated image for scene {SceneId} version {Version} in {Duration}ms",
-                sceneId, nextVersion, result.GenerationDurationMs);
-
-            return MapToDto(sceneImage);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Failed to generate image for scene {SceneId}", sceneId);
-
-            sceneImage.Status = ImageGenerationStatus.Failed;
-            sceneImage.ErrorMessage = ex.Message;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            return MapToDto(sceneImage);
-        }
+        return MapToDto(sceneImage);
     }
 
     public async Task<SceneImageDto> SelectImageAsync(

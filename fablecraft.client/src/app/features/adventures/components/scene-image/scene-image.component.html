@@ -2,7 +2,7 @@
   <!-- Main Image Display -->
   <div class="image-display" *ngIf="selectedImage && selectedImage.status === 'Completed'">
     <img
-      [src]="selectedImage.imageUrl"
+      [src]="imageSrc(selectedImage)"
       [alt]="'Scene image v' + selectedImage.version"
       class="scene-image"
       (click)="toggleGallery()"
@@ -96,7 +96,7 @@
           [class.selected]="image.isSelected"
           (click)="selectImage(image)"
         >
-          <img [src]="image.imageUrl" [alt]="'Version ' + image.version"/>
+          <img [src]="imageSrc(image)" [alt]="'Version ' + image.version"/>
           <div class="gallery-item-info">
             <span class="version-badge">v{{ image.version }}</span>
             <span class="duration" *ngIf="image.generationDurationMs">{{ formatDuration(image.generationDurationMs) }}</span>

@@ -68,10 +68,9 @@ internal sealed class ImagePromptAgent
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(systemPrompt);
 
-        var contextPrompt = BuildContextPrompt(input);
-        chatHistory.AddUserMessage(contextPrompt);
+        chatHistory.AddUserMessage(input.MainCharacterAppearance.ToJsonString());
 
-        chatHistory.AddUserMessage("Generate the image prompts for this scene.");
+        chatHistory.AddUserMessage("Generate the image prompts for this character.");
 
         var outputParser = ResponseParser.CreateJsonParser<ImagePromptOutput>("image_prompt", true);
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
@@ -103,49 +102,6 @@ internal sealed class ImagePromptAgent
         }
         return await File.ReadAllTextAsync(agentPromptPath);
     }
-
-    private static string BuildContextPrompt(ImagePromptInput input)
-    {
-        var sceneTrackerSection = "";
-        if (input.SceneTracker != null)
-        {
-            sceneTrackerSection = $"""
-                <scene_tracker>
-                Time: {input.SceneTracker.Time}
-                Location: {input.SceneTracker.Location}
-                Weather: {input.SceneTracker.Weather}
-                Characters Present: {string.Join(", ", input.SceneTracker.CharactersPresent)}
-                </scene_tracker>
-                """;
-        }
-
-        var mainCharacterSection = "";
-        if (!string.IsNullOrEmpty(input.MainCharacterName) || !string.IsNullOrEmpty(input.MainCharacterAppearance))
-        {
-            mainCharacterSection = $"""
-                <main_character>
-                Name: {input.MainCharacterName ?? "Unknown"}
-                Appearance: {input.MainCharacterAppearance ?? "Not specified"}
-                </main_character>
-                """;
-        }
-
-        var genreSection = !string.IsNullOrEmpty(input.Genre)
-            ? $"<genre>{input.Genre}</genre>"
-            : "";
-
-        return $"""
-                <scene_narrative>
-                {input.NarrativeText}
-                </scene_narrative>
-
-                {sceneTrackerSection}
-
-                {mainCharacterSection}
-
-                {genreSection}
-                """;
-    }
 }
 
 /// <summary>
@@ -159,7 +115,7 @@ public sealed class ImagePromptInput
     public required string NarrativeText { get; init; }
     public SceneTracker? SceneTracker { get; init; }
     public string? MainCharacterName { get; init; }
-    public string? MainCharacterAppearance { get; init; }
+    public MainCharacterTracker? MainCharacterAppearance { get; init; }
     public string? Genre { get; init; }
 }
 

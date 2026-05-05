@@ -31,7 +31,11 @@ builder.Services
 #pragma warning restore EXTEXP0001
     .AddApplicationServices(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -65,8 +69,8 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 // Serve scene images
-var sceneImagesPath = app.Configuration["ComfyUI:ImageStoragePath"] ?? "./scene-images";
-var sceneImagesHostPath = app.Configuration["ComfyUI:ImageStorageHostPath"];
+var sceneImagesPath = app.Configuration["ImageGeneration:ImageStoragePath"] ?? "./scene-images";
+var sceneImagesHostPath = app.Configuration["ImageGeneration:ImageStorageHostPath"];
 var effectiveSceneImagesPath = string.IsNullOrEmpty(sceneImagesHostPath) ? sceneImagesPath : sceneImagesHostPath;
 if (!Path.IsPathRooted(effectiveSceneImagesPath))
 {

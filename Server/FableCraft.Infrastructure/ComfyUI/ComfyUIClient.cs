@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using FableCraft.Infrastructure.Images;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,53 +14,44 @@ namespace FableCraft.Infrastructure.ComfyUI;
 /// Client for interacting with the ComfyUI API.
 /// Handles workflow submission, status polling, and image retrieval.
 /// </summary>
-public sealed class ComfyUIClient
+public sealed class ComfyUIClient : IImageGenerationClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ComfyUISettings _settings;
+    private readonly IOptionsMonitor<ComfyUISettings> _settingsMonitor;
     private readonly ILogger<ComfyUIClient> _logger;
 
     public ComfyUIClient(
         HttpClient httpClient,
-        IOptions<ComfyUISettings> settings,
+        IOptionsMonitor<ComfyUISettings> settingsMonitor,
         ILogger<ComfyUIClient> logger)
     {
         _httpClient = httpClient;
-        _settings = settings.Value;
+        _settingsMonitor = settingsMonitor;
         _logger = logger;
     }
 
-    /// <summary>
-    /// Generates an image using the configured workflow with the provided prompts.
-    /// </summary>
-    /// <param name="positivePrompt">The positive prompt describing what to generate.</param>
-    /// <param name="negativePrompt">The negative prompt describing what to avoid.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The generated image bytes and generation duration.</returns>
-    public async Task<ComfyUIGenerationResult> GenerateImageAsync(
+    private ComfyUISettings _settings => _settingsMonitor.CurrentValue;
+
+    public async Task<ImageGenerationResult> GenerateImageAsync(
         string positivePrompt,
         string? negativePrompt,
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
 
-        // Load and modify workflow
         var workflow = await LoadWorkflowAsync(cancellationToken);
         InjectPrompts(workflow, positivePrompt, negativePrompt);
 
-        // Submit to ComfyUI
         var promptId = await SubmitWorkflowAsync(workflow, cancellationToken);
         _logger.LogInformation("Submitted workflow to ComfyUI with prompt_id: {PromptId}", promptId);
 
-        // Poll for completion
         var outputInfo = await WaitForCompletionAsync(promptId, cancellationToken);
 
-        // Retrieve the generated image
         var imageBytes = await RetrieveImageAsync(outputInfo, cancellationToken);
 
         stopwatch.Stop();
 
-        return new ComfyUIGenerationResult
+        return new ImageGenerationResult
         {
             ImageBytes = imageBytes,
             GenerationDurationMs = stopwatch.ElapsedMilliseconds
@@ -293,18 +286,9 @@ public sealed class ComfyUIClient
 }
 
 /// <summary>
-/// Result of a ComfyUI image generation.
-/// </summary>
-public sealed class ComfyUIGenerationResult
-{
-    public required byte[] ImageBytes { get; init; }
-    public long GenerationDurationMs { get; init; }
-}
-
-/// <summary>
 /// Exception thrown when ComfyUI image generation fails.
 /// </summary>
-public sealed class ComfyUIGenerationException : Exception
+public sealed class ComfyUIGenerationException : ImageGenerationException
 {
     public ComfyUIGenerationException(string message) : base(message) { }
     public ComfyUIGenerationException(string message, Exception innerException) : base(message, innerException) { }
