@@ -474,8 +474,6 @@ internal sealed class SceneContext
 
     public required string SceneContent { get; set; } = null!;
 
-    public required string PlayerChoice { get; set; } = null!;
-
     public required Metadata Metadata { get; set; } = null!;
 
     public static SceneContext CreateFromScene(Scene scene)
@@ -483,9 +481,6 @@ internal sealed class SceneContext
         return new SceneContext
         {
             SceneContent = scene.NarrativeText,
-            PlayerChoice = scene.CharacterActions.FirstOrDefault(y => y.Selected)
-                               ?.ActionDescription
-                           ?? string.Empty,
             Metadata = scene.Metadata,
             SequenceNumber = scene.SequenceNumber
         };

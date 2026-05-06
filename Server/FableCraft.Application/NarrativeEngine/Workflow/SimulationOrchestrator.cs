@@ -747,7 +747,6 @@ internal sealed class SimulationOrchestrator(
             {
                 SequenceNumber = scene.SequenceNumber,
                 SceneContent = scene.Content,
-                PlayerChoice = string.Empty,
                 Metadata = new Metadata
                 {
                     GatheredContext = globalGatheredContext,

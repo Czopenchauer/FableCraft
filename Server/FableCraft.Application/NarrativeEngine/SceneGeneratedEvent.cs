@@ -127,7 +127,6 @@ internal sealed class SceneGeneratedEventHandler : IMessageHandler<SceneGenerate
                                     Weather: {scene.Metadata.Tracker.Scene!.Weather}
                                     Characters on scene: {string.Join(", ", scene.Metadata.Tracker.Scene.CharactersPresent)}
 
-                                    {scene.CharacterActions.Single(x => x.Selected).ActionDescription}
                                     {scene.NarrativeText}
                                     """;
                 var sceneRequest = new ChunkCreationRequest(scene.Id, sceneContent, ContentType.txt, [RagClientExtensions.GetMainCharacterDatasetName()]);

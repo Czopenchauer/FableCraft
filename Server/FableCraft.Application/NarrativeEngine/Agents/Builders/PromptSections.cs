@@ -71,7 +71,6 @@ internal static class PromptSections
                               Time: {x.Metadata.Tracker!.Scene!.Time}
                               Location: {x.Metadata.Tracker.Scene.Location}
                               Weather: {x.Metadata.Tracker.Scene.Weather}
-                              {x.PlayerChoice}
                               {x.SceneContent}
                               """));
 
@@ -92,7 +91,6 @@ internal static class PromptSections
                 .OrderBy(x => x.SequenceNumber)
                 .Select(s => $"""
                               SCENE NUMBER: {s.SequenceNumber}
-                              {s.PlayerChoice}
                               {s.SceneContent}
                               """));
 
@@ -110,7 +108,6 @@ internal static class PromptSections
             ? string.Empty
             : $"""
                <scene_content>
-               {context.PlayerAction}
                {content}
                </scene_content>
                """;
@@ -122,7 +119,6 @@ internal static class PromptSections
             : $"""
                Here's the current narrative scene written from {context.MainCharacter.Name}'s perspective:
                <current_scene>
-               {context.PlayerAction}
                {context.NewScene.Scene}
                </current_scene>
                """;
