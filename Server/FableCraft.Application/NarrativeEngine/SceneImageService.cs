@@ -42,11 +42,14 @@ public interface ISceneImageService
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Generates a new image for a scene.
+    /// Generates a new image for a scene. If <paramref name="prompt"/> is provided,
+    /// it is used directly and the AI prompt agent is skipped.
     /// </summary>
     Task<SceneImageDto> GenerateImageAsync(
         Guid adventureId,
         Guid sceneId,
+        string? prompt,
+        string? negativePrompt,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -109,6 +112,8 @@ internal sealed class SceneImageService : ISceneImageService
     public async Task<SceneImageDto> GenerateImageAsync(
         Guid adventureId,
         Guid sceneId,
+        string? prompt,
+        string? negativePrompt,
         CancellationToken cancellationToken)
     {
         if (!_optionsMonitor.CurrentValue.Enabled)
@@ -127,27 +132,37 @@ internal sealed class SceneImageService : ISceneImageService
             throw new InvalidOperationException($"Scene {sceneId} not found for adventure {adventureId}");
         }
 
-        // Generate prompts using the LLM (no DB write yet — failed generations should not persist).
-        var promptInput = new ImagePromptInput
-        {
-            AdventureId = adventureId,
-            SceneId = sceneId,
-            PromptPath = scene.Adventure!.PromptPath,
-            NarrativeText = scene.NarrativeText,
-            SceneTracker = scene.Metadata?.Tracker?.Scene,
-            MainCharacterName = scene.Adventure.MainCharacter?.Name,
-            MainCharacterAppearance = scene.Metadata?.Tracker?.MainCharacter?.MainCharacter
-        };
-
-        ImagePromptOutput promptOutput;
+        string finalPrompt;
+        string? finalNegativePrompt;
         ImageGenerationResult result;
         try
         {
-            promptOutput = await _imagePromptAgent.InvokeAsync(promptInput, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(prompt))
+            {
+                finalPrompt = prompt;
+                finalNegativePrompt = string.IsNullOrWhiteSpace(negativePrompt) ? null : negativePrompt;
+            }
+            else
+            {
+                var promptInput = new ImagePromptInput
+                {
+                    AdventureId = adventureId,
+                    SceneId = sceneId,
+                    PromptPath = scene.Adventure!.PromptPath,
+                    NarrativeText = scene.NarrativeText,
+                    SceneTracker = scene.Metadata?.Tracker?.Scene,
+                    MainCharacterName = scene.Adventure.MainCharacter?.Name,
+                    MainCharacterAppearance = scene.Metadata?.Tracker?.MainCharacter?.MainCharacter
+                };
+
+                var promptOutput = await _imagePromptAgent.InvokeAsync(promptInput, cancellationToken);
+                finalPrompt = promptOutput.PositivePrompt;
+                finalNegativePrompt = promptOutput.NegativePrompt;
+            }
 
             result = await _imageClient.GenerateImageAsync(
-                promptOutput.PositivePrompt,
-                promptOutput.NegativePrompt,
+                finalPrompt,
+                finalNegativePrompt,
                 cancellationToken);
         }
         catch (Exception ex)
@@ -175,8 +190,8 @@ internal sealed class SceneImageService : ISceneImageService
             Version = nextVersion,
             IsSelected = !hasOtherImages,
             Status = ImageGenerationStatus.Completed,
-            Prompt = promptOutput.PositivePrompt,
-            NegativePrompt = promptOutput.NegativePrompt,
+            Prompt = finalPrompt,
+            NegativePrompt = finalNegativePrompt,
             ImagePath = imagePath,
             GenerationDurationMs = result.GenerationDurationMs,
             CreatedAt = DateTimeOffset.UtcNow

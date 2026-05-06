@@ -23,12 +23,25 @@ export class SceneImageService {
   }
 
   /**
-   * Generates a new image for a scene.
+   * Generates a new image for a scene. If `prompt` is provided, the backend
+   * skips the AI prompt agent and uses the supplied prompt directly.
    */
-  generateImage(adventureId: string, sceneId: string): Observable<SceneImage> {
+  generateImage(
+    adventureId: string,
+    sceneId: string,
+    prompt?: string,
+    negativePrompt?: string
+  ): Observable<SceneImage> {
+    const body: { prompt?: string; negativePrompt?: string } = {};
+    if (prompt && prompt.trim()) {
+      body.prompt = prompt;
+      if (negativePrompt && negativePrompt.trim()) {
+        body.negativePrompt = negativePrompt;
+      }
+    }
     return this.http.post<SceneImage>(
       `${this.baseUrl}/${adventureId}/scene/${sceneId}/images`,
-      {}
+      body
     );
   }
 

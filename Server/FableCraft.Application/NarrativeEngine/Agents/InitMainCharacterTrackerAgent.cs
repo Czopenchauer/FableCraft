@@ -46,7 +46,7 @@ internal sealed class InitMainCharacterTrackerAgent(
             .Select(x => new { x.Id, x.FirstSceneGuidance })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
         var requestPrompt = $"""
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              {PromptSections.InitialInstruction(instruction.FirstSceneGuidance)}
 

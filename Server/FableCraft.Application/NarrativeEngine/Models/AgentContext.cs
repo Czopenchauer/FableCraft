@@ -202,6 +202,27 @@ internal sealed class GenerationContext
     public bool SkipCoLocation { get; set; }
 
     /// <summary>
+    ///     When true, ProgressionAgent should skip execution.
+    ///     Set during regeneration when Progression was not selected (and MainCharacterTracker isn't being regenerated).
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipProgression { get; set; }
+
+    /// <summary>
+    ///     When true, InventoryTrackerAgent should skip execution.
+    ///     Set during regeneration when InventoryTracker was not selected (and MainCharacterTracker isn't being regenerated).
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipInventory { get; set; }
+
+    /// <summary>
+    ///     When true, StorySummaryAgent should skip execution for both per-character and MC summaries.
+    ///     Set during regeneration when Chronicler was not selected.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipStorySummary { get; set; }
+
+    /// <summary>
     ///     When true, CharacterContextGatherer should run for all characters even if already processed.
     ///     Set during regeneration when ContextGatherer is selected for regeneration.
     /// </summary>

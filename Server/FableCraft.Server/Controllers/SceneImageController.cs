@@ -34,7 +34,8 @@ public class SceneImageController : ControllerBase
     }
 
     /// <summary>
-    /// Generates a new image for a scene.
+    /// Generates a new image for a scene. If a prompt is supplied in the body,
+    /// it overrides the AI-generated prompt.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(SceneImageDto), StatusCodes.Status200OK)]
@@ -43,12 +44,17 @@ public class SceneImageController : ControllerBase
     public async Task<ActionResult<SceneImageDto>> GenerateImage(
         Guid adventureId,
         Guid sceneId,
+        [FromBody] GenerateImageRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
             var image = await _sceneImageService.GenerateImageAsync(
-                adventureId, sceneId, cancellationToken);
+                adventureId,
+                sceneId,
+                request?.Prompt,
+                request?.NegativePrompt,
+                cancellationToken);
             return Ok(image);
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
@@ -59,6 +65,12 @@ public class SceneImageController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    public sealed class GenerateImageRequest
+    {
+        public string? Prompt { get; init; }
+        public string? NegativePrompt { get; init; }
     }
 
     /// <summary>

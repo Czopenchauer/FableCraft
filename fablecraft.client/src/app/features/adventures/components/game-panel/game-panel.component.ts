@@ -48,6 +48,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   readonly availableAgents = [
     {id: 'SceneTracker', label: 'Scene Tracker', description: 'Time, location, weather, characters present'},
     {id: 'MainCharacterTracker', label: 'Protagonist State', description: 'Main character tracker & description'},
+    {id: 'InventoryTracker', label: 'Inventory', description: 'Carried items & assets'},
+    {id: 'Progression', label: 'Progression', description: 'Skills & abilities'},
     {id: 'CharacterTracker', label: 'Side Characters', description: 'All side character trackers'},
     {id: 'Simulation', label: 'Simulation', description: 'Off-screen character simulation (skipped by default)'},
     {id: 'Chronicler', label: 'Chronicler', description: 'Story tracking & world events (skipped by default)'},

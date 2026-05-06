@@ -54,7 +54,7 @@ internal sealed class InventoryTrackerAgent(
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
                              New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              Update the main character's Carried and Assets based on the new scene. Output ONLY changes to Carried and/or Assets in the updates object.
                              """;

@@ -396,6 +396,15 @@ internal sealed class SceneGenerationOrchestrator(
         context.SkipCoLocation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.CoLocation));
         context.ForceCharacterContextGathering = agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
 
+        // When MainCharacterTracker is being regenerated, the tracker is rebuilt from scratch and
+        // Progression/Inventory deltas must re-apply on top so prior progression/inventory aren't lost.
+        var regenMainCharacterTracker = agentsToRegenerate.Contains(nameof(EnrichmentAgent.MainCharacterTracker));
+        context.SkipProgression = !regenMainCharacterTracker
+                                  && !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Progression));
+        context.SkipInventory = !regenMainCharacterTracker
+                                && !agentsToRegenerate.Contains(nameof(EnrichmentAgent.InventoryTracker));
+        context.SkipStorySummary = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
+
         var stopwatch = Stopwatch.StartNew();
         try
         {
@@ -484,6 +493,14 @@ internal sealed class SceneGenerationOrchestrator(
                         context.NewTracker.MainCharacter.MainCharacterDescription = null;
                     }
 
+                    break;
+                case nameof(EnrichmentAgent.InventoryTracker):
+                    context.InventoryDelta = null;
+                    context.InventoryAgentRan = false;
+                    break;
+                case nameof(EnrichmentAgent.Progression):
+                    context.ProgressionDelta = null;
+                    context.ProgressionAgentRan = false;
                     break;
                 case nameof(EnrichmentAgent.CharacterTracker):
                     context.CharacterUpdates = [];

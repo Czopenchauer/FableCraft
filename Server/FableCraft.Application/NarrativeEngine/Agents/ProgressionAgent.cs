@@ -51,7 +51,7 @@ internal sealed class ProgressionAgent(
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
                              New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              Update the main character's Skills and Abilities based on the new scene. Output ONLY changes to the Skills and Abilities arrays in the updates object.
                              """;

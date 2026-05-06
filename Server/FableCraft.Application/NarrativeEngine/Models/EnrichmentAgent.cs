@@ -15,6 +15,11 @@ public enum EnrichmentAgent
     SceneTracker,
     MainCharacterTracker,
 
+    // Main character delta agents. Selecting these also forces MainCharacterTracker to re-derive,
+    // so the regenerated delta can be merged onto a clean base instead of doubling onto the saved tracker.
+    InventoryTracker,
+    Progression,
+
     // All updates for side characters, state, tracker are treated atomically. They cannot be partially regenerated.
     CharacterTracker,
 

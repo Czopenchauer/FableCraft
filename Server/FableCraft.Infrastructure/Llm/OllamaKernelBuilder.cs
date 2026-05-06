@@ -29,7 +29,7 @@ internal sealed class OllamaKernelBuilder : IKernelBuilder
         var httpClient = new HttpClient(loggingHandler)
         {
             BaseAddress = new Uri(_preset.BaseUrl ?? "http://host.docker.internal:11434"),
-            Timeout = TimeSpan.FromMinutes(10),
+            Timeout = TimeSpan.FromMinutes(5),
         };
 
         var builder = Kernel

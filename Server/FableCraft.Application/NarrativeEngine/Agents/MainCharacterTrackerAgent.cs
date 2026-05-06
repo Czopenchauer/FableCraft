@@ -80,7 +80,7 @@ internal sealed class MainCharacterTrackerAgent(
         CancellationToken cancellationToken)
     {
         var requestPrompt = $"""
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              It's the first scene of the adventure. Initialize the tracker based on the scene content and characters description.
                              """;
@@ -123,7 +123,7 @@ internal sealed class MainCharacterTrackerAgent(
                              {PromptSections.MainCharacterTracker(context.SceneContext!)}
 
                              New scene content:
-                             {PromptSections.SceneContent(context.NewScene?.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              Update the main_character_tracker based on the new scene. Output ONLY the fields that changed in the updates object.
                              """;

@@ -24,6 +24,9 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
   isGenerating = false;
   showGallery = false;
   error: string | null = null;
+  showPromptEditor = false;
+  editPrompt = '';
+  editNegativePrompt = '';
 
   private destroy$ = new Subject<void>();
 
@@ -59,6 +62,7 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
         next: (images) => {
           this.images = images;
           this.selectedImage = images.find(img => img.isSelected) || images[0] || null;
+          this.syncPromptEditorFromSelected();
         },
         error: (err) => {
           console.error('Failed to load images', err);
@@ -67,13 +71,26 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
       });
   }
 
-  generateImage(): void {
+  /**
+   * Triggers regeneration. If `useCustomPrompt` is true, the currently edited
+   * prompt is sent to the backend (skipping the AI prompt agent). Otherwise the
+   * backend regenerates the prompt with the AI agent.
+   */
+  generateImage(useCustomPrompt = false): void {
     if (!this.adventureId || !this.sceneId || this.isGenerating) return;
+
+    const prompt = useCustomPrompt ? this.editPrompt : undefined;
+    const negativePrompt = useCustomPrompt ? this.editNegativePrompt : undefined;
+
+    if (useCustomPrompt && !prompt?.trim()) {
+      this.toastService.warning('Prompt cannot be empty.');
+      return;
+    }
 
     this.isGenerating = true;
     this.error = null;
 
-    this.sceneImageService.generateImage(this.adventureId, this.sceneId)
+    this.sceneImageService.generateImage(this.adventureId, this.sceneId, prompt, negativePrompt)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.isGenerating = false)
@@ -105,6 +122,7 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
     if (image.status === 'Completed') {
       this.images.unshift(image);
       this.selectedImage = image;
+      this.syncPromptEditorFromSelected();
       this.imageGenerated.emit(image);
       this.toastService.success('Image generated successfully');
     } else if (image.status === 'Failed') {
@@ -113,6 +131,22 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
     }
     // Reload to get the latest state
     this.loadImages();
+  }
+
+  togglePromptEditor(): void {
+    this.showPromptEditor = !this.showPromptEditor;
+    if (this.showPromptEditor) {
+      this.syncPromptEditorFromSelected();
+    }
+  }
+
+  resetPromptEditor(): void {
+    this.syncPromptEditorFromSelected();
+  }
+
+  private syncPromptEditorFromSelected(): void {
+    this.editPrompt = this.selectedImage?.prompt ?? '';
+    this.editNegativePrompt = this.selectedImage?.negativePrompt ?? '';
   }
 
   selectImage(image: SceneImage): void {
@@ -125,6 +159,7 @@ export class SceneImageComponent implements OnChanges, OnDestroy {
           // Update local state
           this.images.forEach(img => img.isSelected = img.id === updated.id);
           this.selectedImage = updated;
+          this.syncPromptEditorFromSelected();
         },
         error: (err) => {
           console.error('Failed to select image', err);

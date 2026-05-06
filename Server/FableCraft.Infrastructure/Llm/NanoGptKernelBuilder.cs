@@ -39,7 +39,7 @@ internal class NanoGptKernelBuilder : IKernelBuilder
         {
             hp.ConfigureHttpClient((_, c) =>
                 {
-                    c.Timeout = TimeSpan.FromMinutes(10);
+                    c.Timeout = TimeSpan.FromMinutes(5);
                 })
                 .AddHttpMessageHandler<HttpLoggingHandler>()
                 .AddHttpMessageHandler<NanoGptRequestTransformer>()

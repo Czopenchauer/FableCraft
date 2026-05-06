@@ -84,17 +84,17 @@ public static class Extensions
         {
             options.AttemptTimeout = new HttpTimeoutStrategyOptions
             {
-                Timeout = TimeSpan.FromMinutes(10)
+                Timeout = TimeSpan.FromMinutes(5)
             };
 
             options.TotalRequestTimeout = new HttpTimeoutStrategyOptions
             {
-                Timeout = TimeSpan.FromMinutes(20)
+                Timeout = TimeSpan.FromMinutes(5)
             };
 
-            options.Retry.MaxRetryAttempts = 2;
+            options.Retry.MaxRetryAttempts = 0;
             options.Retry.Delay = TimeSpan.FromSeconds(5);
-            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(20);
+            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(10);
         });
     }
 

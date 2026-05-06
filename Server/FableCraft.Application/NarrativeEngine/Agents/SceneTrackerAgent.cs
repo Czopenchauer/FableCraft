@@ -60,7 +60,7 @@ internal sealed class SceneTrackerAgent(
             requestPrompt = $"""
                              {(context.SceneContext?.Length < 1 ? PromptSections.AdventureStartTime(context.AdventureStartTime) : "")}
 
-                             {PromptSections.SceneContent(context.NewScene!.Scene)}
+                             {PromptSections.SceneContent(context)}
 
                              It's the first scene of the adventure. Initialize the tracker based on the scene content.
                              """;

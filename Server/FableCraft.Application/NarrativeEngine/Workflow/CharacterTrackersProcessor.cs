@@ -295,6 +295,12 @@ internal sealed class CharacterTrackersProcessor(
             return Task.FromResult<JsonElement?>(null);
         }
 
+        if (context.SkipProgression)
+        {
+            logger.Information("ProgressionAgent: skipping (not selected for regeneration)");
+            return Task.FromResult<JsonElement?>(null);
+        }
+
         if (context.ProgressionAgentRan)
         {
             logger.Information("ProgressionAgent: using cached result from previous enrichment attempt");
@@ -314,6 +320,12 @@ internal sealed class CharacterTrackersProcessor(
     {
         if (context.SceneContext.Length == 0)
         {
+            return Task.FromResult<JsonElement?>(null);
+        }
+
+        if (context.SkipInventory)
+        {
+            logger.Information("InventoryTrackerAgent: skipping (not selected for regeneration)");
             return Task.FromResult<JsonElement?>(null);
         }
 
@@ -535,6 +547,12 @@ internal sealed class CharacterTrackersProcessor(
         CharacterContext characterContext,
         CancellationToken cancellationToken)
     {
+        if (context.SkipStorySummary)
+        {
+            logger.Information("StorySummary for {CharacterName}: skipping (not selected for regeneration)", characterContext.Name);
+            return;
+        }
+
         try
         {
             var orderedRewrites = characterContext.SceneRewrites
@@ -604,6 +622,12 @@ internal sealed class CharacterTrackersProcessor(
         GenerationContext context,
         CancellationToken cancellationToken)
     {
+        if (context.SkipStorySummary)
+        {
+            logger.Information("MC StorySummary: skipping (not selected for regeneration)");
+            return;
+        }
+
         try
         {
             if (context.NewMcStorySummary != null)
