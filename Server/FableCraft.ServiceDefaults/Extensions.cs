@@ -5,6 +5,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 
+using Polly;
+
 using Npgsql;
 
 using OpenTelemetry.Exporter;
@@ -92,7 +94,8 @@ public static class Extensions
                 Timeout = TimeSpan.FromMinutes(5)
             };
 
-            options.Retry.MaxRetryAttempts = 0;
+            options.Retry.MaxRetryAttempts = 1;
+            options.Retry.ShouldHandle = static _ => PredicateResult.False();
             options.Retry.Delay = TimeSpan.FromSeconds(5);
             options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(10);
         });

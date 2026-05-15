@@ -27,7 +27,7 @@ internal sealed class CharacterContextGatherer(
     KernelBuilderFactory kernelBuilderFactory,
     IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    private const int SceneContextCount = 15;
+    private const int SceneContextCount = 10;
 
     public async Task<CharacterGatheredContext> Invoke(
         GenerationContext context,

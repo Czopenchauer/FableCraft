@@ -68,7 +68,7 @@ internal sealed class AgentKernel : IAgentKernel
                 ShouldHandle = new PredicateBuilder()
                     .Handle<HttpOperationException>(e => e.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable)
                     .Handle<HttpRequestException>(e => e.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable),
-                MaxRetryAttempts = 4,
+                MaxRetryAttempts = 7,
                 Delay = TimeSpan.FromSeconds(5),
                 OnRetry = args =>
                 {

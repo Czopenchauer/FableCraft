@@ -23,7 +23,7 @@ internal sealed class ContextGatherer(
     KernelBuilderFactory kernelBuilderFactory,
     IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory), IProcessor
 {
-    private const int SceneContextCount = 20;
+    private const int SceneContextCount = 10;
 
     public async Task Invoke(
         GenerationContext context,
