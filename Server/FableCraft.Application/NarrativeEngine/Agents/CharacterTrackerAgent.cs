@@ -14,13 +14,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class CharacterTrackerAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     protected override AgentName GetAgentName() => AgentName.CharacterTrackerAgent;
 
@@ -33,25 +36,17 @@ internal sealed class CharacterTrackerAgent(
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
-        var previousTrackers = await dbContext.CharacterStates
-            .Where(z => z.CharacterId == context.CharacterId)
-            .OrderByDescending(z => z.SequenceNumber)
-            .Take(TrackerCount)
-            .ToArrayAsync(cancellationToken);
+        var previousTracker = await GetPreviousTracker(context, cancellationToken);
 
         var requestPrompt = $"""
-                             Previous trackers:
-                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
-
                              {PromptSections.CharacterStateContext(context)}
 
                              New scenes content:
                              {string.Join("\n\n", newCharacter.SceneRewrites.Select(z => $"{z.SceneTracker.ToJsonString()}\n{z.Content}"))}
 
-                             Update the character_tracker based on the scenes scenes!
+                             Update the character_tracker based on the scenes. Output ONLY the fields that changed in the updates object.
                              """;
-        return await InvokeInternal(requestPrompt, generationContext, context, sceneTrackerResult, cancellationToken);
+        return await InvokeInternal(requestPrompt, previousTracker, generationContext, context, sceneTrackerResult, cancellationToken);
     }
 
     public async Task<(CharacterTracker Tracker, bool IsDead)> Invoke(
@@ -61,28 +56,42 @@ internal sealed class CharacterTrackerAgent(
         SceneTracker sceneTrackerResult,
         CancellationToken cancellationToken)
     {
+        var previousTracker = await GetPreviousTracker(context, cancellationToken);
+
+        var requestPrompt = $"""
+                             {PromptSections.CharacterStateContext(context)}
+
+                             New scene content:
+                             {newScene}
+
+                             Update the character_tracker based on the new scene. Output ONLY the fields that changed in the updates object.
+                             """;
+        return await InvokeInternal(requestPrompt, previousTracker, generationContext, context, sceneTrackerResult, cancellationToken);
+    }
+
+    private async Task<CharacterTracker> GetPreviousTracker(CharacterContext context, CancellationToken cancellationToken)
+    {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         var previousTrackers = await dbContext.CharacterStates
             .Where(z => z.CharacterId == context.CharacterId)
             .OrderByDescending(z => z.SequenceNumber)
             .Take(TrackerCount)
             .ToArrayAsync(cancellationToken);
-        var requestPrompt = $"""
-                             Previous trackers:
-                             {string.Join("\n", previousTrackers.OrderBy(x => x.SequenceNumber).Select(x => $"{x.Tracker.ToJsonString()}"))}
 
-                             {PromptSections.CharacterStateContext(context)}
+        if (previousTrackers.Length == 0)
+        {
+            return context.CharacterTracker!;
+        }
 
-                             New scene content:
-                             {newScene}
-
-                             Update the character_tracker based on the new scene.
-                             """;
-        return await InvokeInternal(requestPrompt, generationContext, context, sceneTrackerResult, cancellationToken);
+        return previousTrackers
+            .OrderByDescending(x => x.SequenceNumber)
+            .First()
+            .Tracker;
     }
 
     private async Task<(CharacterTracker Tracker, bool IsDead)> InvokeInternal(
         string request,
+        CharacterTracker previousTracker,
         GenerationContext generationContext,
         CharacterContext context,
         SceneTracker sceneTrackerResult,
@@ -96,6 +105,9 @@ internal sealed class CharacterTrackerAgent(
         chatHistory.AddSystemMessage(systemPrompt);
 
         var contextPrompt = $"""
+                             Previous tracker state:
+                             {previousTracker.ToJsonString()}
+
                              {PromptSections.WorldContext(generationContext)}
 
                              {PromptSections.SceneTracker(generationContext, sceneTrackerResult)}
@@ -110,8 +122,6 @@ internal sealed class CharacterTrackerAgent(
 
         chatHistory.AddUserMessage(request);
 
-        var outputParser = CreateOutputParser();
-
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext($"{nameof(CharacterTrackerAgent)}:{context.Name}", generationContext.AdventureId, generationContext.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
@@ -120,27 +130,40 @@ internal sealed class CharacterTrackerAgent(
 
         var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
-        var trackerDelta = await agentKernel.SendRequestAsync(
+        var (deltaOutput, isDead) = await agentKernel.SendRequestAsync(
             chatHistory,
-            outputParser,
+            CreateOutputParser(),
             promptExecutionSettings,
             $"{nameof(CharacterTrackerAgent)}:{context.Name}",
             kernelWithKg,
             cancellationToken);
 
-        return trackerDelta;
+        var mergedTracker = TrackerMerger.Merge(previousTracker, deltaOutput.Updates);
+
+        logger.Information(
+            "CharacterTracker delta merge completed for {CharacterName}. Updates applied: {UpdateCount} fields",
+            context.Name,
+            CountUpdates(deltaOutput.Updates));
+
+        return (mergedTracker, isDead);
     }
 
-    private static Func<string, (CharacterTracker Tracker, bool IsDead)>
-        CreateOutputParser()
+    private static Func<string, (CharacterDeltaOutput Delta, bool IsDead)> CreateOutputParser()
     {
         return response =>
         {
-            var characterStats = ResponseParser.ExtractJson<CharacterStatus>(response, "status");
-            var tracker = ResponseParser.ExtractJson<CharacterDeltaTrackerOutput<CharacterTracker>>(response, "tracker");
-
-            return (tracker.Tracker, characterStats.IsDead);
+            var deltaOutput = ResponseParser.ExtractJson<CharacterDeltaOutput>(response, "tracker");
+            var status = ResponseParser.ExtractJson<CharacterStatus>(response, "status");
+            return (deltaOutput, status.IsDead);
         };
+    }
+
+    private static int CountUpdates(JsonElement updates)
+    {
+        if (updates.ValueKind != JsonValueKind.Object)
+            return 0;
+
+        return updates.EnumerateObject().Count();
     }
 
     private class CharacterStatus

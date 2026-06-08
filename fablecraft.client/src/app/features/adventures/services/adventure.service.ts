@@ -18,6 +18,7 @@ import {
   SceneTracker
 } from '../models/adventure.model';
 import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../models/adventure-settings.model';
+import {ManualCreateContentRequest, ManualCreateContentResult} from '../models/manual-content.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -157,6 +158,16 @@ export class AdventureService {
     return this.http.post<SceneEnrichmentResult>(
       `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/enrich/regenerate`,
       {adventureId, sceneId, agentsToRegenerate}
+    );
+  }
+
+  /**
+   * Manually create canon (character, location, item, or lore) attached to the given scene
+   */
+  createContent(adventureId: string, sceneId: string, body: ManualCreateContentRequest): Observable<ManualCreateContentResult> {
+    return this.http.post<ManualCreateContentResult>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/create-content`,
+      body
     );
   }
 

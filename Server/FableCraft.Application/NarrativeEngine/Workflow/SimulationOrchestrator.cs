@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
@@ -23,6 +24,8 @@ internal sealed class SimulationOrchestrator(
     CharacterContextGatherer characterContextGatherer,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
+    ProgressionAgent progressionAgent,
+    InventoryTrackerAgent inventoryTrackerAgent,
     DispatchService dispatchService,
     LoreCrafter loreCrafter,
     LocationCrafter locationCrafter,
@@ -305,6 +308,27 @@ internal sealed class SimulationOrchestrator(
                     var tracker = await trackerTask;
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = result.IsDead || tracker.IsDead;
+
+                    // Apply NPC progression and inventory deltas
+                    if (!context.SkipProgression)
+                    {
+                        var progressionDelta = await progressionAgent.InvokeForCharacter(context, characterContext, context.NewTracker!.Scene!, cancellationToken);
+                        if (progressionDelta.HasValue && progressionDelta.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, progressionDelta.Value);
+                            logger.Information("Merged progression delta into character tracker for {CharacterName} (standalone simulation)", character.Name);
+                        }
+                    }
+
+                    if (!context.SkipInventory)
+                    {
+                        var inventoryDelta = await inventoryTrackerAgent.InvokeForCharacter(context, characterContext, context.NewTracker!.Scene!, cancellationToken);
+                        if (inventoryDelta.HasValue && inventoryDelta.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, inventoryDelta.Value);
+                            logger.Information("Merged inventory delta into character tracker for {CharacterName} (standalone simulation)", character.Name);
+                        }
+                    }
 
                     if (characterContext.IsDead)
                     {
@@ -612,6 +636,27 @@ internal sealed class SimulationOrchestrator(
         var tracker = await trackerTask;
         characterContext.CharacterTracker = tracker.Tracker;
         characterContext.IsDead = result.IsDead || tracker.IsDead;
+
+        // Apply NPC progression and inventory deltas
+        if (!context.SkipProgression)
+        {
+            var progressionDelta = await progressionAgent.InvokeForCharacter(context, characterContext, context.NewTracker!.Scene!, cancellationToken);
+            if (progressionDelta.HasValue && progressionDelta.Value.ValueKind == JsonValueKind.Object)
+            {
+                characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, progressionDelta.Value);
+                logger.Information("Merged progression delta into character tracker for {CharacterName} (cohort simulation)", character.Name);
+            }
+        }
+
+        if (!context.SkipInventory)
+        {
+            var inventoryDelta = await inventoryTrackerAgent.InvokeForCharacter(context, characterContext, context.NewTracker!.Scene!, cancellationToken);
+            if (inventoryDelta.HasValue && inventoryDelta.Value.ValueKind == JsonValueKind.Object)
+            {
+                characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, inventoryDelta.Value);
+                logger.Information("Merged inventory delta into character tracker for {CharacterName} (cohort simulation)", character.Name);
+            }
+        }
 
         if (characterContext.IsDead)
         {

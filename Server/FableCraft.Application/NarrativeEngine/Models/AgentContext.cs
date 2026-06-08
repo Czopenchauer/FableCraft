@@ -281,6 +281,20 @@ internal sealed class GenerationContext
     public JsonElement? InventoryDelta { get; set; }
 
     /// <summary>
+    ///     Cached per-character progression deltas produced by ProgressionAgent.InvokeForCharacter.
+    ///     Allows retries to reuse deltas for characters whose progression already succeeded.
+    /// </summary>
+    [JsonIgnore]
+    public Dictionary<Guid, JsonElement?> CharacterProgressionDeltas { get; set; } = new();
+
+    /// <summary>
+    ///     Cached per-character inventory deltas produced by InventoryTrackerAgent.InvokeForCharacter.
+    ///     Allows retries to reuse deltas for characters whose inventory tracking already succeeded.
+    /// </summary>
+    [JsonIgnore]
+    public Dictionary<Guid, JsonElement?> CharacterInventoryDeltas { get; set; } = new();
+
+    /// <summary>
     ///     Co-location output from CoLocationAgent.
     ///     Determines which characters from the registry are at the scene location.
     /// </summary>

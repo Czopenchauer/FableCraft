@@ -40,6 +40,7 @@ public static class StartupExtensions
             .AddScoped<IProcessor, CoLocationAgent>()
             .AddScoped<CoLocationAgent>()
             .AddScoped<ContentGenerationService>()
+            .AddScoped<ManualContentService>()
             .AddScoped<MainCharacterTrackerAgent>()
             .AddScoped<ProgressionAgent>()
             .AddScoped<InventoryTrackerAgent>()

@@ -87,6 +87,49 @@ public static class TrackerMerger
     }
 
     /// <summary>
+    /// Merges delta updates into a CharacterTracker state to produce the new state.
+    /// Handles typed properties (Name, Location, Appearance, GeneralBuild) explicitly
+    /// and routes everything else to AdditionalProperties via MergeProperty.
+    /// </summary>
+    /// <param name="previousState">The previous full CharacterTracker state.</param>
+    /// <param name="updates">The delta updates containing only changed fields.</param>
+    /// <returns>The merged CharacterTracker state.</returns>
+    public static CharacterTracker Merge(CharacterTracker previousState, JsonElement updates)
+    {
+        var newState = DeepCopy(previousState);
+
+        if (updates.ValueKind != JsonValueKind.Object)
+            return newState;
+
+        foreach (var property in updates.EnumerateObject())
+        {
+            var key = property.Name;
+            var value = property.Value;
+
+            switch (key)
+            {
+                case "Name":
+                    newState.Name = value.GetString() ?? newState.Name;
+                    break;
+                case "Location":
+                    newState.Location = value.GetString() ?? newState.Location;
+                    break;
+                case "Appearance":
+                    newState.Appearance = value.GetString();
+                    break;
+                case "GeneralBuild":
+                    newState.GeneralBuild = value.GetString();
+                    break;
+                default:
+                    MergeProperty(newState.AdditionalProperties, key, value);
+                    break;
+            }
+        }
+
+        return newState;
+    }
+
+    /// <summary>
     /// Merges a single property value into the target dictionary.
     /// Automatically detects the merge strategy based on the value structure.
     /// </summary>
@@ -390,6 +433,12 @@ public static class TrackerMerger
     {
         var json = JsonSerializer.Serialize(source, JsonOptions);
         return JsonSerializer.Deserialize<MainCharacterTracker>(json, JsonOptions)!;
+    }
+
+    private static CharacterTracker DeepCopy(CharacterTracker source)
+    {
+        var json = JsonSerializer.Serialize(source, JsonOptions);
+        return JsonSerializer.Deserialize<CharacterTracker>(json, JsonOptions)!;
     }
 
     private static Dictionary<string, object> DeepCopyDictionary(Dictionary<string, object> source)

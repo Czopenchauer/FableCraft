@@ -70,6 +70,18 @@
           <span>Edit</span>
         </button>
         <button
+          (click)="openCreateContentModal()"
+          *ngIf="isCurrentScene() && currentScene.tracker"
+          class="btn-action btn-edit"
+          title="Create a character, location, item, or lore"
+        >
+          <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+            <path [attr.d]="'M12 4v16m8-8H4'" [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'"
+                  [attr.stroke-width]="2"></path>
+          </svg>
+          <span>Create</span>
+        </button>
+        <button
           (click)="onRegenerateScene()"
           *ngIf="currentScene.canDelete"
           class="btn-action btn-regenerate"
@@ -865,4 +877,13 @@
     [errorMessage]="sceneDeleteErrorMessage"
     (result)="onSceneDeleteResult($event)">
   </app-scene-delete-modal>
+
+  <!-- Create Content Modal -->
+  <app-create-content-modal
+    [isOpen]="showCreateContentModal"
+    [adventureId]="adventureId"
+    [sceneId]="currentScene?.sceneId ?? null"
+    (close)="closeCreateContentModal()"
+    (created)="onContentCreated()">
+  </app-create-content-modal>
 </div>

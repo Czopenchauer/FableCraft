@@ -44,6 +44,9 @@ import {MarkdownPipe} from './shared/pipes/markdown.pipe';
 import {
   GraphRagSettingsManagerComponent
 } from './features/settings/components/graph-rag-settings-manager/graph-rag-settings-manager.component';
+import {
+  CreateContentModalComponent
+} from './features/adventures/components/create-content-modal/create-content-modal.component';
 
 @NgModule({
   declarations: [
@@ -72,7 +75,8 @@ import {
     SceneEditModalComponent,
     SceneDeleteModalComponent,
     SceneImageComponent,
-    GraphRagSettingsManagerComponent
+    GraphRagSettingsManagerComponent,
+    CreateContentModalComponent
   ],
   imports: [
     BrowserModule,

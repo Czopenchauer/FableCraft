@@ -235,17 +235,12 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             var choices = choicesText
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+            // Creation requests and importance flags are no longer driven by the Writer.
+            // Players trigger entity creation manually (see ManualContentService) and importance
+            // changes via the character importance endpoint. Any such sections the model still
+            // emits are intentionally ignored here.
             CreationRequests? creationRequests = null;
-            if (response.Contains("creation_requests"))
-            {
-                creationRequests = ResponseParser.TryExtractJson<CreationRequests?>(response, "creation_requests", ignoreNull: true);
-            }
-
             ImportanceFlags? importanceFlags = null;
-            if (response.Contains("importance_flags"))
-            {
-                importanceFlags = ResponseParser.TryExtractJson<ImportanceFlags?>(response, "importance_flags", ignoreNull: true);
-            }
 
             List<OutgoingDispatch>? dispatches = null;
             List<DispatchResolution>? dispatchesResolved = null;

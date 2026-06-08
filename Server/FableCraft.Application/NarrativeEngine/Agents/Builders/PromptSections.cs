@@ -325,6 +325,17 @@ internal static class PromptSections
                 """;
     }
 
+    public static string CharacterTrackerForContext(CharacterContext context, bool ignoreNull = true)
+    {
+        var options = GetJsonOptions(ignoreNull);
+        return $"""
+                Current tracker:
+                <character_tracker>
+                {context.CharacterTracker.ToJsonString(options)}
+                </character_tracker>
+                """;
+    }
+
     public static string RecentScenesForCharacter(CharacterContext context, int count = 15)
     {
         var scenes = string.Join("\n\n---\n\n",

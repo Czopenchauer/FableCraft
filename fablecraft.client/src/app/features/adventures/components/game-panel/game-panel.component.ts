@@ -37,6 +37,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   showAdventureStateModal = false;
   // Scene Edit modal state
   showSceneEditModal = false;
+  // Create Content modal state
+  showCreateContentModal = false;
   // Scene Delete modal state
   showSceneDeleteModal = false;
   sceneDeleteModalState: SceneDeleteModalState = 'confirm';
@@ -867,6 +869,27 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   onSceneSaved(scene: GameScene): void {
     this.currentScene = scene;
     this.closeSceneEditModal();
+  }
+
+  /**
+   * Open the manual content creation modal
+   */
+  openCreateContentModal(): void {
+    this.showCreateContentModal = true;
+  }
+
+  /**
+   * Close the manual content creation modal
+   */
+  closeCreateContentModal(): void {
+    this.showCreateContentModal = false;
+  }
+
+  /**
+   * Handle content created event from the create-content modal
+   */
+  onContentCreated(): void {
+    this.closeCreateContentModal();
   }
 
   /**

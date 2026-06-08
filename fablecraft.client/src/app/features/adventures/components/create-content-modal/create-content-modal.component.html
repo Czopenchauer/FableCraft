@@ -1,0 +1,96 @@
+<div (click)="onBackdropClick($event)" *ngIf="isOpen" class="modal-backdrop">
+  <div class="modal-container">
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Create Content</h2>
+        <button (click)="onClose()" class="close-button" title="Close" type="button">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Type selector -->
+        <div class="type-selector">
+          <button
+            *ngFor="let t of types"
+            (click)="type = t.value"
+            [class.active]="type === t.value"
+            [disabled]="isSaving"
+            class="type-button"
+            type="button"
+          >
+            {{ t.label }}
+          </button>
+        </div>
+
+        <!-- Common fields -->
+        <div class="form-group">
+          <label class="form-label" for="cc-name">Name</label>
+          <input
+            id="cc-name"
+            [(ngModel)]="name"
+            [disabled]="isSaving"
+            class="form-input"
+            placeholder="e.g. Kira Voss / The Rusty Anchor"
+            type="text"
+          >
+        </div>
+
+        <!-- Type-specific selector -->
+        <div *ngIf="type === 'character'" class="form-group">
+          <label class="form-label" for="cc-char-importance">Importance</label>
+          <select id="cc-char-importance" [(ngModel)]="characterImportance" [disabled]="isSaving" class="form-input">
+            <option *ngFor="let o of characterImportanceOptions" [value]="o">{{ o }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="type === 'location'" class="form-group">
+          <label class="form-label" for="cc-loc-importance">Importance</label>
+          <select id="cc-loc-importance" [(ngModel)]="locationImportance" [disabled]="isSaving" class="form-input">
+            <option *ngFor="let o of locationImportanceOptions" [value]="o">{{ o }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="type === 'item'" class="form-group">
+          <label class="form-label" for="cc-power">Power level</label>
+          <select id="cc-power" [(ngModel)]="powerLevel" [disabled]="isSaving" class="form-input">
+            <option *ngFor="let o of itemPowerLevelOptions" [value]="o">{{ o }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="type === 'lore'" class="form-group">
+          <label class="form-label" for="cc-category">Category</label>
+          <select id="cc-category" [(ngModel)]="category" [disabled]="isSaving" class="form-input">
+            <option *ngFor="let o of loreCategoryOptions" [value]="o">{{ o }}</option>
+          </select>
+        </div>
+
+        <!-- Details -->
+        <div class="form-group">
+          <label class="form-label" for="cc-details">Details</label>
+          <textarea
+            id="cc-details"
+            [(ngModel)]="details"
+            [disabled]="isSaving"
+            class="form-input"
+            placeholder="Describe what this is, its role/purpose, key facts, and any constraints. The crafter expands this into a full profile."
+            rows="6"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button (click)="onClose()" [disabled]="isSaving" class="btn-secondary" type="button">Cancel</button>
+        <button (click)="submit()" [disabled]="!isValid || isSaving" class="btn-primary" type="button">
+          <span *ngIf="isSaving" class="spinner"></span>
+          {{ isSaving ? 'Creating…' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

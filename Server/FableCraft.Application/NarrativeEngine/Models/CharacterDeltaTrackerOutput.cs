@@ -46,6 +46,18 @@ internal sealed class TimeUpdate
     public string? Elapsed { get; set; }
 }
 
+internal sealed class CharacterDeltaOutput
+{
+    [JsonPropertyName("time_update")]
+    public TimeUpdate? TimeUpdate { get; set; }
+
+    [JsonPropertyName("changes_summary")]
+    public TrackerChanges ChangeSummary { get; set; } = null!;
+
+    [JsonPropertyName("updates")]
+    public JsonElement Updates { get; set; }
+}
+
 internal sealed class TrackerChanges
 {
     [JsonExtensionData]

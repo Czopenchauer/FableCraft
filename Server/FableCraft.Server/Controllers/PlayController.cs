@@ -14,10 +14,12 @@ namespace FableCraft.Server.Controllers;
 public class PlayController : ControllerBase
 {
     private readonly IGameService _gameService;
+    private readonly ManualContentService _manualContentService;
 
-    public PlayController(IGameService gameService)
+    public PlayController(IGameService gameService, ManualContentService manualContentService)
     {
         _gameService = gameService;
+        _manualContentService = manualContentService;
     }
 
     [HttpGet("current-scene")]
@@ -80,6 +82,56 @@ public class PlayController : ControllerBase
         catch (AdventureNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    /// <summary>
+    ///     Manually create canon (character, location, item, or lore) from player-supplied input.
+    ///     The crafted entity is attached to the latest scene and committed to the Knowledge Graph
+    ///     on the next player action.
+    /// </summary>
+    [HttpPost("scene/{sceneId:guid}/create-content")]
+    [ProducesResponseType(typeof(ManualCreateContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ManualCreateContentResult>> CreateContent(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] ManualCreateContentRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Details))
+        {
+            return BadRequest(new { error = "Name and details are required" });
+        }
+
+        var input = new ManualContentInput(
+            Kind: request.Type switch
+            {
+                ManualContentType.Character => ManualContentKind.Character,
+                ManualContentType.Location => ManualContentKind.Location,
+                ManualContentType.Item => ManualContentKind.Item,
+                ManualContentType.Lore => ManualContentKind.Lore,
+                _ => throw new ArgumentOutOfRangeException()
+            },
+            Name: request.Name,
+            Details: request.Details,
+            Importance: request.Importance,
+            PowerLevel: request.PowerLevel,
+            Category: request.Category);
+
+        try
+        {
+            var result = await _manualContentService.CreateAsync(adventureId, input, cancellationToken);
+            return Ok(new ManualCreateContentResult(result.Kind, result.Id, result.Name, result.Summary));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 

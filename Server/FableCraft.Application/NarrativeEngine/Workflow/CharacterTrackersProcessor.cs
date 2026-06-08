@@ -270,6 +270,58 @@ internal sealed class CharacterTrackersProcessor(
                     characterContext.CharacterTracker = tracker.Tracker;
                     characterContext.IsDead = tracker.IsDead;
 
+                    if (!context.SkipProgression)
+                    {
+                        JsonElement? progressionDelta;
+                        bool progressionRan;
+                        lock (context)
+                        {
+                            progressionRan = context.CharacterProgressionDeltas.ContainsKey(character.CharacterId);
+                            progressionDelta = progressionRan ? context.CharacterProgressionDeltas[character.CharacterId] : null;
+                        }
+
+                        if (!progressionRan)
+                        {
+                            progressionDelta = await progressionAgent.InvokeForCharacter(context, characterContext, storyTrackerResult, cancellationToken);
+                            lock (context)
+                            {
+                                context.CharacterProgressionDeltas[character.CharacterId] = progressionDelta;
+                            }
+                        }
+
+                        if (progressionDelta.HasValue && progressionDelta.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, progressionDelta.Value);
+                            logger.Information("Merged progression delta into character tracker for {CharacterName}", character.Name);
+                        }
+                    }
+
+                    if (!context.SkipInventory)
+                    {
+                        JsonElement? inventoryDelta;
+                        bool inventoryRan;
+                        lock (context)
+                        {
+                            inventoryRan = context.CharacterInventoryDeltas.ContainsKey(character.CharacterId);
+                            inventoryDelta = inventoryRan ? context.CharacterInventoryDeltas[character.CharacterId] : null;
+                        }
+
+                        if (!inventoryRan)
+                        {
+                            inventoryDelta = await inventoryTrackerAgent.InvokeForCharacter(context, characterContext, storyTrackerResult, cancellationToken);
+                            lock (context)
+                            {
+                                context.CharacterInventoryDeltas[character.CharacterId] = inventoryDelta;
+                            }
+                        }
+
+                        if (inventoryDelta.HasValue && inventoryDelta.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            characterContext.CharacterTracker = TrackerMerger.Merge(characterContext.CharacterTracker!, inventoryDelta.Value);
+                            logger.Information("Merged inventory delta into character tracker for {CharacterName}", character.Name);
+                        }
+                    }
+
                     lock (context)
                     {
                         context.PendingReflectionCache.Remove(character.CharacterId);

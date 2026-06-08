@@ -80,6 +80,74 @@ internal sealed class ProgressionAgent(
         return deltaOutput.Updates;
     }
 
+    public async Task<JsonElement?> InvokeForCharacter(
+        GenerationContext context,
+        CharacterContext character,
+        SceneTracker sceneTrackerResult,
+        CancellationToken cancellationToken)
+    {
+        var characterSchema = TrackerExtensions.ConvertToSystemJson(context.TrackerStructure.Characters);
+
+        if (!characterSchema.ContainsKey(SkillsKey) && !characterSchema.ContainsKey(AbilitiesKey))
+        {
+            logger.Information("ProgressionAgent: no Skills/Abilities schema for NPC {Character}, skipping", character.Name);
+            return null;
+        }
+
+        var kernelBuilder = await GetKernelBuilder(context);
+
+        var systemPrompt = await BuildInstructionForCharacter(context, character);
+
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(systemPrompt);
+
+        var contextPrompt = $"""
+                             {PromptSections.Context(context)}
+
+                             {PromptSections.SceneTracker(context, sceneTrackerResult)}
+
+                             {PromptSections.RecentScenesForCharacter(character, count: 5)}
+                             """;
+        chatHistory.AddUserMessage(contextPrompt);
+
+        var lastSceneContent = character.SceneRewrites
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Content ?? string.Empty;
+
+        var requestPrompt = $"""
+                             Previous tracker state:
+                             {PromptSections.CharacterTrackerForContext(character)}
+
+                             New scene content:
+                             {lastSceneContent}
+
+                             Update {character.Name}'s Skills and Abilities based on the new scene. Output ONLY changes to the Skills and Abilities arrays in the updates object.
+                             """;
+        chatHistory.AddUserMessage(requestPrompt);
+
+        var outputParser = ResponseParser.CreateJsonParser<ProgressionDeltaOutput>("progression", true);
+        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
+        var kernel = kernelBuilder.Create();
+        var kernelWithKg = kernel.Build();
+
+        var deltaOutput = await agentKernel.SendRequestAsync(
+            chatHistory,
+            outputParser,
+            promptExecutionSettings,
+            $"{nameof(ProgressionAgent)}:{character.Name}",
+            kernelWithKg,
+            cancellationToken);
+
+        if (deltaOutput.NoProgression || deltaOutput.Updates.ValueKind is not JsonValueKind.Object)
+        {
+            logger.Information("ProgressionAgent: no progression for NPC {Character}", character.Name);
+            return null;
+        }
+
+        logger.Information("ProgressionAgent delta produced for NPC {Character}", character.Name);
+        return deltaOutput.Updates;
+    }
+
     private async Task<string> BuildInstruction(GenerationContext context)
     {
         var options = PromptSections.GetJsonOptions();
@@ -93,5 +161,20 @@ internal sealed class ProgressionAgent(
             (PlaceholderNames.SkillsSchema, JsonSerializer.Serialize(skillsSchema, options)),
             (PlaceholderNames.AbilitiesSchema, JsonSerializer.Serialize(abilitiesSchema, options)),
             (PlaceholderNames.CharacterName, context.MainCharacter.Name));
+    }
+
+    private async Task<string> BuildInstructionForCharacter(GenerationContext context, CharacterContext character)
+    {
+        var options = PromptSections.GetJsonOptions();
+        var characterSchema = TrackerExtensions.ConvertToSystemJson(context.TrackerStructure.Characters);
+
+        var skillsSchema = characterSchema.TryGetValue(SkillsKey, out var skills) ? skills : new { };
+        var abilitiesSchema = characterSchema.TryGetValue(AbilitiesKey, out var abilities) ? abilities : new { };
+
+        var prompt = await GetPromptAsync(context);
+        return PromptBuilder.ReplacePlaceholders(prompt,
+            (PlaceholderNames.SkillsSchema, JsonSerializer.Serialize(skillsSchema, options)),
+            (PlaceholderNames.AbilitiesSchema, JsonSerializer.Serialize(abilitiesSchema, options)),
+            (PlaceholderNames.CharacterName, character.Name));
     }
 }

@@ -451,40 +451,7 @@ internal sealed class SaveSceneEnrichment(
                 }
                 else
                 {
-                    var newCharRewrites = contextNewCharacter.SceneRewrites.Select(x => new CharacterSceneRewrite
-                    {
-                        Content = x.Content,
-                        SequenceNumber = x.SequenceNumber,
-                        Scene = scene,
-                        SceneTracker = x.SceneTracker!,
-                        GatheredContext = x.GatheredContext,
-                        StorySummary = x.StorySummary
-                    }).ToList();
-
-                    var newChar = new Character
-                    {
-                        AdventureId = context.AdventureId,
-                        Name = contextNewCharacter.Name,
-                        CharacterStates =
-                        [
-                            new CharacterState
-                            {
-                                CharacterStats = contextNewCharacter.CharacterState,
-                                Tracker = contextNewCharacter.CharacterTracker!,
-                                SequenceNumber = 0,
-                                Scene = scene,
-                                IsDead = false,
-                                SimulationMetadata = contextNewCharacter.SimulationMetadata
-                            }
-                        ],
-                        Version = 0,
-                        CharacterRelationships = relationships,
-                        CharacterSceneRewrites = newCharRewrites,
-                        Importance = contextNewCharacter.Importance,
-                        IntroductionScene = scene.Id,
-                        Scene = scene,
-                        Description = contextNewCharacter.Description
-                    };
+                    var newChar = CharacterPersistence.BuildNewCharacter(contextNewCharacter, scene, context.AdventureId);
                     dbContext.Characters.Add(newChar);
                 }
             }
