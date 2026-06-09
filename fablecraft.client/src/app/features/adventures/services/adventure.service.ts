@@ -18,7 +18,12 @@ import {
   SceneTracker
 } from '../models/adventure.model';
 import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../models/adventure-settings.model';
-import {ManualCreateContentRequest, ManualCreateContentResult} from '../models/manual-content.model';
+import {
+  ManualCreateContentRequest,
+  ManualCreateContentResult,
+  ManualContentDraftResult,
+  ManualContentConfirmRequest
+} from '../models/manual-content.model';
 import {environment} from '../../../../environments/environment';
 
 @Injectable({
@@ -162,11 +167,33 @@ export class AdventureService {
   }
 
   /**
-   * Manually create canon (character, location, item, or lore) attached to the given scene
+   * Manually create canon (character, location, item, or lore) attached to the given scene.
+   * Generates and saves in one step (legacy flow).
    */
   createContent(adventureId: string, sceneId: string, body: ManualCreateContentRequest): Observable<ManualCreateContentResult> {
     return this.http.post<ManualCreateContentResult>(
       `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/create-content`,
+      body
+    );
+  }
+
+  /**
+   * Generate a draft of canon content without persisting. Returns the AI-crafted
+   * result as raw JSON for the user to review and edit.
+   */
+  draftContent(adventureId: string, sceneId: string, body: ManualCreateContentRequest): Observable<ManualContentDraftResult> {
+    return this.http.post<ManualContentDraftResult>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/create-content/draft`,
+      body
+    );
+  }
+
+  /**
+   * Confirm and persist a previously drafted canon content after user review/edit.
+   */
+  confirmContent(adventureId: string, sceneId: string, body: ManualContentConfirmRequest): Observable<ManualCreateContentResult> {
+    return this.http.post<ManualCreateContentResult>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/create-content/confirm`,
       body
     );
   }

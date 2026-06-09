@@ -16,6 +16,18 @@ export interface ManualCreateContentResult {
   summary: string;
 }
 
+export interface ManualContentDraftResult {
+  kind: string;
+  name: string;
+  summary: string;
+  rawJson: any;
+}
+
+export interface ManualContentConfirmRequest {
+  type: ManualContentType;
+  rawJson: any;
+}
+
 export const CHARACTER_IMPORTANCE_OPTIONS = ['arc_important', 'significant', 'background'];
 export const LOCATION_IMPORTANCE_OPTIONS = ['landmark', 'significant', 'standard', 'minor'];
 export const ITEM_POWER_LEVEL_OPTIONS = ['mundane', 'uncommon', 'rare', 'legendary'];

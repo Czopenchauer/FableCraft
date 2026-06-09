@@ -4,53 +4,53 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Anthropic" Version="12.19.0" />
+    <PackageVersion Include="Anthropic" Version="12.27.0" />
     <PackageVersion Include="Aspire.AppHost.Sdk" Version="13.0.0" />
-    <PackageVersion Include="Docker.DotNet.Enhanced" Version="4.2.0" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.2.4" />
+    <PackageVersion Include="Docker.DotNet.Enhanced" Version="4.3.0" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Redis" Version="13.4.3" />
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Hosting.Python" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.2.4" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Python" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.75.0-alpha" />
-    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.6.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.6.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.77.0-alpha" />
+    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.3" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
-    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.75.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Core" Version="1.75.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Orchestration" Version="1.75.0-preview" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess" Version="1.75.0-preview" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.75.0-alpha" />
-    <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.75.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.77.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Core" Version="1.77.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Orchestration" Version="1.77.0-preview" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Agents.Runtime.InProcess" Version="1.77.0-preview" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.77.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.77.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-    <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Seq" Version="9.1.0" />
     <PackageVersion Include="SerilogTracing" Version="2.3.1" />
-    <PackageVersion Include="System.IO.Hashing" Version="10.0.7" />
-    <PackageVersion Include="TUnit" Version="1.43.11" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+    <PackageVersion Include="System.IO.Hashing" Version="10.0.8" />
+    <PackageVersion Include="TUnit" Version="1.53.0" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageVersion Include="Polly" Version="8.6.6" />
     <PackageVersion Include="Polly.RateLimiting" Version="8.6.6" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.7" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.11.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.1" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.12.0" />
   </ItemGroup>
 </Project>

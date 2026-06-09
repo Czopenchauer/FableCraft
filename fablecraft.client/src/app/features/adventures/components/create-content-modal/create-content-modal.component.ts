@@ -8,8 +8,11 @@ import {
   LORE_CATEGORY_OPTIONS,
   ManualContentType,
   ManualCreateContentRequest,
-  ManualCreateContentResult
+  ManualCreateContentResult,
+  ManualContentDraftResult
 } from '../../models/manual-content.model';
+
+type ModalPhase = 'input' | 'editing' | 'confirming';
 
 @Component({
   selector: 'app-create-content-modal',
@@ -44,7 +47,12 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
   powerLevel = 'mundane';
   category = 'historical';
 
+  phase: ModalPhase = 'input';
+  draftResult: ManualContentDraftResult | null = null;
+  editableJson = '';
+
   isSaving = false;
+  jsonError: string | null = null;
 
   get isValid(): boolean {
     return this.name.trim() !== '' && this.details.trim() !== '';
@@ -92,7 +100,42 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
     };
 
     this.isSaving = true;
-    this.adventureService.createContent(this.adventureId, this.sceneId, body).subscribe({
+    this.adventureService.draftContent(this.adventureId, this.sceneId, body).subscribe({
+      next: (result) => {
+        this.isSaving = false;
+        this.draftResult = result;
+        this.editableJson = JSON.stringify(result.rawJson, null, 2);
+        this.phase = 'editing';
+      },
+      error: (err) => {
+        console.error('Error drafting content:', err);
+        this.isSaving = false;
+        this.toastService.error(err?.error?.error || 'Failed to generate draft');
+      }
+    });
+  }
+
+  confirm(): void {
+    if (!this.adventureId || !this.sceneId || !this.draftResult || this.isSaving) {
+      return;
+    }
+
+    let parsedJson: any;
+    try {
+      parsedJson = JSON.parse(this.editableJson);
+    } catch {
+      this.jsonError = 'Invalid JSON — please fix syntax errors before saving.';
+      return;
+    }
+    this.jsonError = null;
+
+    this.isSaving = true;
+    this.phase = 'confirming';
+
+    this.adventureService.confirmContent(this.adventureId, this.sceneId, {
+      type: this.type,
+      rawJson: parsedJson
+    }).subscribe({
       next: (result) => {
         this.isSaving = false;
         this.toastService.success(`Created ${result.kind.toLowerCase()} "${result.name}"`);
@@ -100,11 +143,19 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
         this.onClose();
       },
       error: (err) => {
-        console.error('Error creating content:', err);
+        console.error('Error confirming content:', err);
         this.isSaving = false;
-        this.toastService.error(err?.error?.error || 'Failed to create content');
+        this.phase = 'editing';
+        this.toastService.error(err?.error?.error || 'Failed to save content');
       }
     });
+  }
+
+  backToInput(): void {
+    this.phase = 'input';
+    this.draftResult = null;
+    this.editableJson = '';
+    this.jsonError = null;
   }
 
   constructor(
@@ -122,5 +173,9 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
     this.powerLevel = 'mundane';
     this.category = 'historical';
     this.isSaving = false;
+    this.phase = 'input';
+    this.draftResult = null;
+    this.editableJson = '';
+    this.jsonError = null;
   }
 }

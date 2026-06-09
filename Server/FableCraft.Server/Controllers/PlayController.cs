@@ -86,9 +86,89 @@ public class PlayController : ControllerBase
     }
 
     /// <summary>
+    ///     Generate a draft of canon content (character, location, item, or lore) without persisting.
+    ///     The draft is returned as editable JSON for the user to review and modify before confirming.
+    /// </summary>
+    [HttpPost("scene/{sceneId:guid}/create-content/draft")]
+    [ProducesResponseType(typeof(ManualContentDraftResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ManualContentDraftResult>> DraftContent(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] ManualCreateContentRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Details))
+        {
+            return BadRequest(new { error = "Name and details are required" });
+        }
+
+        var input = MapToManualContentInput(request);
+
+        try
+        {
+            var result = await _manualContentService.DraftAsync(adventureId, input, cancellationToken);
+            return Ok(new ManualContentDraftResult(result.Kind, result.Name, result.Summary, result.RawJson));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    ///     Confirm and persist a previously drafted canon content after user review/edit.
+    ///     The RawJson contains the (potentially edited) drafted content to be saved.
+    /// </summary>
+    [HttpPost("scene/{sceneId:guid}/create-content/confirm")]
+    [ProducesResponseType(typeof(ManualCreateContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ManualCreateContentResult>> ConfirmContent(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] ManualContentConfirmRequest request,
+        CancellationToken cancellationToken)
+    {
+        var input = new ManualContentConfirmInput(
+            Kind: request.Type switch
+            {
+                ManualContentType.Character => ManualContentKind.Character,
+                ManualContentType.Location => ManualContentKind.Location,
+                ManualContentType.Item => ManualContentKind.Item,
+                ManualContentType.Lore => ManualContentKind.Lore,
+                _ => throw new ArgumentOutOfRangeException()
+            },
+            RawJson: request.RawJson);
+
+        try
+        {
+            var result = await _manualContentService.ConfirmAsync(adventureId, input, cancellationToken);
+            return Ok(new ManualCreateContentResult(result.Kind, result.Id, result.Name, result.Summary));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { error = $"Invalid draft JSON: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
     ///     Manually create canon (character, location, item, or lore) from player-supplied input.
-    ///     The crafted entity is attached to the latest scene and committed to the Knowledge Graph
-    ///     on the next player action.
+    ///     This is the legacy endpoint that generates and saves in one step.
+    ///     Prefer using /draft followed by /confirm for the two-phase flow.
     /// </summary>
     [HttpPost("scene/{sceneId:guid}/create-content")]
     [ProducesResponseType(typeof(ManualCreateContentResult), StatusCodes.Status200OK)]
@@ -105,20 +185,7 @@ public class PlayController : ControllerBase
             return BadRequest(new { error = "Name and details are required" });
         }
 
-        var input = new ManualContentInput(
-            Kind: request.Type switch
-            {
-                ManualContentType.Character => ManualContentKind.Character,
-                ManualContentType.Location => ManualContentKind.Location,
-                ManualContentType.Item => ManualContentKind.Item,
-                ManualContentType.Lore => ManualContentKind.Lore,
-                _ => throw new ArgumentOutOfRangeException()
-            },
-            Name: request.Name,
-            Details: request.Details,
-            Importance: request.Importance,
-            PowerLevel: request.PowerLevel,
-            Category: request.Category);
+        var input = MapToManualContentInput(request);
 
         try
         {
@@ -134,6 +201,21 @@ public class PlayController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    private static ManualContentInput MapToManualContentInput(ManualCreateContentRequest request) => new(
+        Kind: request.Type switch
+        {
+            ManualContentType.Character => ManualContentKind.Character,
+            ManualContentType.Location => ManualContentKind.Location,
+            ManualContentType.Item => ManualContentKind.Item,
+            ManualContentType.Lore => ManualContentKind.Lore,
+            _ => throw new ArgumentOutOfRangeException()
+        },
+        Name: request.Name,
+        Details: request.Details,
+        Importance: request.Importance,
+        PowerLevel: request.PowerLevel,
+        Category: request.Category);
 
     [HttpPost("scene/{sceneId:guid}/enrich/regenerate")]
     [ProducesResponseType(typeof(SceneEnrichmentOutput), StatusCodes.Status200OK)]

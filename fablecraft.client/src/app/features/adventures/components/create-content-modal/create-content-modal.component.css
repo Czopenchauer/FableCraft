@@ -16,6 +16,10 @@
   display: flex;
 }
 
+.modal-container--wide {
+  max-width: 780px;
+}
+
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -128,6 +132,71 @@
 textarea.form-input {
   resize: vertical;
   min-height: 110px;
+}
+
+.json-editor {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  background: #1a1a20;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+  color: #d4d4d8;
+  font-size: 0.82rem;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 320px;
+  tab-size: 2;
+}
+
+.json-editor:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.json-error {
+  margin: 0.35rem 0 0;
+  color: #f87171;
+  font-size: 0.8rem;
+}
+
+.draft-summary {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #26262e;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+}
+
+.draft-kind {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+}
+
+.draft-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.draft-summary-text {
+  margin: 0.4rem 0 0;
+  color: #b0b0b8;
+  font-size: 0.85rem;
+}
+
+.form-hint {
+  font-weight: normal;
+  font-size: 0.75rem;
+  color: #888;
+  margin-left: 0.5rem;
 }
 
 .modal-footer {

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace FableCraft.Server.Models;
 
 public enum ManualContentType
@@ -28,3 +30,21 @@ public sealed record ManualCreateContentResult(
     Guid? Id,
     string Name,
     string Summary);
+
+/// <summary>
+///     Draft result returned before persistence. Contains the raw crafted JSON for the user
+///     to review and edit before confirming.
+/// </summary>
+public sealed record ManualContentDraftResult(
+    string Kind,
+    string Name,
+    string Summary,
+    JsonElement RawJson);
+
+/// <summary>
+///     Confirmation request sent after the user reviews/edits the draft.
+///     Carries the (potentially edited) raw JSON to be deserialized and persisted.
+/// </summary>
+public sealed record ManualContentConfirmRequest(
+    ManualContentType Type,
+    JsonElement RawJson);
