@@ -178,6 +178,17 @@ export class AdventureService {
   }
 
   /**
+   * Directly create canon content without AI generation.
+   * Persists user-supplied data immediately — no draft/confirm flow.
+   */
+  createContentDirect(adventureId: string, sceneId: string, body: ManualCreateContentRequest): Observable<ManualCreateContentResult> {
+    return this.http.post<ManualCreateContentResult>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/create-content/direct`,
+      body
+    );
+  }
+
+  /**
    * Generate a draft of canon content without persisting. Returns the AI-crafted
    * result as raw JSON for the user to review and edit.
    */

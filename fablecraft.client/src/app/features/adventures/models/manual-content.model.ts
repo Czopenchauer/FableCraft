@@ -7,6 +7,7 @@ export interface ManualCreateContentRequest {
   importance?: string | null;
   powerLevel?: string | null;
   category?: string | null;
+  description?: string | null;
 }
 
 export interface ManualCreateContentResult {

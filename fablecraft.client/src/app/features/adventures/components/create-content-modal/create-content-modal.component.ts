@@ -41,12 +41,14 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
 
   type: ManualContentType = 'character';
   name = '';
+  description = '';
   details = '';
   characterImportance = 'significant';
   locationImportance = 'standard';
   powerLevel = 'mundane';
   category = 'historical';
 
+  isDirect = false;
   phase: ModalPhase = 'input';
   draftResult: ManualContentDraftResult | null = null;
   editableJson = '';
@@ -55,7 +57,13 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
   jsonError: string | null = null;
 
   get isValid(): boolean {
-    return this.name.trim() !== '' && this.details.trim() !== '';
+    if (this.name.trim() === '' || this.details.trim() === '') {
+      return false;
+    }
+    if (this.isDirect && this.description.trim() === '') {
+      return false;
+    }
+    return true;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -158,6 +166,49 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
     this.jsonError = null;
   }
 
+  onDirectToggle(): void {
+    if (this.isDirect && this.type === 'character') {
+      this.characterImportance = 'background';
+    }
+  }
+
+  submitDirect(): void {
+    if (!this.adventureId || !this.sceneId || !this.isValid || this.isSaving) {
+      return;
+    }
+
+    const importance = this.type === 'character'
+      ? 'background'
+      : this.type === 'location'
+        ? this.locationImportance
+        : null;
+
+    const body: ManualCreateContentRequest = {
+      type: this.type,
+      name: this.name.trim(),
+      details: this.details.trim(),
+      importance,
+      powerLevel: this.type === 'item' ? this.powerLevel : null,
+      category: this.type === 'lore' ? this.category : null,
+      description: this.description.trim() || null
+    };
+
+    this.isSaving = true;
+    this.adventureService.createContentDirect(this.adventureId, this.sceneId, body).subscribe({
+      next: (result) => {
+        this.isSaving = false;
+        this.toastService.success(`Created ${result.kind.toLowerCase()} "${result.name}"`);
+        this.created.emit(result);
+        this.onClose();
+      },
+      error: (err) => {
+        console.error('Error creating content directly:', err);
+        this.isSaving = false;
+        this.toastService.error(err?.error?.error || 'Failed to create content');
+      }
+    });
+  }
+
   constructor(
     private adventureService: AdventureService,
     private toastService: ToastService
@@ -167,11 +218,13 @@ export class CreateContentModalComponent implements OnChanges, OnDestroy {
   private reset(): void {
     this.type = 'character';
     this.name = '';
+    this.description = '';
     this.details = '';
     this.characterImportance = 'significant';
     this.locationImportance = 'standard';
     this.powerLevel = 'mundane';
     this.category = 'historical';
+    this.isDirect = false;
     this.isSaving = false;
     this.phase = 'input';
     this.draftResult = null;

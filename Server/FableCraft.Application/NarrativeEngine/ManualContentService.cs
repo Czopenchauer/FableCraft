@@ -28,7 +28,8 @@ public sealed record ManualContentInput(
     string Details,
     string? Importance,
     string? PowerLevel,
-    string? Category);
+    string? Category,
+    string? Description = null);
 
 public sealed record ManualContentOutput(string Kind, Guid? Id, string Name, string Summary);
 
@@ -58,6 +59,28 @@ public sealed class ManualContentService(
     {
         var draft = await DraftAsync(adventureId, input, cancellationToken);
         return await ConfirmAsync(adventureId, new ManualContentConfirmInput(input.Kind, draft.RawJson), cancellationToken);
+    }
+
+    public async Task<ManualContentOutput> CreateDirectAsync(
+        Guid adventureId,
+        ManualContentInput input,
+        CancellationToken cancellationToken)
+    {
+        var scene = await GetLatestScene(adventureId, cancellationToken);
+
+        var output = input.Kind switch
+        {
+            ManualContentKind.Lore => PersistDirectLore(scene, input),
+            ManualContentKind.Location => PersistDirectLocation(scene, input),
+            ManualContentKind.Item => PersistDirectItem(scene, input),
+            ManualContentKind.Character => PersistDirectCharacter(scene, input),
+            _ => throw new ArgumentOutOfRangeException(nameof(input), input.Kind, "Unknown content kind")
+        };
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.Information("Directly created {Kind} '{Name}' for adventure {AdventureId} on scene {SceneId}",
+            input.Kind, input.Name, adventureId, scene.Id);
+        return output;
     }
 
     public async Task<ManualContentDraftOutput> DraftAsync(
@@ -99,6 +122,50 @@ public sealed class ManualContentService(
         logger.Information("Manually created {Kind} '{Name}' for adventure {AdventureId} on scene {SceneId}",
             input.Kind, output.Name, adventureId, latestScene.Id);
         return output;
+    }
+
+    private ManualContentOutput PersistDirectLore(Scene scene, ManualContentInput input)
+    {
+        var description = input.Description ?? input.Details;
+        var entry = AddLorebookEntry(scene, input.Name, description, input.Details, LorebookCategory.Lore);
+        return new ManualContentOutput(nameof(ManualContentKind.Lore), entry.Id, input.Name, description);
+    }
+
+    private ManualContentOutput PersistDirectLocation(Scene scene, ManualContentInput input)
+    {
+        var description = input.Description ?? input.Details;
+        var entry = AddLorebookEntry(scene, input.Name, description, input.Details, LorebookCategory.Location);
+        return new ManualContentOutput(nameof(ManualContentKind.Location), entry.Id, input.Name, description);
+    }
+
+    private ManualContentOutput PersistDirectItem(Scene scene, ManualContentInput input)
+    {
+        var description = input.Description ?? input.Details;
+        var entry = AddLorebookEntry(scene, input.Name, description, input.Details, LorebookCategory.Item);
+        return new ManualContentOutput(nameof(ManualContentKind.Item), entry.Id, input.Name, description);
+    }
+
+    private ManualContentOutput PersistDirectCharacter(Scene scene, ManualContentInput input)
+    {
+        var lastLocation = scene.Metadata?.Tracker?.Scene?.Location ?? "Unknown";
+        var lastSeenTime = scene.Metadata?.Tracker?.Scene?.Time ?? "Unknown";
+        var description = input.Description ?? input.Details;
+
+        dbContext.BackgroundCharacters.Add(new BackgroundCharacter
+        {
+            AdventureId = scene.AdventureId,
+            SceneId = scene.Id,
+            Name = input.Name,
+            Identity = input.Details,
+            Description = description,
+            LastLocation = lastLocation,
+            LastSeenTime = lastSeenTime,
+            ConvertedToFull = false,
+            Version = 0
+        });
+
+        var entry = AddLorebookEntry(scene, input.Name, description, input.Details, LorebookCategory.BackgroundCharacter);
+        return new ManualContentOutput(nameof(ManualContentKind.Character), entry.Id, input.Name, description);
     }
 
     private async Task<Scene> GetLatestScene(Guid adventureId, CancellationToken cancellationToken)

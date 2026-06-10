@@ -133,7 +133,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
                 .Select(lb => JsonSerializer.Deserialize<GeneratedItem>(lb.Content)!).ToArray()
         };
 
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.ContextGathered?.BackgroundRoster ?? [], ct);
+        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.ContextGathered?.BackgroundRoster ?? [], scene.Id, ct);
 
         context.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
@@ -196,7 +196,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
         var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
 
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, generationContext.ContextGathered?.BackgroundRoster ?? [], ct);
+        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, generationContext.ContextGathered?.BackgroundRoster ?? [], generationContext.NewSceneId, ct);
         generationContext.SetupRequiredFields(
             scenes.Select(SceneContext.CreateFromScene).ToArray(),
             adventure.TrackerStructure,
@@ -279,7 +279,8 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
         var createdLocations = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Location)).ToArray();
         var createdItems = lorebooks.Where(x => x.Category == nameof(LorebookCategory.Item)).ToArray();
 
-        var previousBackgroundCharacters = await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.newContext.ContextGathered?.BackgroundRoster ?? [], ct);
+        var previousBackgroundCharacters = 
+            await GetBackgroundCharactersFromPreviousSceneAsync(adventureId, context.newContext.ContextGathered?.BackgroundRoster ?? [], scenes.OrderByDescending(z => z.SequenceNumber).FirstOrDefault()?.Id, ct);
 
         List<ExtraLoreContext>? extraLoreEntries = null;
         if (scenes.Count == 0)
@@ -382,12 +383,18 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
     private async Task<List<BackgroundCharacter>> GetBackgroundCharactersFromPreviousSceneAsync(
         Guid adventureId,
         string[] backgroundCharacters,
+        Guid? sceneId,
         CancellationToken ct)
     {
-        return await dbContext.BackgroundCharacters
-            .Where(x => x.AdventureId == adventureId
-                        && backgroundCharacters.Contains(x.Name) && !x.ConvertedToFull)
+        var roster = await dbContext.BackgroundCharacters
+            .Where(x => x.AdventureId == adventureId)
             .ToListAsync(ct);
+        roster = roster
+            .GroupBy(x => x.Name)
+            .OrderByDescending(g => g.OrderByDescending(z => z.Version).Take(1))
+            .SelectMany(g => g)
+            .ToList();
+        return roster.Where(x => backgroundCharacters.Contains(x.Name) || x.SceneId == sceneId).ToList();
     }
 
     private async Task<(List<CharacterContext> Existing, List<CharacterContext> New)> GetCharactersForRegenerationAsync(

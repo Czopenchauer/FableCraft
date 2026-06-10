@@ -28,6 +28,17 @@
             </button>
           </div>
 
+          <!-- Direct creation toggle -->
+          <div class="direct-toggle">
+            <label class="toggle-label">
+              <input type="checkbox" [(ngModel)]="isDirect" (ngModelChange)="onDirectToggle()" [disabled]="isSaving">
+              <span>Create directly <span class="direct-hint-inline">(no AI generation)</span></span>
+            </label>
+            <p *ngIf="isDirect && type === 'character'" class="direct-hint">
+              Direct creation only supports background characters.
+            </p>
+          </div>
+
           <!-- Common fields -->
           <div class="form-group">
             <label class="form-label" for="cc-name">Name</label>
@@ -44,7 +55,7 @@
           <!-- Type-specific selector -->
           <div *ngIf="type === 'character'" class="form-group">
             <label class="form-label" for="cc-char-importance">Importance</label>
-            <select id="cc-char-importance" [(ngModel)]="characterImportance" [disabled]="isSaving" class="form-input">
+            <select id="cc-char-importance" [(ngModel)]="characterImportance" [disabled]="isSaving || isDirect" class="form-input">
               <option *ngFor="let o of characterImportanceOptions" [value]="o">{{ o }}</option>
             </select>
           </div>
@@ -70,15 +81,28 @@
             </select>
           </div>
 
+          <!-- Description (direct mode only) -->
+          <div *ngIf="isDirect" class="form-group">
+            <label class="form-label" for="cc-description">Description</label>
+            <textarea
+              id="cc-description"
+              [(ngModel)]="description"
+              [disabled]="isSaving"
+              class="form-input"
+              placeholder="A short summary of this content."
+              rows="3"
+            ></textarea>
+          </div>
+
           <!-- Details -->
           <div class="form-group">
-            <label class="form-label" for="cc-details">Details</label>
+            <label class="form-label" for="cc-details">{{ isDirect ? 'Content' : 'Details' }}</label>
             <textarea
               id="cc-details"
               [(ngModel)]="details"
               [disabled]="isSaving"
               class="form-input"
-              placeholder="Describe what this is, its role/purpose, key facts, and any constraints. The crafter expands this into a full profile."
+              [placeholder]="isDirect ? 'The full content for this entry.' : 'Describe what this is, its role/purpose, key facts, and any constraints. The crafter expands this into a full profile.'"
               rows="6"
             ></textarea>
           </div>
@@ -86,9 +110,9 @@
 
         <div class="modal-footer">
           <button (click)="onClose()" [disabled]="isSaving" class="btn-secondary" type="button">Cancel</button>
-          <button (click)="submit()" [disabled]="!isValid || isSaving" class="btn-primary" type="button">
+          <button (click)="isDirect ? submitDirect() : submit()" [disabled]="!isValid || isSaving" class="btn-primary" type="button">
             <span *ngIf="isSaving" class="spinner"></span>
-            {{ isSaving ? 'Generating…' : 'Generate' }}
+            {{ isSaving ? (isDirect ? 'Creating\u2026' : 'Generating\u2026') : (isDirect ? 'Create' : 'Generate') }}
           </button>
         </div>
       </ng-container>

@@ -20,7 +20,8 @@ public sealed record ManualCreateContentRequest(
     string Details,
     string? Importance = null,
     string? PowerLevel = null,
-    string? Category = null);
+    string? Category = null,
+    string? Description = null);
 
 /// <summary>
 ///     Summary of what was created, returned to the client.

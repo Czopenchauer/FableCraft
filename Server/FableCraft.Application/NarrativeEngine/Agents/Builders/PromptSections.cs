@@ -764,19 +764,17 @@ internal static class PromptSections
 
         var formattedCharacters = string.Join("\n",
             previousBackgroundCharacters.Select(c => $"""
-                                                      <background_character name="{c.Name}">
-                                                      {string.Join("\n", c.ToJsonString())}
-                                                      </background_character>
+                                                      <character name="{c.Name}">
+                                                      {c.Description}
+                                                      </character>
                                                       """));
 
         return $"""
-                ## Previously Established Background Characters
+                ## Characters
 
-                The following background characters have partial profiles from previous scenes.
-
-                <background_characters>
+                <characters>
                 {formattedCharacters}
-                </background_characters>
+                </characters>
                 """;
     }
 

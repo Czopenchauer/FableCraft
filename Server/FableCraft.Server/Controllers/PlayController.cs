@@ -215,7 +215,8 @@ public class PlayController : ControllerBase
         Details: request.Details,
         Importance: request.Importance,
         PowerLevel: request.PowerLevel,
-        Category: request.Category);
+        Category: request.Category,
+        Description: request.Description);
 
     [HttpPost("scene/{sceneId:guid}/enrich/regenerate")]
     [ProducesResponseType(typeof(SceneEnrichmentOutput), StatusCodes.Status200OK)]
@@ -286,6 +287,46 @@ public class PlayController : ControllerBase
         catch (AdventureNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    /// <summary>
+    ///     Directly create canon content (character, location, item, or lore) from user-supplied
+    ///     input without AI generation. Content is persisted immediately — no draft/confirm flow.
+    ///     Characters are always created as background importance.
+    /// </summary>
+    [HttpPost("scene/{sceneId:guid}/create-content/direct")]
+    [ProducesResponseType(typeof(ManualCreateContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ManualCreateContentResult>> CreateContentDirect(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] ManualCreateContentRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Details))
+        {
+            return BadRequest(new { error = "Name and details are required" });
+        }
+
+        if (request.Type == ManualContentType.Character
+            && !string.IsNullOrWhiteSpace(request.Importance)
+            && !string.Equals(request.Importance, "background", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { error = "Direct character creation only supports 'background' importance" });
+        }
+
+        var input = MapToManualContentInput(request);
+
+        try
+        {
+            var result = await _manualContentService.CreateDirectAsync(adventureId, input, cancellationToken);
+            return Ok(new ManualCreateContentResult(result.Kind, result.Id, result.Name, result.Summary));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 
