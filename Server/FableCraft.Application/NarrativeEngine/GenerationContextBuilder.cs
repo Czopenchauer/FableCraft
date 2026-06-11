@@ -391,8 +391,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             .ToListAsync(ct);
         roster = roster
             .GroupBy(x => x.Name)
-            .OrderByDescending(g => g.OrderByDescending(z => z.Version).Take(1))
-            .SelectMany(g => g)
+            .Select(g => g.OrderByDescending(z => z.Version).First())
             .ToList();
         return roster.Where(x => backgroundCharacters.Contains(x.Name) || x.SceneId == sceneId).ToList();
     }
