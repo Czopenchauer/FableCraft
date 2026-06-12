@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 
@@ -63,6 +64,7 @@ public class ChatSessionWithMessagesDto
 public class ChatMessageEntry
 {
     public required string Role { get; init; }
+
     public required string Content { get; init; }
 }
 
@@ -263,7 +265,8 @@ internal sealed class ChatService : IChatService
             ProcessExecutionContext.AdventureId.Value = adventureId;
             ProcessExecutionContext.SceneId.Value = latestScene.Id;
 
-            var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.McStorySummary;
+            var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata
+                .McStorySummary;
             if (!string.IsNullOrEmpty(latestSummary))
             {
                 var message = $"""
@@ -329,6 +332,11 @@ internal sealed class ChatService : IChatService
         }
 
         var finalResponse = responseBuilder.ToString();
+        if (string.IsNullOrEmpty(finalResponse))
+        {
+            throw new LlmEmptyResponseException();
+        }
+
         chatHistory.AddAssistantMessage(finalResponse);
         _logger.Information(chatHistory.ToJsonString());
 
@@ -364,6 +372,7 @@ internal sealed class ChatService : IChatService
     private static ChatHistory DeserializeChatHistory(string? json)
     {
         if (string.IsNullOrEmpty(json)) return new ChatHistory();
+
         try
         {
             return JsonSerializer.Deserialize<ChatHistory>(json, JsonExtensions.JsonSerializerOptions) ?? new ChatHistory();
