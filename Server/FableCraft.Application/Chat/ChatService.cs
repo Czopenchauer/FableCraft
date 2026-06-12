@@ -226,22 +226,7 @@ internal sealed class ChatService : IChatService
 
         if (lastUserIndex < 0) return false;
 
-        var removeEnd = chatHistory.Count;
-        for (var i = lastUserIndex + 1; i < chatHistory.Count; i++)
-        {
-            if (chatHistory[i].Role == AuthorRole.Assistant)
-            {
-                removeEnd = i + 1;
-                break;
-            }
-        }
-
-        chatHistory.RemoveAt(lastUserIndex);
-        var assistantIndex = lastUserIndex < chatHistory.Count ? lastUserIndex : -1;
-        if (assistantIndex >= 0 && chatHistory[assistantIndex].Role == AuthorRole.Assistant)
-        {
-            chatHistory.RemoveAt(assistantIndex);
-        }
+        chatHistory.RemoveRange(lastUserIndex, chatHistory.Count - lastUserIndex);
 
         session.ChatHistoryJson = chatHistory.ToJsonString();
         session.UpdatedAt = DateTimeOffset.UtcNow;
