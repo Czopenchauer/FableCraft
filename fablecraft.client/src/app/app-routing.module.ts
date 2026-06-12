@@ -13,9 +13,11 @@ import {
 import {
   TrackerDefinitionBuilderComponent
 } from './features/adventures/components/tracker-definition-builder/tracker-definition-builder.component';
+import {ChatComponent} from './features/chat/components/chat/chat.component';
 
 const routes: Routes = [
   {path: '', component: HomeComponent},
+  {path: 'chat', component: ChatComponent},
   {path: 'adventures', component: AdventureListComponent},
   {path: 'adventures/create', component: AdventureCreateComponent},
   {path: 'adventures/status/:id', component: AdventureStatusComponent},

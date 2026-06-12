@@ -1,0 +1,94 @@
+<div class="chat-window" *ngIf="session">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <h2 class="chat-header-title">{{ session.title || 'Untitled' }}</h2>
+      <span class="chat-header-adventure">{{ session.adventureName }}</span>
+    </div>
+    <div class="chat-header-actions">
+      <select
+        [ngModel]="session.llmPresetId"
+        (ngModelChange)="onPresetChange($event)"
+        [disabled]="isStreaming"
+        class="preset-select"
+        title="Change LLM preset"
+      >
+        <option *ngFor="let preset of presets" [value]="preset.id">{{ preset.name }}</option>
+      </select>
+      <button
+        (click)="deleteLatestMessage()"
+        [disabled]="isStreaming || isDeletingLatest || messages.length === 0"
+        class="btn-icon"
+        title="Delete latest message"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Message List -->
+  <div #messageList class="message-list" [class.streaming]="isStreaming">
+    <div *ngIf="messages.length === 0 && !isStreaming" class="empty-state">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="empty-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+      </svg>
+      <p>Start a conversation about this adventure</p>
+    </div>
+
+    <div *ngFor="let message of messages; let i = index" class="message" [class]="'message-' + message.role">
+      <div class="message-bubble" [class.streaming]="isLastMessageStreaming(i)">
+        <div *ngIf="message.role === 'assistant'" class="message-content" [innerHTML]="message.content | markdown"></div>
+        <div *ngIf="message.role === 'user'" class="message-content">{{ message.content }}</div>
+        <span *ngIf="isLastMessageStreaming(i)" class="typing-cursor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea
+        #chatInput
+        [(ngModel)]="inputText"
+        (keydown)="onKeydown($event)"
+        [disabled]="isStreaming"
+        class="chat-input"
+        placeholder="Type a message..."
+        rows="1"
+      ></textarea>
+      <button
+        *ngIf="!isStreaming"
+        (click)="sendMessage()"
+        [disabled]="!inputText.trim()"
+        class="send-btn"
+        title="Send message"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+        </svg>
+      </button>
+      <button
+        *ngIf="isStreaming"
+        (click)="cancelStream()"
+        class="stop-btn"
+        title="Stop streaming"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Empty State (no session selected) -->
+<div *ngIf="!session" class="no-session">
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="no-session-icon">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+  </svg>
+  <h3>Select a chat session</h3>
+  <p>Choose a session from the sidebar or create a new one</p>
+</div>

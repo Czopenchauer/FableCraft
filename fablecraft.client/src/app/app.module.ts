@@ -47,6 +47,9 @@ import {
 import {
   CreateContentModalComponent
 } from './features/adventures/components/create-content-modal/create-content-modal.component';
+import {ChatComponent} from './features/chat/components/chat/chat.component';
+import {ChatSessionListComponent} from './features/chat/components/chat-session-list/chat-session-list.component';
+import {ChatWindowComponent} from './features/chat/components/chat-window/chat-window.component';
 
 @NgModule({
   declarations: [
@@ -76,7 +79,10 @@ import {
     SceneDeleteModalComponent,
     SceneImageComponent,
     GraphRagSettingsManagerComponent,
-    CreateContentModalComponent
+    CreateContentModalComponent,
+    ChatComponent,
+    ChatSessionListComponent,
+    ChatWindowComponent
   ],
   imports: [
     BrowserModule,

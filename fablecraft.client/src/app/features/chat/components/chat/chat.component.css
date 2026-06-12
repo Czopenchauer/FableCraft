@@ -1,0 +1,100 @@
+.chat-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.chat-sidebar {
+  width: 280px;
+  min-width: 280px;
+  border-right: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[data-theme="modern-dark"] .chat-sidebar {
+  background: rgb(15, 23, 42);
+}
+
+[data-theme="medieval-fantasy"] .chat-sidebar {
+  background: linear-gradient(180deg, rgb(45, 24, 16) 0%, rgb(35, 18, 10) 100%);
+}
+
+.chat-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+[data-theme="modern-dark"] .chat-main {
+  background: rgb(15, 23, 42);
+}
+
+[data-theme="medieval-fantasy"] .chat-main {
+  background: linear-gradient(180deg, rgb(30, 16, 8) 0%, rgb(20, 10, 4) 100%);
+}
+
+.mobile-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: fixed;
+  top: 68px;
+  left: var(--spacing-sm);
+  z-index: 100;
+  transition: all var(--transition-base);
+}
+
+.mobile-sidebar-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.icon-sm {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+@media (max-width: 767px) {
+  .mobile-sidebar-toggle {
+    display: flex;
+  }
+
+  .chat-sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    height: 100vh;
+    z-index: 999;
+    transition: left var(--transition-base);
+    width: 280px;
+  }
+
+  .chat-sidebar.open {
+    left: 0;
+  }
+
+  .mobile-overlay {
+    display: block;
+  }
+}
