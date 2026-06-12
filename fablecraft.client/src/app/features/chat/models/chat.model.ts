@@ -33,10 +33,3 @@ export interface ChatMessageResponseDto {
   content: string;
   createdAt: string;
 }
-
-export interface ChatSseChunk {
-  type: 'token' | 'done' | 'error';
-  content?: string;
-  message?: ChatMessageResponseDto;
-  error?: string;
-}

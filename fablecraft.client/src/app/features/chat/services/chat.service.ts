@@ -5,6 +5,7 @@ import {
   ChatSessionDto,
   ChatSessionResponseDto,
   ChatSessionWithMessagesDto,
+  ChatMessageResponseDto,
   UpdateChatSessionPresetDto
 } from '../models/chat.model';
 import {environment} from '../../../../environments/environment';
@@ -40,5 +41,9 @@ export class ChatService {
 
   deleteLatestMessage(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/sessions/${id}/messages/latest`);
+  }
+
+  sendMessage(sessionId: string, content: string): Observable<ChatMessageResponseDto> {
+    return this.http.post<ChatMessageResponseDto>(`${this.apiUrl}/sessions/${sessionId}/messages`, {content});
   }
 }

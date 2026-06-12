@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using FableCraft.Application.Chat;
 using FableCraft.Application.Model;
 
@@ -102,10 +100,10 @@ public class ChatController : ControllerBase
     }
 
     [HttpPost("sessions/{id:guid}/messages")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ChatMessageEntry), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task StreamMessage(
+    public async Task<ActionResult<ChatMessageEntry>> SendMessage(
         Guid id,
         [FromBody] ChatMessageDto dto,
         [FromServices] IValidator<ChatMessageDto> validator,
@@ -114,33 +112,11 @@ public class ChatController : ControllerBase
         var validationResult = await validator.ValidateAsync(dto, cancellationToken);
         if (!validationResult.IsValid)
         {
-            Response.StatusCode = StatusCodes.Status400BadRequest;
-            Response.ContentType = "application/json";
-            await Response.WriteAsJsonAsync(validationResult.ToDictionary(), cancellationToken);
-            return;
+            return BadRequest(Results.ValidationProblem(validationResult.ToDictionary()));
         }
 
-        Response.ContentType = "text/event-stream";
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
-
-        try
-        {
-            await foreach (var chunk in _chatService.StreamMessageAsync(id, dto.Content, cancellationToken))
-            {
-                var json = JsonSerializer.Serialize(new { chunk.Type, chunk.Content, chunk.Message },
-                    new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
-
-                await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
-                await Response.Body.FlushAsync(cancellationToken);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error streaming chat message for session {SessionId}", id);
-            var errorJson = JsonSerializer.Serialize(new { type = "error", content = ex.Message });
-            await Response.WriteAsync($"data: {errorJson}\n\n", cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
-        }
+        var message = await _chatService.SendMessageAsync(id, dto.Content, cancellationToken);
+        if (message == null) return NotFound();
+        return Ok(message);
     }
 }

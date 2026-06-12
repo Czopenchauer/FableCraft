@@ -36,7 +36,7 @@ public interface IChatService
 
     Task<bool> DeleteLatestMessageAsync(Guid sessionId, CancellationToken cancellationToken);
 
-    IAsyncEnumerable<ChatSseChunk> StreamMessageAsync(Guid sessionId, string userMessage, CancellationToken cancellationToken);
+    Task<ChatMessageEntry?> SendMessageAsync(Guid sessionId, string userMessage, CancellationToken cancellationToken);
 }
 
 public class ChatSessionWithMessagesDto
@@ -64,15 +64,6 @@ public class ChatMessageEntry
 {
     public required string Role { get; init; }
     public required string Content { get; init; }
-}
-
-public class ChatSseChunk
-{
-    public required string Type { get; init; }
-
-    public string? Content { get; init; }
-
-    public ChatMessageEntry? Message { get; init; }
 }
 
 internal sealed class ChatService : IChatService
@@ -258,11 +249,7 @@ internal sealed class ChatService : IChatService
         return true;
     }
 
-    public async IAsyncEnumerable<ChatSseChunk> StreamMessageAsync(
-        Guid sessionId,
-        string userMessage,
-        [System.Runtime.CompilerServices.EnumeratorCancellation]
-        CancellationToken cancellationToken)
+    public async Task<ChatMessageEntry?> SendMessageAsync(Guid sessionId, string userMessage, CancellationToken cancellationToken)
     {
         var session = await _dbContext.ChatSessions
             .Include(s => s.Adventure)
@@ -270,16 +257,7 @@ internal sealed class ChatService : IChatService
             .Include(s => s.LlmPreset)
             .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
 
-        if (session == null)
-        {
-            yield return new ChatSseChunk
-            {
-                Type = "error",
-                Content = "Session not found"
-            };
-
-            yield break;
-        }
+        if (session == null) return null;
 
         var adventure = session.Adventure;
         var preset = session.LlmPreset;
@@ -351,7 +329,7 @@ internal sealed class ChatService : IChatService
         var chatCompletionService = kernelBuilt.GetRequiredService<IChatCompletionService>();
 
         var responseBuilder = new StringBuilder();
-        var settings = kernelBuilder.GetDefaultPromptExecutionSettings();
+        var settings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
 
         await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
                            chatHistory,
@@ -362,28 +340,21 @@ internal sealed class ChatService : IChatService
             if (chunk.Content != null)
             {
                 responseBuilder.Append(chunk.Content);
-                yield return new ChatSseChunk
-                {
-                    Type = "chunk",
-                    Content = chunk.Content
-                };
             }
         }
+
+        var finalResponse = responseBuilder.ToString();
+        chatHistory.AddAssistantMessage(finalResponse);
         _logger.Information(chatHistory.ToJsonString());
 
-        var fullResponse = responseBuilder.ToString();
         session.ChatHistoryJson = chatHistory.ToJsonString();
         session.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        yield return new ChatSseChunk
+        return new ChatMessageEntry
         {
-            Type = "done",
-            Message = new ChatMessageEntry
-            {
-                Role = "assistant",
-                Content = fullResponse
-            }
+            Role = "assistant",
+            Content = finalResponse
         };
     }
 

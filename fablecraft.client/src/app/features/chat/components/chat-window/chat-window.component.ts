@@ -1,14 +1,12 @@
 import {AfterViewChecked, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
-import {Subject, Subscription} from 'rxjs';
+import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {ChatService} from '../../services/chat.service';
-import {ChatStreamingService} from '../../services/chat-streaming.service';
 import {LlmPresetService} from '../../../adventures/services/llm-preset.service';
 import {ToastService} from '../../../../core/services/toast.service';
 import {
   ChatSessionWithMessagesDto,
   ChatMessageResponseDto,
-  ChatSseChunk,
   UpdateChatSessionPresetDto
 } from '../../models/chat.model';
 import {LlmPresetResponseDto} from '../../../adventures/models/llm-preset.model';
@@ -25,14 +23,12 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   @Output() messagesUpdated = new EventEmitter<void>();
 
   messages: ChatMessageResponseDto[] = [];
-  streamingContent = '';
-  isStreaming = false;
+  isLoading = false;
   inputText = '';
   presets: LlmPresetResponseDto[] = [];
   isLoadingPresets = false;
   isDeletingLatest = false;
 
-  private streamSubscription: Subscription | null = null;
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
 
@@ -41,7 +37,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   constructor(
     private chatService: ChatService,
-    private chatStreamingService: ChatStreamingService,
     private llmPresetService: LlmPresetService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
@@ -62,8 +57,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       this.shouldScrollToBottom = true;
     } else {
       this.messages = [];
-      this.streamingContent = '';
-      this.isStreaming = false;
     }
   }
 
@@ -75,7 +68,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   ngOnDestroy(): void {
-    this.cancelStream();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -97,7 +89,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   sendMessage(): void {
-    if (!this.session || !this.inputText.trim() || this.isStreaming) return;
+    if (!this.session || !this.inputText.trim() || this.isLoading) return;
 
     const content = this.inputText.trim();
     this.inputText = '';
@@ -110,8 +102,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       createdAt: new Date().toISOString()
     });
 
-    this.isStreaming = true;
-    this.streamingContent = '';
+    this.isLoading = true;
     this.messages.push({
       id: '',
       role: 'assistant',
@@ -121,58 +112,30 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
     this.shouldScrollToBottom = true;
 
-    this.streamSubscription = this.chatStreamingService
-      .streamMessage(this.session.id, content, this.cdr)
+    this.chatService.sendMessage(this.session.id, content)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (chunk: ChatSseChunk) => {
-          if (chunk.type === 'token' && chunk.content) {
-            this.streamingContent += chunk.content;
-            const lastMsg = this.messages[this.messages.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = this.streamingContent;
-            }
-            this.cdr.detectChanges();
-            this.shouldScrollToBottom = true;
-          } else if (chunk.type === 'done') {
-            if (chunk.message) {
-              const lastMsg = this.messages[this.messages.length - 1];
-              if (lastMsg && lastMsg.role === 'assistant') {
-                lastMsg.id = chunk.message.id;
-                lastMsg.content = chunk.message.content;
-                lastMsg.createdAt = chunk.message.createdAt;
-              }
-            }
-            this.isStreaming = false;
-            this.streamingContent = '';
-            this.cdr.detectChanges();
-            this.shouldScrollToBottom = true;
-            this.messagesUpdated.emit();
-          } else if (chunk.type === 'error') {
-            this.toastService.error(chunk.error || 'Streaming error');
-            this.isStreaming = false;
-            this.streamingContent = '';
-            if (this.messages.length > 0 && this.messages[this.messages.length - 1].role === 'assistant' && !this.messages[this.messages.length - 1].content) {
-              this.messages.pop();
-            }
-            this.cdr.detectChanges();
+        next: (response) => {
+          const lastMsg = this.messages[this.messages.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant') {
+            lastMsg.id = response.id;
+            lastMsg.content = response.content;
+            lastMsg.createdAt = response.createdAt;
           }
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          this.shouldScrollToBottom = true;
+          this.messagesUpdated.emit();
         },
         error: (err) => {
-          this.toastService.error('Connection error');
-          this.isStreaming = false;
-          this.streamingContent = '';
+          this.toastService.error('Failed to send message');
+          this.isLoading = false;
+          if (this.messages.length > 0 && this.messages[this.messages.length - 1].role === 'assistant' && !this.messages[this.messages.length - 1].content) {
+            this.messages.pop();
+          }
           this.cdr.detectChanges();
         }
       });
-  }
-
-  cancelStream(): void {
-    if (this.streamSubscription) {
-      this.streamSubscription.unsubscribe();
-      this.streamSubscription = null;
-    }
-    this.isStreaming = false;
-    this.streamingContent = '';
   }
 
   onPresetChange(presetId: string): void {
@@ -190,7 +153,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   deleteLatestMessage(): void {
-    if (!this.session || this.isStreaming) return;
+    if (!this.session || this.isLoading) return;
     this.isDeletingLatest = true;
     this.chatService.deleteLatestMessage(this.session.id)
       .pipe(takeUntil(this.destroy$))
@@ -246,7 +209,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     }
   }
 
-  isLastMessageStreaming(index: number): boolean {
-    return this.isStreaming && index === this.messages.length - 1;
+  isLastMessageLoading(index: number): boolean {
+    return this.isLoading && index === this.messages.length - 1;
   }
 }
