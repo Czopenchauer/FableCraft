@@ -20,7 +20,7 @@ public class ChatSession : IEntity
 
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public List<ChatMessage> Messages { get; init; } = [];
+    public string? ChatHistoryJson { get; set; }
 
     [Key]
     public Guid Id { get; set; }

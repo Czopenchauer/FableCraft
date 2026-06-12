@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 using FableCraft.Application.Model;
 using FableCraft.Application.NarrativeEngine.Agents;
@@ -16,6 +17,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+
+using Serilog;
 
 namespace FableCraft.Application.Chat;
 
@@ -54,7 +57,13 @@ public class ChatSessionWithMessagesDto
 
     public DateTimeOffset? UpdatedAt { get; init; }
 
-    public required List<ChatMessageResponseDto> Messages { get; init; } = [];
+    public required List<ChatMessageEntry> Messages { get; init; } = [];
+}
+
+public class ChatMessageEntry
+{
+    public required string Role { get; init; }
+    public required string Content { get; init; }
 }
 
 public class ChatSseChunk
@@ -63,7 +72,7 @@ public class ChatSseChunk
 
     public string? Content { get; init; }
 
-    public ChatMessageResponseDto? Message { get; init; }
+    public ChatMessageEntry? Message { get; init; }
 }
 
 internal sealed class ChatService : IChatService
@@ -72,17 +81,19 @@ internal sealed class ChatService : IChatService
     private readonly KernelBuilderFactory _kernelBuilderFactory;
     private readonly IPluginFactory _pluginFactory;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger _logger;
 
     public ChatService(
         ApplicationDbContext dbContext,
         KernelBuilderFactory kernelBuilderFactory,
         IPluginFactory pluginFactory,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider, ILogger logger)
     {
         _dbContext = dbContext;
         _kernelBuilderFactory = kernelBuilderFactory;
         _pluginFactory = pluginFactory;
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<ChatSessionResponseDto>> GetAllSessionsAsync(CancellationToken cancellationToken)
@@ -110,32 +121,25 @@ internal sealed class ChatService : IChatService
         var session = await _dbContext.ChatSessions
             .Include(s => s.Adventure)
             .Include(s => s.LlmPreset)
-            .Include(s => s.Messages)
             .Where(s => s.Id == sessionId)
-            .Select(s => new ChatSessionWithMessagesDto
-            {
-                Id = s.Id,
-                AdventureId = s.AdventureId,
-                AdventureName = s.Adventure.Name,
-                LlmPresetId = s.LlmPresetId,
-                LlmPresetName = s.LlmPreset.Name,
-                Title = s.Title,
-                CreatedAt = s.CreatedAt,
-                UpdatedAt = s.UpdatedAt,
-                Messages = s.Messages
-                    .OrderBy(m => m.CreatedAt)
-                    .Select(m => new ChatMessageResponseDto
-                    {
-                        Id = m.Id,
-                        Role = m.Role,
-                        Content = m.Content,
-                        CreatedAt = m.CreatedAt
-                    })
-                    .ToList()
-            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return session;
+        if (session == null) return null;
+
+        var messages = ExtractUserAssistantMessages(session.ChatHistoryJson);
+
+        return new ChatSessionWithMessagesDto
+        {
+            Id = session.Id,
+            AdventureId = session.AdventureId,
+            AdventureName = session.Adventure.Name,
+            LlmPresetId = session.LlmPresetId,
+            LlmPresetName = session.LlmPreset.Name,
+            Title = session.Title,
+            CreatedAt = session.CreatedAt,
+            UpdatedAt = session.UpdatedAt,
+            Messages = messages
+        };
     }
 
     public async Task<ChatSessionResponseDto> CreateSessionAsync(ChatSessionDto dto, CancellationToken cancellationToken)
@@ -213,34 +217,43 @@ internal sealed class ChatService : IChatService
 
     public async Task<bool> DeleteLatestMessageAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        var latestMessage = await _dbContext.ChatMessages
-            .Where(m => m.ChatSessionId == sessionId)
-            .OrderByDescending(m => m.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
+        var session = await _dbContext.ChatSessions.FindAsync([sessionId], cancellationToken);
+        if (session == null) return false;
 
-        if (latestMessage == null) return false;
+        var chatHistory = DeserializeChatHistory(session.ChatHistoryJson);
+        if (chatHistory.Count == 0) return false;
 
-        _dbContext.ChatMessages.Remove(latestMessage);
-
-        if (latestMessage.Role == "user")
+        var lastUserIndex = -1;
+        for (var i = chatHistory.Count - 1; i >= 0; i--)
         {
-            var assistantReply = await _dbContext.ChatMessages
-                .Where(m => m.ChatSessionId == sessionId && m.Role == "assistant" && m.CreatedAt > latestMessage.CreatedAt)
-                .OrderBy(m => m.CreatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (assistantReply != null)
+            if (chatHistory[i].Role == AuthorRole.User)
             {
-                _dbContext.ChatMessages.Remove(assistantReply);
+                lastUserIndex = i;
+                break;
             }
         }
 
-        var session = await _dbContext.ChatSessions.FindAsync([sessionId], cancellationToken);
-        if (session != null)
+        if (lastUserIndex < 0) return false;
+
+        var removeEnd = chatHistory.Count;
+        for (var i = lastUserIndex + 1; i < chatHistory.Count; i++)
         {
-            session.UpdatedAt = DateTimeOffset.UtcNow;
+            if (chatHistory[i].Role == AuthorRole.Assistant)
+            {
+                removeEnd = i + 1;
+                break;
+            }
         }
 
+        chatHistory.RemoveAt(lastUserIndex);
+        var assistantIndex = lastUserIndex < chatHistory.Count ? lastUserIndex : -1;
+        if (assistantIndex >= 0 && chatHistory[assistantIndex].Role == AuthorRole.Assistant)
+        {
+            chatHistory.RemoveAt(assistantIndex);
+        }
+
+        session.ChatHistoryJson = chatHistory.ToJsonString();
+        session.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -255,7 +268,6 @@ internal sealed class ChatService : IChatService
             .Include(s => s.Adventure)
             .ThenInclude(a => a.MainCharacter)
             .Include(s => s.LlmPreset)
-            .Include(s => s.Messages)
             .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
 
         if (session == null)
@@ -272,66 +284,61 @@ internal sealed class ChatService : IChatService
         var adventure = session.Adventure;
         var preset = session.LlmPreset;
 
-        var userMsg = new ChatMessage
+        var chatHistory = string.IsNullOrEmpty(session.ChatHistoryJson) ? new ChatHistory() : DeserializeChatHistory(session.ChatHistoryJson);
+        if (string.IsNullOrEmpty(session.ChatHistoryJson))
         {
-            Id = Guid.NewGuid(),
-            ChatSessionId = sessionId,
-            Role = "user",
-            Content = userMessage,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        _dbContext.ChatMessages.Add(userMsg);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            var systemPrompt = await BuildSystemPromptAsync(session, cancellationToken);
+            chatHistory.AddSystemMessage(systemPrompt);
+            var adventureId = session.AdventureId;
+            var latestScenes = await _dbContext.Scenes
+                .Where(s => s.AdventureId == adventureId && s.CommitStatus == CommitStatus.Commited)
+                .OrderByDescending(s => s.SequenceNumber)
+                .Take(40)
+                .ToArrayAsync(cancellationToken);
 
-        var chatHistory = await BuildChatHistoryAsync(session, cancellationToken);
+            var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).First();
+            ProcessExecutionContext.AdventureId.Value = adventureId;
+            ProcessExecutionContext.SceneId.Value = latestScene.Id;
+
+            var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.McStorySummary;
+            if (!string.IsNullOrEmpty(latestSummary))
+            {
+                var message = $"""
+                               <summary>
+                               The summary of the adventure so fat:
+                               {latestSummary}
+                               </summary>
+                               """;
+                chatHistory.AddMessage(AuthorRole.User, message);
+            }
+
+            var formatted = string.Join("\n",
+                latestScenes
+                    .OrderBy(x => x.SequenceNumber)
+                    .Take(WriterAgent.SceneContextCount)
+                    .Select(x => $"""
+                                  Time: {x.Metadata.Tracker!.Scene!.Time}
+                                  Location: {x.Metadata.Tracker.Scene.Location}
+                                  Weather: {x.Metadata.Tracker.Scene.Weather}
+                                  {x.NarrativeText}
+                                  """));
+
+            var scenes = $"""
+                          <latest_scenes>
+                          The latest scenes in the adventures:
+                          {formatted}
+                          </latest_scenes>
+                          """;
+            chatHistory.AddMessage(AuthorRole.User, scenes);
+        }
+
+        chatHistory.AddUserMessage(userMessage);
 
         var kernelBuilder = _kernelBuilderFactory.Create(preset);
         var kernel = kernelBuilder.Create();
 
-        var adventureId = session.AdventureId;
-        var latestScenes = await _dbContext.Scenes
-            .Where(s => s.AdventureId == adventureId && s.CommitStatus == CommitStatus.Commited)
-            .OrderByDescending(s => s.SequenceNumber)
-            .Take(40)
-            .ToArrayAsync(cancellationToken);
-
-        var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).First();
-        ProcessExecutionContext.AdventureId.Value = adventureId;
-        ProcessExecutionContext.SceneId.Value = latestScene.Id;
-
-        var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.McStorySummary;
-        if (!string.IsNullOrEmpty(latestSummary))
-        {
-            var message = $"""
-                           <summary>
-                           The summary of the adventure so fat:
-                           {latestSummary}
-                           </summary>
-                           """;
-            chatHistory.AddMessage(AuthorRole.User, message);
-        }
-
-        var formatted = string.Join("\n",
-            latestScenes
-                .OrderBy(x => x.SequenceNumber)
-                .Take(WriterAgent.SceneContextCount)
-                .Select(x => $"""
-                              Time: {x.Metadata.Tracker!.Scene!.Time}
-                              Location: {x.Metadata.Tracker.Scene.Location}
-                              Weather: {x.Metadata.Tracker.Scene.Weather}
-                              {x.NarrativeText}
-                              """));
-
-        var scenes = $"""
-                     <latest_scenes>
-                     The latest scenes in the adventures:
-                     {formatted}
-                     </latest_scenes>
-                     """;
-        chatHistory.AddMessage(AuthorRole.User, scenes);
-
-        var generationContext = BuildGenerationContext(adventure, latestScene);
-        var callerContext = new CallerContext(nameof(ChatService), adventureId, latestScene.Id);
+        var generationContext = BuildGenerationContext(adventure);
+        var callerContext = new CallerContext(nameof(ChatService), session.AdventureId, Guid.Empty);
 
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, generationContext, callerContext);
@@ -362,43 +369,31 @@ internal sealed class ChatService : IChatService
                 };
             }
         }
+        _logger.Information(chatHistory.ToJsonString());
 
         var fullResponse = responseBuilder.ToString();
+        chatHistory.AddAssistantMessage(fullResponse);
 
-        var assistantMsg = new ChatMessage
-        {
-            Id = Guid.NewGuid(),
-            ChatSessionId = sessionId,
-            Role = "assistant",
-            Content = fullResponse,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        _dbContext.ChatMessages.Add(assistantMsg);
-
+        var persistedHistory = DeserializeChatHistory(session.ChatHistoryJson);
+        persistedHistory.AddUserMessage(userMessage);
+        persistedHistory.AddAssistantMessage(fullResponse);
+        session.ChatHistoryJson = persistedHistory.ToJsonString();
         session.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         yield return new ChatSseChunk
         {
             Type = "done",
-            Message = new ChatMessageResponseDto
+            Message = new ChatMessageEntry
             {
-                Id = assistantMsg.Id,
-                Role = assistantMsg.Role,
-                Content = assistantMsg.Content,
-                CreatedAt = assistantMsg.CreatedAt
+                Role = "assistant",
+                Content = fullResponse
             }
         };
     }
 
-    private GenerationContext BuildGenerationContext(Adventure adventure, Scene? latestScene)
+    private GenerationContext BuildGenerationContext(Adventure adventure)
     {
-        var sceneContexts = new List<SceneContext>();
-        if (latestScene != null)
-        {
-            sceneContexts.Add(SceneContext.CreateFromScene(latestScene));
-        }
-
         var context = new GenerationContext
         {
             AdventureId = adventure.Id,
@@ -409,36 +404,48 @@ internal sealed class ChatService : IChatService
             AgentLlmPreset = adventure.AgentLlmPresets.ToArray(),
             TrackerStructure = adventure.TrackerStructure,
             Characters = [],
-            SceneContext = sceneContexts.ToArray()
+            SceneContext = []
         };
 
         return context;
     }
 
-    private async Task<ChatHistory> BuildChatHistoryAsync(ChatSession session, CancellationToken cancellationToken)
+    private static ChatHistory DeserializeChatHistory(string? json)
     {
-        var chatHistory = new ChatHistory();
-
-        var systemPrompt = await BuildSystemPromptAsync(session, cancellationToken);
-        chatHistory.AddSystemMessage(systemPrompt);
-
-        foreach (var msg in session.Messages.OrderBy(m => m.CreatedAt))
+        if (string.IsNullOrEmpty(json)) return new ChatHistory();
+        try
         {
-            switch (msg.Role)
+            return JsonSerializer.Deserialize<ChatHistory>(json, JsonExtensions.JsonSerializerOptions) ?? new ChatHistory();
+        }
+        catch
+        {
+            return new ChatHistory();
+        }
+    }
+
+    private static List<ChatMessageEntry> ExtractUserAssistantMessages(string? json)
+    {
+        var result = new List<ChatMessageEntry>();
+        if (string.IsNullOrEmpty(json)) return result;
+
+        var chatHistory = DeserializeChatHistory(json);
+        foreach (var message in chatHistory)
+        {
+            if (message.Role == AuthorRole.User || message.Role == AuthorRole.Assistant)
             {
-                case "user":
-                    chatHistory.AddUserMessage(msg.Content);
-                    break;
-                case "assistant":
-                    chatHistory.AddAssistantMessage(msg.Content);
-                    break;
-                case "system":
-                    chatHistory.AddSystemMessage(msg.Content);
-                    break;
+                var content = message.Content;
+                if (content != null)
+                {
+                    result.Add(new ChatMessageEntry
+                    {
+                        Role = message.Role.Label,
+                        Content = content
+                    });
+                }
             }
         }
 
-        return chatHistory;
+        return result;
     }
 
     private async Task<string> BuildSystemPromptAsync(ChatSession session, CancellationToken cancellationToken)

@@ -18,9 +18,5 @@ public class ChatSessionConfiguration : IEntityTypeConfiguration<ChatSession>
             .WithMany()
             .HasForeignKey(x => x.LlmPresetId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.HasMany(x => x.Messages)
-            .WithOne(x => x.ChatSession)
-            .HasForeignKey(x => x.ChatSessionId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }

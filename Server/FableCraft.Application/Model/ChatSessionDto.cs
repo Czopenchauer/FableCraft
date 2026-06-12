@@ -73,14 +73,3 @@ public class ChatMessageDtoValidator : AbstractValidator<ChatMessageDto>
             .NotEmpty().WithMessage("Message content is required");
     }
 }
-
-public class ChatMessageResponseDto
-{
-    public required Guid Id { get; init; }
-
-    public required string Role { get; init; } = string.Empty;
-
-    public required string Content { get; init; } = string.Empty;
-
-    public required DateTimeOffset CreatedAt { get; init; }
-}
