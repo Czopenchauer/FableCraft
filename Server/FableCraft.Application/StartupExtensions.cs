@@ -1,6 +1,7 @@
 #pragma warning disable SKEXP0110 // Experimental Semantic Kernel agents
 
 using FableCraft.Application.AdventureGeneration;
+using FableCraft.Application.Chat;
 using FableCraft.Application.NarrativeEngine;
 using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -26,6 +27,7 @@ public static class StartupExtensions
         services.AddScoped<IAdventureCreationService, AdventureCreationService>();
         services.AddScoped<IGameService, GameService>();
         services.AddScoped<ISceneImageService, SceneImageService>();
+        services.AddScoped<IChatService, ChatService>();
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
             .AddScoped<WorldInfoExtractionMaintenanceService>()
@@ -84,6 +86,7 @@ public static class StartupExtensions
         services.AddTransient<IntentCheckPlugin>();
         services.AddTransient<CharacterSimulationToolsPlugin>();
         services.AddTransient<OrchestrateEmulationPlugin>();
+        services.AddTransient<ChatCharacterPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();
         services.AddMessageHandler<SceneGeneratedEvent, SceneGeneratedEventHandler>();
