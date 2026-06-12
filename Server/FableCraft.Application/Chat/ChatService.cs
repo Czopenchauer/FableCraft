@@ -372,12 +372,7 @@ internal sealed class ChatService : IChatService
         _logger.Information(chatHistory.ToJsonString());
 
         var fullResponse = responseBuilder.ToString();
-        chatHistory.AddAssistantMessage(fullResponse);
-
-        var persistedHistory = DeserializeChatHistory(session.ChatHistoryJson);
-        persistedHistory.AddUserMessage(userMessage);
-        persistedHistory.AddAssistantMessage(fullResponse);
-        session.ChatHistoryJson = persistedHistory.ToJsonString();
+        session.ChatHistoryJson = chatHistory.ToJsonString();
         session.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
