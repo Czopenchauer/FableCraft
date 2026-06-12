@@ -189,17 +189,17 @@ internal sealed class CharacterTrackersProcessor(
                         Description = character.Description,
                         Relationships = character.Relationships,
                         SceneRewrites = character.SceneRewrites.Concat(
-                        [
-                            new CharacterSceneContext
-                            {
-                                Content = sceneRewrite,
-                                SceneTracker = storyTrackerResult,
-                                SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
-                                                     ?.SequenceNumber
-                                                 + 1
-                                                 ?? 0
-                            }
-                        ]).ToList(),
+                            [
+                                new CharacterSceneContext
+                                {
+                                    Content = sceneRewrite,
+                                    SceneTracker = storyTrackerResult,
+                                    SequenceNumber = character.SceneRewrites.MaxBy(x => x.SequenceNumber)
+                                                         ?.SequenceNumber
+                                                     + 1
+                                                     ?? 0
+                                }
+                            ]).ToList(),
                         Importance = character.Importance,
                         SimulationMetadata = character.SimulationMetadata,
                         IsDead = false
@@ -334,7 +334,13 @@ internal sealed class CharacterTrackersProcessor(
 
         var mcStorySummaryTask = ProcessMcStorySummaryIfNeeded(context, cancellationToken);
 
-        await Task.WhenAll(mainCharTrackerTask, progressionTask, inventoryTask, UnpackCharacterUpdates(context, characterUpdateTask), chroniclerTask, mainNarrativeExtractionTask, mcStorySummaryTask);
+        await Task.WhenAll(mainCharTrackerTask,
+            progressionTask,
+            inventoryTask,
+            UnpackCharacterUpdates(context, characterUpdateTask),
+            chroniclerTask,
+            mainNarrativeExtractionTask,
+            mcStorySummaryTask);
 
         await ApplyMainCharacterDelta(context, progressionTask, "progression", c => c.ProgressionDelta = null);
         await ApplyMainCharacterDelta(context, inventoryTask, "inventory", c => c.InventoryDelta = null);
@@ -360,12 +366,13 @@ internal sealed class CharacterTrackersProcessor(
         }
 
         return Task.Run(async () =>
-        {
-            var result = await progressionAgent.Invoke(context, storyTrackerResult, cancellationToken);
-            context.ProgressionDelta = result;
-            context.ProgressionAgentRan = true;
-            return result;
-        }, cancellationToken);
+            {
+                var result = await progressionAgent.Invoke(context, storyTrackerResult, cancellationToken);
+                context.ProgressionDelta = result;
+                context.ProgressionAgentRan = true;
+                return result;
+            },
+            cancellationToken);
     }
 
     private Task<JsonElement?> BuildInventoryTask(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
@@ -388,12 +395,13 @@ internal sealed class CharacterTrackersProcessor(
         }
 
         return Task.Run(async () =>
-        {
-            var result = await inventoryTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
-            context.InventoryDelta = result;
-            context.InventoryAgentRan = true;
-            return result;
-        }, cancellationToken);
+            {
+                var result = await inventoryTrackerAgent.Invoke(context, storyTrackerResult, cancellationToken);
+                context.InventoryDelta = result;
+                context.InventoryAgentRan = true;
+                return result;
+            },
+            cancellationToken);
     }
 
     private async Task ApplyMainCharacterDelta(GenerationContext context, Task<JsonElement?> deltaTask, string source, Action<GenerationContext> clearDelta)
@@ -565,7 +573,8 @@ internal sealed class CharacterTrackersProcessor(
             var alreadyHandled = BuildAlreadyHandledContent(context);
             var result = await worldInfoExtractorAgent.Invoke(context, lastRewrite.Content, sceneTracker, alreadyHandled, cancellationToken);
             logger.Information("Extracted {ActivityCount} activities from {Character} reflection",
-                result.Activity.Count, characterContext.Name);
+                result.Activity.Count,
+                characterContext.Name);
 
             lock (context)
             {
@@ -641,9 +650,10 @@ internal sealed class CharacterTrackersProcessor(
             }
 
             var previousSummary = characterContext.SceneRewrites
-                .Where(s => !string.IsNullOrEmpty(s.StorySummary))
-                .OrderByDescending(s => s.SequenceNumber)
-                .FirstOrDefault()?.StorySummary ?? string.Empty;
+                                      .Where(s => !string.IsNullOrEmpty(s.StorySummary))
+                                      .OrderByDescending(s => s.SequenceNumber)
+                                      .FirstOrDefault()?.StorySummary
+                                  ?? string.Empty;
 
             var result = await storySummaryAgent.InvokeForCharacter(
                 context,
@@ -680,54 +690,48 @@ internal sealed class CharacterTrackersProcessor(
             return;
         }
 
-        try
+        if (context.NewMcStorySummary != null)
         {
-            if (context.NewMcStorySummary != null)
-            {
-                logger.Information("MC StorySummary: using cached result from previous enrichment attempt");
-                return;
-            }
-
-            if (context.SceneContext.Length == 0)
-                return;
-
-            var newSceneNumber = context.SceneContext.Max(s => s.SequenceNumber) + 1;
-
-            if (newSceneNumber < WriterAgent.SceneContextCount)
-            {
-                return;
-            }
-
-            var agedOutSequenceNumber = newSceneNumber - WriterAgent.SceneContextCount;
-            var agedOutScene = context.SceneContext
-                .FirstOrDefault(s => s.SequenceNumber == agedOutSequenceNumber);
-
-            if (agedOutScene == null)
-            {
-                return;
-            }
-
-            var previousSummary = context.SceneContext
-                .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))
-                .OrderByDescending(s => s.SequenceNumber)
-                .FirstOrDefault()?.Metadata.McStorySummary ?? string.Empty;
-
-            var result = await storySummaryAgent.InvokeForMc(
-                context,
-                agedOutScene.SceneContent,
-                agedOutSequenceNumber,
-                previousSummary,
-                cancellationToken);
-
-            context.NewMcStorySummary = result.StorySummary;
-
-            logger.Information(
-                "Updated MC story summary (aged out scene #{SceneNumber})",
-                agedOutSequenceNumber);
+            logger.Information("MC StorySummary: using cached result from previous enrichment attempt");
+            return;
         }
-        catch (Exception ex)
+
+        if (context.SceneContext.Length == 0)
+            return;
+
+        var newSceneNumber = context.SceneContext.Max(s => s.SequenceNumber) + 1;
+
+        if (newSceneNumber < WriterAgent.SceneContextCount)
         {
-            logger.Warning(ex, "Failed to process MC story summary, continuing without it");
+            return;
         }
+
+        var agedOutSequenceNumber = newSceneNumber - WriterAgent.SceneContextCount;
+        var agedOutScene = context.SceneContext
+            .FirstOrDefault(s => s.SequenceNumber == agedOutSequenceNumber);
+
+        if (agedOutScene == null)
+        {
+            return;
+        }
+
+        var previousSummary = context.SceneContext
+                                  .Where(s => !string.IsNullOrEmpty(s.Metadata.McStorySummary))
+                                  .OrderByDescending(s => s.SequenceNumber)
+                                  .FirstOrDefault()?.Metadata.McStorySummary
+                              ?? string.Empty;
+
+        var result = await storySummaryAgent.InvokeForMc(
+            context,
+            agedOutScene.SceneContent,
+            agedOutSequenceNumber,
+            previousSummary,
+            cancellationToken);
+
+        context.NewMcStorySummary = result.StorySummary;
+
+        logger.Information(
+            "Updated MC story summary (aged out scene #{SceneNumber})",
+            agedOutSequenceNumber);
     }
 }

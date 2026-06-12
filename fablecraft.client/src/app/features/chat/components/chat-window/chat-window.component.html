@@ -39,6 +39,7 @@
 
     <div *ngFor="let message of messages; let i = index" class="message" [class]="'message-' + message.role">
       <div class="message-bubble" [class.streaming]="isLastMessageStreaming(i)">
+        <div class="message-role">{{ message.role === 'user' ? 'You' : 'Assistant' }}</div>
         <div *ngIf="message.role === 'assistant'" class="message-content" [innerHTML]="message.content | markdown"></div>
         <div *ngIf="message.role === 'user'" class="message-content">{{ message.content }}</div>
         <span *ngIf="isLastMessageStreaming(i)" class="typing-cursor"></span>
@@ -53,6 +54,7 @@
         #chatInput
         [(ngModel)]="inputText"
         (keydown)="onKeydown($event)"
+        (input)="autoResizeInput()"
         [disabled]="isStreaming"
         class="chat-input"
         placeholder="Type a message..."

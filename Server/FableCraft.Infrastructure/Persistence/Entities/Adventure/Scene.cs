@@ -28,6 +28,7 @@ public class Scene : IEntity
 
     public required int SequenceNumber { get; init; }
 
+    [Obsolete("Do not use. Use Metadata.McStorySummary instead.")]
     public string? AdventureSummary { get; set; }
 
     [Required]

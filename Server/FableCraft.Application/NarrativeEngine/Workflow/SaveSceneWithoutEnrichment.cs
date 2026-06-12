@@ -24,7 +24,6 @@ internal sealed class SaveSceneWithoutEnrichment(IDbContextFactory<ApplicationDb
                 ResolutionOutput = context.NewResolution,
                 WriterObservation = context.NewScene.AdditionalData
             },
-            AdventureSummary = null,
             CharacterActions = context.NewScene.Choices.Select(x => new MainCharacterAction
             {
                 ActionDescription = x,

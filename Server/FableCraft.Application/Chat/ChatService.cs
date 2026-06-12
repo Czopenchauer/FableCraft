@@ -1,6 +1,7 @@
 using System.Text;
 
 using FableCraft.Application.Model;
+using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Plugins.Impl;
@@ -21,31 +22,47 @@ namespace FableCraft.Application.Chat;
 public interface IChatService
 {
     Task<IEnumerable<ChatSessionResponseDto>> GetAllSessionsAsync(CancellationToken cancellationToken);
+
     Task<ChatSessionWithMessagesDto?> GetSessionAsync(Guid sessionId, CancellationToken cancellationToken);
+
     Task<ChatSessionResponseDto> CreateSessionAsync(ChatSessionDto dto, CancellationToken cancellationToken);
+
     Task<ChatSessionResponseDto?> UpdatePresetAsync(Guid sessionId, Guid llmPresetId, CancellationToken cancellationToken);
+
     Task<bool> DeleteSessionAsync(Guid sessionId, CancellationToken cancellationToken);
+
     Task<bool> DeleteLatestMessageAsync(Guid sessionId, CancellationToken cancellationToken);
+
     IAsyncEnumerable<ChatSseChunk> StreamMessageAsync(Guid sessionId, string userMessage, CancellationToken cancellationToken);
 }
 
 public class ChatSessionWithMessagesDto
 {
     public required Guid Id { get; init; }
+
     public required Guid AdventureId { get; init; }
+
     public required string AdventureName { get; init; } = string.Empty;
+
     public required Guid LlmPresetId { get; init; }
+
     public required string LlmPresetName { get; init; } = string.Empty;
+
     public required string Title { get; init; } = string.Empty;
+
     public required DateTimeOffset CreatedAt { get; init; }
+
     public DateTimeOffset? UpdatedAt { get; init; }
+
     public required List<ChatMessageResponseDto> Messages { get; init; } = [];
 }
 
 public class ChatSseChunk
 {
     public required string Type { get; init; }
+
     public string? Content { get; init; }
+
     public ChatMessageResponseDto? Message { get; init; }
 }
 
@@ -124,10 +141,10 @@ internal sealed class ChatService : IChatService
     public async Task<ChatSessionResponseDto> CreateSessionAsync(ChatSessionDto dto, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures.FindAsync([dto.AdventureId], cancellationToken)
-            ?? throw new InvalidOperationException($"Adventure {dto.AdventureId} not found");
+                        ?? throw new InvalidOperationException($"Adventure {dto.AdventureId} not found");
 
         var preset = await _dbContext.LlmPresets.FindAsync([dto.LlmPresetId], cancellationToken)
-            ?? throw new InvalidOperationException($"LLM Preset {dto.LlmPresetId} not found");
+                     ?? throw new InvalidOperationException($"LLM Preset {dto.LlmPresetId} not found");
 
         var session = new ChatSession
         {
@@ -164,7 +181,7 @@ internal sealed class ChatService : IChatService
         if (session == null) return null;
 
         var preset = await _dbContext.LlmPresets.FindAsync([llmPresetId], cancellationToken)
-            ?? throw new InvalidOperationException($"LLM Preset {llmPresetId} not found");
+                     ?? throw new InvalidOperationException($"LLM Preset {llmPresetId} not found");
 
         session.LlmPresetId = llmPresetId;
         session.LlmPreset = preset;
@@ -231,17 +248,24 @@ internal sealed class ChatService : IChatService
     public async IAsyncEnumerable<ChatSseChunk> StreamMessageAsync(
         Guid sessionId,
         string userMessage,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken)
     {
         var session = await _dbContext.ChatSessions
             .Include(s => s.Adventure)
+            .ThenInclude(a => a.MainCharacter)
             .Include(s => s.LlmPreset)
             .Include(s => s.Messages)
             .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
 
         if (session == null)
         {
-            yield return new ChatSseChunk { Type = "error", Content = "Session not found" };
+            yield return new ChatSseChunk
+            {
+                Type = "error",
+                Content = "Session not found"
+            };
+
             yield break;
         }
 
@@ -265,16 +289,49 @@ internal sealed class ChatService : IChatService
         var kernel = kernelBuilder.Create();
 
         var adventureId = session.AdventureId;
-        var latestScene = await _dbContext.Scenes
+        var latestScenes = await _dbContext.Scenes
             .Where(s => s.AdventureId == adventureId && s.CommitStatus == CommitStatus.Commited)
             .OrderByDescending(s => s.SequenceNumber)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Take(40)
+            .ToArrayAsync(cancellationToken);
 
+        var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).First();
         ProcessExecutionContext.AdventureId.Value = adventureId;
-        ProcessExecutionContext.SceneId.Value = latestScene?.Id;
+        ProcessExecutionContext.SceneId.Value = latestScene.Id;
+
+        var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.McStorySummary;
+        if (!string.IsNullOrEmpty(latestSummary))
+        {
+            var message = $"""
+                           <summary>
+                           The summary of the adventure so fat:
+                           {latestSummary}
+                           </summary>
+                           """;
+            chatHistory.AddMessage(AuthorRole.User, message);
+        }
+
+        var formatted = string.Join("\n",
+            latestScenes
+                .OrderBy(x => x.SequenceNumber)
+                .Take(WriterAgent.SceneContextCount)
+                .Select(x => $"""
+                              Time: {x.Metadata.Tracker!.Scene!.Time}
+                              Location: {x.Metadata.Tracker.Scene.Location}
+                              Weather: {x.Metadata.Tracker.Scene.Weather}
+                              {x.NarrativeText}
+                              """));
+
+        var scenes = $"""
+                     <latest_scenes>
+                     The latest scenes in the adventures:
+                     {formatted}
+                     </latest_scenes>
+                     """;
+        chatHistory.AddMessage(AuthorRole.User, scenes);
 
         var generationContext = BuildGenerationContext(adventure, latestScene);
-        var callerContext = new CallerContext(nameof(ChatService), adventureId, latestScene?.Id);
+        var callerContext = new CallerContext(nameof(ChatService), adventureId, latestScene.Id);
 
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, generationContext, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, generationContext, callerContext);
@@ -290,12 +347,19 @@ internal sealed class ChatService : IChatService
         var settings = kernelBuilder.GetDefaultPromptExecutionSettings();
 
         await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
-                           chatHistory, settings, kernelBuilt, cancellationToken))
+                           chatHistory,
+                           settings,
+                           kernelBuilt,
+                           cancellationToken))
         {
             if (chunk.Content != null)
             {
                 responseBuilder.Append(chunk.Content);
-                yield return new ChatSseChunk { Type = "chunk", Content = chunk.Content };
+                yield return new ChatSseChunk
+                {
+                    Type = "chunk",
+                    Content = chunk.Content
+                };
             }
         }
 
@@ -422,10 +486,12 @@ internal sealed class ChatService : IChatService
         if (latestScene?.Metadata?.Tracker?.Scene != null)
         {
             var tracker = latestScene.Metadata.Tracker.Scene;
-            prompt += $"\n\n<current_scene_state>\nTime: {tracker.Time}\nLocation: {tracker.Location}\nWeather: {tracker.Weather}\nCharacters Present: {string.Join(", ", tracker.CharactersPresent ?? [])}\n</current_scene_state>";
+            prompt +=
+                $"\n\n<current_scene_state>\nTime: {tracker.Time}\nLocation: {tracker.Location}\nWeather: {tracker.Weather}\nCharacters Present: {string.Join(", ", tracker.CharactersPresent ?? [])}\n</current_scene_state>";
         }
 
-        prompt += $"\n\n<adventure_info>\nAdventure: {adventure.Name}\nMain Character: {adventure.MainCharacter.Name}\n{adventure.MainCharacter.Description}\n</adventure_info>";
+        prompt +=
+            $"\n\n<adventure_info>\nAdventure: {adventure.Name}\nMain Character: {adventure.MainCharacter.Name}\n{adventure.MainCharacter.Description}\n</adventure_info>";
 
         return prompt;
     }

@@ -1,6 +1,14 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--menubar-height, 49px));
+  overflow: hidden;
+}
+
 .chat-layout {
   display: flex;
-  height: calc(100vh - 60px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
