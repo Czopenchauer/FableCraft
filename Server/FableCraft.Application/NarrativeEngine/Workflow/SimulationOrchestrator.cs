@@ -102,10 +102,6 @@ internal sealed class SimulationOrchestrator(
             return;
         }
 
-        var previousState = context.SceneContext?
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.ChroniclerState;
-
         var gatheredContext = GetPreviousGatheredContext(context);
 
         var simulationTasks = plan.Standalone!
@@ -404,10 +400,6 @@ internal sealed class SimulationOrchestrator(
         {
             return;
         }
-
-        var previousState = context.SceneContext?
-            .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.ChroniclerState;
 
         var charactersInScene = context.NewTracker?.Scene?.CharactersPresent ?? [];
 

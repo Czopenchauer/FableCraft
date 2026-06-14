@@ -19,6 +19,7 @@ public enum AgentName
     ExperientialNarratorAgent,
     ClinicalAssessorAgent,
     ChroniclerAgent,
+    NarrativeCatalystAgent,
     SimulationPlannerAgent,
     StandaloneSimulationAgent,
     IntentCheckAgent,
@@ -30,5 +31,6 @@ public enum AgentName
     CoLocationAgent,
     ImagePromptAgent,
     ProgressionAgent,
-    InventoryTrackerAgent
+    InventoryTrackerAgent,
+    QualityAssuranceAgent
 }

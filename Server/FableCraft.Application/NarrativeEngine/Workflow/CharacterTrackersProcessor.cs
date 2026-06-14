@@ -19,7 +19,7 @@ internal sealed class CharacterTrackersProcessor(
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
-    ChroniclerAgent chroniclerAgent,
+    NarrativeCatalystAgent narrativeCatalystAgent,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
     ProgressionAgent progressionAgent,
@@ -33,7 +33,7 @@ internal sealed class CharacterTrackersProcessor(
                                      "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. "
                                      + "Ensure SceneTrackerProcessor runs before this processor.");
 
-        var chroniclerTask = Task.Run(() => ProcessChronicler(context, storyTrackerResult, cancellationToken), cancellationToken);
+        var catalystTask = Task.Run(() => ProcessNarrativeCatalyst(context, storyTrackerResult, cancellationToken), cancellationToken);
         var mainNarrativeExtractionTask = context.SkipWorldInfoExtractor
             ? Task.CompletedTask
             : Task.Run(() => ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken), cancellationToken);
@@ -338,7 +338,7 @@ internal sealed class CharacterTrackersProcessor(
             progressionTask,
             inventoryTask,
             UnpackCharacterUpdates(context, characterUpdateTask),
-            chroniclerTask,
+            catalystTask,
             mainNarrativeExtractionTask,
             mcStorySummaryTask);
 
@@ -459,19 +459,19 @@ internal sealed class CharacterTrackersProcessor(
         await mainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
     }
 
-    private async Task ProcessChronicler(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
+    private async Task ProcessNarrativeCatalyst(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
     {
-        if (context.SkipChronicler)
+        if (context.SkipNarrativeCatalyst)
         {
-            logger.Information("Chronicler: Skipping (not selected for regeneration)");
+            logger.Information("NarrativeCatalyst: Skipping (not selected for regeneration)");
             return;
         }
 
-        if (context.ChroniclerOutput is null)
+        if (context.NarrativeCatalystOutput is null)
         {
-            var chroniclerOutput = await chroniclerAgent.Invoke(context, storyTrackerResult, cancellationToken);
-            context.ChroniclerOutput = chroniclerOutput;
-            logger.Information("Chronicler completed");
+            var catalystOutput = await narrativeCatalystAgent.Invoke(context, storyTrackerResult, cancellationToken);
+            context.NarrativeCatalystOutput = catalystOutput;
+            logger.Information("NarrativeCatalyst completed");
         }
     }
 

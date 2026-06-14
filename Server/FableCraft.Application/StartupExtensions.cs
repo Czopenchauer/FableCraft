@@ -59,6 +59,7 @@ public static class StartupExtensions
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>()
             .AddScoped<ChroniclerAgent>()
+            .AddScoped<NarrativeCatalystAgent>()
             .AddScoped<SimulationPlannerAgent>()
             .AddScoped<StandaloneSimulationAgent>()
             .AddScoped<SimulationModeratorAgent>()

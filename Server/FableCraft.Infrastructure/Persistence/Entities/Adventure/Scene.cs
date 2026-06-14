@@ -91,6 +91,21 @@ public sealed class Metadata
     public string? WriterGuidance { get; set; }
 
     /// <summary>
+    ///     Narrative Catalyst story assessment for the current scene.
+    /// </summary>
+    public string? CatalystStoryAssessment { get; set; }
+
+    /// <summary>
+    ///     Narrative Catalyst goals for the story (prose text).
+    /// </summary>
+    public string? CatalystGoals { get; set; }
+
+    /// <summary>
+    ///     Narrative Catalyst random event for the current scene (null if no event).
+    /// </summary>
+    public string? CatalystRandomEvent { get; set; }
+
+    /// <summary>
     ///     Rolling story summary for the Main Character up to this scene.
     /// </summary>
     public string? McStorySummary { get; set; }

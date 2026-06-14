@@ -102,12 +102,33 @@ internal sealed class GenerationContext
 
     public ChroniclerOutput? ChroniclerOutput { get; set; }
 
+    public NarrativeCatalystOutput? NarrativeCatalystOutput { get; set; }
+
     public GeneratedLore[] ChroniclerLore { get; set; } = [];
 
     /// <summary>
     ///     Writer guidance from ChroniclerAgent for the next scene.
     /// </summary>
     public WriterGuidance? WriterGuidance => ChroniclerOutput?.WriterGuidance;
+
+    /// <summary>
+    ///     Narrative Catalyst goals and story assessment for the next scene.
+    /// </summary>
+    public string? CatalystGuidance
+    {
+        get
+        {
+            if (NarrativeCatalystOutput is null) return null;
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.StoryAssessment))
+                parts.Add($"Story Assessment:\n{NarrativeCatalystOutput.StoryAssessment}");
+            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.CatalystGoals))
+                parts.Add($"Narrative Goals:\n{NarrativeCatalystOutput.CatalystGoals}");
+            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.RandomEvent))
+                parts.Add($"Random Event:\n{NarrativeCatalystOutput.RandomEvent}");
+            return parts.Count == 0 ? null : string.Join("\n\n", parts);
+        }
+    }
 
     /// <summary>
     ///     World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
@@ -181,6 +202,13 @@ internal sealed class GenerationContext
     public bool SkipChronicler { get; set; }
 
     /// <summary>
+    ///     When true, NarrativeCatalystAgent should skip execution.
+    ///     Set during regeneration when NarrativeCatalyst was not selected for regeneration.
+    /// </summary>
+    [JsonIgnore]
+    public bool SkipNarrativeCatalyst { get; set; }
+
+    /// <summary>
     ///     When true, ContextGatherer should skip execution.
     ///     Set during regeneration when ContextGatherer was not selected for regeneration.
     /// </summary>
@@ -217,7 +245,7 @@ internal sealed class GenerationContext
 
     /// <summary>
     ///     When true, StorySummaryAgent should skip execution for both per-character and MC summaries.
-    ///     Set during regeneration when Chronicler was not selected.
+    ///     Set during regeneration when NarrativeCatalyst was not selected.
     /// </summary>
     [JsonIgnore]
     public bool SkipStorySummary { get; set; }
@@ -299,6 +327,12 @@ internal sealed class GenerationContext
     ///     Determines which characters from the registry are at the scene location.
     /// </summary>
     public CoLocationOutput? CoLocationOutput { get; set; }
+
+    public QaReviewOutput? QaReview { get; set; }
+
+    public string? StyleNoteFromPreviousScene { get; set; }
+
+    public bool ScenePipelineRevisionComplete { get; set; }
 
     public void SetupRequiredFields(
         SceneContext[] sceneContext,

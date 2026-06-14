@@ -802,6 +802,51 @@ internal static class PromptSections
     }
 
     /// <summary>
+    ///     Formats Narrative Catalyst guidance for the Writer agent.
+    ///     Converts the catalyst's goals and optional random event into scene direction
+    ///     the Writer should weave into the narrative.
+    /// </summary>
+    public static string NarrativeCatalystGuidance(SceneContext[] sceneContext)
+    {
+        var latestMetadata = sceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata;
+
+        if (latestMetadata == null)
+        {
+            return string.Empty;
+        }
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrEmpty(latestMetadata.CatalystGoals))
+        {
+            parts.Add(latestMetadata.CatalystGoals);
+        }
+
+        if (parts.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var goals = string.Join("\n\n", parts);
+
+        var eventInstruction = string.IsNullOrEmpty(latestMetadata.CatalystRandomEvent)
+            ? "Weave the narrative goals above into this scene naturally. The goals describe what should happen — let them shape events, character behavior, and the MC's situation. Do not explicitly announce the goals to the reader; embody them in the scene."
+            : $"A random event has been proposed for this scene:\n\n{latestMetadata.CatalystRandomEvent}\n\nWeave this event into the scene alongside the narrative goals above. The event should happen to or around the MC organically — it is not the MC's choice. Integrate it so it feels like the world acting on its own momentum. Do not explicitly announce the goals or the event to the reader; embody them in the scene.";
+
+        return $"""
+                <narrative_catalyst_guidance>
+                Use the following direction to shape this scene:
+
+                {goals}
+
+                {eventInstruction}
+                </narrative_catalyst_guidance>
+                """;
+    }
+
+    /// <summary>
     ///     Formats character emulation outputs for the CharacterReflectionAgent.
     ///     These reveal the character's internal experience during the scene.
     /// </summary>

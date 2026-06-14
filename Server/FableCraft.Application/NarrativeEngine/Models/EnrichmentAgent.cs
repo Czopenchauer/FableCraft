@@ -26,6 +26,7 @@ public enum EnrichmentAgent
     // Simulation and story tracking - skipped during regeneration unless explicitly selected
     Simulation,
     Chronicler,
+    NarrativeCatalyst,
     ContextGatherer,
     WorldInfoExtractor,
     CoLocation

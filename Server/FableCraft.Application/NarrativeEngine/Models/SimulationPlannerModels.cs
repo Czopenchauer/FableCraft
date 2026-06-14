@@ -25,9 +25,9 @@ internal sealed class SimulationPlannerInput
     public object? WorldEvents { get; init; }
 
     /// <summary>
-    ///     Writer guidance from Chronicler - where the story is heading.
+    ///     Narrative direction from the Narrative Catalyst - where the story is heading.
     /// </summary>
-    public WriterGuidance? NarrativeDirection { get; init; }
+    public string? NarrativeDirection { get; init; }
 
     /// <summary>
     ///     Pending dispatches grouped by recipient character name.

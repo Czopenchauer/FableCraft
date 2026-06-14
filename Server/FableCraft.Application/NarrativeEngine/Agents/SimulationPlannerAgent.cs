@@ -103,6 +103,10 @@ internal sealed class SimulationPlannerAgent(
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata.ChroniclerState;
 
+        var catalystGoals = context.SceneContext?
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefault()?.Metadata.CatalystGoals;
+
         var pendingDispatches = await GetPendingDispatchesAsync(context, roster, ct);
 
         return new SimulationPlannerInput
@@ -110,7 +114,7 @@ internal sealed class SimulationPlannerAgent(
             SceneTracker = sceneTracker,
             CharacterRoster = roster,
             WorldEvents = null,
-            NarrativeDirection = context.WriterGuidance,
+            NarrativeDirection = context.CatalystGuidance ?? (catalystGoals != null ? $"Narrative Goals:\n{catalystGoals}" : null),
             PendingDispatches = pendingDispatches
         };
     }

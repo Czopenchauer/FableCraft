@@ -60,6 +60,15 @@ internal static class ResponseParser
     }
 
     /// <summary>
+    ///     Extracts raw text content from an XML tag, returning null if the tag is not found.
+    /// </summary>
+    public static string? TryExtractText(string response, string tag)
+    {
+        var content = ExtractTagContent(response, tag);
+        return content?.RemoveThinkingBlock().Trim();
+    }
+
+    /// <summary>
     ///     Creates a parser function for use with SendRequestAsync that extracts a single JSON object
     /// </summary>
     public static Func<string, T> CreateJsonParser<T>(string tag, bool ignoreNull = false)

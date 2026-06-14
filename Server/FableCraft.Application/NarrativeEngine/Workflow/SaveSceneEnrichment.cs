@@ -37,6 +37,13 @@ internal sealed class SaveSceneEnrichment(
             scene.Metadata.WriterGuidance = context.WriterGuidance.ToJsonString();
         }
 
+        if (context.NarrativeCatalystOutput != null)
+        {
+            scene.Metadata.CatalystStoryAssessment = context.NarrativeCatalystOutput.StoryAssessment;
+            scene.Metadata.CatalystGoals = context.NarrativeCatalystOutput.CatalystGoals;
+            scene.Metadata.CatalystRandomEvent = context.NarrativeCatalystOutput.RandomEvent;
+        }
+
         if (context.NewMcStorySummary != null)
         {
             scene.Metadata.McStorySummary = context.NewMcStorySummary;

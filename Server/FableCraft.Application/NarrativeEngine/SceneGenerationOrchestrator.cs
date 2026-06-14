@@ -87,7 +87,10 @@ public class SceneGenerationOutput
                     GatheredContext = scene.Metadata.GatheredContext,
                     WriterObservation = scene.Metadata.WriterObservation,
                     ChroniclerState = scene.Metadata.ChroniclerState,
-                    WriterGuidance = scene.Metadata.WriterGuidance
+                    WriterGuidance = scene.Metadata.WriterGuidance,
+                    CatalystStoryAssessment = scene.Metadata.CatalystStoryAssessment,
+                    CatalystGoals = scene.Metadata.CatalystGoals,
+                    CatalystRandomEvent = scene.Metadata.CatalystRandomEvent
                 }
                 : null
         };
@@ -137,7 +140,10 @@ public class SceneEnrichmentOutput
                 GatheredContext = scene.Metadata.GatheredContext,
                 WriterObservation = scene.Metadata.WriterObservation,
                 ChroniclerState = scene.Metadata.ChroniclerState,
-                WriterGuidance = scene.Metadata.WriterGuidance
+                WriterGuidance = scene.Metadata.WriterGuidance,
+                CatalystStoryAssessment = scene.Metadata.CatalystStoryAssessment,
+                CatalystGoals = scene.Metadata.CatalystGoals,
+                CatalystRandomEvent = scene.Metadata.CatalystRandomEvent
             }
         };
     }
@@ -188,6 +194,12 @@ public class SceneMetadataDto
     public ChroniclerStoryState? ChroniclerState { get; set; }
 
     public string? WriterGuidance { get; set; }
+
+    public string? CatalystStoryAssessment { get; set; }
+
+    public string? CatalystGoals { get; set; }
+
+    public string? CatalystRandomEvent { get; set; }
 }
 
 internal sealed class SceneGenerationOrchestrator(
@@ -391,6 +403,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         context.SkipSimulation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Simulation));
         context.SkipChronicler = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
+        context.SkipNarrativeCatalyst = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.NarrativeCatalyst));
         context.SkipContextGatherer = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
         context.SkipWorldInfoExtractor = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.WorldInfoExtractor));
         context.SkipCoLocation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.CoLocation));
@@ -403,7 +416,7 @@ internal sealed class SceneGenerationOrchestrator(
                                   && !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Progression));
         context.SkipInventory = !regenMainCharacterTracker
                                 && !agentsToRegenerate.Contains(nameof(EnrichmentAgent.InventoryTracker));
-        context.SkipStorySummary = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
+        context.SkipStorySummary = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.NarrativeCatalyst));
 
         var stopwatch = Stopwatch.StartNew();
         try

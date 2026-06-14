@@ -125,7 +125,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                   """
                 : "Do not call emulate! Simulate them yourself using GEARS!";
             requestPrompt = $"""
-                             {PromptSections.ChroniclerGuidance(context.SceneContext)}
+                             {PromptSections.NarrativeCatalystGuidance(context.SceneContext)}
 
                              {incomingDispatches}
 
