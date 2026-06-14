@@ -135,7 +135,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              Ensure the output is wrapped in correct XML tags. Remember about the <scene> tag!
                              ## Quick Reference
 
-                             {extraInstruction}
+                             Keep the scene short. DO NOT MAKE IT DRAMATIC. CHARACTERS ARE NOT NARRATING their action and parroting what was already said. Repetition is prohibited. Always try to push action and story forward. The scene should not stall - something new should happen.
 
                              **MC Agency:**
                              - MC does ONLY what player input specified—nothing more

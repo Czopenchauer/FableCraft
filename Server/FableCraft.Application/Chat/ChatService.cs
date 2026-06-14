@@ -261,9 +261,9 @@ internal sealed class ChatService : IChatService
                 .Take(40)
                 .ToArrayAsync(cancellationToken);
 
-            var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).First();
+            var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
             ProcessExecutionContext.AdventureId.Value = adventureId;
-            ProcessExecutionContext.SceneId.Value = latestScene.Id;
+            ProcessExecutionContext.SceneId.Value = latestScene?.Id ?? Guid.NewGuid();
 
             var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata
                 .McStorySummary;

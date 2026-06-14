@@ -61,6 +61,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<SceneImage> SceneImages { get; set; }
     public DbSet<ChatSession> ChatSessions { get; set; }
 
+    public DbSet<Project> Projects { get; set; }
+    public DbSet<ProjectFile> ProjectFiles { get; set; }
+    public DbSet<ProjectChatSession> ProjectChatSessions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

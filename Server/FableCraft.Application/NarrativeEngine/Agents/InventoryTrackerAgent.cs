@@ -46,7 +46,7 @@ internal sealed class InventoryTrackerAgent(
 
                              {PromptSections.SceneTracker(context, sceneTrackerResult)}
 
-                             {PromptSections.LastScenes(context.SceneContext!, 5)}
+                             {PromptSections.LastScenes(context.SceneContext!, 1)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

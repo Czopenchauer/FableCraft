@@ -45,6 +45,7 @@ services:
       - GraphService__DataStoreHostPath=${FABLECRAFT_PROJECT_PATH}/data-store
       - GraphService__VisualizationHostPath=${FABLECRAFT_PROJECT_PATH}/visualization
       - GraphService__ExportsHostPath=${FABLECRAFT_PROJECT_PATH}/exports
+      - ProjectManagement__FilesHostPath=${FABLECRAFT_PROJECT_PATH}/project-files
       # Storage path is the in-container target; the host path is supplied by the
       # bind-mount below, not by config. Setting ImageStorageHostPath here would
       # make GetEffectiveImageStoragePath return a host path that doesn't exist
@@ -57,6 +58,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data-store:/app/data-store
+      - ./project-files:/app/project-files
       - ./logs:/app/logs
       - ./Prompts:/app/prompts-root
       - ./visualization:/app/visualization

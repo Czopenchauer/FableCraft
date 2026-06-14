@@ -1,0 +1,77 @@
+<div class="session-list">
+  <div class="session-list-header">
+    <h3 class="session-list-title">Chat Sessions</h3>
+    <button
+      (click)="toggleNewChatForm()"
+      class="new-chat-btn"
+      [title]="showNewChatForm ? 'Cancel' : 'New Chat'"
+    >
+      <svg *ngIf="!showNewChatForm" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      <svg *ngIf="showNewChatForm" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div *ngIf="showNewChatForm" class="new-chat-form">
+    <label class="form-label">
+      LLM Preset *
+      <select [(ngModel)]="newChatPresetId" class="form-select">
+        <option value="" disabled>Select preset...</option>
+        <option *ngFor="let preset of presets" [value]="preset.id">{{ preset.name }}</option>
+      </select>
+    </label>
+    <label class="form-label">
+      Title *
+      <input type="text" [(ngModel)]="newChatTitle" class="form-input" placeholder="Session title">
+    </label>
+    <div class="form-actions">
+      <button (click)="createSession()" [disabled]="!newChatPresetId || !newChatTitle.trim()" class="btn btn-primary">
+        Create
+      </button>
+      <button (click)="cancelNewChatForm()" class="btn btn-secondary">Cancel</button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="session-list-empty">
+    <div class="spinner"></div>
+    <span>Loading sessions...</span>
+  </div>
+
+  <div *ngIf="!isLoading" class="session-items">
+    <div
+      *ngFor="let session of sortedSessions()"
+      (click)="sessionSelected.emit(session)"
+      [class.active]="session.id === activeSessionId"
+      class="session-item"
+    >
+      <div class="session-item-content" *ngIf="deletingSessionId !== session.id">
+        <div class="session-item-title">{{ session.title || 'Untitled' }}</div>
+        <div class="session-item-subtitle">{{ session.llmPresetName }}</div>
+      </div>
+
+      <div *ngIf="deletingSessionId === session.id" class="delete-confirmation">
+        <span>Delete?</span>
+        <button (click)="confirmDelete(session.id); $event.stopPropagation()" class="btn-delete-confirm">Yes</button>
+        <button (click)="cancelDelete(); $event.stopPropagation()" class="btn-delete-cancel">No</button>
+      </div>
+
+      <button
+        *ngIf="deletingSessionId !== session.id"
+        (click)="onDeleteClick(session.id, $event)"
+        class="session-delete-btn"
+        title="Delete session"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="sessions.length === 0" class="session-list-empty">
+      No chat sessions yet. Create one to get started.
+    </div>
+  </div>
+</div>

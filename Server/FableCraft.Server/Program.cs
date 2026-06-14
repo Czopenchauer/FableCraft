@@ -1,5 +1,6 @@
 using FableCraft.Application;
 using FableCraft.Infrastructure;
+using FableCraft.ProjectManagement;
 using FableCraft.Server;
 using FableCraft.Server.Middleware;
 using FableCraft.ServiceDefaults;
@@ -29,7 +30,8 @@ builder.AddServiceDefaults();
 builder.Services
     .AddInfrastructureServices(builder.Configuration)
 #pragma warning restore EXTEXP0001
-    .AddApplicationServices(builder.Configuration);
+    .AddApplicationServices(builder.Configuration)
+    .AddProjectManagementServices(builder.Configuration);
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

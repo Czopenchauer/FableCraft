@@ -8,6 +8,7 @@ COPY Server/FableCraft.Server/FableCraft.Server.csproj Server/FableCraft.Server/
 COPY Server/FableCraft.Application/FableCraft.Application.csproj Server/FableCraft.Application/
 COPY Server/FableCraft.Infrastructure/FableCraft.Infrastructure.csproj Server/FableCraft.Infrastructure/
 COPY Server/FableCraft.ServiceDefaults/FableCraft.ServiceDefaults.csproj Server/FableCraft.ServiceDefaults/
+COPY Server/FableCraft.ProjectManagement/FableCraft.ProjectManagement.csproj Server/FableCraft.ProjectManagement/
 
 WORKDIR /src/Server/FableCraft.Server
 RUN dotnet restore -p:BuildingInDocker=true
@@ -17,6 +18,7 @@ COPY Server/FableCraft.Server/ Server/FableCraft.Server/
 COPY Server/FableCraft.Application/ Server/FableCraft.Application/
 COPY Server/FableCraft.Infrastructure/ Server/FableCraft.Infrastructure/
 COPY Server/FableCraft.ServiceDefaults/ Server/FableCraft.ServiceDefaults/
+COPY Server/FableCraft.ProjectManagement/ Server/FableCraft.ProjectManagement/
 
 WORKDIR /src/Server/FableCraft.Server
 RUN dotnet publish -c Release -o /app/publish --no-restore -p:BuildingInDocker=true
@@ -24,7 +26,7 @@ RUN dotnet publish -c Release -o /app/publish --no-restore -p:BuildingInDocker=t
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN mkdir -p /app/data-store /app/logs /app/logs/graphrag /app/prompts-root /app/config
+RUN mkdir -p /app/data-store /app/project-files /app/logs /app/logs/graphrag /app/prompts-root /app/config
 
 COPY --from=build /app/publish .
 

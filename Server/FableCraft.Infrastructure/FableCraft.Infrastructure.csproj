@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="FableCraft.Tests"/>
+        <InternalsVisibleTo Include="FableCraft.ProjectManagement"/>
     </ItemGroup>
 
     <ItemGroup>

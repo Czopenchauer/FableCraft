@@ -1021,6 +1021,125 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.ToTable("LorebookSnapshots");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Project", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("GraphRagSettingsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IndexingStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("LastIndexedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LlmPresetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GraphRagSettingsId");
+
+                    b.HasIndex("LlmPresetId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.ProjectChatSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChatHistoryJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LlmPresetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LlmPresetId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectChatSessions");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.ProjectFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ContentHash")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IndexedContentHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("KnowledgeGraphNodeId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectFiles");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Worldbook", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1279,6 +1398,53 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Navigation("Worldbook");
                 });
 
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Project", b =>
+                {
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.GraphRagSettings", "GraphRagSettings")
+                        .WithMany()
+                        .HasForeignKey("GraphRagSettingsId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.LlmPreset", "LlmPreset")
+                        .WithMany()
+                        .HasForeignKey("LlmPresetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GraphRagSettings");
+
+                    b.Navigation("LlmPreset");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.ProjectChatSession", b =>
+                {
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.LlmPreset", "LlmPreset")
+                        .WithMany()
+                        .HasForeignKey("LlmPresetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Project", "Project")
+                        .WithMany("ChatSessions")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LlmPreset");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.ProjectFile", b =>
+                {
+                    b.HasOne("FableCraft.Infrastructure.Persistence.Entities.Project", "Project")
+                        .WithMany("Files")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Worldbook", b =>
                 {
                     b.HasOne("FableCraft.Infrastructure.Persistence.Entities.GraphRagSettings", "GraphRagSettings")
@@ -1336,6 +1502,13 @@ namespace FableCraft.Infrastructure.Persistence.Migrations
                     b.Navigation("Adventures");
 
                     b.Navigation("Worldbooks");
+                });
+
+            modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Project", b =>
+                {
+                    b.Navigation("ChatSessions");
+
+                    b.Navigation("Files");
                 });
 
             modelBuilder.Entity("FableCraft.Infrastructure.Persistence.Entities.Worldbook", b =>

@@ -70,6 +70,14 @@
         </div>
       </div>
 
+      <!-- Projects Link -->
+      <a routerLink="/projects" [class.active]="isActive('/projects')" class="menu-link" (click)="closeMenus()">
+        <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="menu-icon" viewBox="0 0 24 24">
+          <path [attr.stroke-linecap]="'round'" [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+        </svg>
+        <span>Projects</span>
+      </a>
+
       <!-- Chat Link -->
       <a routerLink="/chat" [class.active]="isActive('/chat')" class="menu-link" (click)="closeMenus()">
         <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" class="menu-icon" viewBox="0 0 24 24">

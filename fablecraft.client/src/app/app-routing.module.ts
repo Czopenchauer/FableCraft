@@ -14,10 +14,16 @@ import {
   TrackerDefinitionBuilderComponent
 } from './features/adventures/components/tracker-definition-builder/tracker-definition-builder.component';
 import {ChatComponent} from './features/chat/components/chat/chat.component';
+import {ProjectListComponent} from './features/projects/components/project-list/project-list.component';
+import {ProjectFormComponent} from './features/projects/components/project-form/project-form.component';
+import {ProjectDetailComponent} from './features/projects/components/project-detail/project-detail.component';
 
 const routes: Routes = [
   {path: '', component: HomeComponent},
   {path: 'chat', component: ChatComponent},
+  {path: 'projects', component: ProjectListComponent},
+  {path: 'projects/create', component: ProjectFormComponent},
+  {path: 'projects/:id', component: ProjectDetailComponent},
   {path: 'adventures', component: AdventureListComponent},
   {path: 'adventures/create', component: AdventureCreateComponent},
   {path: 'adventures/status/:id', component: AdventureStatusComponent},

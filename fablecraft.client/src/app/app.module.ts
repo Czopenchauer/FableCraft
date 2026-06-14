@@ -50,6 +50,13 @@ import {
 import {ChatComponent} from './features/chat/components/chat/chat.component';
 import {ChatSessionListComponent} from './features/chat/components/chat-session-list/chat-session-list.component';
 import {ChatWindowComponent} from './features/chat/components/chat-window/chat-window.component';
+import {ProjectListComponent} from './features/projects/components/project-list/project-list.component';
+import {ProjectFormComponent} from './features/projects/components/project-form/project-form.component';
+import {ProjectDetailComponent} from './features/projects/components/project-detail/project-detail.component';
+import {ProjectFileListComponent} from './features/projects/components/project-file-list/project-file-list.component';
+import {ProjectFileEditorComponent} from './features/projects/components/project-file-editor/project-file-editor.component';
+import {ProjectChatComponent} from './features/projects/components/project-chat/project-chat.component';
+import {ProjectChatSessionListComponent} from './features/projects/components/project-chat-session-list/project-chat-session-list.component';
 
 @NgModule({
   declarations: [
@@ -82,7 +89,14 @@ import {ChatWindowComponent} from './features/chat/components/chat-window/chat-w
     CreateContentModalComponent,
     ChatComponent,
     ChatSessionListComponent,
-    ChatWindowComponent
+    ChatWindowComponent,
+    ProjectListComponent,
+    ProjectFormComponent,
+    ProjectDetailComponent,
+    ProjectFileListComponent,
+    ProjectFileEditorComponent,
+    ProjectChatComponent,
+    ProjectChatSessionListComponent
   ],
   imports: [
     BrowserModule,

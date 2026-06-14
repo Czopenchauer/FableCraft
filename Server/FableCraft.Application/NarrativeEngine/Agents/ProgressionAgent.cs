@@ -42,7 +42,7 @@ internal sealed class ProgressionAgent(
 
                              {PromptSections.SceneTracker(context, sceneTrackerResult)}
 
-                             {PromptSections.LastScenes(context.SceneContext!, 5)}
+                             {PromptSections.LastScenes(context.SceneContext!, 2)}
                              """;
         chatHistory.AddUserMessage(contextPrompt);
 

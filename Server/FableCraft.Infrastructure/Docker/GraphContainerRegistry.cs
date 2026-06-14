@@ -28,7 +28,8 @@ internal readonly record struct ContainerKey(Guid Identifier, ContainerType Cont
 internal enum ContainerType
 {
     Adventure,
-    Worldbook
+    Worldbook,
+    Project
 }
 
 public interface IVisualizationProvider
@@ -131,6 +132,34 @@ internal sealed class GraphContainerRegistry : IContainerMonitor, IVisualization
             _settings.CurrentValue.GetContainerName(worldbook.Id.ToString()),
             _settings.CurrentValue.GetWorldbookVolumeName(worldbookId),
             worldbook.GraphRagSettings,
+            ct);
+    }
+
+    public async Task<string> EnsureProjectContainerRunningAsync(Guid projectId, CancellationToken ct)
+    {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        var project = await dbContext.Projects
+            .Include(p => p.GraphRagSettings)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.GraphRagSettings
+            })
+            .SingleAsync(x => x.Id == projectId, cancellationToken: ct);
+
+        var volumeName = _settings.CurrentValue.GetProjectVolumeName(projectId);
+        var volumeExists = await _volumeManager.ExistsAsync(volumeName, ct);
+        if (!volumeExists)
+        {
+            await _volumeManager.CreateAsync(volumeName, ct);
+        }
+
+        return await EnsureContainerAsync(
+            new ContainerKey(projectId, ContainerType.Project),
+            _settings.CurrentValue.GetContainerName(project.Id.ToString()),
+            volumeName,
+            project.GraphRagSettings,
             ct);
     }
 

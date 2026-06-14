@@ -1,0 +1,58 @@
+<div class="file-editor" *ngIf="file">
+  <div class="editor-header">
+    <div class="editor-header-info">
+      <h3 class="editor-filename">{{ file.name }}</h3>
+      <span *ngIf="file.category" class="category-badge">{{ file.category }}</span>
+    </div>
+    <div class="editor-header-actions">
+      <button (click)="close()" class="btn-close" title="Close">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="editor-body">
+    <textarea
+      [(ngModel)]="editContent"
+      (input)="onContentChange()"
+      class="editor-textarea"
+      placeholder="Start writing..."
+    ></textarea>
+  </div>
+
+  <div class="editor-footer">
+    <div class="footer-left">
+      <div class="category-edit">
+        <label class="category-label">Category:</label>
+        <input
+          type="text"
+          [(ngModel)]="editCategory"
+          (input)="onCategoryChange()"
+          class="category-input"
+          placeholder="None"
+          list="category-options"
+        >
+        <datalist id="category-options">
+          <option *ngFor="let cat of categories" [value]="cat">
+        </datalist>
+      </div>
+    </div>
+    <div class="footer-right">
+      <div *ngIf="showDeleteConfirm" class="delete-confirm-inline">
+        <span>Delete this file?</span>
+        <button (click)="confirmDelete()" class="btn-delete-yes">Yes</button>
+        <button (click)="cancelDelete()" class="btn-delete-no">No</button>
+      </div>
+      <button *ngIf="!showDeleteConfirm" (click)="deleteFile()" class="btn-delete" title="Delete file">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
+      <button (click)="save()" [disabled]="!isDirty" class="btn-save">
+        Save
+      </button>
+    </div>
+  </div>
+</div>

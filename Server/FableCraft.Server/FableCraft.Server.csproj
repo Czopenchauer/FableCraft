@@ -23,6 +23,7 @@
             <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
         <ProjectReference Include="..\FableCraft.Application\FableCraft.Application.csproj"/>
+        <ProjectReference Include="..\FableCraft.ProjectManagement\FableCraft.ProjectManagement.csproj"/>
         <ProjectReference Include="..\FableCraft.ServiceDefaults\FableCraft.ServiceDefaults.csproj"/>
     </ItemGroup>
 </Project>

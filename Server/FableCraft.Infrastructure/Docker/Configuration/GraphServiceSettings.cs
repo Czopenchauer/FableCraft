@@ -83,10 +83,16 @@ internal sealed class GraphServiceSettings
     public string? LogsHostPath { get; set; }
 
     /// <summary>
-    /// Gets the effective data store path for Docker volume mounts.
-    /// Returns the absolute host path if configured, otherwise falls back to relative path.
+    /// Gets the host-side data store path, used for Docker volume mount sources.
+    /// Returns the absolute host path if configured, otherwise falls back to the relative path.
     /// </summary>
     public string GetEffectiveDataStorePath() => DataStoreHostPath ?? DataStorePath;
+
+    /// <summary>
+    /// Gets the container-internal data store path for file I/O and API calls.
+    /// Always returns DataStorePath (e.g., "/app/data-store" in Docker), never the host path.
+    /// </summary>
+    public string GetDataStoreContainerPath() => DataStorePath;
 
     /// <summary>
     /// Gets the effective visualization path for Docker volume mounts.
@@ -114,6 +120,11 @@ internal sealed class GraphServiceSettings
     public string AdventureVolumePrefix { get; set; } = "kg-adventure-";
 
     /// <summary>
+    /// Volume name prefix for project contexts.
+    /// </summary>
+    public string ProjectVolumePrefix { get; set; } = "kg-project-";
+
+    /// <summary>
     /// Volume mount path inside the graph service container.
     /// Mounts the entire cognee folder to include both data and system directories.
     /// </summary>
@@ -130,6 +141,12 @@ internal sealed class GraphServiceSettings
     /// </summary>
     public string GetAdventureVolumeName(Guid adventureId) =>
         $"{AdventureVolumePrefix}{adventureId}";
+
+    /// <summary>
+    /// Gets the volume name for a project context.
+    /// </summary>
+    public string GetProjectVolumeName(Guid projectId) =>
+        $"{ProjectVolumePrefix}{projectId}";
 
     /// <summary>
     /// Base port for dynamic port allocation.

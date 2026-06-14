@@ -1,0 +1,97 @@
+<div class="file-list">
+  <div class="file-list-header">
+    <h3 class="file-list-title">Files <span class="count">({{ files.length }})</span></h3>
+    <button
+      (click)="toggleNewFileForm()"
+      class="new-file-btn"
+      [title]="showNewFileForm ? 'Cancel' : 'New File'"
+    >
+      <svg *ngIf="!showNewFileForm" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      <svg *ngIf="showNewFileForm" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- New File Form -->
+  <div *ngIf="showNewFileForm" class="new-file-form">
+    <label class="form-label">
+      Name
+      <input type="text" [(ngModel)]="newFileName" class="form-input" placeholder="filename.md">
+    </label>
+    <label class="form-label">
+      Category
+      <input type="text" [(ngModel)]="newFileCategory" class="form-input" placeholder="Optional category">
+    </label>
+    <label class="form-label">
+      Content
+      <textarea [(ngModel)]="newFileContent" class="form-textarea" placeholder="File content..." rows="3"></textarea>
+    </label>
+    <div class="form-actions">
+      <button (click)="createFile()" [disabled]="!newFileName.trim()" class="btn btn-primary">
+        Create
+      </button>
+      <button (click)="cancelNewFile()" class="btn btn-secondary">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Category Filters -->
+  <div *ngIf="uniqueCategories.length > 0" class="category-filters">
+    <button
+      (click)="setCategoryFilter(null)"
+      [class.active]="!activeCategory"
+      class="category-chip"
+    >
+      All ({{ files.length }})
+    </button>
+    <button
+      *ngFor="let cat of filesByCategoryCount"
+      (click)="setCategoryFilter(cat.category)"
+      [class.active]="activeCategory === cat.category"
+      class="category-chip"
+    >
+      {{ cat.category }} ({{ cat.count }})
+    </button>
+  </div>
+
+  <!-- File Items -->
+  <div class="file-items">
+    <div
+      *ngFor="let file of filteredFiles"
+      (click)="selectFile(file)"
+      [class.active]="file.id === selectedFileId"
+      class="file-item"
+    >
+      <div class="file-item-content" *ngIf="deletingFileId !== file.id">
+        <div class="file-item-name">{{ file.name }}</div>
+        <div class="file-item-meta">
+          <span *ngIf="file.category" class="category-badge">{{ file.category }}</span>
+          <span class="file-time">{{ relativeTime(file.updatedAt || file.createdAt) }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="deletingFileId === file.id" class="delete-confirmation">
+        <span>Delete?</span>
+        <button (click)="confirmDelete(file.id); $event.stopPropagation()" class="btn-delete-confirm">Yes</button>
+        <button (click)="cancelDelete(); $event.stopPropagation()" class="btn-delete-cancel">No</button>
+      </div>
+
+      <button
+        *ngIf="deletingFileId !== file.id"
+        (click)="onDeleteClick(file.id, $event)"
+        class="file-delete-btn"
+        title="Delete file"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="icon-sm">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="files.length === 0" class="file-list-empty">
+      No files yet. Create one to get started.
+    </div>
+  </div>
+</div>
