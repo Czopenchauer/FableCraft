@@ -166,9 +166,10 @@ internal sealed class NarrativeCatalystAgent(
         if (string.IsNullOrEmpty(previousGoals.CatalystStoryAssessment))
         {
             goals.AppendLine($"""
-                              <previous_goals>
+                              Check these goals. Are they still going to make it more interesting? Are they still narrative goals?
+                              <previous_story_assessment>
                               {previousGoals.CatalystStoryAssessment}
-                              </previous_goals>
+                              </previous_story_assessment>
                               """);
         }
         

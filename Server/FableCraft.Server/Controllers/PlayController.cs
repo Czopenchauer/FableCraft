@@ -2,6 +2,7 @@
 
 using FableCraft.Application.Exceptions;
 using FableCraft.Application.NarrativeEngine;
+using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 using FableCraft.Server.Models;
 
@@ -434,7 +435,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            var tracker = JsonSerializer.Deserialize<MainCharacterTracker>(request.Tracker.GetRawText());
+            var tracker = JsonSerializer.Deserialize<MainCharacterTracker>(request.Tracker.GetRawText(), JsonExtensions.JsonSerializerOptions);
             if (tracker == null)
             {
                 return BadRequest(new { error = "Invalid tracker format" });
@@ -480,7 +481,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            var tracker = JsonSerializer.Deserialize<CharacterTracker>(request.Tracker.GetRawText());
+            var tracker = JsonSerializer.Deserialize<CharacterTracker>(request.Tracker.GetRawText(), JsonExtensions.JsonSerializerOptions);
             if (tracker == null)
             {
                 return BadRequest(new { error = "Invalid tracker format" });
