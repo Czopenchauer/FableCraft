@@ -71,6 +71,7 @@ internal static class PromptSections
                               Time: {x.Metadata.Tracker!.Scene!.Time}
                               Location: {x.Metadata.Tracker.Scene.Location}
                               Weather: {x.Metadata.Tracker.Scene.Weather}
+                              Characters on scene: {string.Join(",", x.Metadata.Tracker.Scene.CharactersPresent)}
                               {x.SceneContent}
                               """));
 

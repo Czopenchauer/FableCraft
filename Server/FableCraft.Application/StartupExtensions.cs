@@ -33,6 +33,7 @@ public static class StartupExtensions
             .AddScoped<WorldInfoExtractionMaintenanceService>()
             .AddScoped<CoLocationMaintenanceService>()
             .AddScoped<SceneGenerationOrchestrator>()
+            .AddScoped<IProcessor, ScenePipeline>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, ContentGenerator>()
             .AddScoped<IProcessor, CharacterTrackersProcessor>()
@@ -71,6 +72,7 @@ public static class StartupExtensions
             .AddScoped<EmulationOrchestratorAgent>()
             .AddScoped<StorySummaryAgent>()
             .AddScoped<ImagePromptAgent>()
+            .AddScoped<QualityAssuranceAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 
