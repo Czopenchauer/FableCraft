@@ -1,3 +1,5 @@
+using System.Text;
+
 using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
@@ -153,17 +155,32 @@ internal sealed class NarrativeCatalystAgent(
     {
         var previousGoals = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
-            .FirstOrDefault()?.Metadata.CatalystGoals;
+            .FirstOrDefault()?.Metadata;
 
-        if (string.IsNullOrEmpty(previousGoals))
+        if (previousGoals is null)
         {
             return string.Empty;
         }
+        
+        var goals = new StringBuilder();
+        if (string.IsNullOrEmpty(previousGoals.CatalystStoryAssessment))
+        {
+            goals.AppendLine($"""
+                              <previous_goals>
+                              {previousGoals.CatalystStoryAssessment}
+                              </previous_goals>
+                              """);
+        }
+        
+        if (string.IsNullOrEmpty(previousGoals.CatalystGoals))
+        {
+            goals.AppendLine($"""
+                             <previous_goals>
+                             {previousGoals.CatalystGoals}
+                             </previous_goals>
+                             """);
+        }
 
-        return $"""
-                <previous_goals>
-                {previousGoals}
-                </previous_goals>
-                """;
+        return goals.ToString();
     }
 }

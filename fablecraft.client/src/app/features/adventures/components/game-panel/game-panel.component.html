@@ -855,6 +855,7 @@
   <!-- Adventure State Modal (Lore + Characters + Scene Metadata + LLM Logs) -->
   <app-adventure-state-modal
     (close)="closeAdventureStateModal()"
+    (metadataUpdated)="onMetadataUpdated($event)"
     [adventureId]="adventureId"
     [sceneId]="currentScene?.sceneId ?? null"
     [sceneMetadata]="currentScene?.metadata ?? null"

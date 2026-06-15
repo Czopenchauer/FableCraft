@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine;
+
 namespace FableCraft.Server.Models;
 
 public record UpdateSceneNarrativeRequest(string NarrativeText);
@@ -16,3 +18,5 @@ public record UpdateMainCharacterTrackerRequest(
     string Description);
 
 public record UpdateCharacterStateRequest(JsonElement Tracker);
+
+public record UpdateSceneMetadataRequest(SceneMetadataDto Metadata);

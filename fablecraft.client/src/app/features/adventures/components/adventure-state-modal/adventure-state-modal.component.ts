@@ -15,6 +15,7 @@ export class AdventureStateModalComponent implements OnChanges, OnDestroy {
   @Input() sceneId: string | null = null;
   @Input() sceneMetadata: SceneMetadataDto | null = null;
   @Output() close = new EventEmitter<void>();
+  @Output() metadataUpdated = new EventEmitter<SceneMetadataDto>();
 
   activeTab: AdventureStateTab = 'lore';
 
@@ -45,5 +46,9 @@ export class AdventureStateModalComponent implements OnChanges, OnDestroy {
     if (event.target === event.currentTarget) {
       this.onClose();
     }
+  }
+
+  onMetadataUpdated(metadata: SceneMetadataDto): void {
+    this.metadataUpdated.emit(metadata);
   }
 }

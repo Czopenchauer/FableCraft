@@ -90,7 +90,8 @@ public class SceneGenerationOutput
                     WriterGuidance = scene.Metadata.WriterGuidance,
                     CatalystStoryAssessment = scene.Metadata.CatalystStoryAssessment,
                     CatalystGoals = scene.Metadata.CatalystGoals,
-                    CatalystRandomEvent = scene.Metadata.CatalystRandomEvent
+                    CatalystRandomEvent = scene.Metadata.CatalystRandomEvent,
+                    McStorySummary = scene.Metadata.McStorySummary
                 }
                 : null
         };
@@ -143,7 +144,8 @@ public class SceneEnrichmentOutput
                 WriterGuidance = scene.Metadata.WriterGuidance,
                 CatalystStoryAssessment = scene.Metadata.CatalystStoryAssessment,
                 CatalystGoals = scene.Metadata.CatalystGoals,
-                CatalystRandomEvent = scene.Metadata.CatalystRandomEvent
+                CatalystRandomEvent = scene.Metadata.CatalystRandomEvent,
+                McStorySummary = scene.Metadata.McStorySummary
             }
         };
     }
@@ -200,6 +202,8 @@ public class SceneMetadataDto
     public string? CatalystGoals { get; set; }
 
     public string? CatalystRandomEvent { get; set; }
+
+    public string? McStorySummary { get; set; }
 }
 
 internal sealed class SceneGenerationOrchestrator(

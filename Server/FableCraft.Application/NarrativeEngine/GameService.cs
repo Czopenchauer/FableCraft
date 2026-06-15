@@ -72,6 +72,9 @@ public interface IGameService
 
     Task<GameScene> UpdateCharacterStateAsync(Guid adventureId, Guid sceneId, Guid characterStateId,
         CharacterTracker tracker, CancellationToken cancellationToken);
+
+    Task<GameScene> UpdateSceneMetadataAsync(Guid adventureId, Guid sceneId, SceneMetadataDto metadata,
+        CancellationToken cancellationToken);
 }
 
 internal class GameService : IGameService
@@ -550,6 +553,47 @@ internal class GameService : IGameService
         }
 
         characterState.Tracker = tracker;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetSceneAsync(adventureId, sceneId, cancellationToken);
+    }
+
+    public async Task<GameScene> UpdateSceneMetadataAsync(Guid adventureId, Guid sceneId, SceneMetadataDto metadata,
+        CancellationToken cancellationToken)
+    {
+        var scene = await _dbContext.Scenes
+            .Where(s => s.Id == sceneId && s.AdventureId == adventureId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scene == null)
+        {
+            throw new SceneNotFoundException(sceneId);
+        }
+
+        if (scene.CommitStatus != CommitStatus.Uncommited)
+        {
+            throw new InvalidOperationException("Can only edit uncommitted scenes");
+        }
+
+        if (metadata.ResolutionOutput is not null)
+            scene.Metadata.ResolutionOutput = metadata.ResolutionOutput;
+        if (metadata.GatheredContext is not null)
+            scene.Metadata.GatheredContext = metadata.GatheredContext;
+        if (metadata.WriterObservation is not null)
+            scene.Metadata.WriterObservation = metadata.WriterObservation;
+        if (metadata.ChroniclerState is not null)
+            scene.Metadata.ChroniclerState = metadata.ChroniclerState;
+        if (metadata.WriterGuidance is not null)
+            scene.Metadata.WriterGuidance = metadata.WriterGuidance;
+        if (metadata.CatalystStoryAssessment is not null)
+            scene.Metadata.CatalystStoryAssessment = metadata.CatalystStoryAssessment;
+        if (metadata.CatalystGoals is not null)
+            scene.Metadata.CatalystGoals = metadata.CatalystGoals;
+        if (metadata.CatalystRandomEvent is not null)
+            scene.Metadata.CatalystRandomEvent = metadata.CatalystRandomEvent;
+        if (metadata.McStorySummary is not null)
+            scene.Metadata.McStorySummary = metadata.McStorySummary;
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSceneAsync(adventureId, sceneId, cancellationToken);

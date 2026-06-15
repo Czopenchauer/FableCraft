@@ -90,7 +90,10 @@
         <div *ngIf="activeTab === 'metadata'" class="tab-content">
           <app-scene-metadata-tab
             [metadata]="sceneMetadata"
-            [isActive]="activeTab === 'metadata'">
+            [isActive]="activeTab === 'metadata'"
+            [adventureId]="adventureId"
+            [sceneId]="sceneId"
+            (metadataUpdated)="onMetadataUpdated($event)">
           </app-scene-metadata-tab>
         </div>
 

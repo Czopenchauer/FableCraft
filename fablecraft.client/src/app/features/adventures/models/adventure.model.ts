@@ -274,6 +274,10 @@ export interface SceneMetadataDto {
   writerObservation: { [key: string]: any } | null;
   chroniclerState: ChroniclerStoryStateDto | null;
   writerGuidance: string | null;
+  catalystStoryAssessment: string | null;
+  catalystGoals: string | null;
+  catalystRandomEvent: string | null;
+  mcStorySummary: string | null;
 }
 
 export interface GatheredContextDto {

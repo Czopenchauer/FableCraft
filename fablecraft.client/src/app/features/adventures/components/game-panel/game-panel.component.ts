@@ -5,7 +5,7 @@ import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
 import {RagChatMessage, RagChatService, RagDatasetType} from '../../services/rag-chat.service';
-import {GameScene, SceneEnrichmentResult, TrackerDto} from '../../models/adventure.model';
+import {GameScene, SceneEnrichmentResult, SceneMetadataDto, TrackerDto} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 import {SceneDeleteModalState, SceneDeleteResult} from '../scene-delete-modal/scene-delete-modal.component';
 
@@ -847,6 +847,12 @@ export class GamePanelComponent implements OnInit, OnDestroy {
    */
   closeAdventureStateModal(): void {
     this.showAdventureStateModal = false;
+  }
+
+  onMetadataUpdated(metadata: SceneMetadataDto): void {
+    if (this.currentScene) {
+      this.currentScene.metadata = metadata;
+    }
   }
 
   /**

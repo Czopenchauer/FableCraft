@@ -503,4 +503,33 @@ public class PlayController : ControllerBase
             return BadRequest(new { error = $"Invalid JSON format: {ex.Message}" });
         }
     }
+
+    /// <summary>
+    ///     Update scene metadata fields
+    /// </summary>
+    [HttpPatch("scene/{sceneId:guid}/metadata")]
+    [ProducesResponseType(typeof(GameScene), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> UpdateSceneMetadata(
+        Guid adventureId,
+        Guid sceneId,
+        [FromBody] UpdateSceneMetadataRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var scene = await _gameService.UpdateSceneMetadataAsync(
+                adventureId, sceneId, request.Metadata, cancellationToken);
+            return Ok(scene);
+        }
+        catch (SceneNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 }

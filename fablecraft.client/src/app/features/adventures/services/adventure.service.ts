@@ -15,6 +15,7 @@ import {
   GeneratedLorebookDto,
   GenerateLorebookDto,
   SceneEnrichmentResult,
+  SceneMetadataDto,
   SceneTracker
 } from '../models/adventure.model';
 import {AdventureSettingsResponseDto, UpdateAdventureSettingsDto} from '../models/adventure-settings.model';
@@ -248,6 +249,13 @@ export class AdventureService {
     return this.http.patch<GameSceneApiResponse>(
       `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/character/${characterStateId}`,
       {tracker}
+    ).pipe(map(mapApiResponseToGameScene));
+  }
+
+  updateSceneMetadata(adventureId: string, sceneId: string, metadata: SceneMetadataDto): Observable<GameScene> {
+    return this.http.patch<GameSceneApiResponse>(
+      `${environment.apiUrl}/api/Play/${adventureId}/scene/${sceneId}/metadata`,
+      {metadata}
     ).pipe(map(mapApiResponseToGameScene));
   }
 
