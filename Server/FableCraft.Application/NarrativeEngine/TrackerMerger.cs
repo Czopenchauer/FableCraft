@@ -40,25 +40,26 @@ public static class TrackerMerger
 
         foreach (var property in updates.EnumerateObject())
         {
-            var key = property.Name.ToLowerInvariant();
-            var value = property.Value;
+            var key = property.Name;
+            var value = UnwrapSet(property.Value);
 
             // Handle known typed properties on MainCharacterTracker
-            switch (key)
+            if (string.Equals(key, "Name", StringComparison.OrdinalIgnoreCase))
             {
-                case "name":
-                    newState.Name = value.GetString() ?? newState.Name;
-                    break;
-                case "appearance":
-                    newState.Appearance = value.GetString();
-                    break;
-                case "generalbuild":
-                    newState.GeneralBuild = value.GetString();
-                    break;
-                default:
-                    // Handle dynamic properties in AdditionalProperties
-                    MergeProperty(newState.AdditionalProperties, key, value);
-                    break;
+                newState.Name = value.GetString() ?? newState.Name;
+            }
+            else if (string.Equals(key, "Appearance", StringComparison.OrdinalIgnoreCase))
+            {
+                newState.Appearance = value.GetString();
+            }
+            else if (string.Equals(key, "GeneralBuild", StringComparison.OrdinalIgnoreCase))
+            {
+                newState.GeneralBuild = value.GetString();
+            }
+            else
+            {
+                // Handle dynamic properties in AdditionalProperties
+                MergeProperty(newState.AdditionalProperties, key, property.Value);
             }
         }
 
@@ -104,25 +105,27 @@ public static class TrackerMerger
         foreach (var property in updates.EnumerateObject())
         {
             var key = property.Name;
-            var value = property.Value;
+            var value = UnwrapSet(property.Value);
 
-            switch (key)
+            if (string.Equals(key, "Name", StringComparison.OrdinalIgnoreCase))
             {
-                case "Name":
-                    newState.Name = value.GetString() ?? newState.Name;
-                    break;
-                case "Location":
-                    newState.Location = value.GetString() ?? newState.Location;
-                    break;
-                case "Appearance":
-                    newState.Appearance = value.GetString();
-                    break;
-                case "GeneralBuild":
-                    newState.GeneralBuild = value.GetString();
-                    break;
-                default:
-                    MergeProperty(newState.AdditionalProperties, key, value);
-                    break;
+                newState.Name = value.GetString() ?? newState.Name;
+            }
+            else if (string.Equals(key, "Location", StringComparison.OrdinalIgnoreCase))
+            {
+                newState.Location = value.GetString() ?? newState.Location;
+            }
+            else if (string.Equals(key, "Appearance", StringComparison.OrdinalIgnoreCase))
+            {
+                newState.Appearance = value.GetString();
+            }
+            else if (string.Equals(key, "GeneralBuild", StringComparison.OrdinalIgnoreCase))
+            {
+                newState.GeneralBuild = value.GetString();
+            }
+            else
+            {
+                MergeProperty(newState.AdditionalProperties, key, property.Value);
             }
         }
 
@@ -135,6 +138,19 @@ public static class TrackerMerger
     /// </summary>
     internal static void MergeProperty(Dictionary<string, object> target, string key, JsonElement value)
     {
+        if (value.ValueKind == JsonValueKind.Object && value.TryGetProperty("$set", out var setValue))
+        {
+            if (setValue.ValueKind == JsonValueKind.Object)
+            {
+                MergeNestedObject(target, key, setValue);
+            }
+            else
+            {
+                SetIgnoreCase(target, key, JsonElementToObject(setValue));
+            }
+            return;
+        }
+
         switch (value.ValueKind)
         {
             case JsonValueKind.Object when HasOperationKeys(value):
@@ -149,14 +165,30 @@ public static class TrackerMerger
 
             case JsonValueKind.Array:
                 // Simple array: full replacement
-                target[key] = JsonElementToObject(value);
+                SetIgnoreCase(target, key, JsonElementToObject(value));
                 break;
 
             default:
                 // Scalar: direct replacement
-                target[key] = JsonElementToObject(value);
+                SetIgnoreCase(target, key, JsonElementToObject(value));
                 break;
         }
+    }
+
+    /// <summary>
+    /// Unwraps a <c>{"$set": value}</c> wrapper into the inner value.
+    /// If the element is not an object or doesn't contain exactly <c>$set</c>,
+    /// it is returned as-is.
+    /// </summary>
+    private static JsonElement UnwrapSet(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.Object &&
+            value.TryGetProperty("$set", out var inner))
+        {
+            return inner;
+        }
+
+        return value;
     }
 
     /// <summary>
@@ -191,7 +223,7 @@ public static class TrackerMerger
             MergeProperty(nested, subProperty.Name, subProperty.Value);
         }
 
-        target[key] = nested;
+        SetIgnoreCase(target, key, nested);
     }
 
     /// <summary>
@@ -226,7 +258,36 @@ public static class TrackerMerger
             ProcessRemoveOperations(existingArray, removeArray);
         }
 
-        target[key] = existingArray;
+        SetIgnoreCase(target, key, existingArray);
+    }
+
+    /// <summary>
+    /// Sets a value in the dictionary using case-insensitive key matching.
+    /// If an existing key matches case-insensitively, it is replaced with the exact key provided.
+    /// </summary>
+    private static void SetIgnoreCase(Dictionary<string, object> target, string key, object value)
+    {
+        var existingKey = target.Keys.FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (existingKey != null)
+            target.Remove(existingKey);
+
+        target[key] = value;
+    }
+
+    /// <summary>
+    /// Tries to get a value from the dictionary using case-insensitive key matching.
+    /// </summary>
+    private static bool TryGetValueIgnoreCase(Dictionary<string, object> target, string key, out object? value)
+    {
+        var existingKey = target.Keys.FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (existingKey != null)
+        {
+            value = target[existingKey];
+            return true;
+        }
+
+        value = null;
+        return false;
     }
 
     /// <summary>
@@ -256,7 +317,7 @@ public static class TrackerMerger
         // Apply all $set updates
         foreach (var setProp in setValues.EnumerateObject())
         {
-            entry[setProp.Name] = JsonElementToObject(setProp.Value);
+            SetIgnoreCase(entry, setProp.Name, JsonElementToObject(setProp.Value));
         }
 
         array[entryIndex] = entry;
@@ -381,14 +442,14 @@ public static class TrackerMerger
     /// </summary>
     private static Dictionary<string, object> GetOrCreateNestedDictionary(Dictionary<string, object> target, string key)
     {
-        if (!target.TryGetValue(key, out var existing))
-            return new Dictionary<string, object>();
+        if (TryGetValueIgnoreCase(target, key, out var existing))
+        {
+            if (existing is JsonElement existingElement)
+                return JsonElementToDictionary(existingElement);
 
-        if (existing is JsonElement existingElement)
-            return JsonElementToDictionary(existingElement);
-
-        if (existing is Dictionary<string, object> existingDict)
-            return new Dictionary<string, object>(existingDict);
+            if (existing is Dictionary<string, object> existingDict)
+                return new Dictionary<string, object>(existingDict);
+        }
 
         return new Dictionary<string, object>();
     }
@@ -398,7 +459,7 @@ public static class TrackerMerger
     /// </summary>
     private static List<object> GetExistingArray(Dictionary<string, object> target, string key)
     {
-        if (!target.TryGetValue(key, out var existing))
+        if (!TryGetValueIgnoreCase(target, key, out var existing))
             return [];
 
         if (existing is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
