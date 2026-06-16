@@ -107,6 +107,26 @@ internal sealed class NarrativeCatalystAgent(
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
         var init = context.SceneContext.Length == 1 ? PromptSections.InitialInstruction(instruction.FirstSceneGuidance) : string.Empty;
 
+        var scenes = context.SceneContext
+            .OrderByDescending(x => x.SequenceNumber)
+            .Take(MaxScene);
+        var formatted = string.Join("\n",
+            scenes
+                .OrderBy(x => x.SequenceNumber)
+                .Select(x => $"""
+                              Scene number: {x.SequenceNumber}
+                              Time: {x.Metadata.Tracker!.Scene!.Time}
+                              Location: {x.Metadata.Tracker.Scene.Location}
+                              Weather: {x.Metadata.Tracker.Scene.Weather}
+                              Characters on scene: {string.Join(",", x.Metadata.Tracker.Scene.CharactersPresent)}
+                              {x.SceneContent}
+                              """));
+
+        var inject = $"""
+                <last_scenes>
+                {formatted}
+                </last_scenes>
+                """;
         return $"""
                 {PromptSections.Context(context)}
                 
@@ -114,7 +134,7 @@ internal sealed class NarrativeCatalystAgent(
 
                 {context.LatestTracker()?.MainCharacter?.MainCharacter.ToJsonString() ?? string.Empty}
 
-                {(!isFirstScene ? PromptSections.LastScenes(context.SceneContext, MaxScene) : "")}
+                {(!isFirstScene ? inject : "")}
 
                 {PromptSections.SceneTracker(context, sceneTracker)}
 

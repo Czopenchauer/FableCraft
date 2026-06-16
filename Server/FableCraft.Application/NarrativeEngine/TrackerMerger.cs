@@ -40,19 +40,19 @@ public static class TrackerMerger
 
         foreach (var property in updates.EnumerateObject())
         {
-            var key = property.Name;
+            var key = property.Name.ToLowerInvariant();
             var value = property.Value;
 
             // Handle known typed properties on MainCharacterTracker
             switch (key)
             {
-                case "Name":
+                case "name":
                     newState.Name = value.GetString() ?? newState.Name;
                     break;
-                case "Appearance":
+                case "appearance":
                     newState.Appearance = value.GetString();
                     break;
-                case "GeneralBuild":
+                case "generalbuild":
                     newState.GeneralBuild = value.GetString();
                     break;
                 default:

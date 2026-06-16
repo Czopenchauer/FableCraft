@@ -24,6 +24,7 @@ internal sealed class CharacterTrackersProcessor(
     StorySummaryAgent storySummaryAgent,
     ProgressionAgent progressionAgent,
     InventoryTrackerAgent inventoryTrackerAgent,
+    TrackerDeBloaterAgent trackerDeBloaterAgent,
     ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -344,6 +345,11 @@ internal sealed class CharacterTrackersProcessor(
 
         await ApplyMainCharacterDelta(context, progressionTask, "progression", c => c.ProgressionDelta = null);
         await ApplyMainCharacterDelta(context, inventoryTask, "inventory", c => c.InventoryDelta = null);
+
+        if (context.SceneContext.Length > 0)
+        {
+            await trackerDeBloaterAgent.Invoke(context, cancellationToken);
+        }
     }
 
     private Task<JsonElement?> BuildProgressionTask(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)

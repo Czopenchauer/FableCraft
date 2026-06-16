@@ -73,6 +73,7 @@ public static class StartupExtensions
             .AddScoped<StorySummaryAgent>()
             .AddScoped<ImagePromptAgent>()
             .AddScoped<QualityAssuranceAgent>()
+        .AddScoped<TrackerDeBloaterAgent>()
             .AddScoped<IProcessor, SceneTrackerProcessor>()
             .AddScoped<IProcessor, SimulationOrchestrator>();
 

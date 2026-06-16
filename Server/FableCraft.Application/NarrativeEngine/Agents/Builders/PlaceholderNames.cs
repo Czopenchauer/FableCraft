@@ -83,4 +83,14 @@ internal static class PlaceholderNames
     ///     Assets (currency, property, debts) schema definition extracted from the main character tracker structure.
     /// </summary>
     public const string AssetsSchema = "{{assets_schema}}";
+
+    /// <summary>
+    ///     Full tracker definition schema used by the TrackerDeBloaterAgent.
+    /// </summary>
+    public const string TrackerDefinition = "{{tracker_definition}}";
+
+    /// <summary>
+    ///     Current tracker state JSON used by the TrackerDeBloaterAgent.
+    /// </summary>
+    public const string TrackerState = "{{tracker_state}}";
 }
