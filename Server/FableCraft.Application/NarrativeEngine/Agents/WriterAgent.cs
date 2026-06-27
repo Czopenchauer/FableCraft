@@ -120,7 +120,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                   - Call for EVERY full-profile character ON THE SCENE, EVERY beat
                   - Multiple calls per scene is normal and expected
                   - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
-                  - Speech is verbatim. Actions rendered through MC's perception.
+                  - Speech is verbatim. Actions rendered through {context.MainCharacter.Name}'s perception.
                   - If emulation contradicts your plan, emulation wins.
                   """
                 : "Do not call emulate! Simulate them yourself using GEARS!";
@@ -137,13 +137,13 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
                              Keep the scene short. DO NOT MAKE IT DRAMATIC. CHARACTERS ARE NOT NARRATING their action and parroting what was already said. Repetition is prohibited. Always try to push action and story forward. The scene should not stall - something new should happen.
 
-                             **MC Agency:**
-                             - MC does ONLY what player input specified—nothing more
+                             **{context.MainCharacter.Name} Agency:**
+                             - {context.MainCharacter.Name} does ONLY what player input specified—nothing more
                              - No invented dialogue, decisions, or "helpful" additional actions
                              - Wishful thinking ("I convince," "knowing this will earn trust") = inner monologue, not world effect
-                             - No mechanism = MC acts, world doesn't bend
+                             - No mechanism = {context.MainCharacter.Name} acts, world doesn't bend
 
-                             You are prohibited of making gamer, analytical, strategic bullshit. MC is a human being - write them as such.
+                             You are prohibited of making gamer, analytical, strategic bullshit. {context.MainCharacter.Name} is a human being - write them as such.
 
                              **Never invent. Always ask.**
                              Generate a detailed scene based on the above resolution and context.
@@ -304,7 +304,7 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
 
         return $"""
                 <incoming_dispatches>
-                Messages that have arrived for the MC:
+                Messages that have arrived for the {context.MainCharacter.Name}:
                 {json}
                 </incoming_dispatches>
                 """;

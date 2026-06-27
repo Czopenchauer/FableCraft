@@ -685,7 +685,7 @@ internal static class PromptSections
                 {context}
 
                 **Additional Data**:
-                {gatheredContext.AdditionalProperties.ToJsonString()}
+                {gatheredContext.AdditionalProperties?.ToJsonString() ?? "{}"}
                 </previous_gathered_context>
                 """;
     }

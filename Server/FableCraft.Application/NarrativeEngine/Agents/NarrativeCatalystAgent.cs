@@ -13,13 +13,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine.Agents;
 
 internal sealed class NarrativeCatalystAgent(
     IAgentKernel agentKernel,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     KernelBuilderFactory kernelBuilderFactory,
-    IPluginFactory pluginFactory) : BaseAgent(dbContextFactory, kernelBuilderFactory)
+    IPluginFactory pluginFactory,
+    ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
     private const int MaxScene = 20;
 
@@ -38,6 +41,7 @@ internal sealed class NarrativeCatalystAgent(
         var kernelBuilder = await GetKernelBuilder(context);
 
         var systemPrompt = await GetPromptAsync(context);
+        systemPrompt = systemPrompt.Replace(PlaceholderNames.CharacterName, context.MainCharacter.Name);
         var isFirstScene = (context.SceneContext?.Length ?? 0) == 0;
 
         var chatHistory = new ChatHistory();
@@ -86,7 +90,6 @@ internal sealed class NarrativeCatalystAgent(
 
     private async Task<string> BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene, CancellationToken cancellationToken)
     {
-        var previousCatalystGoals = GetPreviousCatalystGoals(context);
         var loreRequested = context.NewScene!.CreationRequests?.Lore != null
             ? $"""
                <lore_requested>
@@ -139,8 +142,6 @@ internal sealed class NarrativeCatalystAgent(
                 {PromptSections.SceneTracker(context, sceneTracker)}
 
                 {loreRequested}
-
-                {previousCatalystGoals}
                 
                 {init}
                 """;
@@ -148,6 +149,8 @@ internal sealed class NarrativeCatalystAgent(
 
     private async Task<string> BuildRequestPrompt(GenerationContext context, bool isFirstScene, CancellationToken cancellationToken)
     {
+        var previousCatalystGoals = GetPreviousCatalystGoals(context);
+        
         if (isFirstScene)
         {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -168,22 +171,25 @@ internal sealed class NarrativeCatalystAgent(
 
                 Update your narrative goals based on the current scene.
                 Assess where the story is now and what should happen next to make it more interesting.
+                
+                {previousCatalystGoals}
                 """;
     }
 
-    private static string GetPreviousCatalystGoals(GenerationContext context)
+    private string GetPreviousCatalystGoals(GenerationContext context)
     {
         var previousGoals = context.SceneContext?
             .OrderByDescending(x => x.SequenceNumber)
             .FirstOrDefault()?.Metadata;
-
+        logger.Information("Previous goals: " + previousGoals.ToJsonString());
+        
         if (previousGoals is null)
         {
             return string.Empty;
         }
         
         var goals = new StringBuilder();
-        if (string.IsNullOrEmpty(previousGoals.CatalystStoryAssessment))
+        if (!string.IsNullOrWhiteSpace(previousGoals.CatalystStoryAssessment))
         {
             goals.AppendLine($"""
                               Check these goals. Are they still going to make it more interesting? Are they still narrative goals?
@@ -192,8 +198,8 @@ internal sealed class NarrativeCatalystAgent(
                               </previous_story_assessment>
                               """);
         }
-        
-        if (string.IsNullOrEmpty(previousGoals.CatalystGoals))
+
+        if (!string.IsNullOrWhiteSpace(previousGoals.CatalystGoals))
         {
             goals.AppendLine($"""
                              <previous_goals>

@@ -7,6 +7,8 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 using Microsoft.EntityFrameworkCore;
 
+using Serilog;
+
 namespace FableCraft.Application.NarrativeEngine;
 
 internal interface IGenerationContextBuilder
@@ -21,7 +23,7 @@ internal interface IGenerationContextBuilder
         CancellationToken ct);
 }
 
-internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) : IGenerationContextBuilder
+internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext, ILogger logger) : IGenerationContextBuilder
 {
     private const int NumberOfScenesToInclude = 30;
 
@@ -210,6 +212,7 @@ internal sealed class GenerationContextBuilder(ApplicationDbContext dbContext) :
             createdItems,
             previousBackgroundCharacters,
             initialMainCharacterTracker: adventure.InitialMainCharacterTracker);
+        logger.Information("Enrichment context: " + generationContext.ToJsonString());
         return generationContext;
     }
 

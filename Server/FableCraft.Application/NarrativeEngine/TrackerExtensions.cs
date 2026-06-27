@@ -18,7 +18,7 @@ public static class TrackerExtensions
             {
                 dict[field.Name] = ConvertToSystemJson(field.NestedFields);
             }
-            else if (field.DefaultValue != null)
+            else
             {
                 dict[field.Name] = new
                 {
@@ -46,7 +46,7 @@ public static class TrackerExtensions
             {
                 dict[field.Name] = ConvertToOutputJson(field.NestedFields);
             }
-            else if (field.DefaultValue != null)
+            else
             {
                 dict[field.Name] = GetDefaultValue(field);
             }

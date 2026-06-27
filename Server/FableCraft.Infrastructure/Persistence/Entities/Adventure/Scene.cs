@@ -127,7 +127,7 @@ public sealed class GatheredContext
     public GatheredCoLocatedCharacter[] CoLocatedCharacters { get; set; } = [];
 
     [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = null!;
+    public Dictionary<string, object>? AdditionalProperties { get; set; }
 }
 
 /// <summary>

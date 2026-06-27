@@ -220,6 +220,7 @@ internal sealed class SceneGenerationOrchestrator(
         CancellationToken cancellationToken)
     {
         var (context, step) = await contextBuilder.GetOrCreateGenerationContextAsync(adventureId, playerAction, cancellationToken);
+        ProcessExecutionContext.AdventureId.Value = adventureId;
         ProcessExecutionContext.SceneId.Value = context.NewSceneId;
 
         if (step == GenerationProcessStep.SceneGenerated)

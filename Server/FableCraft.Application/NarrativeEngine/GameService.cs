@@ -500,6 +500,7 @@ internal class GameService : IGameService
 
         scene.Metadata.Tracker ??= new Tracker();
         scene.Metadata.Tracker.Scene = tracker;
+        _dbContext.Entry(scene).Property(x => x.Metadata).IsModified = true;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSceneAsync(adventureId, sceneId, cancellationToken);
@@ -524,6 +525,7 @@ internal class GameService : IGameService
 
         scene.Metadata.Tracker ??= new Tracker();
         scene.Metadata.Tracker.MainCharacter = state;
+        _dbContext.Entry(scene).Property(x => x.Metadata).IsModified = true;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSceneAsync(adventureId, sceneId, cancellationToken);
@@ -553,6 +555,7 @@ internal class GameService : IGameService
         }
 
         characterState.Tracker = tracker;
+        _dbContext.Entry(characterState).Property(x => x.Tracker).IsModified = true;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSceneAsync(adventureId, sceneId, cancellationToken);
@@ -594,6 +597,7 @@ internal class GameService : IGameService
         if (metadata.McStorySummary is not null)
             scene.Metadata.McStorySummary = metadata.McStorySummary;
 
+        _dbContext.Entry(scene).Property(x => x.Metadata).IsModified = true;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSceneAsync(adventureId, sceneId, cancellationToken);

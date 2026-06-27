@@ -87,9 +87,8 @@ internal sealed class QualityAssuranceAgent(
 
         var kernel = kernelBuilder.Create();
         var kernelWithKg = kernel.Build();
-
         var outputParser = ResponseParser.CreateTextParser("qa_review");
-        var promptExecutionSettings = kernelBuilder.GetDefaultFunctionPromptExecutionSettings();
+        var promptExecutionSettings = kernelBuilder.GetDefaultPromptExecutionSettings();
 
         var reviewText = await agentKernel.SendRequestAsync(
             chatHistory,
