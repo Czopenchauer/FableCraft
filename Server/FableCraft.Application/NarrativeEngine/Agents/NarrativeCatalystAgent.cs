@@ -141,7 +141,7 @@ internal sealed class NarrativeCatalystAgent(
 
                 {PromptSections.SceneTracker(context, sceneTracker)}
 
-                {loreRequested}
+                {PromptSections.McStorySummary(context)}
                 
                 {init}
                 """;

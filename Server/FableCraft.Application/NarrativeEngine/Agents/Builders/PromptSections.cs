@@ -920,9 +920,10 @@ internal static class PromptSections
         }
 
         return $"""
-                <mc_story_summary>
+                <story_summary>
+                What happened in the story so far:
                 {storySummary}
-                </mc_story_summary>
+                </story_summary>
                 """;
     }
 }

@@ -248,8 +248,7 @@ public class WorldbookController : ControllerBase
             }
         }
 
-        var wasIndexed = worldbook.IndexingStatus == IndexingStatus.Indexed ||
-                         worldbook.IndexingStatus == IndexingStatus.NeedsReindexing;
+        var wasIndexed = worldbook.IndexingStatus == IndexingStatus.Indexed || worldbook.IndexingStatus == IndexingStatus.NeedsReindexing;
 
         worldbook.Name = dto.Name;
         worldbook.GraphRagSettingsId = dto.GraphRagSettingsId;
@@ -300,7 +299,10 @@ public class WorldbookController : ControllerBase
                     Category = lorebookDto.Category,
                     ContentType = lorebookDto.ContentType
                 };
-                worldbook.Lorebooks.Add(newLorebook);
+                if (!worldbook.Lorebooks.Any(x => x.Title == lorebookDto.Title))
+                {
+                    worldbook.Lorebooks.Add(newLorebook);
+                }
             }
         }
 
@@ -740,8 +742,7 @@ public class WorldbookController : ControllerBase
             return NotFound();
         }
 
-        if (worldbook.IndexingStatus != IndexingStatus.Indexed &&
-            worldbook.IndexingStatus != IndexingStatus.NeedsReindexing)
+        if (worldbook.IndexingStatus != IndexingStatus.Indexed && worldbook.IndexingStatus != IndexingStatus.NeedsReindexing)
         {
             return BadRequest(new
             {
@@ -820,26 +821,33 @@ public class WorldbookController : ControllerBase
 public record IndexStatusResponse
 {
     public Guid WorldbookId { get; init; }
+
     public required string Status { get; init; }
+
     public string? Error { get; init; }
 }
 
 public record PendingChangesResponse
 {
     public Guid WorldbookId { get; init; }
+
     public List<LorebookChangeDto> Changes { get; init; } = new();
+
     public PendingChangeSummaryDto Summary { get; init; } = null!;
 }
 
 public record LorebookChangeDto
 {
     public Guid LorebookId { get; init; }
+
     public string Title { get; init; } = string.Empty;
+
     public LorebookChangeStatus ChangeStatus { get; init; }
 }
 
 public record VisualizationResponse
 {
     public Guid WorldbookId { get; init; }
+
     public required string VisualizationUrl { get; init; }
 }
