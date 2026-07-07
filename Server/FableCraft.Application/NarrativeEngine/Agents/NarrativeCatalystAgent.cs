@@ -24,18 +24,17 @@ internal sealed class NarrativeCatalystAgent(
     IPluginFactory pluginFactory,
     ILogger logger) : BaseAgent(dbContextFactory, kernelBuilderFactory)
 {
-    private const int MaxScene = 20;
+    private const int MaxScene = 10;
 
     protected override AgentName GetAgentName() => AgentName.NarrativeCatalystAgent;
 
-    public async Task<NarrativeCatalystOutput> Invoke(
-        GenerationContext context,
+    public async Task Invoke(GenerationContext context,
         SceneTracker sceneTracker,
         CancellationToken cancellationToken)
     {
         if (context.NarrativeCatalystOutput is not null)
         {
-            return context.NarrativeCatalystOutput;
+            return;
         }
 
         var kernelBuilder = await GetKernelBuilder(context);
@@ -71,7 +70,6 @@ internal sealed class NarrativeCatalystAgent(
 
         var output = ParseOutput(response);
         context.NarrativeCatalystOutput = output;
-        return output;
     }
 
     private static NarrativeCatalystOutput ParseOutput(string response)
@@ -90,15 +88,6 @@ internal sealed class NarrativeCatalystAgent(
 
     private async Task<string> BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene, CancellationToken cancellationToken)
     {
-        var loreRequested = context.NewScene!.CreationRequests?.Lore != null
-            ? $"""
-               <lore_requested>
-               This lore was already requested. Do not request it again.
-               {string.Join("\n", context.NewScene!.CreationRequests?.Lore.ToJsonString() ?? string.Empty)}
-               </lore_requested>
-               """
-            : string.Empty;
-
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var instruction = await dbContext.Adventures
@@ -162,12 +151,16 @@ internal sealed class NarrativeCatalystAgent(
 
                     {PromptSections.CurrentScene(context)}
 
+                    {PromptSections.PlayerAction(context.PlayerAction)}
+
                     It's the first scene of the adventure. Assess where the story begins and set initial narrative goals.
                     """;
         }
 
         return $"""
                 {PromptSections.CurrentScene(context)}
+
+                {PromptSections.PlayerAction(context.PlayerAction)}
 
                 Update your narrative goals based on the current scene.
                 Assess where the story is now and what should happen next to make it more interesting.

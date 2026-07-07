@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Queue;
 using FableCraft.ServiceDefaults;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -22,12 +23,14 @@ internal class GeminiKernelBuilder : IKernelBuilder
 
     private readonly ILoggerFactory _loggerFactory;
     private readonly Serilog.ILogger _logger;
+    private readonly IMessageDispatcher _messageDispatcher;
     private readonly LlmPreset _preset;
 
-    public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger)
+    public GeminiKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger, IMessageDispatcher messageDispatcher)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
+        _messageDispatcher = messageDispatcher;
         _preset = preset;
     }
 

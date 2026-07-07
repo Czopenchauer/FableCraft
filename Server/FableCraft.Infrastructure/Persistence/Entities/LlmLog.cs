@@ -12,6 +12,8 @@ public sealed class LlmLog : IEntity
 
     public required string ResponseContent { get; set; }
 
+    public string? ReasoningContent { get; set; }
+
     public DateTimeOffset ReceivedAt { get; set; }
 
     public required int? InputToken { get; set; }

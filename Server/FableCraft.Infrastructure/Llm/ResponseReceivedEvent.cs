@@ -14,6 +14,8 @@ internal sealed class ResponseReceivedEvent : IMessage
 
     public required string ResponseContent { get; init; }
 
+    public string? ReasoningContent { get; init; }
+
     public DateTimeOffset ReceivedAt { get; } = DateTimeOffset.UtcNow;
 
     public required int? InputToken { get; init; }
@@ -42,6 +44,7 @@ internal class ResponseReceivedEventHandler(IDbContextFactory<ApplicationDbConte
             CallerName = message.CallerName,
             RequestContent = message.RequestContent,
             ResponseContent = message.ResponseContent,
+            ReasoningContent = message.ReasoningContent,
             ReceivedAt = message.ReceivedAt,
             InputToken = message.InputToken,
             OutputToken = message.OutputToken,

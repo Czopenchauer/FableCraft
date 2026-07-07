@@ -114,18 +114,8 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         else
         {
             var incomingDispatches = await GetIncomingDispatchesAsync(context, _dispatchService, cancellationToken);
-            var extraInstruction = requireSimulation
-                ? """
-                  **Emulation:**
-                  - Call for EVERY full-profile character ON THE SCENE, EVERY beat
-                  - Multiple calls per scene is normal and expected
-                  - Sanitize situations: no self-reference, no assessments, no "helping/threatening/intense"—pure observable actions
-                  - Speech is verbatim. Actions rendered through {context.MainCharacter.Name}'s perception.
-                  - If emulation contradicts your plan, emulation wins.
-                  """
-                : "Do not call emulate! Simulate them yourself using GEARS!";
             requestPrompt = $"""
-                             {PromptSections.NarrativeCatalystGuidance(context.SceneContext)}
+                             {PromptSections.NarrativeCatalystGuidance(context)}
 
                              {incomingDispatches}
 
@@ -135,15 +125,13 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
                              Ensure the output is wrapped in correct XML tags. Remember about the <scene> tag!
                              ## Quick Reference
 
-                             Keep the scene short. DO NOT MAKE IT DRAMATIC. CHARACTERS ARE NOT NARRATING their action and parroting what was already said. Repetition is prohibited. Always try to push action and story forward. The scene should not stall - something new should happen.
+                             Keep the scene short.
 
                              **{context.MainCharacter.Name} Agency:**
                              - {context.MainCharacter.Name} does ONLY what player input specified—nothing more
                              - No invented dialogue, decisions, or "helpful" additional actions
                              - Wishful thinking ("I convince," "knowing this will earn trust") = inner monologue, not world effect
                              - No mechanism = {context.MainCharacter.Name} acts, world doesn't bend
-
-                             You are prohibited of making gamer, analytical, strategic bullshit. {context.MainCharacter.Name} is a human being - write them as such.
 
                              **Never invent. Always ask.**
                              Generate a detailed scene based on the above resolution and context.

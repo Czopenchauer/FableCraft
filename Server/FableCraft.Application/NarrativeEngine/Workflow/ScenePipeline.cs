@@ -23,6 +23,7 @@ internal sealed class ScenePipeline(
     IPluginFactory pluginFactory,
     DispatchService dispatchService,
     QualityAssuranceAgent qualityAssuranceAgent,
+    NarrativeCatalystAgent narrativeCatalystAgent,
     Serilog.ILogger logger) : IProcessor
 {
     public async Task Invoke(GenerationContext context, CancellationToken cancellationToken)
@@ -32,6 +33,7 @@ internal sealed class ScenePipeline(
             return;
         }
 
+        await RunNarrativeCatalystPass(context, cancellationToken);
         await RunDraftPass(context, cancellationToken);
 
         if (context.NewScene is null || string.IsNullOrWhiteSpace(context.NewScene.Scene))
@@ -63,6 +65,25 @@ internal sealed class ScenePipeline(
 
         context.NewScene = revisedScene;
         logger.Information("ScenePipeline: Revision completed for adventure {AdventureId}", context.AdventureId);
+    }
+
+    private async Task RunNarrativeCatalystPass(GenerationContext context, CancellationToken cancellationToken)
+    {
+        if (context.NarrativeCatalystOutput is not null)
+        {
+            return;
+        }
+
+        var sceneTracker = context.LatestTracker()?.Scene;
+        if (sceneTracker is null)
+        {
+            logger.Information("ScenePipeline: Skipping NarrativeCatalyst (no previous scene tracker available)");
+            return;
+        }
+
+        var sceneTrackerResult = context.NewTracker?.Scene ?? sceneTracker;
+        await narrativeCatalystAgent.Invoke(context, sceneTrackerResult, cancellationToken);
+        logger.Information("ScenePipeline: NarrativeCatalyst completed for adventure {AdventureId}", context.AdventureId);
     }
 
     private async Task RunDraftPass(GenerationContext context, CancellationToken cancellationToken)
@@ -144,7 +165,7 @@ internal sealed class ScenePipeline(
         {
             var incomingDispatches = await GetIncomingDispatchesAsync(context, cancellationToken);
             requestPrompt = $"""
-                             {PromptSections.NarrativeCatalystGuidance(context.SceneContext)}
+                             {PromptSections.NarrativeCatalystGuidance(context)}
 
                              {incomingDispatches}
 

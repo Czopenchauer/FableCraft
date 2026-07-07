@@ -304,6 +304,15 @@ public class LlmPresetController : ControllerBase
                 Message = response.Content ?? "Connection successful (empty response)"
             });
         }
+        catch (HttpOperationException ex)
+        {
+            _logger.Error(ex, "LLM preset connection test failed: {message}", ex.ResponseContent);
+            return BadRequest(new TestConnectionResponseDto
+            {
+                Success = false,
+                Message = $"Connection failed: {ex.Message}"
+            });
+        }
         catch (Exception ex)
         {
             _logger.Error(ex, "LLM preset connection test failed");

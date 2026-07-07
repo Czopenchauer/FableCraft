@@ -408,7 +408,6 @@ internal sealed class SceneGenerationOrchestrator(
 
         context.SkipSimulation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Simulation));
         context.SkipChronicler = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.Chronicler));
-        context.SkipNarrativeCatalyst = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.NarrativeCatalyst));
         context.SkipContextGatherer = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.ContextGatherer));
         context.SkipWorldInfoExtractor = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.WorldInfoExtractor));
         context.SkipCoLocation = !agentsToRegenerate.Contains(nameof(EnrichmentAgent.CoLocation));

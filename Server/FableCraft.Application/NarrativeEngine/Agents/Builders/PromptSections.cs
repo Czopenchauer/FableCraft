@@ -136,6 +136,7 @@ internal static class PromptSections
     public static string PlayerAction(string action) =>
         $"""
          <player_action>
+         Action performed by the protagonist:
          {action}
          </player_action>
          """;
@@ -832,9 +833,44 @@ internal static class PromptSections
 
         var goals = string.Join("\n\n", parts);
 
-        var eventInstruction = string.IsNullOrEmpty(latestMetadata.CatalystRandomEvent)
+        return BuildNarrativeCatalystGuidance(goals, latestMetadata.CatalystRandomEvent);
+    }
+
+    /// <summary>
+    ///     Formats the fresh Narrative Catalyst output (run before the Writer) into scene direction
+    ///     the Writer should weave into the narrative. Falls back to the previous scene's saved
+    ///     catalyst metadata when no fresh output is available.
+    /// </summary>
+    public static string NarrativeCatalystGuidance(GenerationContext context)
+    {
+        var output = context.NarrativeCatalystOutput;
+        if (output is null)
+        {
+            return NarrativeCatalystGuidance(context.SceneContext);
+        }
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(output.CatalystGoals))
+        {
+            parts.Add(output.CatalystGoals);
+        }
+
+        if (parts.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var goals = string.Join("\n\n", parts);
+
+        return BuildNarrativeCatalystGuidance(goals, output.RandomEvent);
+    }
+
+    private static string BuildNarrativeCatalystGuidance(string goals, string? randomEvent)
+    {
+        var eventInstruction = string.IsNullOrEmpty(randomEvent)
             ? "Weave the narrative goals above into this scene naturally. The goals describe what should happen — let them shape events, character behavior, and the MC's situation. Do not explicitly announce the goals to the reader; embody them in the scene."
-            : $"A random event has been proposed for this scene:\n\n{latestMetadata.CatalystRandomEvent}\n\nWeave this event into the scene alongside the narrative goals above. The event should happen to or around the MC organically — it is not the MC's choice. Integrate it so it feels like the world acting on its own momentum. Do not explicitly announce the goals or the event to the reader; embody them in the scene.";
+            : $"A random event has been proposed for this scene:\n\n{randomEvent}\n\nWeave this event into the scene alongside the narrative goals above. The event should happen to or around the MC organically — it is not the MC's choice. Integrate it so it feels like the world acting on its own momentum. Do not explicitly announce the goals or the event to the reader; embody them in the scene.";
 
         return $"""
                 <narrative_catalyst_guidance>

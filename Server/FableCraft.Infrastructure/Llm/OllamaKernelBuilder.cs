@@ -1,4 +1,5 @@
 using FableCraft.Infrastructure.Persistence.Entities;
+using FableCraft.Infrastructure.Queue;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,12 +12,14 @@ internal sealed class OllamaKernelBuilder : IKernelBuilder
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly Serilog.ILogger _logger;
+    private readonly IMessageDispatcher _messageDispatcher;
     private readonly LlmPreset _preset;
 
-    public OllamaKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger)
+    public OllamaKernelBuilder(LlmPreset preset, ILoggerFactory loggerFactory, Serilog.ILogger logger, IMessageDispatcher messageDispatcher)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
+        _messageDispatcher = messageDispatcher;
         _preset = preset;
     }
 
@@ -24,7 +27,7 @@ internal sealed class OllamaKernelBuilder : IKernelBuilder
     {
         var innerHandler = new HttpClientHandler();
         var nanoGptHandler = new NanoGptRequestTransformer(_logger) { InnerHandler = innerHandler };
-        var loggingHandler = new HttpLoggingHandler(_logger) { InnerHandler = nanoGptHandler };
+        var loggingHandler = new HttpLoggingHandler(_logger, _messageDispatcher) { InnerHandler = nanoGptHandler };
 
         var httpClient = new HttpClient(loggingHandler)
         {

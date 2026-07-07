@@ -19,7 +19,6 @@ internal sealed class CharacterTrackersProcessor(
     CharacterTrackerAgent characterTrackerAgent,
     CharacterContextGatherer characterContextGatherer,
     InitMainCharacterTrackerAgent initMainCharacterTrackerAgent,
-    NarrativeCatalystAgent narrativeCatalystAgent,
     WorldInfoExtractorAgent worldInfoExtractorAgent,
     StorySummaryAgent storySummaryAgent,
     ProgressionAgent progressionAgent,
@@ -34,7 +33,6 @@ internal sealed class CharacterTrackersProcessor(
                                      "CharacterTrackersProcessor requires context.NewTracker.Scene to be populated. "
                                      + "Ensure SceneTrackerProcessor runs before this processor.");
 
-        var catalystTask = Task.Run(() => ProcessNarrativeCatalyst(context, storyTrackerResult, cancellationToken), cancellationToken);
         var mainNarrativeExtractionTask = context.SkipWorldInfoExtractor
             ? Task.CompletedTask
             : Task.Run(() => ExtractWorldInfoFromMainNarrative(context, storyTrackerResult, cancellationToken), cancellationToken);
@@ -339,7 +337,6 @@ internal sealed class CharacterTrackersProcessor(
             progressionTask,
             inventoryTask,
             UnpackCharacterUpdates(context, characterUpdateTask),
-            catalystTask,
             mainNarrativeExtractionTask,
             mcStorySummaryTask);
 
@@ -463,22 +460,6 @@ internal sealed class CharacterTrackersProcessor(
         }
 
         await mainCharacterTrackerAgent.Invoke(context, sceneTrackerResult, cancellationToken);
-    }
-
-    private async Task ProcessNarrativeCatalyst(GenerationContext context, SceneTracker storyTrackerResult, CancellationToken cancellationToken)
-    {
-        if (context.SkipNarrativeCatalyst)
-        {
-            logger.Information("NarrativeCatalyst: Skipping (not selected for regeneration)");
-            return;
-        }
-
-        if (context.NarrativeCatalystOutput is null)
-        {
-            var catalystOutput = await narrativeCatalystAgent.Invoke(context, storyTrackerResult, cancellationToken);
-            context.NarrativeCatalystOutput = catalystOutput;
-            logger.Information("NarrativeCatalyst completed");
-        }
     }
 
     /// <summary>

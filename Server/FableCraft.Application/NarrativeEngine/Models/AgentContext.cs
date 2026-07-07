@@ -202,13 +202,6 @@ internal sealed class GenerationContext
     public bool SkipChronicler { get; set; }
 
     /// <summary>
-    ///     When true, NarrativeCatalystAgent should skip execution.
-    ///     Set during regeneration when NarrativeCatalyst was not selected for regeneration.
-    /// </summary>
-    [JsonIgnore]
-    public bool SkipNarrativeCatalyst { get; set; }
-
-    /// <summary>
     ///     When true, ContextGatherer should skip execution.
     ///     Set during regeneration when ContextGatherer was not selected for regeneration.
     /// </summary>

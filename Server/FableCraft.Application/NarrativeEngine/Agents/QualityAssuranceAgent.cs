@@ -73,7 +73,7 @@ internal sealed class QualityAssuranceAgent(
         else
         {
             requestPrompt = $"""
-                             {PromptSections.NarrativeCatalystGuidance(context.SceneContext)}
+                             {PromptSections.NarrativeCatalystGuidance(context)}
                              
                              {PromptSections.PlayerAction(context.PlayerAction)}
 
