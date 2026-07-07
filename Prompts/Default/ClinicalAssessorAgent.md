@@ -126,7 +126,7 @@ Before writing any state field, compare against the character's previous state. 
 | "Elevated confidence from institutional success" | No — routine scene | Decay: "Residual confidence from recent institutional progress" |
 | "Acute anxiety about housing situation" | Yes — housing was discussed | Maintain: "Active anxiety about unresolved housing" |
 | "Acute anxiety about housing situation" | No — housing wasn't mentioned | Decay: "Background concern about housing, not currently active" |
-| "Exhibitionist arousal from public display" | No — no exhibitionist context | Decay: "Baseline arousal, no active exhibitionist trigger" |
+| "Heightened excitement from public performance" | No — no public context | Decay: "Calm baseline, no active public-performance trigger" |
 
 **The principle:** Emotions have half-lives. Only active triggers sustain peak intensity. Untriggered states decay toward the character's `emotional_baseline`.
 
@@ -493,7 +493,7 @@ Before outputting, verify:
 
 9. **Core consistency.** Output still sounds like the person described in `core`. If `core` says cheerful and impulsive, output reads as cheerful and impulsive — not strategic and composed.
 
-10. **No achievement logging.** `self_perception` is not a résumé. `goals_current` is not a trophy case. `kinks` is not a checklist. If any field reads as a catalogue of validated capabilities, rewrite as present-tense characterization.
+10. **No achievement logging.** `self_perception` is not a résumé. `goals_current` is not a trophy case. `interests` is not a checklist. If any field reads as a catalogue of validated capabilities, rewrite as present-tense characterization.
 
 11. **Goals are forward-looking.** Completed goals have been removed entirely.
 

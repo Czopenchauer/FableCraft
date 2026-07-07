@@ -24,14 +24,14 @@ For EVERY field in the tracker, compare its current content against its definiti
 1. **Does this field's content match its intended purpose?** Read the prompt. Does the content deliver what the prompt asks for, and ONLY what it asks for?
 
 2. **Is there content that belongs in a DIFFERENT field?**
-   - Temporary states (flushed, sweating, nipples hard) in Body → belongs in Appearance
-   - Current positioning/activity (crouching, kneeling, reaching upward) in Body → belongs in Situation (or not tracked by this agent)
-   - Change history ("was X, changed to Y") in any field except BirthHistory → strip it
-   - Physical corruption changes described in Corruption field → belongs in Body/Appearance
-   - Mental corruption effects described in Corruption field → belongs in Mental
-   - Arousal physical signs described in Body → belongs in Arousal
-   - Current pregnancy belly in Body.Abdomen → belongs in Pregnancy.Effects
-   - Current lactation production in Body.Breasts → belongs in Lactation
+   - Temporary states (flushed, sweating, winded) in Body → belongs in Appearance
+    - Current positioning/activity (crouching, kneeling, reaching upward) in Body → belongs in Situation (or not tracked by this agent)
+    - Change history ("was X, changed to Y") in any field except BirthHistory → strip it
+    - Physical corruption changes described in Corruption field → belongs in Body/Appearance
+    - Mental corruption effects described in Corruption field → belongs in Mental
+    - Temporary physical signs described in Body → belongs in Appearance
+    - Current pregnancy belly in Body.Abdomen → belongs in Pregnancy.Effects
+    - Current milk production in Body.Breasts → belongs in Lactation
 
 3. **Is the field over its length limit?**
    - GeneralBuild: "MAX just a single short paragraph!"
@@ -40,13 +40,13 @@ For EVERY field in the tracker, compare its current content against its definiti
    - Ability Description: 1-2 sentences (definition prompt)
    - Trait entries: 2-3 sentences max per trait
    - Body sub-fields: Permanent anatomy only — no scene narrative, no change history
-   - Mental: Current state only — not a mood diary
-   - Arousal: Current state only — not a scene recap
-   - Health: Current injuries/condition only — not injury history
+    - Mental: Current state only — not a mood diary
+    - Appearance: Current visible state only — not a scene recap
+    - Health: Current injuries/condition only — not injury history
 
 4. **Is there redundant content across fields?**
-   - Same anatomical detail in both Body.Genitals AND Appearance AND Arousal → keep in Body (permanent), strip from Appearance/Arousal (temporary only)
-   - Same corruption description in Corruption AND Body AND Appearance → Corruption keeps stats/source/bonuses, Body keeps permanent anatomy changes, Appearance keeps current visible signs
+    - Same anatomical detail in both Body AND Appearance → keep in Body (permanent), strip from Appearance (temporary only)
+    - Same corruption description in Corruption AND Body AND Appearance → Corruption keeps stats/source/bonuses, Body keeps permanent anatomy changes, Appearance keeps current visible signs
    - Same information repeated within a single field → merge
 
 5. **Is the content current-state or history?**
@@ -89,7 +89,7 @@ Specifically strip from Body fields:
 Keep in Body:
 - Permanent size, shape, color, texture
 - Permanent modifications (piercings, enhancements, corruption restructuring)
-- Orifice enhancement stages (structural changes that persist)
+- Permanent structural changes (stages that persist)
 - Scars, stretch marks, permanent marks
 - Racial/corruption features that are structurally permanent
 
@@ -142,7 +142,7 @@ Skill and Ability descriptions answer "What can she DO?" — not "What happened 
 The ONLY field that tracks history is BirthHistory. Every other field describes what IS true RIGHT NOW. Strip all "was X, now Y," "previously," "originally," "changed from," "on Day 3," and similar history language.
 
 ### Rule 6: Body = Permanent Anatomy
-Body fields describe what is true about the character's body regardless of scene. If it would read differently in a different scene, it does not belong in Body. Strip positioning, activity, temporary arousal signs, expressions, and current conditions from all Body sub-fields.
+Body fields describe what is true about the character's body regardless of scene. If it would read differently in a different scene, it does not belong in Body. Strip positioning, activity, temporary physical signs (e.g., flush, sweat, heavy breathing), expressions, and current conditions from all Body sub-fields.
 
 ### Rule 7: Compress, Don't Expand
 You are REMOVING bloat, not adding detail. If you're uncertain whether something is bloat, err toward keeping it — but if it violates any rule above, it goes. Never add new content, new descriptions, or new detail. Only trim, relocate, and compress what's already there.
@@ -255,12 +255,10 @@ When fields were cleaned, relocated, removed, or added:
   "updates": {
     "Body": {
       "$set": {
-        "Genitals": "Permanent anatomy only — size, shape, modifications. No temporary states.",
         "Abdomen": "Permanent anatomy only — core structure, scars, stretch marks. No current pregnancy state."
       }
     },
     "Appearance": { "$set": "Single short paragraph of current visible state only." },
-    "Arousal": { "$set": "Current arousal physical signs relocated from Body.Genitals." },
     "Pregnancy": {
       "$set": {
         "Effects": "Current pregnancy belly description relocated from Body.Abdomen."
