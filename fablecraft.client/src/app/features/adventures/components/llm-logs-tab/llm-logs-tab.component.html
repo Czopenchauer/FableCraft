@@ -142,9 +142,9 @@
       <!-- Content sections -->
       <div class="log-content-sections">
         <div class="content-section">
-          <h4>Request</h4>
+          <h4>Reasoning</h4>
           <div class="content-scroll-wrapper">
-            <pre class="text-content">{{ selectedLog.requestContent }}</pre>
+            <pre class="text-content">{{ selectedLog.reasoningContent }}</pre>
           </div>
         </div>
 
@@ -152,6 +152,19 @@
           <h4>Response</h4>
           <div class="content-scroll-wrapper">
             <pre class="text-content">{{ selectedLog.responseContent }}</pre>
+          </div>
+        </div>
+
+        <div class="content-section collapsible-section">
+          <h4 class="collapsible-header" (click)="toggleRequest()">
+            <svg [class.expanded]="isRequestExpanded" class="chevron-icon" viewBox="0 0 24 24">
+              <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"></path>
+            </svg>
+            Request
+          </h4>
+          <div *ngIf="isRequestExpanded" class="content-scroll-wrapper">
+            <pre class="text-content">{{ selectedLog.requestContent }}</pre>
           </div>
         </div>
       </div>

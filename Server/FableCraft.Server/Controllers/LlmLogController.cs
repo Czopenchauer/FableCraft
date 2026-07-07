@@ -44,13 +44,8 @@ public class LlmLogController : ControllerBase
                 SceneId = l.SceneId,
                 CallerName = l.CallerName,
                 RequestContent = l.RequestContent,
-                ResponseContent = $"""
-                                  Thinking block:
-                                  {l.ReasoningContent}
-                                  
-                                  Response:
-                                  {l.ResponseContent}
-                                  """,
+                ReasoningContent = l.ReasoningContent,
+                ResponseContent = l.ResponseContent,
                 ReceivedAt = l.ReceivedAt,
                 InputToken = l.InputToken,
                 OutputToken = l.OutputToken,

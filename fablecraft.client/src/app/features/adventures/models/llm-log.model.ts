@@ -4,6 +4,7 @@ export interface LlmLogResponseDto {
   sceneId: string | null;
   callerName: string | null;
   requestContent: string;
+  reasoningContent: string | null;
   responseContent: string;
   receivedAt: string;
   inputToken: number | null;

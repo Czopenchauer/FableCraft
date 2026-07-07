@@ -25,6 +25,7 @@ export class LlmLogsTabComponent implements OnChanges {
   isLoading = false;
   hasError = false;
   errorMessage = '';
+  isRequestExpanded = false;
 
   private readonly pageSize = 100;
   private hasLoaded = false;
@@ -127,6 +128,11 @@ export class LlmLogsTabComponent implements OnChanges {
 
   selectLog(log: LlmLogResponseDto): void {
     this.selectedLog = log;
+    this.isRequestExpanded = false;
+  }
+
+  toggleRequest(): void {
+    this.isRequestExpanded = !this.isRequestExpanded;
   }
 
   get hasMoreLogs(): boolean {

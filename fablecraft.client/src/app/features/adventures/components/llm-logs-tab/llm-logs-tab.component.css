@@ -395,6 +395,33 @@
   margin: 0;
 }
 
+.collapsible-section h4 {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  user-select: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.collapsible-section h4:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.collapsible-section h4 .chevron-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.collapsible-section h4 .chevron-icon.expanded {
+  transform: rotate(90deg);
+}
+
 .content-scroll-wrapper {
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);

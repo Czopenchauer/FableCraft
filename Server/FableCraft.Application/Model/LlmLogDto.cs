@@ -12,6 +12,8 @@ public class LlmLogResponseDto
 
     public required string RequestContent { get; init; }
 
+    public string? ReasoningContent { get; init; }
+
     public required string ResponseContent { get; init; }
 
     public required DateTimeOffset ReceivedAt { get; init; }
