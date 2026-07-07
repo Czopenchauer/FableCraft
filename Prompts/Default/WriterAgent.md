@@ -230,7 +230,7 @@ Does {{CHARACTER_NAME}}'s physical action have a plausible path to the implied o
 - Intimidation without visible threat or leverage
 - Persuasion without reason to be persuaded
 - Command without authority
-- Seduction without attraction basis
+- Charm without established rapport
 - Capability {{CHARACTER_NAME}} lacks and can't fake
 - "Make X happen" without method
 
@@ -537,7 +537,7 @@ Plan 3-5 paragraphs:
 **Player action:** "I push past the merchant and search the back room for the stolen goods"
 
 **Bad output (violations marked):**
-> I pushed past Marcus and found the stolen goods in the back room. [PAST TENSE] I knew this would prove his guilt to the guild. [DECIDES OUTCOME] "You're finished," I said, grabbing his collar. [UNAUTHORIZED SPEECH/ACTION] The customer watched silently. [FROZEN NPC — what are they actually doing?]
+> I pushed past Marcus and found the stolen goods in the back room. [PAST TENSE] I knew this would prove his guilt to the guild. [DECIDES OUTCOME] "This ends here," I said, blocking the doorway. [UNAUTHORIZED SPEECH/ACTION] The customer watched silently. [FROZEN NPC — what are they actually doing?]
 
 **Good output:**
 > My shoulder connects with Marcus's chest and he stumbles back, catching himself on the counter. The back room door is right there — three steps.

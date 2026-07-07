@@ -313,11 +313,11 @@ This shows how to track active character development. Most characters have empty
 ```json
 {
   "in_development": {
-    "trust in Jaime cracking": {
-      "from": "Absolute, twin-bonded, him-and-her-against-the-world",
+    "trust in an old friend cracking": {
+      "from": "Absolute, lifelong, him-and-her-against-the-world",
       "toward": "Uncertain—could calcify into hatred or crack into desperate reconciliation",
-      "pressure": "His time with Brienne. His failure to rescue her. The hand. He's becoming someone she doesn't recognize.",
-      "resistance": "He's literally her other half. If she can't trust Jaime, she's completely alone.",
+      "pressure": "His time with the reformers. His failure to speak up for her. He's becoming someone she doesn't recognize.",
+      "resistance": "He's been her closest ally since childhood. If she can't trust him, she's completely alone.",
       "intensity": "She's noticing. Making excuses. Not yet doubting openly, but the excuses are getting harder."
     }
   }
@@ -408,8 +408,8 @@ This shows how to track active relationship shifts. Most stable relationships ha
     "trust eroding around loyalty": {
       "from": "Absolute trust in his priorities—believed she came first",
       "toward": "Uncertainty whether she matters more than his honor, his oaths, his new principles",
-      "pressure": "He chose to leave. He chose Brienne. He chose the war over her.",
-      "resistance": "Decades of evidence that he would choose her. The twin bond. The children."
+      "pressure": "He chose to leave. He chose the reformers. He chose the cause over her.",
+      "resistance": "Decades of evidence that he would choose her. The shared history. The family they built."
     },
     "respect shifting to admiration": {
       "from": "Professional regard for competence",

@@ -156,7 +156,7 @@ If two characters' actions contradict (both reaching for the same object, one mo
 
 The situation shows what's happening in the room. It does not show the character to themselves.
 
-**Why:** When you put "You're exhausted and naked" in the situation, you're overriding the character's self-knowledge. Their tracker already knows they're exhausted and naked. By restating it, you're telling them what to prioritize. A character who doesn't care about being naked processes that differently than one who's mortified. You're choosing FOR them.
+**Why:** When you put "You're exhausted and unarmed" in the situation, you're overriding the character's self-knowledge. Their tracker already knows they're exhausted and unarmed. By restating it, you're telling them what to prioritize. A character who doesn't care about being unarmed processes that differently than one who's terrified. You're choosing FOR them.
 
 ### Situation Contains
 
@@ -205,7 +205,7 @@ Run this against every situation string before calling emulation.
 |----------|---------|
 | "After a fierce battle" | *(remove — her tracker knows what just happened)* |
 | "You're exhausted" | *(remove — her tracker knows her state)* |
-| "You're naked from the waist down" | *(remove — she knows what she's wearing)* |
+| "You're unarmed and barefoot" | *(remove — she knows what she's wearing)* |
 | "He's helping you sit up" | "He's gripping your arm, pulling you upright" |
 | "He's comforting you" | "He's pressing a waterskin into your hands, rubbing circles on your back" |
 | "A threatening figure approaches" | "A large figure in stained leather walking toward the group, hand on a sheathed blade" |

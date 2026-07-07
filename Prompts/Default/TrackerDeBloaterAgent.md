@@ -25,7 +25,7 @@ For EVERY field in the tracker, compare its current content against its definiti
 
 2. **Is there content that belongs in a DIFFERENT field?**
    - Temporary states (flushed, sweating, nipples hard) in Body → belongs in Appearance
-   - Current positioning/activity (bent over, being penetrated) in Body → belongs in Situation (or not tracked by this agent)
+   - Current positioning/activity (crouching, kneeling, reaching upward) in Body → belongs in Situation (or not tracked by this agent)
    - Change history ("was X, changed to Y") in any field except BirthHistory → strip it
    - Physical corruption changes described in Corruption field → belongs in Body/Appearance
    - Mental corruption effects described in Corruption field → belongs in Mental
