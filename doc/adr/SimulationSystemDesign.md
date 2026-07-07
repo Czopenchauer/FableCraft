@@ -861,7 +861,7 @@ Score based on importance **to this character**, not plot importance.
       "what": "Freedom",
       "condition": "Captured by Halvard forces",
       "deadline": null,
-      "failure_consequence": "Returned to slavery, punishment for escape"
+      "failure_consequence": "Returned to captivity, punishment for escape"
     }
   ],
   "windows": [

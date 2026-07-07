@@ -112,7 +112,7 @@ internal static class TestTracker
                                           "exampleValues": [
                                             "Natural look with light foundation and mascara",
                                             "None",
-                                            "Subtle eyeliner and nude lipstick"
+                                            "Subtle eyeliner and neutral lipstick"
                                           ]
                                         },
                                         {
@@ -253,7 +253,7 @@ internal static class TestTracker
                                           "exampleValues": [
                                             "Natural look with light foundation and mascara",
                                             "None",
-                                            "Subtle eyeliner and nude lipstick"
+                                            "Subtle eyeliner and neutral lipstick"
                                           ]
                                         },
                                         {
