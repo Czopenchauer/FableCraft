@@ -76,6 +76,10 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
   // RAG Knowledge Chat state
   private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
+  // Sound notifications state
+  private readonly SOUND_ENABLED_KEY = 'game-panel-sound-enabled';
+  soundEnabled = false;
+  private audioContext: AudioContext | null = null;
   private destroy$ = new Subject<void>();
   private sceneSubmissionSubscription: Subscription | null = null;
 
@@ -90,6 +94,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   ) {
     this.loadEmulationVisibility();
     this.loadRagChatVisibility();
+    this.loadSoundEnabled();
   }
 
   ngOnInit(): void {
@@ -194,6 +199,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           this.currentScene = scene;
           this.customAction = ''; // Reset custom action
           this.resetCharacterTab(); // Reset to protagonist tab
+          this.playSuccessSound();
           this.cdr.detectChanges();
 
           // Immediately start enriching the scene
@@ -202,6 +208,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error submitting action:', err);
           this.toastService.error('Failed to submit your choice. Please try again.');
+          this.playErrorSound();
           this.cdr.detectChanges();
         }
       });
@@ -247,6 +254,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
           this.previousTrackerData = null; // Clear the backup
           this.toastService.success('Enrichment regenerated successfully.');
+          this.playSuccessSound();
           this.cdr.detectChanges();
         },
         error: (err) => {
@@ -259,6 +267,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
 
           this.previousTrackerData = null;
           this.toastService.error('Failed to regenerate enrichment. Previous values restored.');
+          this.playErrorSound();
           this.cdr.detectChanges();
         }
       });
@@ -664,11 +673,13 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           console.log('Regenerated scene received:', scene);
           this.currentScene = scene;
           this.customAction = ''; // Reset custom action
+          this.playSuccessSound();
           this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error regenerating scene:', err);
           this.toastService.error('Failed to regenerate the scene. Please try again.');
+          this.playErrorSound();
           this.cdr.detectChanges();
         }
       });
@@ -1074,12 +1085,14 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           // Update diff availability now that current scene has tracker
           this.hasDiffAvailable = this.previousTrackerForDiff !== null;
 
+          this.playSuccessSound();
           this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error enriching scene:', err);
           this.enrichmentFailed = true;
           this.toastService.warning('Scene enrichment failed. The scene is still playable.');
+          this.playErrorSound();
         }
       });
   }
@@ -1114,6 +1127,88 @@ export class GamePanelComponent implements OnInit, OnDestroy {
           this.hasDiffAvailable = false;
         }
       });
+  }
+
+  /**
+   * Toggle sound notifications on/off
+   */
+  toggleSoundNotifications(): void {
+    this.soundEnabled = !this.soundEnabled;
+    localStorage.setItem(this.SOUND_ENABLED_KEY, String(this.soundEnabled));
+    if (this.soundEnabled) {
+      this.getAudioContext();
+    }
+  }
+
+  /**
+   * Load sound notification preference from localStorage
+   */
+  private loadSoundEnabled(): void {
+    const stored = localStorage.getItem(this.SOUND_ENABLED_KEY);
+    this.soundEnabled = stored === 'true';
+  }
+
+  /**
+   * Get or create the AudioContext, resuming it if suspended
+   */
+  private getAudioContext(): AudioContext {
+    if (!this.audioContext) {
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      this.audioContext = AudioContextClass ? new AudioContextClass() : null;
+    }
+
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(err => console.warn('AudioContext resume failed:', err));
+    }
+
+    return this.audioContext!;
+  }
+
+  /**
+   * Play a short ascending chime for successful operations
+   */
+  private playSuccessSound(): void {
+    if (!this.soundEnabled) return;
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    this.playTone(ctx, 523.25, now, 0.12, 0.3); // C5
+    this.playTone(ctx, 659.25, now + 0.12, 0.18, 0.35); // E5
+  }
+
+  /**
+   * Play a short descending low tone for failed operations
+   */
+  private playErrorSound(): void {
+    if (!this.soundEnabled) return;
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    this.playTone(ctx, 220.0, now, 0.15, 0.3); // A3
+    this.playTone(ctx, 185.0, now + 0.15, 0.25, 0.3); // F#3
+  }
+
+  /**
+   * Play a single tone with a quick attack/decay envelope
+   */
+  private playTone(ctx: AudioContext, frequency: number, startTime: number, duration: number, volume: number): void {
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration);
   }
 
   /**

@@ -252,6 +252,62 @@
   border-color: rgba(59, 130, 246, 0.6);
 }
 
+/* Sound Toggle Button */
+.btn-sound {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-sound.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+[data-theme="modern-dark"] .btn-sound:not(.active) {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+[data-theme="modern-dark"] .btn-sound:not(.active):hover {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #94a3b8;
+}
+
+[data-theme="modern-dark"] .btn-sound.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+[data-theme="modern-dark"] .btn-sound.active:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-theme="medieval-fantasy"] .btn-sound:not(.active) {
+  border-color: var(--border-secondary);
+}
+
+[data-theme="medieval-fantasy"] .btn-sound:not(.active):hover {
+  background: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="medieval-fantasy"] .btn-sound.active {
+  background: rgba(34, 139, 34, 0.2);
+  color: #228b22;
+  border-color: rgba(34, 139, 34, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .btn-sound.active:hover {
+  background: rgba(34, 139, 34, 0.3);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
 [data-theme="medieval-fantasy"] .btn-current:not(:disabled) {
   background: rgba(184, 134, 11, 0.15);
   border-color: var(--color-primary);
