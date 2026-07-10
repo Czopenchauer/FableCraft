@@ -337,7 +337,7 @@ internal sealed class ScenePipeline(
     {
         var agentPromptPath = Path.Combine(context.PromptPath, $"{agentName}.md");
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
-        var prompt = await ReplaceJailbreakPlaceholder(promptTemplate, context.PromptPath);
+        var prompt = await ReplaceContentPolicyPlaceholder(promptTemplate, context.PromptPath);
         var storyBible = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "StoryBible.md"));
         var progressionSystem = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "ProgressionSystem.md"));
         var identitySchema = await File.ReadAllTextAsync(Path.Combine(context.PromptPath, "IdentitySchema.md"));
@@ -354,18 +354,18 @@ internal sealed class ScenePipeline(
             .Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 
-    private static async Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
+    private static async Task<string> ReplaceContentPolicyPlaceholder(string promptTemplate, string promptPath)
     {
-        if (!promptTemplate.Contains(PlaceholderNames.Jailbreak))
+        if (!promptTemplate.Contains(PlaceholderNames.ContentPolicy))
         {
             return promptTemplate;
         }
 
-        var filePath = Path.Combine(promptPath, "Jailbrake.md");
+        var filePath = Path.Combine(promptPath, "ContentPolicy.md");
         if (File.Exists(filePath))
         {
             var fileContent = await File.ReadAllTextAsync(filePath);
-            return promptTemplate.Replace(PlaceholderNames.Jailbreak, fileContent);
+            return promptTemplate.Replace(PlaceholderNames.ContentPolicy, fileContent);
         }
 
         return promptTemplate;

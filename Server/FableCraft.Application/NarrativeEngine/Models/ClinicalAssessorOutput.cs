@@ -45,7 +45,7 @@ public sealed class ClinicalRelationshipOutput
     public string? Dynamic { get; set; }
 
     /// <summary>
-    ///     All other relationship fields (foundation, stance, trust, desire, intimacy, power, unspoken, developing, etc.)
+    ///     All other relationship fields (foundation, stance, trust, expectations, connection, influence, unspoken, developing, etc.)
     ///     captured as extension data to preserve the complete relationship snapshot.
     /// </summary>
     [JsonExtensionData]

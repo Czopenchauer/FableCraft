@@ -62,7 +62,7 @@ public class CustomRelationshipDto
     public required string Dynamic { get; init; }
 
     /// <summary>
-    ///     Full relationship data (foundation, stance, trust, desire, intimacy, power, unspoken, developing).
+    ///     Full relationship data (foundation, stance, trust, expectations, connection, influence, unspoken, developing).
     /// </summary>
     public required IDictionary<string, object> Data { get; init; }
 }

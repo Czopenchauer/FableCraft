@@ -48,6 +48,8 @@ testem.log
 cognee_data
 cognee_system
 seq-data
+visualization
+scene-images
 
 # System files
 .DS_Store

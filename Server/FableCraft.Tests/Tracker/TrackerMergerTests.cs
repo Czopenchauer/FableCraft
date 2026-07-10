@@ -174,23 +174,23 @@ public class TrackerMergerTests
         // Arrange
         var previous = new Dictionary<string, object>
         {
-            ["Pregnancy"] = new Dictionary<string, object>
+            ["Progress"] = new Dictionary<string, object>
             {
-                ["Status"] = "Not pregnant",
+                ["Status"] = "Not started",
                 ["Details"] = new Dictionary<string, object>
                 {
-                    ["Trimester"] = "N/A",
-                    ["DueDate"] = "N/A"
+                    ["Stage"] = "N/A",
+                    ["Deadline"] = "N/A"
                 }
             }
         };
 
         var updates = JsonDocument.Parse("""
         {
-            "Pregnancy": {
-                "Status": "Pregnant",
+            "Progress": {
+                "Status": "In progress",
                 "Details": {
-                    "Trimester": "First"
+                    "Stage": "First"
                 }
             }
         }
@@ -200,12 +200,12 @@ public class TrackerMergerTests
         var result = TrackerMerger.Merge(previous, updates);
 
         // Assert
-        var pregnancy = result["Pregnancy"] as Dictionary<string, object>;
-        await Assert.That(pregnancy!["Status"].ToString()).IsEqualTo("Pregnant");
+        var progress = result["Progress"] as Dictionary<string, object>;
+        await Assert.That(progress!["Status"].ToString()).IsEqualTo("In progress");
 
-        var details = pregnancy["Details"] as Dictionary<string, object>;
-        await Assert.That(details!["Trimester"].ToString()).IsEqualTo("First");
-        await Assert.That(details["DueDate"].ToString()).IsEqualTo("N/A");
+        var details = progress["Details"] as Dictionary<string, object>;
+        await Assert.That(details!["Stage"].ToString()).IsEqualTo("First");
+        await Assert.That(details["Deadline"].ToString()).IsEqualTo("N/A");
     }
 
     [Test]

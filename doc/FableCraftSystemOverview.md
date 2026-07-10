@@ -954,7 +954,7 @@ Generate full profiles when the Writer requests them via `creation_requests`. Al
 
 | Crafter | Creates | Output |
 |---------|---------|--------|
-| **CharacterCrafter** | Full profiles for arc-important/significant NPCs | Identity (psychology, voice, sexuality, motivations), Tracker (physical state), Relationships, World Description |
+| **CharacterCrafter** | Full profiles for arc-important/significant NPCs | Identity (psychology, voice, temperament, motivations), Tracker (physical state), Relationships, World Description |
 | **PartialProfileCrafter** | Lightweight profiles for background NPCs | Identity, appearance, personality, voice (critical), knowledge boundaries. ~250-350 words total. |
 | **LocationCrafter** | Places from room to region scale | Physical structure, atmosphere (layered sensory), inhabitants, temporal history, faction perspectives, narrative hooks |
 | **ItemCrafter** | Objects from mundane to unique | Physical description, power level, effects (with costs/limitations), temporal context, relationships, secrets |

@@ -115,7 +115,7 @@ public class TrackerStructureTests
         var expectedFields = new[]
         {
             "Name", "Gender", "Age", "Hair", "Makeup", "Outfit", "StateOfDress",
-            "PostureAndInteraction", "Traits", "Children", "Inventory"
+            "PostureAndInteraction", "Traits", "Inventory"
         };
         var actualFieldNames = structure.MainCharacter.Select(f => f.Name).ToArray();
 
@@ -245,7 +245,7 @@ public class TrackerStructureTests
         var expectedFields = new[]
         {
             "Name", "Gender", "Age", "Hair", "Makeup", "Outfit", "StateOfDress",
-            "PostureAndInteraction", "Traits", "Children"
+            "PostureAndInteraction", "Traits"
         };
         var actualFieldNames = structure.Characters.Select(f => f.Name).ToArray();
 

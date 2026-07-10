@@ -86,11 +86,10 @@ public class TrackerDeBloaterPromptTests
         await Assert.That(serialized).Contains("\"StateOfDress\"");
         await Assert.That(serialized).Contains("\"PostureAndInteraction\"");
         await Assert.That(serialized).Contains("\"Traits\"");
-        await Assert.That(serialized).Contains("\"Children\"");
         await Assert.That(serialized).Contains("\"Inventory\"");
 
         using var doc = JsonDocument.Parse(serialized);
-        await Assert.That(doc.RootElement.EnumerateObject().Count()).IsEqualTo(11);
+        await Assert.That(doc.RootElement.EnumerateObject().Count()).IsEqualTo(10);
 
         var nameField = doc.RootElement.GetProperty("Name");
         await Assert.That(nameField.GetProperty("Prompt").GetString()).IsEqualTo("Character's full name.");

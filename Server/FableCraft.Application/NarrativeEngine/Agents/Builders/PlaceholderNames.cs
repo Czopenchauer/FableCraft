@@ -9,7 +9,7 @@ internal static class PlaceholderNames
     /// <summary>
     ///     Content policy configuration. Used by most agents.
     /// </summary>
-    public const string Jailbreak = "{{jailbreak}}";
+    public const string ContentPolicy = "{{content_policy}}";
 
     /// <summary>
     ///     NPC character name injection. Used by character-related agents.

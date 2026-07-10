@@ -435,13 +435,13 @@ internal sealed class ChatService : IChatService
         var worldSettingsPath = Path.Combine(promptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath, cancellationToken) : string.Empty;
 
-        var jailbreakPath = Path.Combine(promptPath, "Jailbrake.md");
-        var jailbreak = File.Exists(jailbreakPath) ? await File.ReadAllTextAsync(jailbreakPath, cancellationToken) : string.Empty;
+        var contentPolicyPath = Path.Combine(promptPath, "ContentPolicy.md");
+        var contentPolicy = File.Exists(contentPolicyPath) ? await File.ReadAllTextAsync(contentPolicyPath, cancellationToken) : string.Empty;
 
         var prompt = promptTemplate
             .Replace("{{story_bible}}", storyBible)
             .Replace("{{world_setting}}", worldSettings)
-            .Replace("{{jailbreak}}", jailbreak)
+            .Replace("{{content_policy}}", contentPolicy)
             .Replace("{{CHARACTER_NAME}}", adventure.MainCharacter.Name);
 
         var adventureId = session.AdventureId;

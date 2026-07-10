@@ -160,16 +160,6 @@ internal static class TestTracker
                                           ]
                                         },
                                         {
-                                          "name": "Children",
-                                          "type": "String",
-                                          "prompt": "Add child after birth based on Narrative. Format: '{Birth Order}: {Name}, {Gender + Symbol}, child with {Other Parent}'",
-                                          "defaultValue": "No Child",
-                                          "exampleValues": [
-                                            "No Child",
-                                            "1st Born: Eve, Female, child with Harry"
-                                          ]
-                                        },
-                                        {
                                           "name": "Inventory",
                                           "type": "ForEachObject",
                                           "prompt": "Track items the main character is carrying or has access to.",
@@ -298,16 +288,6 @@ internal static class TestTracker
                                             "No Traits",
                                             "Emotional Intelligence: deeply philosophical and sentimental",
                                             "Charismatic: naturally draws people in with charm and wit"
-                                          ]
-                                        },
-                                        {
-                                          "name": "Children",
-                                          "type": "String",
-                                          "prompt": "Add child after birth based on Narrative. Format: '{Birth Order}: {Name}, {Gender + Symbol}, child with {Other Parent}'",
-                                          "defaultValue": "No Child",
-                                          "exampleValues": [
-                                            "No Child",
-                                            "1st Born: Eve, Female, child with Harry"
                                           ]
                                         }
                                       ]

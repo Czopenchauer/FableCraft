@@ -41,7 +41,7 @@ internal abstract class BaseAgent
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
-        var prompt = await ReplaceJailbreakPlaceholder(promptTemplate, generationContext.PromptPath);
+        var prompt = await ReplaceContentPolicyPlaceholder(promptTemplate, generationContext.PromptPath);
         return prompt
             .Replace(PlaceholderNames.StoryBible, storyBible)
             .Replace(PlaceholderNames.ProgressionSystem, progressionSystem)
@@ -51,22 +51,22 @@ internal abstract class BaseAgent
             .Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 
-    private static async Task<string> ReplaceJailbreakPlaceholder(string promptTemplate, string promptPath)
+    private static async Task<string> ReplaceContentPolicyPlaceholder(string promptTemplate, string promptPath)
     {
-        if (!promptTemplate.Contains(PlaceholderNames.Jailbreak))
+        if (!promptTemplate.Contains(PlaceholderNames.ContentPolicy))
         {
             return promptTemplate;
         }
 
         var filePath = Path.Combine(
             promptPath,
-            "Jailbrake.md"
+            "ContentPolicy.md"
         );
 
         if (File.Exists(filePath))
         {
             var fileContent = await File.ReadAllTextAsync(filePath);
-            return promptTemplate.Replace(PlaceholderNames.Jailbreak, fileContent);
+            return promptTemplate.Replace(PlaceholderNames.ContentPolicy, fileContent);
         }
 
         return promptTemplate;
