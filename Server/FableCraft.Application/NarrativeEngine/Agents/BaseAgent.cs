@@ -38,32 +38,10 @@ internal abstract class BaseAgent
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
         var promptTemplate = await File.ReadAllTextAsync(agentPromptPath);
-        var prompt = await ReplaceContentPolicyPlaceholder(promptTemplate, generationContext.PromptPath);
-        return prompt
+        return promptTemplate
             .Replace(PlaceholderNames.StoryBible, storyBible)
             .Replace(PlaceholderNames.ProgressionSystem, progressionSystem)
             .Replace(PlaceholderNames.WorldSetting, worldSettings);
-    }
-
-    private static async Task<string> ReplaceContentPolicyPlaceholder(string promptTemplate, string promptPath)
-    {
-        if (!promptTemplate.Contains(PlaceholderNames.ContentPolicy))
-        {
-            return promptTemplate;
-        }
-
-        var filePath = Path.Combine(
-            promptPath,
-            "ContentPolicy.md"
-        );
-
-        if (File.Exists(filePath))
-        {
-            var fileContent = await File.ReadAllTextAsync(filePath);
-            return promptTemplate.Replace(PlaceholderNames.ContentPolicy, fileContent);
-        }
-
-        return promptTemplate;
     }
 
     protected async Task<IKernelBuilder> GetKernelBuilder(GenerationContext generationContext)
