@@ -34,9 +34,6 @@ internal abstract class BaseAgent
         );
         var storyBible = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "StoryBible.md"));
         var progressionSystem = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "ProgressionSystem.md"));
-        var identitySchema = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "IdentitySchema.md"));
-        var relationshipSchema = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "RelationshipSchema.md"));
-        var dispatch = await File.ReadAllTextAsync(Path.Combine(generationContext.PromptPath, "Dispatch.md"));
         var worldSettingsPath = Path.Combine(generationContext.PromptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath) : string.Empty;
 
@@ -45,9 +42,6 @@ internal abstract class BaseAgent
         return prompt
             .Replace(PlaceholderNames.StoryBible, storyBible)
             .Replace(PlaceholderNames.ProgressionSystem, progressionSystem)
-            .Replace(PlaceholderNames.RelationshipSchema, relationshipSchema)
-            .Replace(PlaceholderNames.IdentitySchema, identitySchema)
-            .Replace(PlaceholderNames.Dispatch, dispatch)
             .Replace(PlaceholderNames.WorldSetting, worldSettings);
     }
 

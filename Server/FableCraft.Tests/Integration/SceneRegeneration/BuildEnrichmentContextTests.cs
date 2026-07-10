@@ -4,6 +4,8 @@ using FableCraft.Infrastructure.Persistence;
 using FableCraft.Infrastructure.Persistence.Entities;
 using FableCraft.Tests.Integration.SceneRegeneration.Fixtures;
 
+using Serilog.Core;
+
 namespace FableCraft.Tests.Integration.SceneRegeneration;
 
 [ClassDataSource<PostgresContainerFixture>(Shared = SharedType.PerTestSession)]
@@ -12,7 +14,7 @@ public class BuildEnrichmentContextTests(PostgresContainerFixture fixture)
     private IGenerationContextBuilder CreateBuilder()
     {
         var db = fixture.CreateDbContext();
-        return new GenerationContextBuilder(db);
+        return new GenerationContextBuilder(db, Logger.None);
     }
 
     [Test]

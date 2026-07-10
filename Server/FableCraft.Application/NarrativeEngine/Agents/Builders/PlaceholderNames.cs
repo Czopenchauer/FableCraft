@@ -58,12 +58,6 @@ internal static class PlaceholderNames
 
     public const string ProgressionSystem = "{{progression_system}}";
 
-    public const string IdentitySchema = "{{identity_schema}}";
-
-    public const string RelationshipSchema = "{{relationship_schema}}";
-
-    public const string Dispatch = "{{dispatch}}";
-
     /// <summary>
     ///     Skills schema definition extracted from the main character tracker structure.
     /// </summary>
