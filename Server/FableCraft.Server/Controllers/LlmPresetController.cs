@@ -55,6 +55,7 @@ public class LlmPresetController : ControllerBase
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt
             })
+            .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(cancellationToken);
 
         return Ok(presets);

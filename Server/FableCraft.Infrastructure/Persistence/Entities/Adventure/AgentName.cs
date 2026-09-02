@@ -33,5 +33,6 @@ public enum AgentName
     ProgressionAgent,
     InventoryTrackerAgent,
     QualityAssuranceAgent,
-    TrackerDeBloaterAgent
+    TrackerDeBloaterAgent,
+    LoreAgent
 }

@@ -83,7 +83,7 @@ internal sealed class SaveSceneEnrichment(
                                Category = nameof(LorebookCategory.Lore),
                                Content = x.ToJsonString(),
                                ContentType = ContentType.json
-                           }).ToList()
+                           }).DistinctBy(x => x.Title).DistinctBy(x => x.Content).ToList()
                            ?? new List<LorebookEntry>();
 
             var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry

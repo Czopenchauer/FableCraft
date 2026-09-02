@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FableCraft.Application.NarrativeEngine.Agents;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Workflow;
 using FableCraft.Infrastructure.Persistence;
@@ -70,10 +71,10 @@ public sealed class ContentGenerationService(
         var sceneTrackerProcessor = processors.First(p => p is SceneTrackerProcessor);
         await sceneTrackerProcessor.Invoke(context, cancellationToken);
 
-        var contentGenerator = processors.First(p => p is ContentGenerator);
+        var loreAgent = processors.First(p => p is LoreAgent);
         var characterTrackersProcessor = processors.First(p => p is CharacterTrackersProcessor);
         await Task.WhenAll(
-            contentGenerator.Invoke(context, cancellationToken),
+            loreAgent.Invoke(context, cancellationToken),
             characterTrackersProcessor.Invoke(context, cancellationToken));
 
         // Save the generated content and character updates to the database

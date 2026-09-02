@@ -29,8 +29,13 @@ internal static class PromptSections
 
     public static JsonSerializerOptions GetJsonOptions(bool ignoreNull = false) => ignoreNull ? JsonOptionsIgnoreNull : JsonOptions;
 
-    public static string SceneTracker(GenerationContext context, SceneTracker sceneTracker)
+    public static string SceneTracker(GenerationContext context, SceneTracker? sceneTracker)
     {
+        if (sceneTracker is null)
+        {
+            return string.Empty;
+        }
+
         var previousTime = context.LatestTracker()?.Scene;
         return $"""
                 Current Time, Location and general Scene information:
@@ -185,15 +190,15 @@ internal static class PromptSections
                 var wornBuild = c.CharacterTracker?.AdditionalProperties.TryGetValue("Worn", out var worn) != null ? $"Worn: {worn.ToJsonString()}" : string.Empty;
 
                 return $"""
-                     <character>
-                     Name: {c.Name}
-                     Location: {c.CharacterTracker?.Location}
-                     Appearance: {c.CharacterTracker?.Appearance}
-                     GeneralBuild: {c.CharacterTracker?.GeneralBuild}
-                     {wornBuild}
-                     {c.Description}
-                     </character>
-                     """;
+                        <character>
+                        Name: {c.Name}
+                        Location: {c.CharacterTracker?.Location}
+                        Appearance: {c.CharacterTracker?.Appearance}
+                        GeneralBuild: {c.CharacterTracker?.GeneralBuild}
+                        {wornBuild}
+                        {c.Description}
+                        </character>
+                        """;
             }));
 
         return $"""
@@ -631,8 +636,7 @@ internal static class PromptSections
             .FirstOrDefault()?.GatheredContext;
 
         var worldContext = characterContext?.Context
-            ?? string.Empty;
-
+                           ?? string.Empty;
 
         var loreContent = generationContext.PreviouslyGeneratedLore.Length > 0
             ? string.Join("\n", generationContext.PreviouslyGeneratedLore.Select(x => $"- {x.Content}"))

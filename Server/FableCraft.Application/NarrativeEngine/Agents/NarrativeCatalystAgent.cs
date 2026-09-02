@@ -29,7 +29,7 @@ internal sealed class NarrativeCatalystAgent(
     protected override AgentName GetAgentName() => AgentName.NarrativeCatalystAgent;
 
     public async Task Invoke(GenerationContext context,
-        SceneTracker sceneTracker,
+        SceneTracker? sceneTracker,
         CancellationToken cancellationToken)
     {
         if (context.NarrativeCatalystOutput is not null)
@@ -86,7 +86,7 @@ internal sealed class NarrativeCatalystAgent(
         };
     }
 
-    private async Task<string> BuildContextPrompt(GenerationContext context, SceneTracker sceneTracker, bool isFirstScene, CancellationToken cancellationToken)
+    private async Task<string> BuildContextPrompt(GenerationContext context, SceneTracker? sceneTracker, bool isFirstScene, CancellationToken cancellationToken)
     {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
 
@@ -97,7 +97,7 @@ internal sealed class NarrativeCatalystAgent(
                 x.FirstSceneGuidance
             })
             .SingleAsync(x => x.Id == context.AdventureId, cancellationToken);
-        var init = context.SceneContext.Length == 1 ? PromptSections.InitialInstruction(instruction.FirstSceneGuidance) : string.Empty;
+        var init = isFirstScene ? PromptSections.InitialInstruction(instruction.FirstSceneGuidance) : string.Empty;
 
         var scenes = context.SceneContext
             .OrderByDescending(x => x.SequenceNumber)
@@ -126,12 +126,12 @@ internal sealed class NarrativeCatalystAgent(
 
                 {context.LatestTracker()?.MainCharacter?.MainCharacter.ToJsonString() ?? string.Empty}
 
-                {(!isFirstScene ? inject : "")}
+                {PromptSections.McStorySummary(context)}
+                
+                {(!isFirstScene ? inject : string.Empty)}
 
                 {PromptSections.SceneTracker(context, sceneTracker)}
 
-                {PromptSections.McStorySummary(context)}
-                
                 {init}
                 """;
     }

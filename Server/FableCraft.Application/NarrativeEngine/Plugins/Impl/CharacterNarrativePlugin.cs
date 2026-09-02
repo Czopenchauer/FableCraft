@@ -51,7 +51,7 @@ internal class CharacterNarrativePlugin : CharacterPluginBase
         {
             if (!string.IsNullOrEmpty(time))
             {
-                return $"{x}. Current time: {time} - use it to retrieve fresh knowledge where possible . Prepare comprehensive and deep response.";
+                return $"{x}. Current time: {time} - use it to retrieve fresh knowledge where possible . Prepare comprehensive and deep response. If data contain does not contain context, write: \"The provided context does not contain this information.\"";
             }
             return $"{x}. Prepare comprehensive and deep response.";
         }).ToArray();

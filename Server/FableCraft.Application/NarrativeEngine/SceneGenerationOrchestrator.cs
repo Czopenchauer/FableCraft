@@ -334,8 +334,10 @@ internal sealed class SceneGenerationOrchestrator(
 
         var parallelProcessors = new[]
         {
-            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
-            processors.First(p => p is ContextGatherer), processors.First(p => p is CoLocationAgent)
+            processors.First(p => p is LoreAgent),
+            processors.First(p => p is CharacterTrackersProcessor),
+            processors.First(p => p is ContextGatherer),
+            processors.First(p => p is CoLocationAgent)
         };
 
         stopwatch.Restart();
@@ -437,7 +439,7 @@ internal sealed class SceneGenerationOrchestrator(
 
         var parallelProcessors = new[]
         {
-            processors.First(p => p is ContentGenerator), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
+            processors.First(p => p is LoreAgent), processors.First(p => p is CharacterTrackersProcessor), processors.First(p => p is SimulationOrchestrator),
             processors.First(p => p is ContextGatherer), processors.First(p => p is CoLocationAgent)
         };
 

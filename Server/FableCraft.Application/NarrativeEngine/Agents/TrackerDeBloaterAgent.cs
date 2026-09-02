@@ -93,7 +93,6 @@ internal sealed class TrackerDeBloaterAgent(
 
         var prompt = await GetPromptAsync(context);
         return PromptBuilder.ReplacePlaceholders(prompt,
-            (PlaceholderNames.TrackerDefinition, JsonSerializer.Serialize(trackerDefinition, options)),
-            (PlaceholderNames.TrackerState, "Provided in the user message"));
+            (PlaceholderNames.MainCharacterTrackerStructure, JsonSerializer.Serialize(trackerDefinition, options)));
     }
 }

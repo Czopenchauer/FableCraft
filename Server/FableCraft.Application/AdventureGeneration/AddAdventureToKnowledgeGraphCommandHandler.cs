@@ -68,11 +68,7 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             string[] mainCharacterDatasets = [RagClientExtensions.GetMainCharacterDatasetName(), RagClientExtensions.GetWorldDatasetName()];
             string[] worldDatasets = [RagClientExtensions.GetWorldDatasetName()];
 
-            List<ChunkCreationRequest> chunkRequests = [new(
-                                                           adventure.MainCharacter.Id,
-                                                           FormatMainCharacterDescription(adventure.MainCharacter),
-                                                           ContentType.txt,
-                                                           mainCharacterDatasets)];
+            List<ChunkCreationRequest> chunkRequests = [];
 
             var extraLoreEntries = adventure.Lorebook
                 .Select(l => new ChunkCreationRequest(l.Id, l.Content, l.ContentType, worldDatasets))
@@ -143,7 +139,4 @@ internal class AddAdventureToKnowledgeGraphCommandHandler(
             }
         });
     }
-
-    private static string FormatMainCharacterDescription(MainCharacter mc) =>
-        $"Name: {mc.Name}\n\n{mc.Description}";
 }

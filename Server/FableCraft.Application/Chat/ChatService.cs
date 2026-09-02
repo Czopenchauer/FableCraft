@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using FableCraft.Application.Model;
 using FableCraft.Application.NarrativeEngine.Agents;
+using FableCraft.Application.NarrativeEngine.Agents.Builders;
 using FableCraft.Application.NarrativeEngine.Models;
 using FableCraft.Application.NarrativeEngine.Plugins;
 using FableCraft.Application.NarrativeEngine.Plugins.Impl;
@@ -250,52 +251,46 @@ internal sealed class ChatService : IChatService
         var preset = session.LlmPreset;
 
         var chatHistory = string.IsNullOrEmpty(session.ChatHistoryJson) ? new ChatHistory() : DeserializeChatHistory(session.ChatHistoryJson);
+        var systemPrompt = await BuildSystemPromptAsync(session, cancellationToken);
+        chatHistory.AddSystemMessage(systemPrompt);
+        var adventureId = session.AdventureId;
+        var latestScenes = await _dbContext.Scenes
+            .Where(s => s.AdventureId == adventureId)
+            .OrderByDescending(s => s.SequenceNumber)
+            .Take(40)
+            .ToArrayAsync(cancellationToken);
+
+        var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
+        ProcessExecutionContext.AdventureId.Value = adventureId;
+        ProcessExecutionContext.SceneId.Value = latestScene?.Id ?? Guid.NewGuid();
+
+        var formatted = string.Join("\n",
+            latestScenes
+                .OrderByDescending(x => x.SequenceNumber)
+                .Take(WriterAgent.SceneContextCount)
+                .OrderBy(x => x.SequenceNumber)
+                .Select(x => $"""
+                              Time: {x.Metadata.Tracker!.Scene!.Time}
+                              Location: {x.Metadata.Tracker.Scene.Location}
+                              Weather: {x.Metadata.Tracker.Scene.Weather}
+                              {x.NarrativeText}
+                              """));
+
+        var scenes = $"""
+                      {AddStorySummary()}
+
+                       <latest_scenes>
+                       The latest scenes in the adventures:
+                      {formatted}
+                      </latest_scenes>
+                      """;
         if (string.IsNullOrEmpty(session.ChatHistoryJson))
         {
-            var systemPrompt = await BuildSystemPromptAsync(session, cancellationToken);
-            chatHistory.AddSystemMessage(systemPrompt);
-            var adventureId = session.AdventureId;
-            var latestScenes = await _dbContext.Scenes
-                .Where(s => s.AdventureId == adventureId && s.CommitStatus == CommitStatus.Commited)
-                .OrderByDescending(s => s.SequenceNumber)
-                .Take(40)
-                .ToArrayAsync(cancellationToken);
-
-            var latestScene = latestScenes.OrderByDescending(x => x.SequenceNumber).FirstOrDefault();
-            ProcessExecutionContext.AdventureId.Value = adventureId;
-            ProcessExecutionContext.SceneId.Value = latestScene?.Id ?? Guid.NewGuid();
-
-            var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata
-                .McStorySummary;
-            if (!string.IsNullOrEmpty(latestSummary))
-            {
-                var message = $"""
-                               <summary>
-                               The summary of the adventure so fat:
-                               {latestSummary}
-                               </summary>
-                               """;
-                chatHistory.AddMessage(AuthorRole.User, message);
-            }
-
-            var formatted = string.Join("\n",
-                latestScenes
-                    .OrderBy(x => x.SequenceNumber)
-                    .Take(WriterAgent.SceneContextCount)
-                    .Select(x => $"""
-                                  Time: {x.Metadata.Tracker!.Scene!.Time}
-                                  Location: {x.Metadata.Tracker.Scene.Location}
-                                  Weather: {x.Metadata.Tracker.Scene.Weather}
-                                  {x.NarrativeText}
-                                  """));
-
-            var scenes = $"""
-                          <latest_scenes>
-                          The latest scenes in the adventures:
-                          {formatted}
-                          </latest_scenes>
-                          """;
             chatHistory.AddMessage(AuthorRole.User, scenes);
+        }
+        else
+        {
+            chatHistory[1] = new ChatMessageContent(AuthorRole.User, scenes);
         }
 
         chatHistory.AddUserMessage(userMessage);
@@ -349,6 +344,23 @@ internal sealed class ChatService : IChatService
             Role = "assistant",
             Content = finalResponse
         };
+
+        string AddStorySummary()
+        {
+            var latestSummary = latestScenes.Where(x => !string.IsNullOrEmpty(x.Metadata.McStorySummary)).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata
+                .McStorySummary;
+            if (!string.IsNullOrEmpty(latestSummary))
+            {
+                return $"""
+                        <summary>
+                        The summary of the adventure so fat:
+                        {latestSummary}
+                        </summary>
+                        """;
+            }
+
+            return string.Empty;
+        }
     }
 
     private GenerationContext BuildGenerationContext(Adventure adventure)
@@ -435,14 +447,10 @@ internal sealed class ChatService : IChatService
         var worldSettingsPath = Path.Combine(promptPath, "WorldSettings.md");
         var worldSettings = File.Exists(worldSettingsPath) ? await File.ReadAllTextAsync(worldSettingsPath, cancellationToken) : string.Empty;
 
-        var contentPolicyPath = Path.Combine(promptPath, "ContentPolicy.md");
-        var contentPolicy = File.Exists(contentPolicyPath) ? await File.ReadAllTextAsync(contentPolicyPath, cancellationToken) : string.Empty;
-
         var prompt = promptTemplate
-            .Replace("{{story_bible}}", storyBible)
-            .Replace("{{world_setting}}", worldSettings)
-            .Replace("{{content_policy}}", contentPolicy)
-            .Replace("{{CHARACTER_NAME}}", adventure.MainCharacter.Name);
+            .Replace(PlaceholderNames.StoryBible, storyBible)
+            .Replace(PlaceholderNames.WorldSetting, worldSettings)
+            .Replace(PlaceholderNames.CharacterName, adventure.MainCharacter.Name);
 
         var adventureId = session.AdventureId;
         var latestScene = await _dbContext.Scenes

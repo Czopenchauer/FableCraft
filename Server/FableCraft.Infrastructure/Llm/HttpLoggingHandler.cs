@@ -181,6 +181,8 @@ internal sealed class HttpLoggingHandler(ILogger logger, IMessageDispatcher mess
 
             var rawResponse = _responseBuilder.ToString();
 
+            _logger.Information("[{RequestId}] Raw response: {Response}", _requestId, rawResponse);
+
             if (TryParseOllamaResponse(rawResponse, out var ollamaThinking, out var ollamaResponse, out var ollamaUsage))
             {
                 if (!string.IsNullOrEmpty(ollamaThinking))

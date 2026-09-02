@@ -1,5 +1,6 @@
 ﻿import logging
 import os
+from contextlib import asynccontextmanager
 from typing import Any, List, Optional
 from uuid import UUID
 
@@ -8,6 +9,7 @@ import cognee
 import uvicorn
 from cognee.api.v1.exceptions import DocumentNotFoundError
 from cognee.context_global_variables import set_session_user_context_variable
+from cognee.infrastructure.databases.relational import get_relational_engine
 from cognee.modules.data.exceptions import DatasetNotFoundError
 from cognee.modules.observability.get_observe import get_observe
 from cognee.modules.search.types import SearchType
@@ -48,10 +50,46 @@ logging.getLogger().addHandler(handler)
 logger = logging.getLogger(__name__)
 cognee.setup_logging()
 
+
+def _ensure_storage_directories() -> None:
+    """Create cognee storage directories when they don't exist yet.
+
+    A freshly created Docker volume mounted at the system/data root starts
+    empty, and cognee (0.5.x) does not create this directory tree itself.
+    SQLite cannot create missing parent directories, so without this the
+    first DB access fails with 'sqlite3.OperationalError: unable to open
+    database file'.
+    """
+    system_root = os.environ.get("SYSTEM_ROOT_DIRECTORY")
+    if system_root:
+        os.makedirs(os.path.join(system_root, "databases"), exist_ok=True)
+
+    data_root = os.environ.get("DATA_ROOT_DIRECTORY")
+    if data_root:
+        os.makedirs(data_root, exist_ok=True)
+
+
+_ensure_storage_directories()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Mirrors cognee's own server startup (cognee.api.client lifespan):
+    # initialize the relational database (file + tables) and the default user
+    # before serving requests. Without this the first request fails with
+    # DatabaseNotCreatedError on a fresh storage volume.
+    db_engine = get_relational_engine()
+    await db_engine.create_database()
+    await get_default_user()
+
+    yield
+
+
 app = FastAPI(
     title="GraphRAG API (Cognee)",
     description="API for GraphRAG operations using Cognee framework with SQLite, Kuzu, and LanceDB",
     version="2.0.0",
+    lifespan=lifespan,
 )
 FastAPIInstrumentor.instrument_app(app)
 

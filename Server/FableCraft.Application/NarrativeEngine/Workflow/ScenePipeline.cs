@@ -75,12 +75,6 @@ internal sealed class ScenePipeline(
         }
 
         var sceneTracker = context.LatestTracker()?.Scene;
-        if (sceneTracker is null)
-        {
-            logger.Information("ScenePipeline: Skipping NarrativeCatalyst (no previous scene tracker available)");
-            return;
-        }
-
         var sceneTrackerResult = context.NewTracker?.Scene ?? sceneTracker;
         await narrativeCatalystAgent.Invoke(context, sceneTrackerResult, cancellationToken);
         logger.Information("ScenePipeline: NarrativeCatalyst completed for adventure {AdventureId}", context.AdventureId);
