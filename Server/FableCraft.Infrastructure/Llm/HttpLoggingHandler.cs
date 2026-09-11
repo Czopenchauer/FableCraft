@@ -181,8 +181,6 @@ internal sealed class HttpLoggingHandler(ILogger logger, IMessageDispatcher mess
 
             var rawResponse = _responseBuilder.ToString();
 
-            _logger.Information("[{RequestId}] Raw response: {Response}", _requestId, rawResponse);
-
             if (TryParseOllamaResponse(rawResponse, out var ollamaThinking, out var ollamaResponse, out var ollamaUsage))
             {
                 if (!string.IsNullOrEmpty(ollamaThinking))
@@ -348,7 +346,7 @@ internal sealed class HttpLoggingHandler(ILogger logger, IMessageDispatcher mess
 
                     isOpenAi = true;
                     var delta = choices[0].Delta;
-                    reasoningBuilder.Append(delta?.ReasoningContent);
+                    reasoningBuilder.Append(delta?.ReasoningContent ?? delta?.Reasoning);
                     responseBuilder.Append(delta?.Content);
 
                     if (chunk.Usage is { } chunkUsage)
@@ -437,6 +435,9 @@ internal sealed class HttpLoggingHandler(ILogger logger, IMessageDispatcher mess
 
         [JsonPropertyName("reasoning_content")]
         public string? ReasoningContent { get; init; }
+
+        [JsonPropertyName("reasoning")]
+        public string? Reasoning { get; init; }
     }
 
     private sealed class OpenAiUsage
