@@ -2246,6 +2246,174 @@
   font-family: var(--font-family-primary);
 }
 
+/* ========== Agent Instructions Section ========== */
+
+.agent-instructions-section {
+  margin-top: var(--spacing-lg);
+}
+
+.agent-instructions-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.agent-instructions-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.agent-instructions-toggle-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="modern-dark"] .agent-instructions-toggle-btn {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="modern-dark"] .agent-instructions-toggle-btn:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .agent-instructions-toggle-btn {
+  border-color: var(--border-secondary);
+}
+
+[data-theme="medieval-fantasy"] .agent-instructions-toggle-btn:hover {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.agent-instructions-active-badge {
+  margin-left: auto;
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.agent-instructions-box {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  animation: fadeIn var(--transition-base);
+}
+
+[data-theme="modern-dark"] .agent-instructions-box {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: var(--backdrop-blur);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="medieval-fantasy"] .agent-instructions-box {
+  background: linear-gradient(135deg, rgba(62, 36, 21, 0.95) 0%, rgba(45, 24, 16, 0.95) 100%);
+  border-color: var(--color-accent);
+}
+
+.agent-instruction-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.agent-instruction-field:last-of-type {
+  margin-bottom: var(--spacing-sm);
+}
+
+.agent-instruction-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+[data-theme="modern-dark"] .agent-instruction-label {
+  color: #a855f7;
+}
+
+[data-theme="medieval-fantasy"] .agent-instruction-label {
+  color: var(--color-primary);
+}
+
+.agent-instruction-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 44px;
+  max-height: 150px;
+  box-sizing: border-box;
+}
+
+.agent-instruction-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.agent-instruction-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.agent-instruction-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme="modern-dark"] .agent-instruction-input {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="modern-dark"] .agent-instruction-input:focus {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+[data-theme="medieval-fantasy"] .agent-instruction-input {
+  background: rgba(45, 24, 16, 0.5);
+  border-color: var(--border-secondary);
+}
+
+[data-theme="medieval-fantasy"] .agent-instruction-input:focus {
+  border-color: var(--color-primary);
+}
+
+.agent-instructions-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
 /* ========== RAG Knowledge Chat Section ========== */
 
 .rag-chat-section {

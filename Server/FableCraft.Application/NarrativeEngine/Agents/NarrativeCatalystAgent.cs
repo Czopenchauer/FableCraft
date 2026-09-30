@@ -52,6 +52,16 @@ internal sealed class NarrativeCatalystAgent(
         var requestPrompt = await BuildRequestPrompt(context, isFirstScene, cancellationToken);
         chatHistory.AddUserMessage(requestPrompt);
 
+        if (!string.IsNullOrWhiteSpace(context.NarrativeCatalystInstruction))
+        {
+            chatHistory.AddUserMessage($"""
+                                        <player_instruction>
+                                        The player provided the following additional instruction for this generation. Treat it as a high-priority direction for your narrative goals and assessment:
+                                        {context.NarrativeCatalystInstruction}
+                                        </player_instruction>
+                                        """);
+        }
+
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(GetType().Name, context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);

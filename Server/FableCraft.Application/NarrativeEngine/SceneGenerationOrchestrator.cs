@@ -217,9 +217,17 @@ internal sealed class SceneGenerationOrchestrator(
     public async Task<Scene> GenerateSceneAsync(
         Guid adventureId,
         string playerAction,
+        AgentInstructionsDto? agentInstructions,
         CancellationToken cancellationToken)
     {
         var (context, step) = await contextBuilder.GetOrCreateGenerationContextAsync(adventureId, playerAction, cancellationToken);
+
+        // Ad-hoc player instructions always reflect the latest submit call, even when an
+        // existing in-flight generation process is being reused/retried.
+        context.NarrativeCatalystInstruction = agentInstructions?.NarrativeCatalyst;
+        context.WriterInstruction = agentInstructions?.Writer;
+        context.LoreInstruction = agentInstructions?.Lore;
+
         ProcessExecutionContext.AdventureId.Value = adventureId;
         ProcessExecutionContext.SceneId.Value = context.NewSceneId;
 

@@ -32,6 +32,30 @@ public class SubmitActionRequest
     public Guid AdventureId { get; init; }
 
     public string ActionText { get; init; } = null!;
+
+    public AgentInstructionsDto? AgentInstructions { get; init; }
+}
+
+/// <summary>
+///     Optional ad-hoc instructions from the player, applied to specific agents
+///     for the next scene generation. Null/empty values mean "no extra instruction".
+/// </summary>
+public class AgentInstructionsDto
+{
+    /// <summary>
+    ///     Instruction for the NarrativeCatalystAgent (narrative goals/direction).
+    /// </summary>
+    public string? NarrativeCatalyst { get; init; }
+
+    /// <summary>
+    ///     Instruction for the WriterAgent (scene writing).
+    /// </summary>
+    public string? Writer { get; init; }
+
+    /// <summary>
+    ///     Instruction for the LoreAgent (canon/lore minting during enrichment).
+    /// </summary>
+    public string? Lore { get; init; }
 }
 
 public class RegenerateEnrichmentRequest
@@ -51,7 +75,8 @@ public interface IGameService
 
     Task DeleteSceneAsync(Guid adventureId, bool forceDelete, CancellationToken cancellationToken);
 
-    Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken);
+    Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, AgentInstructionsDto? agentInstructions,
+        CancellationToken cancellationToken);
 
     Task<SceneEnrichmentOutput> EnrichSceneAsync(Guid adventureId, CancellationToken cancellationToken);
 
@@ -197,7 +222,7 @@ internal class GameService : IGameService
                 {
                     adventure.SceneGenerationStatus = ProcessingStatus.Pending;
                     adventure.Scenes.Clear();
-                    var scene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, string.Empty, cancellationToken);
+                    var scene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, string.Empty, null, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return new GameScene
@@ -231,6 +256,7 @@ internal class GameService : IGameService
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             var nextScene = await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId,
                 lastScene.CharacterActions.First(x => x.Selected).ActionDescription,
+                null,
                 cancellationToken);
 
             _dbContext.Scenes.Remove(lastScene);
@@ -337,7 +363,8 @@ internal class GameService : IGameService
         });
     }
 
-    public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText, CancellationToken cancellationToken)
+    public async Task<GameScene> SubmitActionAsync(Guid adventureId, string actionText,
+        AgentInstructionsDto? agentInstructions, CancellationToken cancellationToken)
     {
         var adventure = await _dbContext.Adventures
             .Select(ad => new { ad.Id })
@@ -376,7 +403,7 @@ internal class GameService : IGameService
         try
         {
             var nextScene =
-                await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, cancellationToken);
+                await _sceneGenerationOrchestrator.GenerateSceneAsync(adventureId, actionText, agentInstructions, cancellationToken);
             var generationOutput = SceneGenerationOutput.CreateFromScene(nextScene);
             return new GameScene
             {

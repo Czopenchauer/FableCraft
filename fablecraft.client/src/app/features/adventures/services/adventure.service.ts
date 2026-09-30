@@ -7,6 +7,7 @@ import {
   AdventureDefaultsDto,
   AdventureDto,
   AdventureListItemDto,
+  AgentInstructions,
   AvailableLorebookDto,
   ComponentStatus,
   DirectoryListingDto,
@@ -123,12 +124,13 @@ export class AdventureService {
   }
 
   /**
-   * Submit a player action (choice selection)
+   * Submit a player action (choice selection), optionally with per-agent instructions
    */
-  submitAction(adventureId: string, actionText: string): Observable<GameScene> {
+  submitAction(adventureId: string, actionText: string, agentInstructions?: AgentInstructions): Observable<GameScene> {
     return this.http.post<GameSceneApiResponse>(`${environment.apiUrl}/api/Play/${adventureId}/submit`, {
       adventureId,
-      actionText
+      actionText,
+      agentInstructions: agentInstructions ?? null
     })
       .pipe(map(mapApiResponseToGameScene));
   }

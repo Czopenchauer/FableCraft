@@ -690,6 +690,63 @@
 
             </div>
 
+            <!-- Agent Instructions Box -->
+            <div class="agent-instructions-section" *ngIf="isCurrentScene()">
+              <button
+                (click)="toggleAgentInstructionsBox()"
+                class="agent-instructions-toggle-btn"
+                type="button"
+              >
+                <svg [attr.fill]="'none'" [attr.stroke]="'currentColor'" viewBox="0 0 24 24">
+                  <path *ngIf="!showAgentInstructionsBox" [attr.d]="'M19 9l-7 7-7-7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                  <path *ngIf="showAgentInstructionsBox" [attr.d]="'M5 15l7-7 7 7'" [attr.stroke-linecap]="'round'"
+                        [attr.stroke-linejoin]="'round'" [attr.stroke-width]="2"></path>
+                </svg>
+                <span>Agent Instructions</span>
+                <span *ngIf="hasAgentInstructions()" class="agent-instructions-active-badge">Active</span>
+              </button>
+
+              <div *ngIf="showAgentInstructionsBox" class="agent-instructions-box">
+                <div class="agent-instruction-field">
+                  <label class="agent-instruction-label" for="narrative-instruction">Narrative Agent</label>
+                  <textarea
+                    [(ngModel)]="narrativeCatalystInstruction"
+                    [disabled]="isLoading || isRegenerating"
+                    class="agent-instruction-input"
+                    id="narrative-instruction"
+                    placeholder="Direction for narrative goals, e.g. 'escalate the conflict with the guild'..."
+                    rows="2"
+                  ></textarea>
+                </div>
+                <div class="agent-instruction-field">
+                  <label class="agent-instruction-label" for="writer-instruction">Writer Agent</label>
+                  <textarea
+                    [(ngModel)]="writerInstruction"
+                    [disabled]="isLoading || isRegenerating"
+                    class="agent-instruction-input"
+                    id="writer-instruction"
+                    placeholder="Direction for scene writing, e.g. 'make the scene tense and end on a cliffhanger'..."
+                    rows="2"
+                  ></textarea>
+                </div>
+                <div class="agent-instruction-field">
+                  <label class="agent-instruction-label" for="lore-instruction">Lore Agent</label>
+                  <textarea
+                    [(ngModel)]="loreInstruction"
+                    [disabled]="isLoading || isRegenerating"
+                    class="agent-instruction-input"
+                    id="lore-instruction"
+                    placeholder="Direction for lore mining, e.g. 'record details about the ancient ruins'..."
+                    rows="2"
+                  ></textarea>
+                </div>
+                <p class="agent-instructions-hint">
+                  Instructions are sent with your next action and applied to the corresponding agents for the next scene.
+                </p>
+              </div>
+            </div>
+
             <!-- Character Emulation Box -->
             <div class="emulation-section">
               <button

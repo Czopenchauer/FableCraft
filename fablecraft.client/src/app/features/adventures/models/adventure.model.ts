@@ -167,6 +167,14 @@ export interface LorebookGenerationState {
   error?: string;
 }
 
+// Optional ad-hoc player instructions sent with a submitted action,
+// applied to specific agents for the next scene generation.
+export interface AgentInstructions {
+  narrativeCatalyst?: string | null;
+  writer?: string | null;
+  lore?: string | null;
+}
+
 // Backend API response structure for GameScene
 export interface GameSceneApiResponse {
   previousScene: string | null;

@@ -47,7 +47,7 @@ public class PlayController : ControllerBase
     {
         try
         {
-            var scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, cancellationToken);
+            var scene = await _gameService.SubmitActionAsync(request.AdventureId, request.ActionText, request.AgentInstructions, cancellationToken);
             return Ok(scene);
         }
         catch (AdventureNotFoundException)

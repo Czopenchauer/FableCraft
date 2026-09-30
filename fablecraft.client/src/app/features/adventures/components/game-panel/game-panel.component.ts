@@ -5,7 +5,7 @@ import {finalize, takeUntil} from 'rxjs/operators';
 import {AdventureService} from '../../services/adventure.service';
 import {CharacterService} from '../../services/character.service';
 import {RagChatMessage, RagChatService, RagDatasetType} from '../../services/rag-chat.service';
-import {GameScene, SceneEnrichmentResult, SceneMetadataDto, TrackerDto} from '../../models/adventure.model';
+import {AgentInstructions, GameScene, SceneEnrichmentResult, SceneMetadataDto, TrackerDto} from '../../models/adventure.model';
 import {ToastService} from '../../../../core/services/toast.service';
 import {SceneDeleteModalState, SceneDeleteResult} from '../scene-delete-modal/scene-delete-modal.component';
 
@@ -62,6 +62,11 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   emulationInstruction = '';
   emulationResponse = '';
   isEmulating = false;
+  // Agent instructions box state (per-agent ad-hoc instructions sent with the next action)
+  showAgentInstructionsBox = false;
+  narrativeCatalystInstruction = '';
+  writerInstruction = '';
+  loreInstruction = '';
   showRagChatBox = false;
   ragChatQuery = '';
   ragChatDataset: RagDatasetType = 'world';
@@ -74,6 +79,8 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   hasDiffAvailable = false;
   // Character emulation state
   private readonly EMULATION_VISIBLE_KEY = 'game-panel-emulation-visible';
+  // Agent instructions box visibility state
+  private readonly AGENT_INSTRUCTIONS_VISIBLE_KEY = 'game-panel-agent-instructions-visible';
   // RAG Knowledge Chat state
   private readonly RAG_CHAT_VISIBLE_KEY = 'game-panel-rag-chat-visible';
   // Sound notifications state
@@ -95,6 +102,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.loadEmulationVisibility();
     this.loadRagChatVisibility();
     this.loadSoundEnabled();
+    this.loadAgentInstructionsVisibility();
   }
 
   ngOnInit(): void {
@@ -184,7 +192,7 @@ export class GamePanelComponent implements OnInit, OnDestroy {
     this.enrichmentData = null; // Reset enrichment data
     this.enrichmentFailed = false; // Reset enrichment failure state
 
-    this.sceneSubmissionSubscription = this.adventureService.submitAction(this.adventureId, choice)
+    this.sceneSubmissionSubscription = this.adventureService.submitAction(this.adventureId, choice, this.buildAgentInstructions())
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -918,6 +926,41 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Toggle agent instructions box visibility
+   */
+  toggleAgentInstructionsBox(): void {
+    this.showAgentInstructionsBox = !this.showAgentInstructionsBox;
+    localStorage.setItem(this.AGENT_INSTRUCTIONS_VISIBLE_KEY, String(this.showAgentInstructionsBox));
+  }
+
+  /**
+   * Check if any agent instruction is filled in
+   */
+  hasAgentInstructions(): boolean {
+    return !!(this.narrativeCatalystInstruction.trim() || this.writerInstruction.trim() || this.loreInstruction.trim());
+  }
+
+  /**
+   * Build the per-agent instructions payload from the instruction fields.
+   * Returns undefined when all fields are empty.
+   */
+  private buildAgentInstructions(): AgentInstructions | undefined {
+    const narrativeCatalyst = this.narrativeCatalystInstruction.trim();
+    const writer = this.writerInstruction.trim();
+    const lore = this.loreInstruction.trim();
+
+    if (!narrativeCatalyst && !writer && !lore) {
+      return undefined;
+    }
+
+    return {
+      narrativeCatalyst: narrativeCatalyst || null,
+      writer: writer || null,
+      lore: lore || null
+    };
+  }
+
+  /**
    * Submit emulation instruction
    */
   onEmulateMainCharacter(): void {
@@ -1275,6 +1318,14 @@ export class GamePanelComponent implements OnInit, OnDestroy {
   private loadRagChatVisibility(): void {
     const stored = localStorage.getItem(this.RAG_CHAT_VISIBLE_KEY);
     this.showRagChatBox = stored === 'true';
+  }
+
+  /**
+   * Load agent instructions box visibility from localStorage
+   */
+  private loadAgentInstructionsVisibility(): void {
+    const stored = localStorage.getItem(this.AGENT_INSTRUCTIONS_VISIBLE_KEY);
+    this.showAgentInstructionsBox = stored === 'true';
   }
 }
 

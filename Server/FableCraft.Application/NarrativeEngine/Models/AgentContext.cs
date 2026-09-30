@@ -29,6 +29,22 @@ internal sealed class GenerationContext
     public required string PlayerAction { get; set; }
 
     /// <summary>
+    ///     Optional ad-hoc player instruction for the NarrativeCatalystAgent, submitted with the player action.
+    /// </summary>
+    public string? NarrativeCatalystInstruction { get; set; }
+
+    /// <summary>
+    ///     Optional ad-hoc player instruction for the WriterAgent, submitted with the player action.
+    /// </summary>
+    public string? WriterInstruction { get; set; }
+
+    /// <summary>
+    ///     Optional ad-hoc player instruction for the LoreAgent, submitted with the player action.
+    ///     Persisted with the generation context so it is available during the enrichment phase.
+    /// </summary>
+    public string? LoreInstruction { get; set; }
+
+    /// <summary>
     ///     Has to be refetched from DB as there's no point to store it
     /// </summary>
     [JsonIgnore]

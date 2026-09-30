@@ -186,6 +186,16 @@ internal sealed class ScenePipeline(
 
         chatHistory.AddUserMessage(requestPrompt);
 
+        if (!string.IsNullOrWhiteSpace(context.WriterInstruction))
+        {
+            chatHistory.AddUserMessage($"""
+                                        <player_instruction>
+                                        The player provided the following additional instruction for this scene. Treat it as a high-priority direction when writing the scene:
+                                        {context.WriterInstruction}
+                                        </player_instruction>
+                                        """);
+        }
+
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(nameof(ScenePipeline), context.AdventureId, context.NewSceneId);
         await pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
@@ -265,6 +275,16 @@ internal sealed class ScenePipeline(
 
         var revisionMessage = BuildRevisionMessage(draftScene, qaReview);
         chatHistory.AddUserMessage(revisionMessage);
+
+        if (!string.IsNullOrWhiteSpace(context.WriterInstruction))
+        {
+            chatHistory.AddUserMessage($"""
+                                        <player_instruction>
+                                        The player provided the following additional instruction for this scene. Treat it as a high-priority direction when revising the scene — do not remove or contradict what it asks for:
+                                        {context.WriterInstruction}
+                                        </player_instruction>
+                                        """);
+        }
 
         var kernel = kernelBuilder.Create();
         var callerContext = new CallerContext(nameof(ScenePipeline), context.AdventureId, context.NewSceneId);
