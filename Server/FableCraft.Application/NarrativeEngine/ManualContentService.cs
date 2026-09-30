@@ -96,7 +96,6 @@ public sealed class ManualContentService(
             ManualContentKind.Lore => await DraftLore(context, input, latestScene, cancellationToken),
             ManualContentKind.Location => await DraftLocation(context, input, latestScene, cancellationToken),
             ManualContentKind.Item => await DraftItem(context, input, latestScene, cancellationToken),
-            ManualContentKind.Character => await DraftCharacter(context, input, latestScene, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(input), input.Kind, "Unknown content kind")
         };
     }
@@ -210,65 +209,6 @@ public sealed class ManualContentService(
         var payload = new DraftPayload(nameof(ManualContentKind.Item), result);
         var rawJson = JsonSerializer.SerializeToElement(payload, JsonOptions);
         return new ManualContentDraftOutput(nameof(ManualContentKind.Item), result.Name, result.Description, rawJson);
-    }
-
-    private async Task<ManualContentDraftOutput> DraftCharacter(
-        GenerationContext context, ManualContentInput input, Scene scene, CancellationToken ct)
-    {
-        var importance = CharacterImportanceConverter.FromString(
-            string.IsNullOrWhiteSpace(input.Importance) ? "significant" : input.Importance);
-
-        var request = new CharacterRequest
-        {
-            Importance = importance,
-            AdditionalData =
-            {
-                ["name"] = input.Name,
-                ["request"] = input.Details
-            }
-        };
-
-        if (importance == CharacterImportance.Background)
-        {
-            var profile = await serviceProvider.GetRequiredService<PartialProfileCrafter>().Invoke(context, request, context.SceneContext, ct);
-            var bgPayload = new DraftPayload("BackgroundCharacter", profile)
-            {
-                AdditionalData = new Dictionary<string, object?>
-                {
-                    ["lastLocation"] = context.NewTracker?.Scene?.Location ?? "Unknown",
-                    ["lastSeenTime"] = context.NewTracker?.Scene?.Time ?? context.AdventureStartTime
-                }
-            };
-            var bgRawJson = JsonSerializer.SerializeToElement(bgPayload, JsonOptions);
-            return new ManualContentDraftOutput(nameof(ManualContentKind.Character), profile.Name, profile.Description, bgRawJson);
-        }
-
-        var sceneTracker = context.NewTracker?.Scene
-            ?? throw new InvalidOperationException("Scene must be enriched before creating a full-profile character");
-
-        var character = await serviceProvider.GetRequiredService<CharacterCrafter>().Invoke(context, request, context.SceneContext, ct);
-        var experientialOutput = await serviceProvider.GetRequiredService<ExperientialNarratorAgent>().Invoke(context, character, sceneTracker, ct);
-        var assessorOutput = await serviceProvider.GetRequiredService<ClinicalAssessorAgent>().Invoke(context, character, experientialOutput.SceneRewrite, sceneTracker, ct);
-
-        if (assessorOutput.Identity != null)
-        {
-            character.CharacterState = assessorOutput.Identity;
-        }
-
-        character.SceneRewrites =
-        [
-            new CharacterSceneContext
-            {
-                Content = experientialOutput.SceneRewrite,
-                SceneTracker = sceneTracker,
-                SequenceNumber = 0
-            }
-        ];
-        character.IsDead = experientialOutput.IsDead;
-
-        var payload = new DraftPayload("FullCharacter", character);
-        var rawJson = JsonSerializer.SerializeToElement(payload, JsonOptions);
-        return new ManualContentDraftOutput(nameof(ManualContentKind.Character), character.Name, character.Description, rawJson);
     }
 
     private ManualContentOutput PersistLore(Scene scene, JsonElement rawJson)

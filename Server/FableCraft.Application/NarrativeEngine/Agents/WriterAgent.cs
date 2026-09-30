@@ -41,7 +41,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             return;
         }
 
-        context.CharacterEmulationOutputs.Clear();
         foreach (GatheredCoLocatedCharacter gatheredContextCoLocatedCharacter in context.SceneContext
                                                                                      .OrderByDescending(x => x.SequenceNumber)
                                                                                      .FirstOrDefault()?.Metadata?.GatheredContext?.CoLocatedCharacters
@@ -145,11 +144,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
         await _pluginFactory.AddPluginAsync<WorldKnowledgePlugin>(kernel, context, callerContext);
         await _pluginFactory.AddPluginAsync<MainCharacterNarrativePlugin>(kernel, context, callerContext);
 
-        if (requireSimulation)
-        {
-            await _pluginFactory.AddPluginAsync<CharacterEmulationPlugin>(kernel, context, callerContext);
-        }
-
         var kernelWithKg = kernel.Build();
 
         var outputParser = CreateOutputParser();
@@ -164,52 +158,6 @@ internal sealed class WriterAgent : BaseAgent, IProcessor
             new AgentKernelOptions { MaxParsingRetries = 1 });
 
         context.NewScene = newScene;
-
-        if (newScene.Dispatches is { Count: > 0 })
-        {
-            foreach (var dispatch in newScene.Dispatches)
-            {
-                context.NewDispatches.Add(new DispatchToSave
-                {
-                    AdventureId = context.AdventureId,
-                    FromCharacter = context.MainCharacter.Name,
-                    ToCharacter = dispatch.To,
-                    Method = dispatch.Method,
-                    SentAt = dispatch.SentAt,
-                    EstimatedTransit = dispatch.EstimatedTransit,
-                    SenderContext = dispatch.SenderContext,
-                    WhatArrives = dispatch.WhatArrives
-                });
-            }
-        }
-
-        if (newScene.DispatchesResolved is { Count: > 0 })
-        {
-            foreach (var resolution in newScene.DispatchesResolved)
-            {
-                if (Guid.TryParse(resolution.DispatchId, out var dispatchId))
-                {
-                    context.DispatchResolutions.Add(new DispatchResolutionToSave
-                    {
-                        DispatchId = dispatchId,
-                        Resolution = resolution.Resolution,
-                        ResolvedAt = resolution.Time,
-                        Discoverable = resolution.Discoverable,
-                        Location = context.NewTracker?.Scene?.Location
-                    });
-
-                    if (resolution.Discoverable)
-                    {
-                        context.NewWorldEvents.Add(new WorldEvent
-                        {
-                            When = resolution.Time,
-                            Where = context.NewTracker?.Scene?.Location ?? "Unknown",
-                            Event = resolution.Resolution
-                        });
-                    }
-                }
-            }
-        }
     }
 
     protected override AgentName GetAgentName() => AgentName.WriterAgent;

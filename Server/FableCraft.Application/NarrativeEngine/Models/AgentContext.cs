@@ -5,23 +5,6 @@ using FableCraft.Infrastructure.Persistence.Entities.Adventure;
 
 namespace FableCraft.Application.NarrativeEngine.Models;
 
-/// <summary>
-///     Parsed result from a character emulation LLM call.
-///     Observable is returned to the caller; FullResponse (observable + internal) goes to reflection.
-/// </summary>
-internal sealed record CharacterEmulationResult(string Observable, string FullResponse);
-
-/// <summary>
-///     Captures the output from a character emulation call for use in reflection.
-/// </summary>
-internal sealed record CharacterEmulationOutput(
-    string CharacterName,
-    string Stimulus,
-    string Query,
-    string Response,
-    string Observables,
-    int SequenceNumber);
-
 internal sealed class GenerationContext
 {
     public required Guid AdventureId { get; set; }
@@ -128,80 +111,9 @@ internal sealed class GenerationContext
     public WriterGuidance? WriterGuidance => ChroniclerOutput?.WriterGuidance;
 
     /// <summary>
-    ///     Narrative Catalyst goals and story assessment for the next scene.
-    /// </summary>
-    public string? CatalystGuidance
-    {
-        get
-        {
-            if (NarrativeCatalystOutput is null) return null;
-            var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.StoryAssessment))
-                parts.Add($"Story Assessment:\n{NarrativeCatalystOutput.StoryAssessment}");
-            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.CatalystGoals))
-                parts.Add($"Narrative Goals:\n{NarrativeCatalystOutput.CatalystGoals}");
-            if (!string.IsNullOrWhiteSpace(NarrativeCatalystOutput.RandomEvent))
-                parts.Add($"Random Event:\n{NarrativeCatalystOutput.RandomEvent}");
-            return parts.Count == 0 ? null : string.Join("\n\n", parts);
-        }
-    }
-
-    /// <summary>
-    ///     World events emitted by ChroniclerAgent and Character simulation. Saved as LorebookEntries.
-    /// </summary>
-    public List<WorldEvent> NewWorldEvents { get; set; } = [];
-
-    /// <summary>
     ///     Chronicler story state to persist in scene metadata.
     /// </summary>
     public ChroniclerStoryState? NewChroniclerState => ChroniclerOutput?.StoryState;
-
-    /// <summary>
-    ///     Simulation plan from SimulationPlannerAgent.
-    /// </summary>
-    public SimulationPlannerOutput? SimulationPlan { get; set; }
-
-    /// <summary>
-    ///     CharacterEvent IDs to mark as consumed in SaveEnrichmentStep.
-    ///     Collected by OffscreenInferenceProcessor after processing events.
-    /// </summary>
-    public List<Guid> CharacterEventsToConsume { get; set; } = [];
-
-    /// <summary>
-    ///     New CharacterEvents to save in SaveEnrichmentStep.
-    ///     Collected by SimulationOrchestrator when arc_important characters interact with significant characters.
-    /// </summary>
-    public List<CharacterEventToSave> NewCharacterEvents { get; set; } = [];
-
-    /// <summary>
-    ///     New dispatches to persist in SaveEnrichmentStep.
-    ///     Collected by SimulationOrchestrator when characters send dispatches.
-    /// </summary>
-    public List<DispatchToSave> NewDispatches { get; set; } = [];
-
-    /// <summary>
-    ///     Dispatch resolutions to apply in SaveEnrichmentStep.
-    ///     Collected by SimulationOrchestrator when characters resolve incoming dispatches.
-    /// </summary>
-    public List<DispatchResolutionToSave> DispatchResolutions { get; set; } = [];
-
-    /// <summary>
-    ///     Character emulation outputs captured during scene generation.
-    ///     Used by CharacterReflectionAgent to understand the character's internal experience.
-    /// </summary>
-    public Dictionary<string, List<CharacterEmulationOutput>> CharacterEmulationOutputs { get; set; } = new();
-
-    /// <summary>
-    ///     Cached reflection/simulation results that haven't been tracked yet.
-    ///     Populated before CharacterTrackerAgent runs, consumed after tracker succeeds.
-    /// </summary>
-    public Dictionary<Guid, CachedReflectionResult> PendingReflectionCache { get; set; } = new();
-
-    /// <summary>
-    ///     Saved cohort simulation state for resuming reflection collection.
-    ///     Set when moderation completes, cleared when all reflections succeed.
-    /// </summary>
-    public CohortSimulationState? CohortSimulationState { get; set; }
 
     /// <summary>
     ///     When true, SimulationOrchestrator should skip execution.
@@ -287,13 +199,6 @@ internal sealed class GenerationContext
     public string? NewMcStorySummary { get; set; }
 
     /// <summary>
-    ///     Cached per-character story summaries produced by StorySummaryAgent during enrichment.
-    ///     Allows retries to reuse summaries for characters whose story summary already succeeded
-    ///     even if their enclosing character processing ultimately failed.
-    /// </summary>
-    public Dictionary<Guid, string> CharacterStorySummaries { get; set; } = new();
-
-    /// <summary>
     ///     True once ProgressionAgent has finished for this enrichment (even if it produced no delta).
     ///     Used to skip the agent on retries.
     /// </summary>
@@ -318,28 +223,12 @@ internal sealed class GenerationContext
     public JsonElement? InventoryDelta { get; set; }
 
     /// <summary>
-    ///     Cached per-character progression deltas produced by ProgressionAgent.InvokeForCharacter.
-    ///     Allows retries to reuse deltas for characters whose progression already succeeded.
-    /// </summary>
-    [JsonIgnore]
-    public Dictionary<Guid, JsonElement?> CharacterProgressionDeltas { get; set; } = new();
-
-    /// <summary>
-    ///     Cached per-character inventory deltas produced by InventoryTrackerAgent.InvokeForCharacter.
-    ///     Allows retries to reuse deltas for characters whose inventory tracking already succeeded.
-    /// </summary>
-    [JsonIgnore]
-    public Dictionary<Guid, JsonElement?> CharacterInventoryDeltas { get; set; } = new();
-
-    /// <summary>
     ///     Co-location output from CoLocationAgent.
     ///     Determines which characters from the registry are at the scene location.
     /// </summary>
     public CoLocationOutput? CoLocationOutput { get; set; }
 
     public QaReviewOutput? QaReview { get; set; }
-
-    public string? StyleNoteFromPreviousScene { get; set; }
 
     public bool ScenePipelineRevisionComplete { get; set; }
 
@@ -377,89 +266,6 @@ internal sealed class GenerationContext
     {
         return SceneContext.Where(x => x.Metadata.Tracker != null).OrderByDescending(x => x.SequenceNumber).FirstOrDefault()?.Metadata.Tracker;
     }
-}
-
-/// <summary>
-///     Data for a CharacterEvent to be saved.
-/// </summary>
-internal sealed class CharacterEventToSave
-{
-    public required Guid AdventureId { get; init; }
-
-    public required string TargetCharacterName { get; init; }
-
-    public required string SourceCharacterName { get; init; }
-
-    public required string Time { get; init; }
-
-    public required string Event { get; init; }
-
-    public required string SourceRead { get; init; }
-}
-
-/// <summary>
-///     Data for a Dispatch to be saved.
-/// </summary>
-internal sealed class DispatchToSave
-{
-    public required Guid AdventureId { get; init; }
-
-    public required string FromCharacter { get; init; }
-
-    public required string ToCharacter { get; init; }
-
-    public required string Method { get; init; }
-
-    public required string SentAt { get; init; }
-
-    public required string EstimatedTransit { get; init; }
-
-    public string? SenderContext { get; init; }
-
-    public required string WhatArrives { get; init; }
-}
-
-/// <summary>
-///     Data for a Dispatch resolution to be applied.
-/// </summary>
-internal sealed class DispatchResolutionToSave
-{
-    public required Guid DispatchId { get; init; }
-
-    public required string Resolution { get; init; }
-
-    public required string ResolvedAt { get; init; }
-
-    public required bool Discoverable { get; init; }
-
-    /// <summary>
-    ///     Location for world event if discoverable.
-    /// </summary>
-    public string? Location { get; init; }
-}
-
-/// <summary>
-///     Cached intermediate result from reflection/simulation agents.
-///     Persisted in GenerationContext to survive retries.
-/// </summary>
-internal sealed class CachedReflectionResult
-{
-    public required Guid CharacterId { get; init; }
-
-    public required string CharacterName { get; init; }
-
-    public required ReflectionSource Source { get; init; }
-
-    public required CharacterContext Result { get; init; }
-}
-
-internal enum ReflectionSource
-{
-    CharacterReflection,
-    ExperientialNarrator,
-    StandaloneSimulation,
-    CohortSimulation,
-    OffscreenInference
 }
 
 internal sealed class CharacterContext

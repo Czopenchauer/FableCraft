@@ -888,39 +888,6 @@ internal static class PromptSections
     }
 
     /// <summary>
-    ///     Formats character emulation outputs for the CharacterReflectionAgent.
-    ///     These reveal the character's internal experience during the scene.
-    /// </summary>
-    public static string CharacterEmulationOutputs(GenerationContext context, string characterName)
-    {
-        if (!context.CharacterEmulationOutputs.TryGetValue(characterName, out var outputs) || outputs.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var formatted = string.Join("\n\n---\n\n",
-            outputs.OrderBy(o => o.SequenceNumber).Select(o => $"""
-                                                                <emulation sequence="{o.SequenceNumber}">
-                                                                **Situation:** {o.Stimulus}
-                                                                **Query:** {o.Query}
-
-                                                                {o.Response}
-                                                                </emulation>
-                                                                """));
-
-        return $"""
-                ## Your Internal Experience During This Scene
-
-                The following are your internal responses as generated during the scene.
-                These reveal your actual thoughts, feelings, and reactions that informed your actions.
-
-                <character_emulation_outputs>
-                {formatted}
-                </character_emulation_outputs>
-                """;
-    }
-
-    /// <summary>
     ///     Gets the rolling story summary for a character from their scene rewrites.
     ///     This is the compressed history of everything that happened before the recent window.
     /// </summary>

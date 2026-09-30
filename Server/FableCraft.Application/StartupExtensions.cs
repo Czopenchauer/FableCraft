@@ -30,14 +30,12 @@ public static class StartupExtensions
         services.AddScoped<IChatService, ChatService>();
         services
             .AddScoped<IGenerationContextBuilder, GenerationContextBuilder>()
-            .AddScoped<WorldInfoExtractionMaintenanceService>()
             .AddScoped<CoLocationMaintenanceService>()
             .AddScoped<SceneGenerationOrchestrator>()
             .AddScoped<IProcessor, ScenePipeline>()
             .AddScoped<IProcessor, WriterAgent>()
             .AddScoped<IProcessor, LoreAgent>()
             .AddScoped<LoreAgent>()
-            .AddScoped<IProcessor, CharacterTrackersProcessor>()
             .AddScoped<IProcessor, SaveSceneWithoutEnrichment>()
             .AddScoped<IProcessor, SaveSceneEnrichment>()
             .AddScoped<IProcessor, ContextGatherer>()
@@ -50,47 +48,30 @@ public static class StartupExtensions
             .AddScoped<InventoryTrackerAgent>()
             .AddScoped<InitMainCharacterTrackerAgent>()
             .AddScoped<SceneTrackerAgent>()
-            .AddScoped<CharacterCrafter>()
             .AddScoped<PartialProfileCrafter>()
             .AddScoped<LoreCrafter>()
             .AddScoped<ItemCrafter>()
-            .AddScoped<CharacterTrackerAgent>()
-            .AddScoped<CharacterReflectionAgent>()
-            .AddScoped<ExperientialNarratorAgent>()
-            .AddScoped<ClinicalAssessorAgent>()
             .AddScoped<LocationCrafter>()
             .AddScoped<MainCharacterEmulatorAgent>()
             .AddScoped<ChroniclerAgent>()
             .AddScoped<NarrativeCatalystAgent>()
-            .AddScoped<SimulationPlannerAgent>()
-            .AddScoped<StandaloneSimulationAgent>()
-            .AddScoped<SimulationModeratorAgent>()
-            .AddScoped<CharacterSimulationAgent>()
             .AddScoped<CharacterContextGatherer>()
             .AddScoped<DispatchService>()
-            .AddScoped<IntentCheckAgent>()
-            .AddScoped<WorldInfoExtractorAgent>()
-            .AddScoped<EmulationOrchestratorAgent>()
             .AddScoped<StorySummaryAgent>()
             .AddScoped<ImagePromptAgent>()
             .AddScoped<QualityAssuranceAgent>()
         .AddScoped<TrackerDeBloaterAgent>()
-            .AddScoped<IProcessor, SceneTrackerProcessor>()
-            .AddScoped<IProcessor, SimulationOrchestrator>();
+            .AddScoped<IProcessor, SceneTrackerProcessor>();
 
         // Plugin factory and plugins
         services.AddScoped<IPluginFactory, PluginFactory>();
-        services.AddTransient<CharacterAgent>();
         services.AddTransient<WorldKnowledgePlugin>();
         services.AddTransient<MainCharacterNarrativePlugin>();
         services.AddTransient<CharacterNarrativePlugin>();
         services.AddTransient<CharacterStatePlugin>();
         services.AddTransient<CharacterRelationshipPlugin>();
         services.AddTransient<CharacterDescriptionPlugin>();
-        services.AddTransient<CharacterEmulationPlugin>();
-        services.AddTransient<IntentCheckPlugin>();
         services.AddTransient<CharacterSimulationToolsPlugin>();
-        services.AddTransient<OrchestrateEmulationPlugin>();
         services.AddTransient<ChatCharacterPlugin>();
 
         services.AddMessageHandler<AddAdventureToKnowledgeGraphCommand, AddAdventureToKnowledgeGraphCommandHandler>();

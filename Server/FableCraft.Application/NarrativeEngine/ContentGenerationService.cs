@@ -72,10 +72,8 @@ public sealed class ContentGenerationService(
         await sceneTrackerProcessor.Invoke(context, cancellationToken);
 
         var loreAgent = processors.First(p => p is LoreAgent);
-        var characterTrackersProcessor = processors.First(p => p is CharacterTrackersProcessor);
         await Task.WhenAll(
-            loreAgent.Invoke(context, cancellationToken),
-            characterTrackersProcessor.Invoke(context, cancellationToken));
+            loreAgent.Invoke(context, cancellationToken));
 
         // Save the generated content and character updates to the database
         var saveProcessor = processors.First(p => p is SaveSceneEnrichment);

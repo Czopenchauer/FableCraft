@@ -86,19 +86,6 @@ internal sealed class SaveSceneEnrichment(
                            }).DistinctBy(x => x.Title).DistinctBy(x => x.Content).ToList()
                            ?? new List<LorebookEntry>();
 
-            var worldEventEntities = context.NewWorldEvents?.Select(x => new LorebookEntry
-                                     {
-                                         AdventureId = context.AdventureId,
-                                         Title = $"Event at {x.When}: {x.Where}",
-                                         Description = $"[{x.When}] {x.Where}\n\n{x.Event}",
-                                         Category = nameof(LorebookCategory.WorldEvent),
-                                         Content = $"""
-                                                    {x.Event}
-                                                    """,
-                                         ContentType = ContentType.txt
-                                     }).ToList()
-                                     ?? new List<LorebookEntry>();
-
             var backgroundCharacterEntities = context.NewBackgroundCharacters?.Select(x => new LorebookEntry
                                               {
                                                   AdventureId = context.AdventureId,
@@ -110,7 +97,6 @@ internal sealed class SaveSceneEnrichment(
                                               }).ToList()
                                               ?? new List<LorebookEntry>();
 
-            loreEntities.AddRange(worldEventEntities);
             loreEntities.AddRange(backgroundCharacterEntities);
 
             var activityEntries = (context.WorldInfoExtractions?.Activity ?? [])
@@ -186,14 +172,6 @@ internal sealed class SaveSceneEnrichment(
             }
 
             await ProcessImportanceFlags(context, dbContext, logger, cancellationToken);
-
-            await MarkCharacterEventsConsumed(context, cancellationToken, dbContext);
-
-            await SaveNewCharacterEvents(context, dbContext);
-
-            await SaveNewDispatches(context, dbContext);
-
-            await ApplyDispatchResolutions(context, dbContext, cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -465,64 +443,6 @@ internal sealed class SaveSceneEnrichment(
         }
     }
 
-    private static async Task MarkCharacterEventsConsumed(GenerationContext context, CancellationToken cancellationToken, ApplicationDbContext dbContext)
-    {
-        List<Guid> eventIds;
-        lock (context)
-        {
-            if (context.CharacterEventsToConsume.Count == 0)
-            {
-                return;
-            }
-
-            eventIds = context.CharacterEventsToConsume.ToList();
-        }
-
-        if (eventIds.Count == 0)
-        {
-            return;
-        }
-
-        await dbContext.CharacterEvents
-            .Where(e => eventIds.Contains(e.Id))
-            .ExecuteUpdateAsync(
-                setters => setters.SetProperty(e => e.Consumed, true),
-                cancellationToken);
-    }
-
-    private static async Task SaveNewCharacterEvents(GenerationContext context, ApplicationDbContext dbContext)
-    {
-        List<CharacterEventToSave> eventsToSave;
-        lock (context)
-        {
-            if (context.NewCharacterEvents.Count == 0)
-            {
-                return;
-            }
-
-            eventsToSave = context.NewCharacterEvents.ToList();
-        }
-
-        if (eventsToSave.Count == 0)
-        {
-            return;
-        }
-
-        var entities = eventsToSave.Select(e => new CharacterEvent
-        {
-            Id = Guid.NewGuid(),
-            AdventureId = e.AdventureId,
-            TargetCharacterName = e.TargetCharacterName,
-            SourceCharacterName = e.SourceCharacterName,
-            Time = e.Time,
-            Event = e.Event,
-            SourceRead = e.SourceRead,
-            Consumed = false
-        });
-
-        await dbContext.CharacterEvents.AddRangeAsync(entities);
-    }
-
     private static async Task ProcessImportanceFlags(
         GenerationContext context,
         ApplicationDbContext dbContext,
@@ -592,83 +512,6 @@ internal sealed class SaveSceneEnrichment(
 
     private static bool IsValidTransition(ImportanceChangeRequest request) =>
         request.From == "arc_important" && request.To == "significant" || request.From == "significant" && request.To == "arc_important";
-
-    private static async Task SaveNewDispatches(GenerationContext context, ApplicationDbContext dbContext)
-    {
-        List<DispatchToSave> dispatchesToSave;
-        lock (context)
-        {
-            if (context.NewDispatches.Count == 0)
-            {
-                return;
-            }
-
-            dispatchesToSave = context.NewDispatches.ToList();
-        }
-
-        if (dispatchesToSave.Count == 0)
-        {
-            return;
-        }
-
-        var entities = dispatchesToSave.Select(d => new Dispatch
-        {
-            Id = Guid.NewGuid(),
-            AdventureId = d.AdventureId,
-            FromCharacter = d.FromCharacter,
-            ToCharacter = d.ToCharacter,
-            Method = d.Method,
-            SentAt = d.SentAt,
-            EstimatedTransit = d.EstimatedTransit,
-            SenderContext = d.SenderContext,
-            WhatArrives = d.WhatArrives,
-            Status = DispatchStatus.Pending,
-            CreatedUtc = DateTime.UtcNow
-        });
-
-        await dbContext.Dispatches.AddRangeAsync(entities);
-    }
-
-    private static async Task ApplyDispatchResolutions(
-        GenerationContext context,
-        ApplicationDbContext dbContext,
-        CancellationToken cancellationToken)
-    {
-        List<DispatchResolutionToSave> resolutions;
-        lock (context)
-        {
-            if (context.DispatchResolutions.Count == 0)
-            {
-                return;
-            }
-
-            resolutions = context.DispatchResolutions.ToList();
-        }
-
-        if (resolutions.Count == 0)
-        {
-            return;
-        }
-
-        var dispatchIds = resolutions.Select(r => r.DispatchId).ToList();
-        var dispatches = await dbContext.Dispatches
-            .Where(d => dispatchIds.Contains(d.Id))
-            .ToListAsync(cancellationToken);
-
-        foreach (var resolution in resolutions)
-        {
-            var dispatch = dispatches.FirstOrDefault(d => d.Id == resolution.DispatchId);
-            if (dispatch == null)
-            {
-                continue;
-            }
-
-            dispatch.Status = DispatchStatus.Resolved;
-            dispatch.Resolution = resolution.Resolution;
-            dispatch.ResolvedAt = resolution.ResolvedAt;
-            dispatch.Discoverable = resolution.Discoverable;
-        }
-    }
 
     /// <summary>
     ///     Links pre-scene custom characters (those with null IntroductionScene) to the first scene.

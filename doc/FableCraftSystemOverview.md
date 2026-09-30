@@ -692,10 +692,11 @@ Runs immediately after CharacterReflection. Updates the NPC's physical state usi
 
 **Processing Locations:**
 - **Existing characters in scene** → `CharacterTrackersProcessor` (enrichment)
-- **Newly created characters** → `ContentGenerator` (enrichment)
 - **Simulated characters** → `SimulationOrchestrator` (enrichment)
 
 This split processing is an implementation detail—all paths use the same CharacterTracker agent.
+
+New enrichment-phase world content (lore) is minted by `LoreAgent` from the finished scene into the lorebook—the Writer no longer emits `creation_requests`.
 
 #### Chronicler
 
@@ -1194,7 +1195,7 @@ Error recovery. The current scene can be regenerated if the AI makes mistakes. O
 
 ### Thread Safety
 
-All parallel processors in the enrichment phase use `lock(context)` for shared state updates. This prevents race conditions when multiple agents (ContentGenerator, SimulationOrchestrator, CharacterTrackersProcessor) write to the same context object simultaneously.
+All parallel processors in the enrichment phase use `lock(context)` for shared state updates. This prevents race conditions when multiple agents (LoreAgent, SimulationOrchestrator, CharacterTrackersProcessor) write to the same context object simultaneously.
 
 ### Scene History Limits by Agent
 
@@ -1225,14 +1226,14 @@ This includes carried-forward world context, story history, and new queries comb
 
 ### Creation Request Processing
 
-Writer and Simulation both produce `creation_requests` but they're processed in different locations:
+The Writer no longer emits `creation_requests`; new world content is created in two places:
 
 | Source | Processing Location |
 |--------|---------------------|
-| Writer's `creation_requests` | ContentGenerator (enrichment) |
+| Finished scene (new lore) | LoreAgent (enrichment) |
 | Simulation's `creation_requests` | SimulationOrchestrator (inline) |
 
-Both use the same Crafter agents.
+Simulation's creation requests use the Crafter agents; LoreAgent mints lore directly from the finished scene.
 
 ### Known Code Gaps
 
